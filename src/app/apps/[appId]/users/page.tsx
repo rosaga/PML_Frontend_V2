@@ -1,21 +1,62 @@
 // Users.js
 import React from "react";
-import Box from '@mui/material/Box';
-import { DataGrid, GridRowsProp, GridColDef } from '@mui/x-data-grid';
+import Box from "@mui/material/Box";
+import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
+import {
+  FormControl,
+  InputAdornment,
+  TextField,
+  createStyles,
+  makeStyles
+} from "@material-ui/core";
+import SearchIcon from "@material-ui/icons/Search";
+
+// const useStyles = makeStyles(() => {
+//   return createStyles({
+//       search: {
+//           margin: "0",
+//           width: '340px',
+//           mt:'4px'
+//       },
+//   });
+// });
 
 const Users = () => {
 
+    // const { search } = useStyles();
+
+
   const rows: GridRowsProp = [
-    { id: 1, first_name: 'Allan', last_name: 'Oluoch' , email: 'allan@gmail.com'},
-    { id: 2, first_name: 'Richard', last_name: 'Osaga' , email: 'osaga@gmail.com'},
-    { id: 3, first_name: 'Victor', last_name: 'Siderra' , email: 'siderra@gmail.com'},
-    { id: 3, first_name: 'Ryan', last_name: 'Ashiruma' , email: 'ashiruma@gmail.com'},
+    {
+      id: 1,
+      first_name: "Allan",
+      last_name: "Oluoch",
+      email: "allan@gmail.com",
+    },
+    {
+      id: 2,
+      first_name: "Richard",
+      last_name: "Osaga",
+      email: "osaga@gmail.com",
+    },
+    {
+      id: 3,
+      first_name: "Victor",
+      last_name: "Siderra",
+      email: "siderra@gmail.com",
+    },
+    {
+      id: 3,
+      first_name: "Ryan",
+      last_name: "Ashiruma",
+      email: "ashiruma@gmail.com",
+    },
   ];
-  
+
   const columns: GridColDef[] = [
-    { field: 'first_name', headerName: 'First Name', flex:1 },
-    { field: 'last_name', headerName: 'Last Name', flex:1 },
-    { field: 'email', headerName: 'Email', flex:1 },
+    { field: "first_name", headerName: "First Name", flex: 1 },
+    { field: "last_name", headerName: "Last Name", flex: 1 },
+    { field: "email", headerName: "Email", flex: 1 },
   ];
 
   const data = [
@@ -25,21 +66,58 @@ const Users = () => {
     ["Ryan", "Ashiruma", "ashiruma@gmail.com"],
   ];
 
+  
+
+
+
+//   const handleKeyDown = (event:any) => {
+//     if (event.key === 'Enter') {
+//     handleClick(event);
+// }};
+
+
   return (
     <div className="p-4 sm:ml-64 h-screen ">
       <div className="p-4 border-2 border-gray-200 h-full border-dashed rounded-lg dark:border-gray-700">
         <div className="flex flex-col h-full">
           <div>
-            <p className="mt-2 font-bold text-lg">Zawadi Test Account</p>
+            <p className="mt-2 ml-8 font-bold text-lg">Zawadi Test Account</p>
           </div>
 
           <div className="flex flex-col">
-            <div className="border-2 p-8">
-              <p className="mt-2 font-medium text-md">Users</p>
+            <div className="p-8">
+              <p className="mt-4 font-medium text-lg">Users</p>
+              <FormControl>
+                    <TextField
+                        size="small"
 
-              <div style={{ height: 300, width: '100%' }}>
-      <DataGrid rows={rows} columns={columns} />
-    </div>
+                        placeholder='Search Customer'
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment
+                                    position="start"
+                                    // onClick={handleClick}
+                                    style={{
+                                        cursor: 'pointer',
+                                        font:'Ubuntu',
+                                    }}
+                                >
+                                    <div className='bg-[#525456]  rounded-md  p-1.5 -mr-1.5 text-white' >
+                                        <SearchIcon fontSize='medium'/>
+                                    </div>
+                                </InputAdornment>
+                            ),
+                            disableUnderline: true,
+
+                            }}
+                            //  onKeyDown={handleKeyDown} 
+                    />
+                </FormControl>
+              <div className="mt-4">
+              <div style={{ height: 350, width: "100%" }}>
+                <DataGrid rows={rows} columns={columns} />
+              </div>
+            </div>
             </div>
           </div>
         </div>
