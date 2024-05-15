@@ -1,20 +1,29 @@
 // Users.js
-import React from 'react';
-import Table from '../../../../components/table/table';
+import React from "react";
+import Box from '@mui/material/Box';
+import { DataGrid, GridRowsProp, GridColDef } from '@mui/x-data-grid';
 
 const Users = () => {
-  const columns = ['First Name', 'Last Name', 'Email'];
 
-  const data = [
-    ['Allan', 'Oluoch', 'allan@gmail.com'],
-    ['Richard', 'Osaga', 'osaga@gmail.com'],
-    ['Victor', 'Siderra', 'siderra@gmail.com'],
-    ['Ryan', 'Ashiruma', 'ashiruma@gmail.com'],
+  const rows: GridRowsProp = [
+    { id: 1, first_name: 'Allan', last_name: 'Oluoch' , email: 'allan@gmail.com'},
+    { id: 2, first_name: 'Richard', last_name: 'Osaga' , email: 'osaga@gmail.com'},
+    { id: 3, first_name: 'Victor', last_name: 'Siderra' , email: 'siderra@gmail.com'},
+    { id: 3, first_name: 'Ryan', last_name: 'Ashiruma' , email: 'ashiruma@gmail.com'},
+  ];
+  
+  const columns: GridColDef[] = [
+    { field: 'first_name', headerName: 'First Name', flex:1 },
+    { field: 'last_name', headerName: 'Last Name', flex:1 },
+    { field: 'email', headerName: 'Email', flex:1 },
   ];
 
-  const options = {
-    filterType: 'checkbox',
-  };
+  const data = [
+    ["Allan", "Oluoch", "allan@gmail.com"],
+    ["Richard", "Osaga", "osaga@gmail.com"],
+    ["Victor", "Siderra", "siderra@gmail.com"],
+    ["Ryan", "Ashiruma", "ashiruma@gmail.com"],
+  ];
 
   return (
     <div className="p-4 sm:ml-64 h-screen ">
@@ -28,7 +37,9 @@ const Users = () => {
             <div className="border-2 p-8">
               <p className="mt-2 font-medium text-md">Users</p>
 
-              {/* <Table columns={columns} options={options} data={data} /> */}
+              <div style={{ height: 300, width: '100%' }}>
+      <DataGrid rows={rows} columns={columns} />
+    </div>
             </div>
           </div>
         </div>
