@@ -1,5 +1,6 @@
 // MyComponent.js
 import React from "react";
+import Profile from "../profile/profile"
 
 const Sidebar = () => {
   return (
@@ -10,11 +11,11 @@ const Sidebar = () => {
         aria-label="Sidebar"
       >
         <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50 light:bg-gray-800">
-          <img
+          {/* <img
             src="/images/peaklogo.png"
             className="h-30 me-24 sm:h-24"
-            alt="Flowbite Logo"
-          />
+            alt="Peak Logo"
+          /> */}
           <ul className="space-y-4 font-medium">
             <li>
               <a
@@ -174,7 +175,6 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      
     </div>
   );
 };
