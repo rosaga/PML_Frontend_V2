@@ -11,20 +11,8 @@ import {
 } from "@material-ui/core";
 import SearchIcon from "@material-ui/icons/Search";
 
-// const useStyles = makeStyles(() => {
-//   return createStyles({
-//       search: {
-//           margin: "0",
-//           width: '340px',
-//           mt:'4px'
-//       },
-//   });
-// });
 
 const Users = () => {
-
-    // const { search } = useStyles();
-
 
   const rows: GridRowsProp = [
     {
@@ -87,32 +75,7 @@ const Users = () => {
           <div className="flex flex-col">
             <div className="p-8">
               <p className="mt-4 font-medium text-lg">Users</p>
-              <FormControl>
-                    <TextField
-                        size="small"
 
-                        placeholder='Search Customer'
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment
-                                    position="start"
-                                    // onClick={handleClick}
-                                    style={{
-                                        cursor: 'pointer',
-                                        font:'Ubuntu',
-                                    }}
-                                >
-                                    <div className='bg-[#525456]  rounded-md  p-1.5 -mr-1.5 text-white' >
-                                        <SearchIcon fontSize='medium'/>
-                                    </div>
-                                </InputAdornment>
-                            ),
-                            disableUnderline: true,
-
-                            }}
-                            //  onKeyDown={handleKeyDown} 
-                    />
-                </FormControl>
               <div className="mt-4">
               <div style={{ height: 350, width: "100%" }}>
                 <DataGrid rows={rows} columns={columns} />
