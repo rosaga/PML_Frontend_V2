@@ -1,6 +1,7 @@
 import Sidebar from "@/components/sidebar/sidebar";
 import React from "react";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
+import Image from "next/image";
 
 const Dashboard = () => {
   const rows: GridRowsProp = [
@@ -51,7 +52,19 @@ const Dashboard = () => {
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Recipients Reached</div>
                   <div>
-                    <span>ICON</span>
+                    <span>
+                      <Image
+                        style={{ color: "#F58426" }}
+                        className="w-12 h-12  rounded-lg "
+                        width={60}
+                        height={60}
+                        src="/images/Icon.svg"
+                        blurDataURL="/bluriconloader.png"
+                        placeholder="blur"
+                        alt="Recipients reached"
+                        priority
+                      />
+                    </span>
                   </div>
                 </div>
                 <div className="text-2xl font-bold">20</div>
@@ -60,7 +73,19 @@ const Dashboard = () => {
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Consumed Data</div>
                   <div>
-                    <span>ICON</span>
+                    <span>
+                      <Image
+                        style={{ color: "#F58426" }}
+                        className="w-12 h-12  rounded-lg "
+                        width={60}
+                        height={60}
+                        src="/images/Icon-1.svg"
+                        blurDataURL="/bluriconloader.png"
+                        placeholder="blur"
+                        alt="Recipients reached"
+                        priority
+                      />
+                    </span>
                   </div>
                 </div>
                 <div className="text-2xl font-bold">10,000 MBS</div>
@@ -69,7 +94,19 @@ const Dashboard = () => {
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Active Campaigns</div>
                   <div>
-                    <span>ICON</span>
+                    <span>
+                      <Image
+                        style={{ color: "#F58426" }}
+                        className="w-12 h-12  rounded-lg "
+                        width={60}
+                        height={60}
+                        src="/images/Icon-1.svg"
+                        blurDataURL="/bluriconloader.png"
+                        placeholder="blur"
+                        alt="Recipients reached"
+                        priority
+                      />
+                    </span>
                   </div>
                 </div>
                 <div className="text-2xl font-bold">5</div>
@@ -78,7 +115,19 @@ const Dashboard = () => {
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Failed Campaigns</div>
                   <div>
-                    <span>ICON</span>
+                    <span>
+                      <Image
+                        style={{ color: "#F58426" }}
+                        className="w-12 h-12  rounded-lg "
+                        width={60}
+                        height={60}
+                        src="/images/Icon-2.svg"
+                        blurDataURL="/bluriconloader.png"
+                        placeholder="blur"
+                        alt="Recipients reached"
+                        priority
+                      />
+                    </span>
                   </div>
                 </div>
                 <div className="text-2xl font-bold">8</div>
