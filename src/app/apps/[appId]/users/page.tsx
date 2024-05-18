@@ -7,13 +7,11 @@ import {
   InputAdornment,
   TextField,
   createStyles,
-  makeStyles
+  makeStyles,
 } from "@material-ui/core";
 import SearchIcon from "@material-ui/icons/Search";
 
-
 const Users = () => {
-
   const rows: GridRowsProp = [
     {
       id: 1,
@@ -54,33 +52,33 @@ const Users = () => {
     ["Ryan", "Ashiruma", "ashiruma@gmail.com"],
   ];
 
-  
-
-
-
-//   const handleKeyDown = (event:any) => {
-//     if (event.key === 'Enter') {
-//     handleClick(event);
-// }};
-
+  //   const handleKeyDown = (event:any) => {
+  //     if (event.key === 'Enter') {
+  //     handleClick(event);
+  // }};
 
   return (
     <div className="p-4 sm:ml-64 h-screen ">
-      <div className="p-4 border-2 border-gray-200 h-full border-dashed rounded-lg dark:border-gray-700">
-        <div className="flex flex-col h-full">
-          <div>
-            <p className="mt-2 ml-8 font-bold text-lg">Zawadi Test Account</p>
-          </div>
+      <div className="flex flex-col h-full">
+        <div className="flex flex-col">
+          <div className="p-4">
+            <p className="mt-4 font-medium text-lg">Users</p>
 
-          <div className="flex flex-col">
-            <div className="p-8">
-              <p className="mt-4 font-medium text-lg">Users</p>
-
-              <div className="mt-4">
+            <div className="mt-4">
               <div style={{ height: 350, width: "100%" }}>
-                <DataGrid rows={rows} columns={columns} />
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  sx={{
+                    "& .MuiDataGrid-columnHeader": {
+                      backgroundColor: "#E5E4E2",
+                    },
+                    "&.MuiDataGrid-root": {
+                      border: "none",
+                    },
+                  }}
+                />
               </div>
-            </div>
             </div>
           </div>
         </div>
