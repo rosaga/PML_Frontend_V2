@@ -2,16 +2,19 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
-import {
-  FormControl,
-  InputAdornment,
-  TextField,
-  createStyles,
-  makeStyles,
-} from "@material-ui/core";
-import SearchIcon from "@material-ui/icons/Search";
+import Button from "@mui/material/Button";
+import IosShareIcon from "@mui/icons-material/IosShare";
+import PeakButton from "../../../../components/button/button";
+import AddIcon from '@mui/icons-material/Add';
+import PeakSearch from "../../../../components/search/search"
 
 const Users = () => {
+  const filterOptions = [
+    { value: 'eq__external_id', label: 'Email' },
+    { value: 'ilike__first_name', label: 'First Name' },
+    { value: 'ilike__last_name', label: 'Last Name' },
+];
+
   const rows: GridRowsProp = [
     {
       id: 1,
@@ -56,13 +59,25 @@ const Users = () => {
   //     if (event.key === 'Enter') {
   //     handleClick(event);
   // }};
+  const selectedFilter = "Email"
+    const searchInput = "sid@gmail.com"
 
   return (
     <div className="p-4 sm:ml-64 h-screen ">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
           <div className="p-4">
-            <p className="mt-4 font-medium text-lg">Users</p>
+            <div className="flex items-center justify-between">
+              <p className="mt-4 font-medium text-lg">Users</p>
+              <div className="ml-auto flex space-x-4">
+              <PeakSearch
+              filterOptions={filterOptions}
+              selectedFilter={selectedFilter}
+              />  
+              <PeakButton buttonText="Invite User" icon={AddIcon} className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"/>
+              <PeakButton buttonText="Export" icon={IosShareIcon} className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"/>
+              </div>
+            </div>
 
             <div className="mt-4">
               <div style={{ height: 350, width: "100%" }}>
