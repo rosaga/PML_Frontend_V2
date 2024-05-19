@@ -111,7 +111,7 @@ const Dashboard = () => {
     <div className="p-4 sm:ml-64 h-screen ">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
         <div className="flex flex-col h-full">
-          <div className="border-2 rounded-3xl">
+          <div className="shadow-md rounded-3xl">
             <div className="p-8">
               <p className="m-1 font-semibold text-lg">Summary Tiles</p>
               <div className="flex items-center justify-between"><p className="m-1 text-md">Data Rewards Summary</p>
@@ -122,7 +122,7 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-4 gap-4 p-8">
-              <div className="border-1 shadow-lg rounded-lg p-6 flex flex-col">
+              <div className="border-1 shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Recipients Reached</div>
                   <div>
@@ -143,7 +143,7 @@ const Dashboard = () => {
                 </div>
                 <div className="text-2xl font-bold">20</div>
               </div>
-              <div className="border-1 shadow-lg rounded-lg p-6 flex flex-col">
+              <div className="border-1 shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Consumed Data</div>
                   <div>
@@ -164,7 +164,7 @@ const Dashboard = () => {
                 </div>
                 <div className="text-2xl font-bold">10,000 MBS</div>
               </div>
-              <div className="border-1 shadow-lg rounded-lg p-6 flex flex-col">
+              <div className="border-1 shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Active Campaigns</div>
                   <div>
@@ -185,7 +185,7 @@ const Dashboard = () => {
                 </div>
                 <div className="text-2xl font-bold">5</div>
               </div>
-              <div className="border-1 shadow-lg rounded-lg p-6 flex flex-col">
+              <div className="border-1 shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-gray-500">Failed Campaigns</div>
                   <div>
@@ -208,18 +208,30 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 my-4 p-8">
-            <div className="col-span-2 border-1 shadow-md font-semibold text-md p-6">
+          <div className="grid grid-cols-3 gap-3 my-4 p-1">
+            
+            <div className="col-span-2 rounded-3xl shadow-md font-semibold text-md p-6">
               <p className="mt-2 font-medium text-lg">Data Balance</p>
 
               <div className="mt-4">
-                <div style={{ height: 350, width: "100%" }}>
-                  <DataGrid rows={rows} columns={columns} />
-                </div>
+              <div style={{ height: 350, width: "100%" }}>
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  sx={{
+                    "& .MuiDataGrid-columnHeader": {
+                      backgroundColor: "#E5E4E2",
+                    },
+                    "&.MuiDataGrid-root": {
+                      border: "none",
+                    },
+                  }}
+                />
+              </div>
               </div>
             </div>
             <div className="flex flex-col gap-4">
-              <div className="border-1 shadow-md p-6">
+              <div className="rounded-3xl shadow-md p-6">
               <span>
                       <Image
                         style={{ color: "#F58426" }}
@@ -235,7 +247,7 @@ const Dashboard = () => {
                     </span>
               <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>      
               </div>
-              <div className="border-1 shadow-md p-6">
+              <div className="rounded-3xl shadow-md p-6">
               <span>
                       <Image
                         style={{ color: "#F58426" }}
@@ -255,7 +267,7 @@ const Dashboard = () => {
           </div>
 
           <div className="flex flex-col">
-            <div className="p-8">
+            <div className="p-4 shadow-md rounded-lg">
               <div className="flex items-center justify-between">
               <p className="mt-4 font-medium text-lg">Recent Recipients</p>
               <span>
@@ -273,12 +285,23 @@ const Dashboard = () => {
                     </span>
               </div>
               <div className="mt-4">
-                <div style={{ height: 350, width: "100%" }}>
-                  <DataGrid rows={rows1} columns={columns1} />
-                </div>
+              <div style={{ height: 350, width: "100%" }}>
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  sx={{
+                    "& .MuiDataGrid-columnHeader": {
+                      backgroundColor: "#E5E4E2",
+                    },
+                    "&.MuiDataGrid-root": {
+                      border: "none",
+                    },
+                  }}
+                />
+              </div>
               </div>
             </div>
-            <div className="p-8">
+            <div className="p-4 shadow-md rounded-lg mt-4">
             <div className="flex items-center justify-between">
               <p className="mt-4 font-medium text-lg">Recent Groups</p>
               <span>
@@ -297,12 +320,23 @@ const Dashboard = () => {
               </div>
 
               <div className="mt-4">
-                <div style={{ height: 350, width: "100%" }}>
-                  <DataGrid rows={rows} columns={columns} />
-                </div>
+              <div style={{ height: 350, width: "100%" }}>
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  sx={{
+                    "& .MuiDataGrid-columnHeader": {
+                      backgroundColor: "#E5E4E2",
+                    },
+                    "&.MuiDataGrid-root": {
+                      border: "none",
+                    },
+                  }}
+                />
+              </div>
               </div>
             </div>
-            <div className="p-8">
+            <div className="p-4 shadow-md rounded-lg mt-4 mb-4">
             <div className="flex items-center justify-between">
               <p className="mt-4 font-medium text-lg">Recent Campaigns</p>
               <span>
@@ -321,9 +355,20 @@ const Dashboard = () => {
               </div>
 
               <div className="mt-4">
-                <div style={{ height: 350, width: "100%" }}>
-                  <DataGrid rows={rows} columns={columns} />
-                </div>
+              <div style={{ height: 350, width: "100%" }}>
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  sx={{
+                    "& .MuiDataGrid-columnHeader": {
+                      backgroundColor: "#E5E4E2",
+                    },
+                    "&.MuiDataGrid-root": {
+                      border: "none",
+                    },
+                  }}
+                />
+              </div>
               </div>
             </div>
           </div>
