@@ -1,5 +1,5 @@
-// Users.js
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
@@ -7,8 +7,20 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import PeakButton from "../../../../components/button/button";
 import AddIcon from '@mui/icons-material/Add';
 import PeakSearch from "../../../../components/search/search"
+import InviteUserModal from "../../../../components/modal/inviteUser"
 
 const Users = () => {
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+  
   const filterOptions = [
     { value: 'eq__external_id', label: 'Email' },
     { value: 'ilike__first_name', label: 'First Name' },
@@ -55,10 +67,6 @@ const Users = () => {
     ["Ryan", "Ashiruma", "ashiruma@gmail.com"],
   ];
 
-  //   const handleKeyDown = (event:any) => {
-  //     if (event.key === 'Enter') {
-  //     handleClick(event);
-  // }};
   const selectedFilter = "Email"
     const searchInput = "sid@gmail.com"
 
@@ -70,12 +78,19 @@ const Users = () => {
             <div className="flex items-center justify-between">
               <p className="mt-4 font-medium text-lg">Users</p>
               <div className="ml-auto flex space-x-4">
-              <PeakSearch
-              filterOptions={filterOptions}
-              selectedFilter={selectedFilter}
-              />  
-              <PeakButton buttonText="Invite User" icon={AddIcon} className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"/>
-              <PeakButton buttonText="Export" icon={IosShareIcon} className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"/>
+                <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+                <PeakButton
+                  buttonText="Invite User"
+                  icon={AddIcon}
+                  className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
+                  onClick={openModal}
+                />
+                <PeakButton
+                  buttonText="Export"
+                  icon={IosShareIcon}
+                  className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
+                  onClick={openModal}
+                />
               </div>
             </div>
 
@@ -98,6 +113,7 @@ const Users = () => {
           </div>
         </div>
       </div>
+      {isModalOpen && <InviteUserModal closeModal={closeModal} />}
     </div>
   );
 };
