@@ -22,8 +22,8 @@ const Users = () => {
   };
   
   const filterOptions = [
-    { value: 'eq__external_id', label: 'Email' },
-    { value: 'ilike__first_name', label: 'First Name' },
+    { value: 'eq__external_id', label: 'Phone Number' },
+    { value: 'ilike__first_name', label: 'Created By' },
     { value: 'ilike__last_name', label: 'Last Name' },
 ];
 

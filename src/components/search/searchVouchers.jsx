@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 
 
-const PeakSearch = ({ filterOptions, selectedFilter }) => {
+const SearchVouchers = ({ filterOptions, selectedFilter }) => {
     const [inputValue, setInputValue] = useState("");
     const [filter, setFilter] = useState(selectedFilter);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -142,4 +142,4 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
     );
   };
   
-  export default PeakSearch;
+  export default SearchVouchers;
