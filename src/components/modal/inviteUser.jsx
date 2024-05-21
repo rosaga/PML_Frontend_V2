@@ -21,7 +21,7 @@ const InviteUserModal = ({ closeModal }) => {
   return (
     <div
       id="authentication-modal"
-      tabindex="-1"
+      tabIndex="-1"
       aria-hidden="true"
       className="fixed inset-0 z-50 flex justify-center items-center w-full h-screen bg-black bg-opacity-50"
     >

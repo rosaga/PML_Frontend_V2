@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Box from "@mui/material/Box";
-import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
+import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from '@mui/icons-material/Add';
@@ -48,7 +48,7 @@ const Users = () => {
           Authorization: `Bearer ${token}`
         }
       });
-      const users = usersResponse.data.map((user, index) => ({
+      const users = usersResponse.data.map((user: any) => ({
         id: user.user_id, 
         first_name: user.firstname,
         last_name: user.lastname,
@@ -64,7 +64,7 @@ const Users = () => {
   };
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const worksheet = XLSX.utils.json_to_sheet(rows as GridValidRowModel[]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
     XLSX.writeFile(workbook, "users_data.xlsx");
