@@ -219,9 +219,6 @@ const Dashboard = () => {
                   rows={rows}
                   columns={columns}
                   sx={{
-                    "& .MuiDataGrid-columnHeader": {
-                      backgroundColor: "#E5E4E2",
-                    },
                     "&.MuiDataGrid-root": {
                       border: "none",
                     },
@@ -291,7 +288,7 @@ const Dashboard = () => {
                   columns={columns}
                   sx={{
                     "& .MuiDataGrid-columnHeader": {
-                      backgroundColor: "#E5E4E2",
+                      backgroundColor: "#F1F2F3",
                     },
                     "&.MuiDataGrid-root": {
                       border: "none",
@@ -326,7 +323,7 @@ const Dashboard = () => {
                   columns={columns}
                   sx={{
                     "& .MuiDataGrid-columnHeader": {
-                      backgroundColor: "#E5E4E2",
+                      backgroundColor: "#F1F2F3",
                     },
                     "&.MuiDataGrid-root": {
                       border: "none",
@@ -361,7 +358,7 @@ const Dashboard = () => {
                   columns={columns}
                   sx={{
                     "& .MuiDataGrid-columnHeader": {
-                      backgroundColor: "#E5E4E2",
+                      backgroundColor: "#F1F2F3",
                     },
                     "&.MuiDataGrid-root": {
                       border: "none",

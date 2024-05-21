@@ -102,6 +102,7 @@ const Users = () => {
 
             <div className="mt-4">
               <div style={{ height: 350, width: "100%" }}>
+
                 {loading ? (
                   <p>Loading...</p>
                 ) : (
@@ -118,6 +119,7 @@ const Users = () => {
                     }}
                   />
                 )}
+
               </div>
             </div>
           </div>
