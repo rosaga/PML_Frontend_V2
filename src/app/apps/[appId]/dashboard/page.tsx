@@ -132,7 +132,7 @@ const Dashboard = () => {
                         className="w-12 h-12  rounded-lg "
                         width={60}
                         height={60}
-                        src="/images/Icon.svg"
+                        src="/images/Icon-0.svg"
                         blurDataURL="/bluriconloader.png"
                         placeholder="blur"
                         alt="Recipients reached"
@@ -195,7 +195,7 @@ const Dashboard = () => {
                         className="w-12 h-12  rounded-lg "
                         width={60}
                         height={60}
-                        src="/images/Icon-2.svg"
+                        src="/images/Icon-3.svg"
                         blurDataURL="/bluriconloader.png"
                         placeholder="blur"
                         alt="Recipients reached"
