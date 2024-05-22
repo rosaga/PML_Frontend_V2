@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const RequestUnitsModal = ({ closeModal, onRequest }) => {
+const RequestUnitsModal = ({ closeModal }) => {
   const [bundleAmount, setBundleAmount] = useState("");
   const [numberOfUnits, setNumberOfUnits] = useState("");
 
@@ -27,7 +27,6 @@ const RequestUnitsModal = ({ closeModal, onRequest }) => {
           }
         );
 
-        onRequest();
         closeModal(); 
       } catch (error) {
         console.error("Error requesting data units:", error);

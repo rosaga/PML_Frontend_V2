@@ -79,6 +79,7 @@ const DataUnits: React.FC = () => {
     },
   ];
   const refreshPage = () => {
+    setIsModalOpen(false);
     setLoadingData(true);
     fetchRechargeData();
   }
@@ -266,7 +267,7 @@ const DataUnits: React.FC = () => {
           </div>
         </div>
       </div>
-      {isModalOpen && <RequestUnitsModal closeModal={closeModal} onRequest={refreshPage} />}
+      {isModalOpen && <RequestUnitsModal closeModal={refreshPage} />}
     </div>
   );
 };
