@@ -12,207 +12,153 @@ import RequestUnitsModal from "../../../../components/modal/requestUnits";
 import Box from "@mui/material/Box";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
+import RecipientsTable from "../../../../components/rewards-tables/recipients";
+import GroupsTable from "../../../../components/rewards-tables/groups";
+import RewardsTable from "../../../../components/rewards-tables/rewards";
+import CampaignsTable from "../../../../components/rewards-tables/campaigns";
+import VouchersTable from "../../../../components/rewards-tables/vouchers";
 
 const DataRewards = () => {
-  const [value, setValue] = React.useState(0);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
-
-  const filterOptions = [
-    { value: "eq__external_id", label: "Transaction Reference" },
-    { value: "ilike__first_name", label: "Start Date" },
-    { value: "ilike__last_name", label: "End Date" },
-    { value: "eq__external_id", label: "Data Bundle" },
-    { value: "ilike__first_name", label: "Units" },
-    { value: "ilike__last_name", label: "Status" },
-  ];
-
-  const rows: GridRowsProp = [
-    {
-      id: 1,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 3,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 4,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 5,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 6,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 7,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 8,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 9,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-    {
-      id: 10,
-      transId: "11111",
-      start_date: "2024-01-21",
-      end_date: "2024-05-21",
-      bundle: "20",
-      units: "100",
-      status: "Approved",
-    },
-  ];
-
-  const columns: GridColDef[] = [
-    { field: "transId", headerName: "Transaction Reference", flex: 1 },
-    { field: "start_date", headerName: "Start Date", flex: 1 },
-    { field: "end_date", headerName: "End Date", flex: 1 },
-    { field: "bundle", headerName: "Data Bundle", flex: 1 },
-    { field: "units", headerName: "Units", flex: 1 },
-    {
-      field: "status",
-      headerName: "Status",
-      flex: 1,
-      renderCell: (params) => {
-        const getColor = (status: any) => {
-          switch (status) {
-            case "Approved":
-              return "green";
-            case "Pending":
-              return "orange";
-            default:
-              return "black"; // Default color if needed
-          }
-        };
-
-        return (
-          <span style={{ color: getColor(params.value) }}>{params.value}</span>
-        );
-      },
-    },
-  ];
+  const [active, setActive] = useState("recipients");
+  const [childActive, setChildActive] = useState("recipients");
 
   return (
-    <div className="p-4 sm:ml-64 h-screen ">
+    <div className="p-4 sm:ml-64 h-screen">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
-              <Box sx={{ width: "100%", bgcolor: "background.paper" }}>
-                <Tabs value={value} onChange={handleChange} centered>
-                  <Tab label="Recipients" />
-                  <Tab label="Dispatch Data" />
-                </Tabs>
-              </Box>
-              <div className="flex items-center justify-between">
-                <p className="mt-4 font-medium text-lg">All Contacts</p>
-                <div className="ml-auto flex space-x-4">
-                  <PeakSearch filterOptions={filterOptions} selectedFilter="" />
-                  <PeakButton
-                    buttonText="Request Data Units"
-                    icon={AddIcon}
-                    className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-                    onClick={openModal}
-                  />
-                  <PeakButton
-                    buttonText="Export"
-                    icon={IosShareIcon}
-                    className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
-                    onClick={openModal}
-                  />
+              <div className="flex rounded-lg">
+                <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
+                  <span
+                    onClick={() => { setActive("recipients");
+                    setChildActive("recipients");
+                    }}
+                    
+                    className={
+                      active === "recipients"
+                        ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
+                        : "rounded cursor-pointer px-24"
+                    }
+                  >
+                    Recipients
+                  </span>
+                </div>
+                <div className="mr-48 text-center mt-4 ml-4 ">
+                  <span
+                    onClick={() => {
+                      setActive("data-dispatch");
+                      setChildActive("rewards");
+                    }}
+                    className={
+                      active === "data-dispatch"
+                        ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
+                        : "ounded cursor-pointer px-24"
+                    }
+                  >
+                    Data Dispatch
+                  </span>
                 </div>
               </div>
 
-              <div className="mt-4">
-                <div style={{ width: "100%" }}>
-                  <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    sx={{
-                      "& .MuiDataGrid-columnHeader": {
-                        backgroundColor: "#F1F2F3",
-                      },
-                      "&.MuiDataGrid-root": {
-                        border: "none",
-                      },
-                    }}
-                  />
-                </div>
-              </div>
+              {active === "recipients" && (
+                <>
+                  <div className="flex rounded-lg">
+                    <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
+                      <span
+                        onClick={() => setChildActive("recipients")}
+                        className={
+                          childActive === "recipients"
+                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
+                            : "rounded cursor-pointer px-24"
+                        }
+                      >
+                        Recipients
+                      </span>
+                    </div>
+                    <div className="mr-48 text-center mt-4 ml-4 ">
+                      <span
+                        onClick={() => setChildActive("groups")}
+                        className={
+                          childActive === "groups"
+                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
+                            : "ounded cursor-pointer px-24"
+                        }
+                      >
+                        Groups
+                      </span>
+                    </div>
+                  </div>
+
+                  {childActive === "recipients" && ( // Check if the child "Recipients" tab is selected
+                    <RecipientsTable />
+                  )}
+
+                  {childActive === "groups" && ( // Check if the child "Groups" tab is selected
+                    <GroupsTable />
+                  )}
+                </>
+              )}
+
+              {active === "data-dispatch" && ( // Check if the "Dispatch Data" tab is selected
+                <>
+                  <div className="flex rounded-lg">
+                    <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
+                      <span
+                        onClick={() => setChildActive("rewards")}
+                        className={
+                          childActive === "rewards"
+                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
+                            : "rounded cursor-pointer px-24"
+                        }
+                      >
+                        Rewards
+                      </span>
+                    </div>
+                    <div className="mr-48 text-center mt-4 ml-4 ">
+                      <span
+                        onClick={() => setChildActive("campaigns")}
+                        className={
+                          childActive === "campaigns"
+                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
+                            : "ounded cursor-pointer px-24"
+                        }
+                      >
+                        Campaigns
+                      </span>
+                    </div>
+                    <div className="mr-48 text-center mt-4 ml-4 ">
+                      <span
+                        onClick={() => setChildActive("vouchers")}
+                        className={
+                          childActive === "vouchers"
+                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
+                            : "ounded cursor-pointer px-24"
+                        }
+                      >
+                        Vouchers
+                      </span>
+                    </div>
+                  </div>
+
+                  {childActive === "rewards" && ( // Check if the child "Recipients" tab is selected
+                    <RewardsTable />
+                  )}
+
+                  {childActive === "campaigns" && ( // Check if the child "Groups" tab is selected
+                    <CampaignsTable />
+                  )}
+
+                  {childActive === "vouchers" && ( // Check if the child "Groups" tab is selected
+                    <VouchersTable />
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
-      {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
     </div>
   );
 };
