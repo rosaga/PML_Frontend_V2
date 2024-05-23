@@ -1,7 +1,7 @@
 "use client";
 import Sidebar from "@/components/sidebar/sidebar";
 import React from "react";
-import { DataGrid, GridRowsProp, GridColDef, GridPageChangeParams } from "@mui/x-data-grid";
+import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import Image from "next/image";
 import Button from '@mui/material/Button';
 import IosShareIcon from '@mui/icons-material/IosShare';
