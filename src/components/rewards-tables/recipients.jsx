@@ -7,6 +7,7 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import PeakButton from "../button/button";
 import AddIcon from "@mui/icons-material/Add";
 import PeakSearch from "../search/search";
+import RequestUnitsModal from "../modal/requestUnits";
 
 const RecipientsTable = () => {
 

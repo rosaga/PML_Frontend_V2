@@ -7,6 +7,8 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import PeakButton from "../button/button";
 import AddIcon from "@mui/icons-material/Add";
 import PeakSearch from "../search/search";
+import RequestUnitsModal from "../modal/requestUnits";
+
 
 const GroupsTable = () => {
 
@@ -153,7 +155,7 @@ const GroupsTable = () => {
 
   return (
     <>
-    {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
+      {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
       <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Groups</p>
         <div className="ml-auto flex space-x-4">
