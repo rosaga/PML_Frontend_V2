@@ -29,10 +29,13 @@ const DataRewards = () => {
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
-              <div className="bg-dx ml-1 mt-6 h-14 flex bg-mm  rounded-lg">
+              <div className="flex rounded-lg">
                 <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
                   <span
-                    onClick={() => setActive("recipients")}
+                    onClick={() => { setActive("recipients");
+                    setChildActive("recipients");
+                    }}
+                    
                     className={
                       active === "recipients"
                         ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
@@ -59,9 +62,9 @@ const DataRewards = () => {
                 </div>
               </div>
 
-              {active === "recipients" && ( // Check if the "Recipients" tab is selected
+              {active === "recipients" && (
                 <>
-                  <div className="bg-dx ml-1 mt-6 h-14 flex bg-mm  rounded-lg">
+                  <div className="flex rounded-lg">
                     <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
                       <span
                         onClick={() => setChildActive("recipients")}
@@ -100,7 +103,7 @@ const DataRewards = () => {
 
               {active === "data-dispatch" && ( // Check if the "Dispatch Data" tab is selected
                 <>
-                  <div className="bg-dx ml-1 mt-6 h-14 flex bg-mm  rounded-lg">
+                  <div className="flex rounded-lg">
                     <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
                       <span
                         onClick={() => setChildActive("rewards")}
