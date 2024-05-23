@@ -19,7 +19,7 @@ const Sidebar = () => {
           <ul className="space-y-4 font-medium">
             <li>
               <a
-                href="#"
+                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/dashboard`}
                 className="flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg
@@ -37,7 +37,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href="#"
+                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/data-rewards`}
                 className="flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg
@@ -57,7 +57,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href="#"
+                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/vouchers`}
                 className="flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg
@@ -74,7 +74,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href="#"
+                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/data-units`}
                 className="flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg
@@ -93,7 +93,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href="#"
+                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/users`}
                 className="flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg
