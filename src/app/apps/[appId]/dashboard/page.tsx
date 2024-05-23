@@ -1,7 +1,7 @@
 "use client";
 import Sidebar from "@/components/sidebar/sidebar";
 import React from "react";
-import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
+import { DataGrid, GridRowsProp, GridColDef, GridPageChangeParams } from "@mui/x-data-grid";
 import Image from "next/image";
 import Button from '@mui/material/Button';
 import IosShareIcon from '@mui/icons-material/IosShare';
@@ -9,7 +9,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-// import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+
 
 interface RowData {
   id: number;
@@ -69,6 +69,10 @@ const Dashboard = () => {
       </Box>
     );
   };
+  const [paginationModel, setPaginationModel] = React.useState({
+    pageSize: 4,
+    page: 0,
+  });
 
   const columns: GridColDef[] = [
     { field: "data_bundle", headerName: "Data Bundle", flex: 1 },
@@ -313,6 +317,8 @@ const Dashboard = () => {
                   <DataGrid
                     rows={rows}
                     columns={columns}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
                     sx={{
                       "&.MuiDataGrid-root": {
                         border: "none",
@@ -380,6 +386,8 @@ const Dashboard = () => {
                   <DataGrid
                     rows={rows1}
                     columns={columns1}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",
@@ -414,6 +422,8 @@ const Dashboard = () => {
                   <DataGrid
                     rows={rows2}
                     columns={columns2}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",
@@ -448,6 +458,8 @@ const Dashboard = () => {
                   <DataGrid
                     rows={rows3}
                     columns={columns3}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",
