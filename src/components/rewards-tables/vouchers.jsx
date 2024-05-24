@@ -106,11 +106,11 @@ const VouchersTable = () => {
   return (
     <>
     <div className="flex items-center justify-between">
-        <p className="mt-4 font-medium text-lg">All Contacts</p>
+        <p className="mt-4 font-medium text-lg">All Vouchers</p>
         <div className="ml-auto flex space-x-4">
           <PeakSearch filterOptions={filterOptions} selectedFilter="" />
           <PeakButton
-            buttonText="Request Data Units"
+            buttonText="Generate Voucher"
             icon={AddIcon}
             className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
             onClick={openModal}
