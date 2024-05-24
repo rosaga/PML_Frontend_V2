@@ -10,6 +10,7 @@ import PeakSearch from "../search/search";
 import { format } from "date-fns";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
+import CampaignDetails from "./campaignDetails";
 
 const CampaignsTable = () => {
 
@@ -17,6 +18,8 @@ const CampaignsTable = () => {
     const [page, setPage] = useState(0); // Pagination state
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [openCampaignDetails, setOpenCampaignDetails] = useState(false);
+    const [selectedCampaign, setSelectedCampaign] = useState(null);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -98,47 +101,65 @@ const CampaignsTable = () => {
     fetchData();
   }, [page]);
 
+  const handleRowClick = (params) => {
+    const { id } = params.row;
+    setSelectedCampaign(id);
+    setOpenCampaignDetails(true);
+  };
+
   return (
     <>
-     {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
-      <div className="flex items-center justify-between">
-        <p className="mt-4 font-medium text-lg">All Campaigns</p>
-        <div className="ml-auto flex space-x-4">
-          <PeakSearch filterOptions={filterOptions} selectedFilter="" />
-          <PeakButton
-            buttonText="Create Campaign"
-            icon={AddIcon}
-            className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-            onClick={openModal}
-          />
-          <PeakButton
-            buttonText="Export"
-            icon={IosShareIcon}
-            className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
-            onClick={openModal}
-          />
-        </div>
-      </div>
+      {openCampaignDetails && (
+        <CampaignDetails
+          campaignId={selectedCampaign}
+          closeDetails={() => setOpenCampaignDetails(false)}
+        />
+      )}
 
-      <div className="mt-4">
-        <div style={{ width: "100%" }}>
-          <DataGrid
-            rows={data}
-            columns={columns}
-            loading={loading}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            sx={{
-              "& .MuiDataGrid-columnHeader": {
-                backgroundColor: "#F1F2F3",
-              },
-              "&.MuiDataGrid-root": {
-                border: "none",
-              },
-            }}
-          />
-        </div>
-      </div>
+      {!openCampaignDetails && (
+        <>
+          {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
+          <div className="flex items-center justify-between">
+            <p className="mt-4 font-medium text-lg">All Campaigns</p>
+            <div className="ml-auto flex space-x-4">
+              <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+              <PeakButton
+                buttonText="Create Campaign"
+                icon={AddIcon}
+                className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
+                onClick={openModal}
+              />
+              <PeakButton
+                buttonText="Export"
+                icon={IosShareIcon}
+                className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
+                onClick={openModal}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div style={{ width: "100%" }}>
+              <DataGrid
+                rows={data}
+                columns={columns}
+                loading={loading}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                onRowClick={handleRowClick} // Add this line to handle row click
+                sx={{
+                  "& .MuiDataGrid-columnHeader": {
+                    backgroundColor: "#F1F2F3",
+                  },
+                  "&.MuiDataGrid-root": {
+                    border: "none",
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };
