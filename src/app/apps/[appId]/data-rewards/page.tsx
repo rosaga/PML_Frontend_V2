@@ -29,32 +29,31 @@ const DataRewards = () => {
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
-              <div className="flex rounded-lg">
-                <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
-                  <span
+              <div className="flex items-center justify-between w-full rounded-lg bg-[#F1F2F3]">
+                <div 
                     onClick={() => { setActive("recipients");
                     setChildActive("recipients");
-                    }}
-                    
+                    }} className={active === "recipients" ? "flex-1 flex justify-center text-center bg-[#090A29] m-2 rounded-md cursor-pointer": "flex-1 flex justify-center text-center bg-white m-2 cursor-pointer rounded-md"}>
+                  <span                  
                     className={
                       active === "recipients"
-                        ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
-                        : "rounded cursor-pointer px-24"
+                        ? "text-white bg-[#090A29] py-2 rounded"
+                        : "rounded text-[#E88A17] py-2"
                     }
                   >
                     Recipients
                   </span>
                 </div>
-                <div className="mr-48 text-center mt-4 ml-4 ">
-                  <span
-                    onClick={() => {
+                <div    
+                      onClick={() => {
                       setActive("data-dispatch");
                       setChildActive("rewards");
-                    }}
+                    }} className={active === "data-dispatch" ? "flex-1 flex justify-center text-center bg-[#090A29] m-2 rounded-md cursor-pointer ": "flex-1 flex justify-center text-center bg-white m-2 rounded-md cursor-pointer"}>
+                  <span
                     className={
                       active === "data-dispatch"
-                        ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
-                        : "ounded cursor-pointer px-24"
+                        ? "text-white bg-[#090A29] py-2 rounded"
+                        : "rounded text-[#E88A17] py-2"
                     }
                   >
                     Data Dispatch
@@ -64,26 +63,26 @@ const DataRewards = () => {
 
               {active === "recipients" && (
                 <>
-                  <div className="flex rounded-lg">
-                    <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
+                  <div className="flex rounded-lg mt-2 border-[1.5px] mb-2">
+                    <div className="m-2 flex">
                       <span
                         onClick={() => setChildActive("recipients")}
                         className={
                           childActive === "recipients"
-                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
-                            : "rounded cursor-pointer px-24"
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
                         }
                       >
                         Recipients
                       </span>
                     </div>
-                    <div className="mr-48 text-center mt-4 ml-4 ">
+                    <div className="flex m-2">
                       <span
                         onClick={() => setChildActive("groups")}
                         className={
                           childActive === "groups"
-                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
-                            : "ounded cursor-pointer px-24"
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
                         }
                       >
                         Groups
@@ -103,38 +102,38 @@ const DataRewards = () => {
 
               {active === "data-dispatch" && ( // Check if the "Dispatch Data" tab is selected
                 <>
-                  <div className="flex rounded-lg">
-                    <div className="mr-48 pl-10 text-center mt-4 ml-4 ">
+                  <div className="flex rounded-lg mt-2 border-[1.5px] mb-2">
+                    <div className="m-2 flex">
                       <span
                         onClick={() => setChildActive("rewards")}
                         className={
                           childActive === "rewards"
-                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
-                            : "rounded cursor-pointer px-24"
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
                         }
                       >
                         Rewards
                       </span>
                     </div>
-                    <div className="mr-48 text-center mt-4 ml-4 ">
+                    <div className="m-2 flex">
                       <span
                         onClick={() => setChildActive("campaigns")}
                         className={
                           childActive === "campaigns"
-                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
-                            : "ounded cursor-pointer px-24"
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
                         }
                       >
                         Campaigns
                       </span>
                     </div>
-                    <div className="mr-48 text-center mt-4 ml-4 ">
+                    <div className="m-2 flex">
                       <span
                         onClick={() => setChildActive("vouchers")}
                         className={
                           childActive === "vouchers"
-                            ? "text-[#F58426] bg-white px-24 py-2 rounded cursor-pointer"
-                            : "ounded cursor-pointer px-24"
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
                         }
                       >
                         Vouchers
