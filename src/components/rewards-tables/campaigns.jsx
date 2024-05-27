@@ -10,6 +10,7 @@ import PeakSearch from "../search/search";
 import { format } from "date-fns";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
+import CreateCampaignModal from "../modal/createCampaign"
 import CampaignDetails from "./campaignDetails";
 
 const CampaignsTable = () => {
@@ -118,7 +119,7 @@ const CampaignsTable = () => {
 
       {!openCampaignDetails && (
         <>
-          {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
+          {isModalOpen && <CreateCampaignModal closeModal={closeModal} />}
           <div className="flex items-center justify-between">
             <p className="mt-4 font-medium text-lg">All Campaigns</p>
             <div className="ml-auto flex space-x-4">

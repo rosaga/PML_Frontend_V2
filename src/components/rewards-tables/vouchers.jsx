@@ -9,13 +9,14 @@ import SearchVouchers from "../../components/search/search"
 import InviteUserModal from "../../components/modal/inviteUser"
 import AddIcon from "@mui/icons-material/Add";
 import PeakSearch from "../search/search";
+import GenerateVoucherModal from "../modal/generateVoucher"
 
 const VouchersTable = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openModal = () => {
-    // setIsModalOpen(true);
+    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -105,6 +106,7 @@ const VouchersTable = () => {
 
   return (
     <>
+    {isModalOpen && <GenerateVoucherModal closeModal={closeModal} />}
     <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Vouchers</p>
         <div className="ml-auto flex space-x-4">
