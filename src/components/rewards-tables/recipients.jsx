@@ -4,14 +4,16 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../button/button";
 import PeakSearch from "../search/search";
-import RequestUnitsModal from "../modal/requestUnits";
 import axios from "axios";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format } from "date-fns";
+import UploadRecipientsModal from "../modal/uploadRecipients";
+import NewContactModal from "../modal/newContact"
 
 
-const RecipientsTable = () => {
+const UploadRecipients = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen1, setIsModalOpen1] = useState(false);
   const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,8 +22,13 @@ const RecipientsTable = () => {
     setIsModalOpen(true);
   };
 
+  const openModal1 = () => {
+    setIsModalOpen1(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsModalOpen1(false);
   };
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
@@ -106,7 +113,8 @@ const RecipientsTable = () => {
 
   return (
     <>
-      {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
+      {isModalOpen && <UploadRecipientsModal closeModal={closeModal} />}
+      {isModalOpen1 && <NewContactModal closeModal={closeModal} />}
       <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Contacts</p>
         <div className="ml-auto flex space-x-4">
@@ -121,7 +129,7 @@ const RecipientsTable = () => {
             buttonText="New Contact"
             icon={AddIcon}
             className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-            onClick={openModal}
+            onClick={openModal1}
           />
           <PeakButton
             buttonText="Export"
@@ -155,4 +163,4 @@ const RecipientsTable = () => {
   );
 };
 
-export default RecipientsTable;
+export default UploadRecipients;

@@ -8,6 +8,7 @@ import RequestUnitsModal from "../modal/requestUnits";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import axios from "axios";
 import { format } from "date-fns";
+import NewGroupModal from "../modal/newGroup"
 
 const GroupsTable = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,7 +95,7 @@ const GroupsTable = () => {
 
   return (
     <>
-      {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
+      {isModalOpen && <NewGroupModal closeModal={closeModal} />}
       <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Groups</p>
         <div className="ml-auto flex space-x-4">

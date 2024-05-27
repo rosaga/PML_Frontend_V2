@@ -8,12 +8,15 @@ import AddIcon from "@mui/icons-material/Add";
 import PeakSearch from "../search/search";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
+import SendDataRewardsModal from "../modal/sendDataReward"
+import SendBatchRewardsModal from "../modal/sendBatchRewards"
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format } from "date-fns";
 
 const RewardsTable = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpen1, setIsModalOpen1] = useState(false);
     const [page, setPage] = useState(0); // Pagination state
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -22,8 +25,13 @@ const RewardsTable = () => {
     setIsModalOpen(true);
   };
 
+  const openModal1 = () => {
+    setIsModalOpen1(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsModalOpen1(false);
   };
 
   const filterOptions = [
@@ -112,7 +120,8 @@ const RewardsTable = () => {
 
   return (
     <>
-      {isModalOpen && <RequestUnitsModal closeModal={closeModal} />}
+      {isModalOpen && <SendDataRewardsModal closeModal={closeModal} />}
+      {isModalOpen1 && <SendBatchRewardsModal closeModal={closeModal} />}
       <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Rewards</p>
         <div className="ml-auto flex space-x-4">
@@ -127,7 +136,7 @@ const RewardsTable = () => {
             buttonText="Send Batch Rewards"
             icon={AddIcon}
             className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-            onClick={openModal}
+            onClick={openModal1}
           />
           <PeakButton
             buttonText="Export"
