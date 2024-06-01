@@ -135,7 +135,7 @@ const Otp = () => {
               </p>
 
               <p className="flex text-sm font-md justify-center mt-4">
-                Didn't Receive the Code?{" "}
+                Did not Receive the Code?{" "}
                 <span className="text-[#E88A17] ml-2"> Resend Code</span>
               </p>
             </div>
