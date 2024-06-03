@@ -119,12 +119,12 @@ const UploadRecipients = () => {
         <p className="mt-4 font-medium text-lg">All Contacts</p>
         <div className="ml-auto flex space-x-4">
           <PeakSearch filterOptions={filterOptions} selectedFilter="" />
-          <PeakButton
+          {/* <PeakButton
             buttonText="Upload CSV File"
             icon={IosShareIcon}
             className="bg-[#E88A17] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
             onClick={openModal}
-          />
+          /> */}
           <PeakButton
             buttonText="New Contact"
             icon={AddIcon}
