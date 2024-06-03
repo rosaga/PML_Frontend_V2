@@ -12,6 +12,10 @@ const SignUp = () => {
     router.push("/otp");
   };
 
+  const handleLoginClick = () => {
+    router.push("/signin");
+  };
+
   return (
     <div
       className="relative h-screen w-full flex items-center"
@@ -92,7 +96,7 @@ const SignUp = () => {
               </button>
               <p className="flex text-sm font-md justify-center mt-4">
                 Already have an account?{" "}
-                <span className="text-[#E88A17]">Login</span>
+                <span className="text-[#E88A17] cursor-pointer ml-2" onClick={handleLoginClick}>{" "}Login</span>
               </p>
               <p className="flex justify-center items-center m-1 relative">
                 <span className="line"></span>
