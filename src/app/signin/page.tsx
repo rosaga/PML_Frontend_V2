@@ -1,18 +1,34 @@
 "use client";
 import React, { useState } from "react";
+import axios from "axios";
 import { Card, CardContent, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import GoogleButton from "react-google-button";
 import "../../app/globals.css";
 
-const SignUp = () => {
+const SignIn = () => {
   const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleButtonClick = () => {
-    router.push("/apps/1/dashboard");
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post("https://peak-mobile-backend-4yhy5.ondigitalocean.app/public/token", {
+        username,
+        password,
+      });
+
+      if (response.status === 200) {
+        // Login successful, redirect to dashboard
+        router.push("/apps/1/dashboard");
+      } else {
+        // Handle failed login (e.g., display error message)
+        console.error("Login failed:", response.data);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
-
-  
 
   return (
     <div
@@ -42,24 +58,26 @@ const SignUp = () => {
               </p>
 
               <div>
-
                 <input
                   type="email"
                   placeholder="Your Email *"
                   className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
 
                 <input
                   type="password"
                   placeholder="Your Password *"
                   className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
-
               </div>
 
               <button
                 className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md"
-                onClick={handleButtonClick}
+                onClick={handleLogin}
               >
                 {" "}
                 Login{" "}
@@ -76,4 +94,4 @@ const SignUp = () => {
   );
 };
 
-export default SignUp;
+export default SignIn;
