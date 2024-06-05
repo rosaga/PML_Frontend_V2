@@ -9,6 +9,7 @@ import PeakButton from "../../../../components/button/button";
 import PeakSearch from "../../../../components/search/search";
 import RequestUnitsModal from "../../../../components/modal/requestUnits";
 import * as XLSX from 'xlsx';
+import { getToken } from "../../../../utils/auth";
 
 interface Balance {
   package: string;
@@ -29,9 +30,8 @@ const DataUnits: React.FC = () => {
   const [balances, setBalances] = useState<Balance[]>([]);
   const [rechargeData, setRechargeData] = useState<RechargeData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingToken, setLoadingToken] = useState(true);
-  const [token, setToken] = useState("");
   const [loadingData, setLoadingData] = useState(true);
+  let token = getToken();
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -84,21 +84,6 @@ const DataUnits: React.FC = () => {
     fetchRechargeData();
   }
 
-  const fetchToken = async () => {
-    try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      setToken(fetchedToken);
-      setLoadingToken(false);
-    } catch (error) {
-      console.error("Error fetching token:", error);
-      setLoadingToken(false);
-    }
-  };
 
   const fetchBalances = async () => {
     try {
@@ -163,14 +148,9 @@ const DataUnits: React.FC = () => {
   };
 
   useEffect(() => {
-    if (loadingToken) {
-      fetchToken();
-    }
-    if (!loadingToken && token) {
       fetchBalances();
       fetchRechargeData();
-    }
-  }, [loadingToken]);
+  }, []);
 
   const exportToExcel = () => {
     const workbook = XLSX.utils.book_new();

@@ -9,6 +9,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import { getToken } from "@/utils/auth";
 
 
 interface RowData {
@@ -50,6 +51,7 @@ const Dashboard = () => {
       progress: 25,
     },
   ];
+  const token = getToken();
 
   const calculateProgress = (unitsBought: number, unitBalance: number): number => {
     return ((unitsBought - unitBalance) / unitsBought) * 100;

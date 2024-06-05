@@ -6,11 +6,13 @@ import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-da
 import AddIcon from '@mui/icons-material/Add';
 import PeakButton from "../../../../components/button/button";
 import InviteUserModal from "../../../../components/modal/inviteUser"
+import { getToken } from "../../../../utils/auth";
 
 const Users = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rows, setRows] = useState<GridRowsProp>([]);
   const [loading, setLoading] = useState(true);
+  let token = getToken();
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -26,12 +28,6 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD
-      });
-
-      const token = authResponse.data.token; 
       const usersResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/user/list`, {        headers: {
           Authorization: `Bearer ${token}`
         }

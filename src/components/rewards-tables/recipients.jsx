@@ -9,6 +9,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format } from "date-fns";
 import UploadRecipientsModal from "../modal/uploadRecipients";
 import NewContactModal from "../modal/newContact"
+import { getToken } from "@/utils/auth";
 
 
 const UploadRecipients = () => {
@@ -17,6 +18,7 @@ const UploadRecipients = () => {
   const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  let token = getToken();
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -35,24 +37,10 @@ const UploadRecipients = () => {
     page: 0,
   });
 
-  const fetchToken = async () => {
-    try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      return fetchedToken;
-    } catch (error) {
-      console.error("Error fetching token:", error);
-    }
-  };
 
   const fetchData = async (page) => {
     setLoading(true);
     try {
-      const token = await fetchToken();
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/list`, {
         headers: {
           Authorization: `Bearer ${token}`,

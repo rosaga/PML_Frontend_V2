@@ -12,6 +12,7 @@ import PeakSearch from "../search/search";
 import { format } from "date-fns";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
+import { getToken } from "@/utils/auth";
 
 
 const CampaignDetails = (campaignId,closeDetails) => {
@@ -20,7 +21,7 @@ const CampaignDetails = (campaignId,closeDetails) => {
   const [page, setPage] = useState(0); 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  let token = getToken();
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -68,24 +69,10 @@ const CampaignDetails = (campaignId,closeDetails) => {
     page: 0,
   });
 
-  const fetchToken = async () => {
-    try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      return fetchedToken;
-    } catch (error) {
-      console.error("Error fetching token:", error);
-    }
-  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = await fetchToken();
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/campaign/${campaignId.campaignId}/rewards/list`, {
         headers: {
           Authorization: `Bearer ${token}`,

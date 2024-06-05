@@ -1,13 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { getToken } from "../../utils/auth";
 
 const SendDataRewardModal = ({ closeModal }) => {
   const [contacts, setContacts] = useState([]);
   const [bundles, setBundles] = useState([]);
   const [selectedContact, setSelectedContact] = useState("");
   const [selectedBundle, setSelectedBundle] = useState("");
-  const [token, setToken] = useState(null);
+  let token = getToken();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -23,28 +24,14 @@ const SendDataRewardModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
-  useEffect(() => {
-    fetchToken();
-  }, []);
+ ;
 
 
   useEffect(() => {
     fetchContactsAndBundles();
-  }, [token]);
+  }, []);
 
-  const fetchToken = async () => {
-    try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      setToken(fetchedToken);
-    } catch (error) {
-      console.error("Error fetching token:", error);
-    }
-  };
+  
   const fetchContactsAndBundles = async () => {
     if (!token) return;
 

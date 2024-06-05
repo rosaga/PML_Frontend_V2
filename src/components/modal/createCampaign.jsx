@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { getToken } from "../../utils/auth";
 
 const CreateCampaignModal = ({ closeModal }) => {
-  const [token, setToken] = useState(null);
+  let token = getToken();
   const [groups, setGroups] = useState([]);
   const [bundles, setBundles] = useState([]);
   const [campaignName, setCampaignName] = useState("");
@@ -26,29 +27,12 @@ const CreateCampaignModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
+
+
   useEffect(() => {
-    fetchToken();
+      fetchGroupsAndBundles();
   }, []);
 
-  useEffect(() => {
-    if (token) {
-      fetchGroupsAndBundles();
-    }
-  }, [token]);
-
-  const fetchToken = async () => {
-    try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      setToken(fetchedToken);
-    } catch (error) {
-      console.error("Error fetching token:", error);
-    }
-  };
 
   const fetchGroupsAndBundles = async () => {
     try {
@@ -79,8 +63,6 @@ const CreateCampaignModal = ({ closeModal }) => {
       description: description,
       content: message,
     };
-
-    console.log("Creating campaign...", formData);
     try {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/campaign/create`,

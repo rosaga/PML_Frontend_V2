@@ -12,6 +12,7 @@ import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
 import CreateCampaignModal from "../modal/createCampaign"
 import CampaignDetails from "./campaignDetails";
+import { getToken } from "@/utils/auth";
 
 const CampaignsTable = () => {
 
@@ -21,6 +22,7 @@ const CampaignsTable = () => {
     const [loading, setLoading] = useState(true);
     const [openCampaignDetails, setOpenCampaignDetails] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
+    let token = getToken();
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -57,24 +59,10 @@ const CampaignsTable = () => {
     page: 0,
   });
 
-  const fetchToken = async () => {
-    try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      return fetchedToken;
-    } catch (error) {
-      console.error("Error fetching token:", error);
-    }
-  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = await fetchToken();
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/campaign/list`, {
         headers: {
           Authorization: `Bearer ${token}`,

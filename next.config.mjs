@@ -1,13 +1,13 @@
 const nextConfig = {
-    async redirects() {
-      return [
-        {
-          source: '/',
-          destination: `/apps/${process.env.NEXT_PUBLIC_APP_ID}/dashboard`, // Redirect to the dashboard page
-          permanent: true,
-        },
-      ]
-    },
-  }
-  
-  export default nextConfig;
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/signin',
+        permanent: false,
+      },
+    ];
+  },
+};
+
+export default nextConfig;
