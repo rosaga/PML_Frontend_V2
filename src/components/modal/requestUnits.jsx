@@ -1,38 +1,35 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { getToken } from "../../utils/auth";
 
 const RequestUnitsModal = ({ closeModal }) => {
   const [bundleAmount, setBundleAmount] = useState("");
   const [numberOfUnits, setNumberOfUnits] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  let token = getToken();
 
   const handleRequest = async () => {
     try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      try {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/recharge`,
-          {
-            package: bundleAmount.toString(), 
-            units: parseInt(numberOfUnits),
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/recharge`,
+        {
+          package: bundleAmount.toString(), 
+          units: parseInt(numberOfUnits),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-          {
-            headers: {
-              Authorization: `Bearer ${fetchedToken}`,
-            },
-          }
-        );
+        }
+      );
 
-        closeModal(); 
-      } catch (error) {
-        console.error("Error requesting data units:", error);
-      }
+      setSuccessMessage("Data units requested successfully.");
+      setErrorMessage(""); // Clear any previous error messages
     } catch (error) {
-      console.error("Error fetching token:", error);
+      console.error("Error requesting data units:", error);
+      setErrorMessage("Failed to request data units. Please try again.");
+      setSuccessMessage(""); // Clear any previous success messages
     }
   };
 
@@ -87,59 +84,83 @@ const RequestUnitsModal = ({ closeModal }) => {
             </button>
           </div>
           <div className="p-4 md:p-5">
-            <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
-              <div>
-                <label
-                  htmlFor="bundleAmount"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Bundle Amount
-                </label>
-                <input
-                  type="text"
-                  id="bundleAmount"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  placeholder="10MB or 2GB"
-                  value={bundleAmount}
-                  onChange={(e) => setBundleAmount(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="numberOfUnits"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Number of Units
-                </label>
-                <input
-                  type="number"
-                  id="numberOfUnits"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  placeholder="200"
-                  value={numberOfUnits}
-                  onChange={(e) => setNumberOfUnits(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="flex space-x-2">
+            {successMessage ? (
+              <div className="p-4 text-center">
+                <div className="mb-4 text-2xl font-semibold text-green-500">
+                  Success!
+                </div>
+                <div className="mb-4 text-gray-900 dark:text-white">
+                  {successMessage}
+                </div>
                 <button
-                  type="button"
-                  onClick={closeModal}
-                  className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  onClick={() => {
+                    setSuccessMessage("");
+                    closeModal();
+                  }}
+                  className="w-full text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRequest}
-                  className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                >
-                  Request
+                  OK
                 </button>
               </div>
-            </form>
+            ) : (
+              <>
+                <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
+                  <div>
+                    <label
+                      htmlFor="bundleAmount"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Bundle Amount
+                    </label>
+                    <input
+                      type="text"
+                      id="bundleAmount"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="10MB or 2GB"
+                      value={bundleAmount}
+                      onChange={(e) => setBundleAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="numberOfUnits"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Number of Units
+                    </label>
+                    <input
+                      type="number"
+                      id="numberOfUnits"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="200"
+                      value={numberOfUnits}
+                      onChange={(e) => setNumberOfUnits(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {errorMessage && (
+                    <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                  )}
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRequest}
+                      className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                    >
+                      Request
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>

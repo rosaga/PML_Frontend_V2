@@ -1,45 +1,40 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { getToken } from "../../utils/auth";
 
 const NewContactModal = ({ closeModal }) => {
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  let token = getToken();
 
   const handleRequest = async () => {
     try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      try {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/create`,
-          {
-            "mobile_no": phoneNumber,
-            "metadata": {
-              "firstname": firstname,
-              "lastname": lastname,
-            }
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/create`,
+        {
+          mobile_no: phoneNumber,
+          metadata: {
+            firstname: firstname,
+            lastname: lastname,
           },
-          {
-            headers: {
-              Authorization: `Bearer ${fetchedToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-        setSuccessMessage(`The contact ${phoneNumber} has been created`);
-      } catch (error) {
-        console.error("Error Creating Contact", error);
-      }
+      setSuccessMessage(`The contact ${phoneNumber} has been created`);
+      setErrorMessage("");  // Clear any previous error messages
     } catch (error) {
-      console.error("Error fetching token:", error);
+      console.error("Error Creating Contact", error);
+      setErrorMessage("Failed to create contact. Please try again.");
     }
   };
 
@@ -144,6 +139,9 @@ const NewContactModal = ({ closeModal }) => {
                       required
                     />
                   </div>
+                  {errorMessage && (
+                    <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                  )}
                   <div className="flex space-x-2">
                     <button
                       type="button"

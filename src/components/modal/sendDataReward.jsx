@@ -8,6 +8,8 @@ const SendDataRewardModal = ({ closeModal }) => {
   const [bundles, setBundles] = useState([]);
   const [selectedContact, setSelectedContact] = useState("");
   const [selectedBundle, setSelectedBundle] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   let token = getToken();
 
   useEffect(() => {
@@ -24,30 +26,32 @@ const SendDataRewardModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
- ;
-
-
   useEffect(() => {
     fetchContactsAndBundles();
   }, []);
 
-  
   const fetchContactsAndBundles = async () => {
     if (!token) return;
 
     try {
-      const contactsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const contactsResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/list`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setContacts(contactsResponse.data);
 
-      const bundlesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/balance`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const bundlesResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/balance`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setBundles(bundlesResponse.data);
     } catch (error) {
       console.error("Error fetching contacts or bundles:", error);
@@ -61,20 +65,23 @@ const SendDataRewardModal = ({ closeModal }) => {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/reward`,
         {
-          "mobile_no": selectedContact,
-          "bundle_amount": selectedBundle,
+          mobile_no: selectedContact,
+          bundle_amount: selectedBundle,
         },
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "content-Type": "application/json",         },
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      alert("Data reward sent successfully.");
-      closeModal();
+      setSuccessMessage("Data reward sent successfully.");
+      setErrorMessage(""); // Clear any previous error messages
     } catch (error) {
       console.error("Error sending data reward:", error);
+      setErrorMessage("Failed to send data reward. Please try again.");
+      setSuccessMessage(""); // Clear any previous success messages
     }
   };
 
@@ -93,69 +100,93 @@ const SendDataRewardModal = ({ closeModal }) => {
             </h3>
           </div>
           <div className="p-4 md:p-5">
-            <form className="space-y-2" action="#">
-              <div>
-                <label
-                  htmlFor="mobile"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Select Mobile Number
-                </label>
-                <select
-                  name="mobile"
-                  id="mobile"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  onChange={(e) => setSelectedContact(e.target.value)}
-                  required
-                >
-                  <option value="">Select a contact</option>
-                  {contacts.map((contact) => (
-                    <option key={contact.mobile_no} value={contact.mobile_no}>
-                      {contact.firstname} {contact.lastname} ({contact.mobile_no})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor="bundle"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Bundle Amount
-                </label>
-                <select
-                  name="bundle"
-                  id="bundle"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  onChange={(e) => setSelectedBundle(e.target.value)}
-                  required
-                >
-                  <option value="">Select a bundle</option>
-                  {bundles.map((bundle) => (
-                    <option key={bundle.package} value={bundle.package}>
-                      {bundle.package}
-                    </option> 
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex space-x-2">
+            {successMessage ? (
+              <div className="p-4 text-center">
+                <div className="mb-4 text-2xl font-semibold text-green-500">
+                  Success!
+                </div>
+                <div className="mb-4 text-gray-900 dark:text-white">
+                  {successMessage}
+                </div>
                 <button
-                  type="button"
-                  className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                  onClick={closeModal}
+                  onClick={() => {
+                    setSuccessMessage("");
+                    closeModal();
+                  }}
+                  className="w-full text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                  onClick={handleRequest}
-                >
-                  Submit
+                  OK
                 </button>
               </div>
-            </form>
+            ) : (
+              <>
+                <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
+                  <div>
+                    <label
+                      htmlFor="mobile"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Mobile Number
+                    </label>
+                    <select
+                      name="mobile"
+                      id="mobile"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      onChange={(e) => setSelectedContact(e.target.value)}
+                      required
+                    >
+                      <option value="">Select a contact</option>
+                      {contacts.map((contact) => (
+                        <option key={contact.mobile_no} value={contact.mobile_no}>
+                          {contact.firstname} {contact.lastname} ({contact.mobile_no})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Bundle Amount
+                    </label>
+                    <select
+                      name="bundle"
+                      id="bundle"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      onChange={(e) => setSelectedBundle(e.target.value)}
+                      required
+                    >
+                      <option value="">Select a bundle</option>
+                      {bundles.map((bundle) => (
+                        <option key={bundle.package} value={bundle.package}>
+                          {bundle.package}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {errorMessage && (
+                    <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                  )}
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                      onClick={closeModal}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                      onClick={handleRequest}
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>

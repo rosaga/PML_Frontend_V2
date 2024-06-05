@@ -1,62 +1,55 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { getToken } from "../../utils/auth";
 
 const NewGroupModal = ({ closeModal }) => {
   const [groupName, setGroupName] = useState("");
   const [csvFile, setCsvFile] = useState(null);
   const [description, setDescription] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  let token = getToken();
 
   const handleRequest = async () => {
     try {
-      const authResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
-        username: process.env.NEXT_PUBLIC_USERNAME,
-        password: process.env.NEXT_PUBLIC_PASSWORD,
-      });
-
-      const fetchedToken = authResponse.data.token;
-      console.log(groupName);
-
-      try {
-        const groupResponse = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/group/`,
-          {
-            "name": groupName,
-            // "description": description,
+      const groupResponse = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/group/`,
+        JSON.stringify({
+          name: groupName,
+          // description: description,
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          {
-            headers: {
-              Authorization: `Bearer ${fetchedToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        console.log(groupResponse.data);
-        const groupId = groupResponse.data.id;
+        }
+      );
+      const groupId = groupResponse.data.id;
 
-        // Prepare form data for file upload
-        const formData = new FormData();
-        formData.append("contacts", csvFile);
-        formData.append("group_id", groupId);
+      // Prepare form data for file upload
+      const formData = new FormData();
+      formData.append("contacts", csvFile);
+      formData.append("group_id", groupId);
 
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/upload`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${fetchedToken}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/upload`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
-        setSuccessMessage(`The group ${groupName} has been created and CSV file uploaded successfully.`);
-      } catch (error) {
-        console.error("Error Creating Group or Uploading CSV File", error);
-      }
+      setSuccessMessage(`The group ${groupName} has been created and CSV file uploaded successfully.`);
+      setErrorMessage("");  // Clear any previous error messages
     } catch (error) {
-      console.error("Error fetching token:", error);
+      console.error("Error Creating Group or Uploading CSV File", error);
+      setErrorMessage("Failed to create group or upload CSV file. Please try again.");
+      setSuccessMessage("");  // Clear any previous success messages
     }
   };
 
@@ -160,6 +153,9 @@ const NewGroupModal = ({ closeModal }) => {
                       required
                     />
                   </div>
+                  {errorMessage && (
+                    <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                  )}
                   <div className="flex space-x-2">
                     <button
                       type="button"
