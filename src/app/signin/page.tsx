@@ -32,6 +32,7 @@ const SignIn = () => {
       setIsLoading(false);
     } catch (error) {
       alert("Login failed. Invalid username or password Please try again.");
+      setIsLoading(false);
       console.error("Login error:", error);
     }
   };
@@ -60,7 +61,7 @@ const SignIn = () => {
                 <input type="password" placeholder="Your Password *" className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
                   value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
-              <button className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md" onClick={!isLoading ? handleLogin : undefined}> {isLoading ? <LinearProgress></LinearProgress> : 'Loading'}</button>
+              <button className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md" onClick={!isLoading ? handleLogin : undefined}> {isLoading ? <LinearProgress></LinearProgress> : 'Log in'}</button>
               <p className="flex text-sm font-md justify-end mt-4">Forgot Password?</p>
             </div>
           </CardContent>

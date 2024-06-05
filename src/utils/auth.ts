@@ -10,7 +10,7 @@ export const getToken = () => {
   const now = Date.now();
   if (now > parseInt(expirationTime, 10)) {
     clearToken();
-    window.location.href = '/login';
+    window.location.href = '/signin';
     return null;
   }
 
@@ -18,7 +18,6 @@ export const getToken = () => {
 };
 
 export const setToken = (token: string) => {
-  console.log('setting token')
   const expirationTime = Date.now() + 3600000; // 1 hour in milliseconds
   localStorage.setItem('token', token);
   localStorage.setItem('tokenExpiration', expirationTime.toString());
