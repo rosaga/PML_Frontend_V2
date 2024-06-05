@@ -138,7 +138,7 @@ const Sidebar = () => {
           <ul className="font-medium mt-40">
             <li>
               <a
-                href="#"
+                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/logout`}
                 className="flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg

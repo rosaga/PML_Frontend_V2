@@ -1,7 +1,6 @@
 export const getToken = () => {
   const token = localStorage.getItem('token');
   const expirationTime = localStorage.getItem('tokenExpiration');
-
   if (!token || !expirationTime) {
     alert('Session Expired, Please login again')
     window.location.href = '/signin';
@@ -10,9 +9,7 @@ export const getToken = () => {
 
   const now = Date.now();
   if (now > parseInt(expirationTime, 10)) {
-    // Token is expired, clear it
     clearToken();
-    // Redirect to login page
     window.location.href = '/login';
     return null;
   }
@@ -26,8 +23,14 @@ export const setToken = (token: string) => {
   localStorage.setItem('token', token);
   localStorage.setItem('tokenExpiration', expirationTime.toString());
 };
+export const setOrganisation = (orgId: string,orgName:string) => {
+  localStorage.setItem('orgId', orgId);
+  localStorage.setItem('orgName', orgName);
+}
 
 export const clearToken = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('tokenExpiration');
+  localStorage.removeItem('orgId');
+  localStorage.removeItem('orgName');
 };
