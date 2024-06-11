@@ -35,7 +35,7 @@ const Otp = () => {
       }}
     >
       <div className="w-2/5 h-full"></div> {/* Left half, empty */}
-      <div className="w-3/5 h-full flex items-center justify-center">
+      <div className="w-3/5 h-full flex items-center justify-center mr-32">
         {" "}
         {/* Right half */}
         <Card

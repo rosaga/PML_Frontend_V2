@@ -62,7 +62,7 @@ const UploadRecipients = () => {
 
   useEffect(() => {
     fetchData(page);
-  }, [page]);
+  }, [page, isModalOpen1]);
 
   const filterOptions = [
     // { value: "eq__external_id", label: "" },
