@@ -15,7 +15,8 @@ const SignIn = () => {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
+      // const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/public/token`, {
+        const response = await axios.post(`https://dataapi.peakmobile.co.ke/public/token`, {
         username,
         password,
       });
@@ -45,7 +46,7 @@ const SignIn = () => {
         backgroundPosition: "center",
       }}>
       <div className="w-2/5 h-full"></div>
-      <div className="w-3/5 h-full flex items-center justify-center">
+      <div className="w-3/5 h-full flex items-center justify-center mr-28">
         <Card sx={{
             borderRadius: "lg",
             boxShadow: "md",

@@ -113,6 +113,12 @@ const CampaignsTable = () => {
             <div className="ml-auto flex space-x-4">
               <PeakSearch filterOptions={filterOptions} selectedFilter="" />
               <PeakButton
+                buttonText="Schedule Campaign"
+                icon={AddIcon}
+                className="bg-orange-400 text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
+                onClick={openModal}
+              />
+              <PeakButton
                 buttonText="Create Campaign"
                 icon={AddIcon}
                 className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"

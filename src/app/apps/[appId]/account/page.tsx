@@ -134,7 +134,7 @@ const Users = () => {
                     columns={columns}
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
-                        backgroundColor: "#E5E4E2",
+                        backgroundColor: "#F1F2F3",
                       },
                       "&.MuiDataGrid-root": {
                         border: "none",
