@@ -12,6 +12,8 @@ const SendDataRewardModal = ({ closeModal }) => {
   const [errorMessage, setErrorMessage] = useState("");
   let token = getToken();
 
+  const { v4: uuidv4 } = require('uuid');
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (event.target.id === "authentication-modal") {
@@ -67,6 +69,7 @@ const SendDataRewardModal = ({ closeModal }) => {
         {
           mobile_no: selectedContact,
           bundle_amount: selectedBundle,
+          request_id: uuidv4()
         },
         {
           headers: {
