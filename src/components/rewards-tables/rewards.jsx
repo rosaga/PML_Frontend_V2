@@ -116,7 +116,7 @@ const RewardsTable = () => {
           <PeakButton
             buttonText="Send Data Rewards"
             icon={AddIcon}
-            className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
+            className="bg-orange-400 text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
             onClick={openModal}
           />
           <PeakButton

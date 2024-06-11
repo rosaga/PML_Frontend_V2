@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.icon-hover-parent:hover .icon {
+    filter: brightness(0) invert(1); /* This changes the icon color to white */
+  }
+  

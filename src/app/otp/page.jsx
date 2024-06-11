@@ -8,7 +8,7 @@ import "../../app/globals.css";
 const Otp = () => {
   const router = useRouter();
 
-  const [timer, setTimer] = useState(7); // Initial timer value in seconds
+  const [timer, setTimer] = useState(60); // Initial timer value in seconds
 
   useEffect(() => {
     // Decrease timer every second
@@ -29,7 +29,7 @@ const Otp = () => {
     <div
       className="relative h-screen w-full flex items-center"
       style={{
-        backgroundImage: "url('/images/signup.png')",
+        backgroundImage: "url('/images/otp.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
