@@ -18,7 +18,7 @@ export const getToken = () => {
 };
 
 export const setToken = (token: string) => {
-  const expirationTime = Date.now() + 3600000; // 1 hour in milliseconds
+  const expirationTime = Date.now() + 3600000;
   localStorage.setItem('token', token);
   localStorage.setItem('tokenExpiration', expirationTime.toString());
 };
