@@ -14,10 +14,11 @@ const NewGroupModal = ({ closeModal }) => {
   const handleRequest = async () => {
     try {
       const groupResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/group/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/group`,
         JSON.stringify({
           name: groupName,
-          // description: description,
+          description: description,
+          organization_id: process.env.NEXT_PUBLIC_ORG_ID,
         }),
         {
           headers: {

@@ -6,7 +6,6 @@ import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-da
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from '@mui/icons-material/Add';
-import * as XLSX from 'xlsx';
 import PeakButton from "../../../../components/button/button";
 import PeakSearch from "../../../../components/search/search"
 import InviteUserModal from "../../../../components/modal/inviteUser"
@@ -59,13 +58,6 @@ const Users = () => {
     }
   };
 
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(rows as GridValidRowModel[]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-    XLSX.writeFile(workbook, "users_data.xlsx");
-  };
-
   const columns: GridColDef[] = [
     { field: "first_name", headerName: "First Name", flex: 1 },
     { field: "last_name", headerName: "Last Name", flex: 1 },
@@ -86,12 +78,6 @@ const Users = () => {
                   icon={AddIcon}
                   className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
                   onClick={openModal}
-                />
-                <PeakButton
-                  buttonText="Export"
-                  icon={IosShareIcon}
-                  className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
-                  onClick={exportToExcel} // Update the onClick handler to call exportToExcel
                 />
               </div>
             </div>
