@@ -64,6 +64,7 @@ const SendBatchRewardsModal = ({ closeModal }) => {
         }
       );
       setSuccessMessage("Batch rewards sent successfully.");
+      setErrorMessage("Failed to send batch reward.");
     } catch (error) {
       console.error("Error submitting form:", error);
     }
@@ -160,6 +161,9 @@ const SendBatchRewardsModal = ({ closeModal }) => {
                   required
                 />
               </div>
+              {errorMessage && (
+                    <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                  )}
               <div className="flex space-x-2">
                 <button
                   type="button"
