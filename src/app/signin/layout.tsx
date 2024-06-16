@@ -1,5 +1,7 @@
-// app/login/layout.tsx
+// src/app/signin/layout.js
+'use client';
 
+import SessionProviderWrapper from '@/components/SessionProviderWrapper';
 import "./signin.css"; // Import any specific styles for the login page
 
 export default function LoginLayout({
@@ -10,9 +12,11 @@ export default function LoginLayout({
   return (
     <html lang="en">
       <body>
-        <div>
-          {children}
-        </div>
+        <SessionProviderWrapper>
+          <div>
+            {children}
+          </div>
+        </SessionProviderWrapper>
       </body>
     </html>
   );

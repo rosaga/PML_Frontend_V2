@@ -8,9 +8,20 @@ import "../../app/globals.css";
 const SignUp = () => {
   const router = useRouter();
 
+  console.log("THE URL IS",process.env.NEXT_PUBLIC_KEYCLOAK_URL)
+
   const handleButtonClick = () => {
-    router.push("/otp");
+    const keycloakUrl = `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/peakmobile/protocol/openid-connect/registrations`;
+    const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID;
+    const redirectUri = "http://localhost:3000/api/auth/callback";
+
+    const registrationUrl = `https://auth-jja4kcvvdq-ez.a.run.app/realms/peakmobile/protocol/openid-connect/registrations?client_id=PeakmobileUI&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    console.log("Registration URL:", registrationUrl);
+    window.location.href = registrationUrl;
   };
+
+  
+
 
   const handleLoginClick = () => {
     router.push("/signin");
