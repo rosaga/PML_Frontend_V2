@@ -1,14 +1,16 @@
 // components/SignIn.js
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, LinearProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
+
 import '../../app/globals.css';
 
 const SignIn = () => {
   const { data: session, status } = useSession();
+  console.log("THE STATUS IS!!!!", status)
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -19,16 +21,11 @@ const SignIn = () => {
     signIn("keycloak");
   };
 
-  if (status === 'authenticated') {
-    return (
-      <div>
-        <div>Your name is {session.user?.name}</div>
-        <div>
-          <button onClick={() => signOut()}>Sign out of Keycloak</button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/user-orgs');
+    }
+  }, [status, router]);
 
   return (
     <div

@@ -1,8 +1,16 @@
 // MyComponent.js
+"use client";
+
 import React from "react";
 import Image from "next/image";
+import { useSession } from 'next-auth/react';
 
 const Profile = () => {
+
+  const { data: session, status } = useSession();
+
+  console.log("SESSION is", session)
+
   return (
     <div>
       <button
@@ -24,8 +32,8 @@ const Profile = () => {
             priority
           />
           <div className="ml-4">
-            <p className="text-sm text-left">Robina Rasanga</p>
-            <p className="text-sm text-left">robina@gmail.com</p>
+            <p className="text-sm text-left">{ session && session.user && session.user.name }</p>
+            <p className="text-sm text-left">{ session && session.user && session.user.email}</p>
           </div>
         </div>
 

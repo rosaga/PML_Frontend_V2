@@ -2,8 +2,8 @@ export const getToken = () => {
   const token = localStorage.getItem('token');
   const expirationTime = localStorage.getItem('tokenExpiration');
   if (!token || !expirationTime) {
-    alert('Session Expired, Please login again')
-    window.location.href = '/signin';
+    // alert('Session Expired, Please login again')
+    // window.location.href = '/signin';
     return null;
   }
 

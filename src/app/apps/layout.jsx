@@ -1,6 +1,6 @@
 // src/app/api/apps/[appId]/layout.js
 import { Inter } from "next/font/google";
-import "../../../app/globals.css";
+import "../../app/globals.css";
 import Sidebar from "@/components/sidebar/sidebar";
 import Navbar from "@/components/navbar/navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";

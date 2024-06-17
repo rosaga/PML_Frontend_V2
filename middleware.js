@@ -23,7 +23,7 @@ function isValidToken(token) {
         return false; 
       }
     if (parseInt(expirationTime, 10) < Date.now()) {
-        alert('Session expired. Please sign in again.');
+        // alert('Session expired. Please sign in again.');
         return false;
      }
     return true;
