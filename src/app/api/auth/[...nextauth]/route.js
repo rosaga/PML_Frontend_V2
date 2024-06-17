@@ -6,9 +6,9 @@ import KeycloakProvider from 'next-auth/providers/keycloak';
 export const authOptions = {
     providers: [
       KeycloakProvider({
-        clientId: "PeakmobileUI",
-        clientSecret: "2LgA9h6H5HoGUL7Mw8U8ZFMld396Uabi",
-        issuer: "https://auth-jja4kcvvdq-ez.a.run.app/realms/peakmobile",
+        clientId: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID,
+        clientSecret: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_SECRET,
+        issuer: process.env.NEXT_PUBLIC_KEYCLOAK_ISSUER,
       }),
     ],
     callbacks: {
