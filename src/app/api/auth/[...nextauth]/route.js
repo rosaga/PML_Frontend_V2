@@ -8,7 +8,7 @@ export const authOptions = {
       KeycloakProvider({
         clientId: "PeakmobileUI",
         clientSecret: "2LgA9h6H5HoGUL7Mw8U8ZFMld396Uabi",
-        issuer: "https://auth-jja4kcvvdq-ez.a.run.app/auth/realms/peakmobile",
+        issuer: "https://auth-jja4kcvvdq-ez.a.run.app/realms/peakmobile",
       }),
     ],
     callbacks: {
@@ -30,6 +30,6 @@ export const authOptions = {
   };
   
 
-  const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

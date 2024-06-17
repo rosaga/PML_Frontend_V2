@@ -16,7 +16,7 @@ const SignIn = () => {
 
   const handleSignIn = () => {
     setIsLoading(true);
-    signIn('keycloak');
+    signIn("keycloak");
   };
 
   if (status === 'authenticated') {
