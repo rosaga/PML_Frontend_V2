@@ -32,21 +32,7 @@ const RequestUnitsModal = ({ closeModal }) => {
 
     return res;
   };
-
-  // useEffect(() => {
-  //   const handleClickOutside = (event) => {
-  //     if (event.target.id === "authentication-modal") {
-  //       closeModal();
-  //     }
-  //   };
-
-  //   window.addEventListener("click", handleClickOutside);
-
-  //   return () => {
-  //     window.removeEventListener("click", handleClickOutside);
-  //   };
-  // }, [closeModal]);
-
+  
   return (
     <div
       id="authentication-modal"
