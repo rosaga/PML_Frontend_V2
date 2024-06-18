@@ -9,7 +9,9 @@ import { signOut } from "next-auth/react";
 const Sidebar = () => {
 
   const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
     localStorage.removeItem('selectedAccountId');
+    }
     signOut({ callbackUrl: '/signin' });
   };
 

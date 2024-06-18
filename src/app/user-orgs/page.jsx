@@ -34,8 +34,10 @@ const UserOrgs = () => {
   }, [session]);
 
   const handleAccountClick = (account) => {
+    if (typeof window !== 'undefined') {
     localStorage.removeItem('selectedAccountId');
     localStorage.setItem('selectedAccountId', account.id);
+    }
     router.push("/apps/dashboard");
   };
 
