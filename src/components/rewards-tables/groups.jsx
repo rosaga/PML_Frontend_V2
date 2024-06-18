@@ -10,13 +10,17 @@ import axios from "axios";
 import { format } from "date-fns";
 import NewGroupModal from "../modal/newGroup"
 import { getToken } from "@/utils/auth";
+import { GetGroups } from "@/app/api/actions/group/group";
 
 const GroupsTable = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  let token = getToken();
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -30,33 +34,28 @@ const GroupsTable = () => {
     page: 0,
   });
 
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [contacts, setContacts] = useState([]);
 
-  const fetchData = async (page) => {
-    setLoading(true);
+  const getGroups = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/group/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      const transformedData = response.data.map((item) => ({
-        id: item.group_id,
-        group_name: item.group_name,
-        contacts: item.contacts,
-        description: item.description,
-        date_created: format(new Date(item.createdat), "dd-MM-yyyy, h:mm a"),
-      }));
-      setData(transformedData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+      const res = await GetGroups(org_id);
+      if (res.errors) {
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        setContacts(res.data.data);
+        setIsLoaded(true);
+        setLoading(false);
+      
+      }
+    } catch (err) {
+      console.log(err);
     }
   };
 
   useEffect(() => {
-    fetchData(page);
-  }, [page]);
+      getGroups();
+  }, [isModalOpen,page, org_id]);
 
   const filterOptions = [
     { value: "eq__external_id", label: "Transaction Reference" },
@@ -69,10 +68,10 @@ const GroupsTable = () => {
 
   const columns = [
     { field: "id", headerName: "ID", flex: 1 },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
+    { field: "name", headerName: "Group Name", flex: 1 },
     { field: "contacts", headerName: "No of Contacts", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
+    { field: "created_at", headerName: "Date Created", flex: 1 },
     {
       field: "action",
       headerName: "Action",
@@ -106,7 +105,7 @@ const GroupsTable = () => {
       <div className="mt-4">
         <div style={{ width: "100%" }}>
           <DataGrid
-            rows={data}
+            rows={contacts}
             columns={columns}
             loading={loading}
             paginationModel={paginationModel}

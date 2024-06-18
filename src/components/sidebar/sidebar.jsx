@@ -29,7 +29,7 @@ const Sidebar = () => {
           <ul className="space-y-4 font-medium">
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/dashboard`}
+                href={`/apps/dashboard`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -48,7 +48,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/data-rewards`}
+                href={`/apps/data-rewards`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -71,7 +71,7 @@ const Sidebar = () => {
 
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/data-units`}
+                href={`/apps/data-units`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -92,7 +92,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/users`}
+                href={`/apps/users`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -111,7 +111,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/account`}
+                href={`/apps/account`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image

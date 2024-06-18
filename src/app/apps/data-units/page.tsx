@@ -5,11 +5,11 @@ import Image from "next/image";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from "@mui/icons-material/Add";
-import PeakButton from "../../../../components/button/button";
-import PeakSearch from "../../../../components/search/search";
-import RequestUnitsModal from "../../../../components/modal/requestUnits";
+import PeakButton from "../../../components/button/button";
+import PeakSearch from "../../../components/search/search";
+import RequestUnitsModal from "../../../components/modal/requestUnits";
 import * as XLSX from 'xlsx';
-import { getToken } from "../../../../utils/auth";
+import { getToken } from "../../../utils/auth";
 
 interface Balance {
   package: string;

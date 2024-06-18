@@ -2,15 +2,47 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
+import { batchReward } from "@/app/api/actions/reward/reward";
+import { GetBalance } from "@/app/api/actions/reward/reward";
 
 const SendBatchRewardsModal = ({ closeModal }) => {
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+
   const [bundles, setBundles] = useState([]);
   const [selectedBundle, setSelectedBundle] = useState("");
   const [message, setMessage] = useState("");
   const [contactsFile, setContactsFile] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  let token = getToken();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!contactsFile) {
+      console.log('Please select a file and a group');
+      return;
+    }
+
+    const newReward = {
+      contacts: contactsFile,
+      bundle: selectedBundle,
+      message : message,
+    };
+
+    const res = batchReward({org_id,newReward}).then((res) => {
+      if (res.status === 200) {
+        setSuccessMessage(`The data has been sent`);
+        setErrorMessage(""); 
+      } else {
+        setErrorMessage("Failed to send data. Please try again.");
+      }
+    });
+
+    return res;
+  };
 
   useEffect(() => {
   const handleClickOutside = (event) => {
@@ -26,49 +58,15 @@ const SendBatchRewardsModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
-
   useEffect(() => {
-    fetchBundles();
+    async function fetchBalance() {
+      const balanceData = await GetBalance(org_id);
+      if (balanceData) {
+        setBundles(balanceData.data.data);
+      }
+    }
+    fetchBalance();
   }, []);
-  const fetchBundles = async () => {
-    if (!token) return;
-    try {
-
-      const bundlesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/balance`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setBundles(bundlesResponse.data);
-    } catch (error) {
-      console.error("Error fetching contacts or bundles:", error);
-    }
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const formData = new FormData();
-    formData.append("bundle", selectedBundle);
-    formData.append("message", message);
-    formData.append("contacts", contactsFile);
-
-    try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/batchreward`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      setSuccessMessage("Batch rewards sent successfully.");
-      setErrorMessage("Failed to send batch reward.");
-    } catch (error) {
-      console.error("Error submitting form:", error);
-    }
-  };
 
   return (
     <div

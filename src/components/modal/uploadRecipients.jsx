@@ -2,16 +2,13 @@
 import React, { useEffect } from "react";
 
 const UploadRecipientsModal = ({ closeModal }) => {
-
     useEffect(() => {
         const handleClickOutside = (event) => {
           if (event.target.id === "authentication-modal") {
             closeModal();
           }
         };
-    
         window.addEventListener("click", handleClickOutside);
-    
         return () => {
           window.removeEventListener("click", handleClickOutside);
         };
@@ -27,17 +24,7 @@ const UploadRecipientsModal = ({ closeModal }) => {
     >
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-          <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Upload CSV File
-            </h3>
-            <button
-              type="button"
-              className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-            >
-              Download CSV Template
-            </button>
-          </div>
+
           <div className="p-4 md:p-5">
             <form className="space-y-2" action="#">
             <div className="mb-4">
@@ -55,9 +42,7 @@ const UploadRecipientsModal = ({ closeModal }) => {
                   placeholder="robina"
                   required
                 />
-              </div>
-
-              
+              </div> 
               <div className="flex space-x-2">
                   <button
                     type="submit"

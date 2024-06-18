@@ -5,7 +5,6 @@ export async function authHeaders() {
       try {
         const session = await getSession();
         const token = session.accessToken;
-        console.log("THE TOKEN BEING SENT IS!!!!!!!!!!", token);
         const authToken = `Bearer ${token}`;
         return {
           headers: {
