@@ -9,13 +9,12 @@ import AddIcon from '@mui/icons-material/Add';
 import PeakButton from "../../../components/button/button";
 import PeakSearch from "../../../components/search/search"
 import InviteUserModal from "../../../components/modal/inviteUser"
-import { getToken } from "@/utils/auth";
 
 const Users = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rows, setRows] = useState<GridRowsProp>([]);
   const [loading, setLoading] = useState(true);
-  let token = getToken();
+  let token = "xyz";
 
   const openModal = () => {
     setIsModalOpen(true);

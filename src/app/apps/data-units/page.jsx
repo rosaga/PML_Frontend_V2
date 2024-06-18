@@ -9,7 +9,6 @@ import PeakButton from "../../../components/button/button";
 import PeakSearch from "../../../components/search/search";
 import RequestUnitsModal from "../../../components/modal/requestUnits";
 import * as XLSX from 'xlsx';
-import { getToken } from "../../../utils/auth";
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
 
 const DataUnits = () => {
@@ -24,7 +23,6 @@ const DataUnits = () => {
   const [recharges, setRecharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
-  let token = getToken();
 
   const openModal = () => {
     setIsModalOpen(true);

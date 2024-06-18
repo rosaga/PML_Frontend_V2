@@ -51,7 +51,6 @@ const Dashboard = () => {
       progress: 25,
     },
   ];
-  const token = getToken();
 
   const calculateProgress = (unitsBought: number, unitBalance: number): number => {
     return ((unitsBought - unitBalance) / unitsBought) * 100;
