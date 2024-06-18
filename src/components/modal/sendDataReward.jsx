@@ -172,8 +172,8 @@ const SendDataRewardModal = ({ closeModal }) => {
                     >
                       <option value="">Select a bundle</option>
                       {bundles.map((bundle) => (
-                        <option key={bundle.id} value={bundle.package}>
-                          {bundle.package}
+                        <option key={bundle.id} value={bundle.module}>
+                          {bundle.module}
                         </option>
                       ))}
                     </select>
