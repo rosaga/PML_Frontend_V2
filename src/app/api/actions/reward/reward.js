@@ -143,7 +143,7 @@ export async function GetRewards(org_id) {
 
   export async function GetBalance(org_id) {
     
-    const balanceUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}`;
+    const balanceUrl = `${apiUrl.GET_BALANCE}/organization/balance/${org_id}`;
   
     try {
       const config = await authHeaders();

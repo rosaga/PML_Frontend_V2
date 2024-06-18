@@ -52,9 +52,17 @@ const RewardsTable = () => {
 
   const columns= [
     { field: "id", headerName: "Request ID", flex: 1 },
-    { field: "created_date", headerName: "Date Created", flex: 1 },
+    { field: "created_at", headerName: "Date Created", flex: 1 },
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
-    { field: "phone_number", headerName: "Phone Number", flex: 1 },
+    {
+      field: 'phone_number',
+      headerName: 'Phone Number',
+      flex: 1,
+      // valueGetter: (params) => {
+      //   console.log('params for phone_number:', params); // Debug log
+      //   return params.row?.contact?.mobile_no;
+      // },
+    },
     {
       field: "status",
       headerName: "Status ID",
