@@ -10,25 +10,18 @@ import PeakSearch from "../../../components/search/search";
 import RequestUnitsModal from "../../../components/modal/requestUnits";
 import * as XLSX from 'xlsx';
 import { getToken } from "../../../utils/auth";
+import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
 
-interface Balance {
-  package: string;
-  units: string;
-}
+const DataUnits = () => {
 
-interface RechargeData {
-  id: string;
-  expireson: string;
-  startDate: string;
-  package: string;
-  units: string;
-  status: string;
-}
-
-const DataUnits: React.FC = () => {
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [balances, setBalances] = useState<Balance[]>([]);
-  const [rechargeData, setRechargeData] = useState<RechargeData[]>([]);
+  const [balances, setBalances] = useState([]);
+  const [recharges, setRecharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
   let token = getToken();
@@ -50,10 +43,10 @@ const DataUnits: React.FC = () => {
     { value: "ilike__last_name", label: "Status" },
   ];
 
-  const columns: GridColDef[] = [
+  const columns = [
     { field: "id", headerName: "Transaction Reference", flex: 1 },
-    { field: "startDate", headerName: "Start Date", flex: 1 },
-    { field: "expireson", headerName: "End Date", flex: 1 },
+    { field: "created_by", headerName: "Created By", flex: 1 },
+    { field: "expires_on", headerName: "End Date", flex: 1 },
     { field: "package", headerName: "Data Bundle", flex: 1 },
     { field: "units", headerName: "Units", flex: 1 },
     {
@@ -61,7 +54,7 @@ const DataUnits: React.FC = () => {
       headerName: "Status",
       flex: 1,
       renderCell: (params) => {
-        const getStatusLabel = (status: string) => {
+        const getStatusLabel = (status) => {
           switch (status) {
             case "TOPUP_APPROVED":
               return { label: "Approved", color: "green" };
@@ -81,76 +74,41 @@ const DataUnits: React.FC = () => {
   const refreshPage = () => {
     setIsModalOpen(false);
     setLoadingData(true);
-    fetchRechargeData();
+
   }
 
+  
 
-  const fetchBalances = async () => {
-    try {
-      const balancesResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/balance`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const fetchedBalances = balancesResponse.data as Balance[];
-
-      const defaultBalances: Balance[] = [
-        { package: "0", units: "0" },
-        { package: "0", units: "0" },
-        { package: "0", units: "0" },
-        { package: "0", units: "0" },
-      ];
-
-      const combinedBalances = defaultBalances.map((item, index) => fetchedBalances[index] || item);
-      setLoading(false);
-      setBalances(combinedBalances);
-    } catch (error) {
-      console.error("Error fetching balances data:", error);
-      setLoading(false);
+  useEffect(() => {
+    async function fetchBalance() {
+      const balanceData = await GetBalance(org_id);
+      if (balanceData) {
+        setBalances(balanceData.data.data);
+      }
     }
-  };
+    fetchBalance();
+  }, []);
 
-  const convertToLocalDateTime = (datetime: string) => {
-    const date = new Date(datetime);
-    return date.toLocaleString();
-  };
-
-  const fetchRechargeData = async () => {
+  const getRewards = async () => {
     try {
-      const rechargeResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/recharge/list`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const fetchedRechargeData = rechargeResponse.data.map((item: any) => ({
-        id: item.id,
-        expireson: convertToLocalDateTime(item.expireson),
-        startDate: convertToLocalDateTime(item.expireson), // Change to start date
-        package: item.package,
-        units: item.units,
-        status: item.status,
-      }));
-
-      setRechargeData(fetchedRechargeData);
-      setLoadingData(false);
-    } catch (error) {
-      console.error("Error fetching recharge data:", error);
-      setLoadingData(false);
+      const res = await GetRecharges(org_id);
+      if (res.errors) {
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        setRecharges(res.data.data);
+        setLoading(false);
+        setLoadingData(false);
+      
+      }
+    } catch (err) {
+      console.log(err);
     }
   };
 
   useEffect(() => {
-      fetchBalances();
-      fetchRechargeData();
-  }, []);
+      getRewards();
+  }, [isModalOpen, org_id]);
+
 
   const exportToExcel = () => {
     const workbook = XLSX.utils.book_new();
@@ -231,7 +189,7 @@ const DataUnits: React.FC = () => {
                 <div style={{ width: "100%" }}>
                   {loadingData ? <p>Loading...</p> : 
                   <DataGrid
-                    rows={rechargeData}
+                    rows={recharges}
                     columns={columns}
                     sx={{
                       "& .MuiDataGrid-columnHeader": {

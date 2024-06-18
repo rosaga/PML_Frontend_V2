@@ -4,9 +4,9 @@ import axios from "axios";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-data-grid";
 import AddIcon from '@mui/icons-material/Add';
-import PeakButton from "../../../../components/button/button";
-import InviteUserModal from "../../../../components/modal/inviteUser"
-import { getToken } from "../../../../utils/auth";
+import PeakButton from "../../../components/button/button";
+import InviteUserModal from "../../../components/modal/inviteUser"
+import { getToken } from "../../../utils/auth";
 
 const Users = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
