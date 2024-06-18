@@ -9,8 +9,16 @@ const SignUp = () => {
   const router = useRouter();
 
   const handleButtonClick = () => {
-    router.push("/otp");
+    const keycloakUrl = `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/registrations`;
+    const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID;
+    const redirectUri = "http://localhost:3000/api/auth/callback";
+
+    const registrationUrl = `${keycloakUrl}?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    window.location.href = registrationUrl;
   };
+
+  
+
 
   const handleLoginClick = () => {
     router.push("/signin");

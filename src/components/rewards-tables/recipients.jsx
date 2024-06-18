@@ -10,15 +10,45 @@ import { format } from "date-fns";
 import UploadRecipientsModal from "../modal/uploadRecipients";
 import NewContactModal from "../modal/newContact"
 import { getToken } from "@/utils/auth";
+import { GetContacts } from "../../app/api/actions/contact/contact"
+import { signIn, signOut, useSession } from 'next-auth/react';
 
 
 const UploadRecipients = () => {
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+
+  const { data: session, status } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpen1, setIsModalOpen1] = useState(false);
   const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  let token = getToken();
+
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [contacts, setContacts] = useState([]);
+
+  const getContacts = async () => {
+    try {
+      const res = await GetContacts(org_id);
+      if (res.errors) {
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        setContacts(res.data.data);
+        setIsLoaded(true);
+        setLoading(false);
+      
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+      getContacts();
+  }, [isModalOpen1,page, org_id]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -37,33 +67,6 @@ const UploadRecipients = () => {
     page: 0,
   });
 
-
-  const fetchData = async (page) => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      const transformedData = response.data.map((item) => ({
-        id: item.id,
-        date: format(new Date(item.createdAt), "dd-MM-yyyy, h:mm a"),
-        phone: item.mobile_no,
-        status: item.status_id === "9" ? "Active" : "Inactive",
-      }));
-      setData(transformedData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData(page);
-  }, [page, isModalOpen1]);
-
   const filterOptions = [
     // { value: "eq__external_id", label: "" },
     { value: "ilike__first_name", label: "Date of Onboarding" },
@@ -73,8 +76,8 @@ const UploadRecipients = () => {
     // { value: "ilike__last_name", label: "Status" },
   ];
   const columns = [
-    { field: "date", headerName: "Date of Onboarding", flex: 1 },
-    { field: "phone", headerName: "Phone Number", flex: 1 },
+    { field: "created_at", headerName: "Date of Onboarding", flex: 1 },
+    { field: "mobile_no", headerName: "Phone Number", flex: 1 },
     {
       field: "status",
       headerName: "Status",
@@ -82,7 +85,7 @@ const UploadRecipients = () => {
       renderCell: (params) => {
         const getColor = (status) => {
           switch (status) {
-            case "Active":
+            case "ACTIVE":
               return "green";
             case "Inactive":
               return "red";
@@ -131,7 +134,7 @@ const UploadRecipients = () => {
       <div className="mt-4">
         <div style={{ width: "100%" }}>
           <DataGrid
-            rows={data}
+            rows={contacts}
             columns={columns}
             loading={loading}
             paginationModel={paginationModel}

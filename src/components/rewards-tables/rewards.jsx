@@ -13,14 +13,19 @@ import SendBatchRewardsModal from "../modal/sendBatchRewards"
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format } from "date-fns";
 import { getToken } from "../../utils/auth";
+import { GetRewards } from "../../app/api/actions/reward/reward"
+
 const RewardsTable = () => {
+
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModalOpen1, setIsModalOpen1] = useState(false);
     const [page, setPage] = useState(0); // Pagination state
-    const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
-    let token = getToken();
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -78,32 +83,28 @@ const RewardsTable = () => {
   });
 
 
-  const fetchData = async () => {
-    setLoading(true);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [rewards, setRewards] = useState([]);
+
+  const getRewards = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/reward/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      const transformedData = response.data.map((item) => ({
-        id: item.id,
-        created_date: format(new Date(item.createdat), "dd-MM-yyyy, h:mm a"),
-        bundle_amount: item.bundle_amount,
-        phone_number: item.mobile_no,
-        status: item.status_id === "SUCCESS_DISPATCH" ? "Success Dispatch" : "Failed Dispatch",
-      }));
-      setData(transformedData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+      const res = await GetRewards(org_id);
+      if (res.errors) {
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        setRewards(res.data.data);
+        setIsLoaded(true);
+        setLoading(false);
+      
+      }
+    } catch (err) {
+      console.log(err);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [page]);
+      getRewards();
+  }, [isModalOpen,isModalOpen1,page, org_id]);
 
   return (
     <>
@@ -137,7 +138,7 @@ const RewardsTable = () => {
       <div className="mt-4">
         <div style={{ width: "100%" }}>
           <DataGrid
-            rows={data}
+            rows={rewards}
             columns={columns}
             loading={loading}
             paginationModel={paginationModel}

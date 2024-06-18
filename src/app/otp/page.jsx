@@ -18,7 +18,7 @@ const Otp = () => {
 
     // Redirect to login page when timer reaches zero
     if (timer === 0) {
-      router.push("/apps/1/dashboard");
+      router.push("/apps/dashboard");
     }
 
     // Clear interval on component unmount

@@ -1,41 +1,41 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { getToken } from "../../utils/auth";
+import { contactCreate } from "@/app/api/actions/contact/contact";
 
 const NewContactModal = ({ closeModal }) => {
+
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  let token = getToken();
 
-  const handleRequest = async () => {
-    try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/create`,
-        {
-          mobile_no: phoneNumber,
-          metadata: {
-            firstname: firstname,
-            lastname: lastname,
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+  const handleCreate = (e) => {
+    e.preventDefault();
 
-      setSuccessMessage(`The contact ${phoneNumber} has been created`);
-      setErrorMessage("");  // Clear any previous error messages
-    } catch (error) {
-      console.error("Error Creating Contact", error);
-      setErrorMessage("Failed to create contact. Please try again.");
-    }
+    const newContact = {
+      mobile_no: phoneNumber,
+      metadata: {
+        FIRSTNAME: firstname,
+        LASTNAME: lastname
+    },
+    };
+
+    const res = contactCreate({org_id,newContact}).then((res) => {
+      if (res.status === 201) {
+        setSuccessMessage(`The contact ${phoneNumber} has been created`);
+        setErrorMessage("");  // Clear any previous error messages
+      } else {
+        setErrorMessage("Failed to create contact. Please try again.");
+      }
+    });
+
+    return res;
   };
 
   useEffect(() => {
@@ -100,7 +100,7 @@ const NewContactModal = ({ closeModal }) => {
                       name="phone"
                       id="phone"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      placeholder="+254711438911"
+                      placeholder="0711438911"
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       required
                     />
@@ -153,7 +153,7 @@ const NewContactModal = ({ closeModal }) => {
                     <button
                       type="button"
                       className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                      onClick={handleRequest}
+                      onClick={handleCreate}
                     >
                       Submit
                     </button>

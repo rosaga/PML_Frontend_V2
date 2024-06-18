@@ -2,56 +2,84 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
+import { saveAs } from "file-saver";
+import { contactsUpload } from '../../../src/app/api/actions/contact/contact';
 
 const NewGroupModal = ({ closeModal }) => {
+
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+
   const [groupName, setGroupName] = useState("");
   const [csvFile, setCsvFile] = useState(null);
   const [description, setDescription] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  let token = getToken();
 
-  const handleRequest = async () => {
-    try {
-      const groupResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/group`,
-        JSON.stringify({
-          name: groupName,
-          description: description,
-          organization_id: process.env.NEXT_PUBLIC_ORG_ID,
-        }),
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const groupId = groupResponse.data.id;
+  function handleDownloadTemplate() {
+    const templateData = [
+      {
+        mobile: "0711223344",
+        firstName: "John",
+        lastName: "Doe" 
+      },
+      {
+        mobile: "0722334455",
+        firstName: "Jane",
+        lastName: "Smith"
+      },
+    ];
 
-      // Prepare form data for file upload
-      const formData = new FormData();
-      formData.append("contacts", csvFile);
-      formData.append("group_id", groupId);
+    const csvData = convertToCsv(templateData);
 
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/upload`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, "contact_template.csv");
+  }
 
-      setSuccessMessage(`The group ${groupName} has been created and CSV file uploaded successfully.`);
-      setErrorMessage("");  // Clear any previous error messages
-    } catch (error) {
-      console.error("Error Creating Group or Uploading CSV File", error);
-      setErrorMessage("Failed to create group or upload CSV file. Please try again.");
-      setSuccessMessage("");  // Clear any previous success messages
+  function convertToCsv(data) {
+    const csvRows = [];
+    const headers = Object.keys(data[0]);
+
+    csvRows.push(headers.join(","));
+
+    for (const row of data) {
+      const values = headers.map((header) => row[header]);
+      csvRows.push(values.join(","));
     }
+    return csvRows.join("\n");
+  }
+
+  const handleGroupCreate = (e) => {
+    e.preventDefault();
+  
+    if (!csvFile) {
+      console.log('Please select a file and a group');
+      return;
+    }
+  
+    const formValues = {
+      org_id: org_id,
+      description: description,
+      name: groupName,
+      contacts: csvFile,
+    };
+  
+    const res = contactsUpload(formValues)
+      .then((res) => {
+        if (res.status === 201) {
+          setSuccessMessage(`The group has been created`);
+          setErrorMessage("");
+        } else {
+          setErrorMessage("Failed to create group. Please try again.");
+        }
+      })
+      .catch((error) => {
+        console.log("Error:", error);
+      });
+  
+    return res;
   };
 
   useEffect(() => {
@@ -97,11 +125,18 @@ const NewGroupModal = ({ closeModal }) => {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  New Group
-                </h3>
-              </div>
+                        <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+              New Group
+            </h3>
+            <button
+              type="button"
+              className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+              onClick={handleDownloadTemplate}           
+            >
+              Download CSV Template
+            </button>
+          </div>
               <div className="p-4 md:p-5">
                 <form className="space-y-2" action="#">
                   <div>
@@ -168,7 +203,7 @@ const NewGroupModal = ({ closeModal }) => {
                     <button
                       type="button"
                       className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                      onClick={handleRequest}
+                      onClick={handleGroupCreate}
                     >
                       Submit
                     </button>

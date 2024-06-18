@@ -1,18 +1,68 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { getToken } from "../../utils/auth";
+import { fetchContacts } from "@/app/api/actions/contact/contact";
+import { GetBalance } from "@/app/api/actions/reward/reward";
+import { sendReward } from "@/app/api/actions/reward/reward";
 
 const SendDataRewardModal = ({ closeModal }) => {
-  const [contacts, setContacts] = useState([]);
-  const [bundles, setBundles] = useState([]);
+
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+
   const [selectedContact, setSelectedContact] = useState("");
-  const [selectedBundle, setSelectedBundle] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  let token = getToken();
 
   const { v4: uuidv4 } = require('uuid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredContacts, setFilteredContacts] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const [bundles, setBundles] = useState([]);
+  const [selectedBundle, setSelectedBundle] = useState('');
+
+  useEffect(() => {
+    if (searchQuery.length > 0) {
+      const fetchAndSetContacts = async () => {
+        const contacts = await fetchContacts(searchQuery, org_id);
+        setFilteredContacts(contacts);
+        setShowDropdown(true);
+      };
+      fetchAndSetContacts();
+    } else {
+      setFilteredContacts([]);
+      setShowDropdown(false);
+    }
+  }, [searchQuery, org_id]);
+
+  const handleSelect = (contact) => {
+    setSelectedContact(contact.mobile_no);
+    setSearchQuery(contact.mobile_no);
+    setShowDropdown(false);
+  };
+
+  const handleSend = (e) => {
+    e.preventDefault();
+
+    const newReward = {
+      request_id: uuidv4(),
+      bundle_amount: selectedBundle,
+      msisdn : selectedContact,
+    };
+
+    const res = sendReward({org_id,newReward}).then((res) => {
+      if (res.status === 200) {
+        setSuccessMessage(`The data has been sent`);
+        setErrorMessage(""); 
+      } else {
+        setErrorMessage("Failed to send data. Please try again.");
+      }
+    });
+
+    return res;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -29,64 +79,14 @@ const SendDataRewardModal = ({ closeModal }) => {
   }, [closeModal]);
 
   useEffect(() => {
-    fetchContactsAndBundles();
+    async function fetchBalance() {
+      const balanceData = await GetBalance(org_id);
+      if (balanceData) {
+        setBundles(balanceData.data.data);
+      }
+    }
+    fetchBalance();
   }, []);
-
-  const fetchContactsAndBundles = async () => {
-    if (!token) return;
-
-    try {
-      const contactsResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/contact/list`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setContacts(contactsResponse.data);
-
-      const bundlesResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/balance`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setBundles(bundlesResponse.data);
-    } catch (error) {
-      console.error("Error fetching contacts or bundles:", error);
-    }
-  };
-
-  const handleRequest = async () => {
-    if (!selectedContact || !selectedBundle) return;
-
-    try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/reward`,
-        {
-          mobile_no: selectedContact,
-          bundle_amount: selectedBundle,
-          request_id: uuidv4()
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      setSuccessMessage("Data reward sent successfully.");
-      setErrorMessage(""); // Clear any previous error messages
-    } catch (error) {
-      console.error("Error sending data reward:", error);
-      setErrorMessage("Failed to send data reward. Please try again.");
-      setSuccessMessage(""); // Clear any previous success messages
-    }
-  };
 
   return (
     <div
@@ -131,20 +131,30 @@ const SendDataRewardModal = ({ closeModal }) => {
                     >
                       Select Mobile Number
                     </label>
-                    <select
-                      name="mobile"
-                      id="mobile"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      onChange={(e) => setSelectedContact(e.target.value)}
-                      required
-                    >
-                      <option value="">Select a contact</option>
-                      {contacts.map((contact) => (
-                        <option key={contact.mobile_no} value={contact.mobile_no}>
-                          {contact.firstname} {contact.lastname} ({contact.mobile_no})
-                        </option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                      placeholder="Search for a contact"
+                    />
+                    {showDropdown && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1">
+                        {filteredContacts.length > 0 ? (
+                          filteredContacts.map((contact) => (
+                            <div
+                              key={contact.mobile_no}
+                              className="p-2 cursor-pointer hover:bg-gray-200"
+                              onClick={() => handleSelect(contact)}
+                            >
+                              {contact.metadata.FIRSTNAME} {contact.metadata.LASTNAME} ({contact.mobile_no})
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-2 text-gray-500">No contacts found</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label
@@ -162,7 +172,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                     >
                       <option value="">Select a bundle</option>
                       {bundles.map((bundle) => (
-                        <option key={bundle.package} value={bundle.package}>
+                        <option key={bundle.id} value={bundle.package}>
                           {bundle.package}
                         </option>
                       ))}
@@ -182,7 +192,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                     <button
                       type="button"
                       className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                      onClick={handleRequest}
+                      onClick={handleSend}
                     >
                       Submit
                     </button>

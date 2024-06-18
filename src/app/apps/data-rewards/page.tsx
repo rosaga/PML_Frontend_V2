@@ -5,18 +5,18 @@ import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import Image from "next/image";
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
-import PeakButton from "../../../../components/button/button";
+import PeakButton from "../../../components/button/button";
 import AddIcon from "@mui/icons-material/Add";
-import PeakSearch from "../../../../components/search/search";
-import RequestUnitsModal from "../../../../components/modal/requestUnits";
+import PeakSearch from "../../../components/search/search";
+import RequestUnitsModal from "../../../components/modal/requestUnits";
 import Box from "@mui/material/Box";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import RecipientsTable from "../../../../components/rewards-tables/recipients";
-import GroupsTable from "../../../../components/rewards-tables/groups";
-import RewardsTable from "../../../../components/rewards-tables/rewards";
-import CampaignsTable from "../../../../components/rewards-tables/campaigns";
-import VouchersTable from "../../../../components/rewards-tables/vouchers";
+import RecipientsTable from "../../../components/rewards-tables/recipients";
+import GroupsTable from "../../../components/rewards-tables/groups";
+import RewardsTable from "../../../components/rewards-tables/rewards";
+import CampaignsTable from "../../../components/rewards-tables/campaigns";
+import VouchersTable from "../../../components/rewards-tables/vouchers";
 
 const DataRewards = () => {
 

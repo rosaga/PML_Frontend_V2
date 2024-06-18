@@ -6,9 +6,9 @@ import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-da
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from '@mui/icons-material/Add';
-import PeakButton from "../../../../components/button/button";
-import PeakSearch from "../../../../components/search/search"
-import InviteUserModal from "../../../../components/modal/inviteUser"
+import PeakButton from "../../../components/button/button";
+import PeakSearch from "../../../components/search/search"
+import InviteUserModal from "../../../components/modal/inviteUser"
 import { getToken } from "@/utils/auth";
 
 const Users = () => {

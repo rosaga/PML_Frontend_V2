@@ -1,52 +1,38 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { getToken } from "../../utils/auth";
+import { requestUnits } from "@/app/api/actions/reward/reward";
 
 const RequestUnitsModal = ({ closeModal }) => {
+
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+
   const [bundleAmount, setBundleAmount] = useState("");
   const [numberOfUnits, setNumberOfUnits] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  let token = getToken();
 
-  const handleRequest = async () => {
-    try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/recharge`,
-        {
-          package: bundleAmount.toString(), 
-          units: parseInt(numberOfUnits),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  const handleRequest = (e) => {
+    e.preventDefault();
 
-      setSuccessMessage("Data units requested successfully.");
-      setErrorMessage(""); // Clear any previous error messages
-    } catch (error) {
-      console.error("Error requesting data units:", error);
-      setErrorMessage("Failed to request data units. Please try again.");
-      setSuccessMessage(""); // Clear any previous success messages
-    }
-  };
+    const newRequest = {
+      package: bundleAmount,
+      units : parseInt(numberOfUnits),
+    };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (event.target.id === "authentication-modal") {
-        closeModal();
+    const res = requestUnits({org_id,newRequest}).then((res) => {
+      if (res.status === 201) {
+        setSuccessMessage(`The data has been sent`);
+        setErrorMessage(""); 
+      } else {
+        setErrorMessage("Failed to send data. Please try again.");
       }
-    };
+    });
 
-    window.addEventListener("click", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-    };
-  }, [closeModal]);
-
+    return res;
+  };
+  
   return (
     <div
       id="authentication-modal"

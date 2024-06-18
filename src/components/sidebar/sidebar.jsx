@@ -1,9 +1,18 @@
 // MyComponent.js
+"use client";
+
 import React from "react";
 import Profile from "../profile/profile"
 import Image from "next/image";
+import { signOut } from "next-auth/react";
 
 const Sidebar = () => {
+
+  const handleSignOut = () => {
+    localStorage.removeItem('selectedAccountId');
+    signOut({ callbackUrl: '/signin' });
+  };
+
   return (
     <div>
       <aside
@@ -20,7 +29,7 @@ const Sidebar = () => {
           <ul className="space-y-4 font-medium">
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/dashboard`}
+                href={`/apps/dashboard`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -39,7 +48,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/data-rewards`}
+                href={`/apps/data-rewards`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -62,7 +71,7 @@ const Sidebar = () => {
 
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/data-units`}
+                href={`/apps/data-units`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -83,7 +92,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/users`}
+                href={`/apps/users`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -102,7 +111,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/account`}
+                href={`/apps/account`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -162,8 +171,8 @@ const Sidebar = () => {
           <ul className="font-medium mt-40">
             <li>
               <a
-                href={`/apps/${process.env.NEXT_PUBLIC_APP_ID}/logout`}
-                className="flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
+                onClick={handleSignOut}
+                className="flex items-center cursor-pointer p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg
                   className="flex-shrink-0 w-5 h-5 text-black transition duration-75 dark:text-gray-400 group-hover:text-white dark:group-hover:text-white"
