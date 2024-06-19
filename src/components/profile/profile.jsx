@@ -9,7 +9,7 @@ const Profile = () => {
 
   const { data: session, status } = useSession();
 
-  console.log("SESSION is", session)
+  // console.log("SESSION is", session)
 
   return (
     <div>

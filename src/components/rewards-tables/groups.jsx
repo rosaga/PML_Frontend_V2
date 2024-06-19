@@ -69,7 +69,7 @@ const GroupsTable = () => {
   const columns = [
     { field: "id", headerName: "ID", flex: 1 },
     { field: "name", headerName: "Group Name", flex: 1 },
-    { field: "contacts", headerName: "No of Contacts", flex: 1 },
+    { field: "contact_count", headerName: "No of Contacts", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
     { field: "created_at", headerName: "Date Created", flex: 1 },
     {
