@@ -55,7 +55,7 @@ const RewardsTable = () => {
     { field: "created_at", headerName: "Date Created", flex: 1 },
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
     {
-      field: 'phone_number',
+      field: 'mobile_no',
       headerName: 'Phone Number',
       flex: 1,
       // valueGetter: (params) => {
