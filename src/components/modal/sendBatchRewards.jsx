@@ -121,7 +121,7 @@ const SendBatchRewardsModal = ({ closeModal }) => {
                   <option value="">Select Bundle</option>
                   {bundles.map((bundle) => (
                     <option key={bundle.package} value={bundle.package}>
-                      {bundle.package}
+                      {bundle.module}
                     </option>
                   ))}
                 </select>
