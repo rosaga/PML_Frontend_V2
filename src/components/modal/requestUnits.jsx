@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { requestUnits } from "@/app/api/actions/reward/reward";
+import { GetBalance } from "@/app/api/actions/reward/reward";
+
 
 const RequestUnitsModal = ({ closeModal }) => {
 
@@ -12,6 +14,7 @@ const RequestUnitsModal = ({ closeModal }) => {
   const [numberOfUnits, setNumberOfUnits] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [bundles, setBundles] = useState([]);
 
   const handleRequest = (e) => {
     e.preventDefault();
@@ -32,6 +35,15 @@ const RequestUnitsModal = ({ closeModal }) => {
 
     return res;
   };
+  useEffect(() => {
+    async function fetchBalance() {
+      const balanceData = await GetBalance(org_id);
+      if (balanceData) {
+        setBundles(balanceData.data.data);
+      }
+    }
+    fetchBalance();
+  }, []);
   
   return (
     <div
@@ -98,15 +110,21 @@ const RequestUnitsModal = ({ closeModal }) => {
                     >
                       Bundle Amount
                     </label>
-                    <input
-                      type="text"
-                      id="bundleAmount"
+                    <select
+                      name="bundle"
+                      id="bundle"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      placeholder="10MB or 2GB"
                       value={bundleAmount}
                       onChange={(e) => setBundleAmount(e.target.value)}
                       required
-                    />
+                    >
+                      <option value="">Select Bundle</option>
+                      {bundles.map((bundle) => (
+                        <option key={bundle.package} value={bundle.package}>
+                          {bundle.module}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label
