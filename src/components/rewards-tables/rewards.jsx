@@ -100,7 +100,10 @@ const RewardsTable = () => {
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
-        setRewards(res.data.data);
+        setRewards(res.data.data.map(item => ({
+          ...item,
+          mobile_no: item.contact?.mobile_no || ""
+        })));
         setIsLoaded(true);
         setLoading(false);
       
@@ -113,6 +116,7 @@ const RewardsTable = () => {
   useEffect(() => {
       getRewards();
   }, [isModalOpen,isModalOpen1,page, org_id]);
+
 
   return (
     <>
