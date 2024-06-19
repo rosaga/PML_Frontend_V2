@@ -78,15 +78,15 @@ const DataUnits = () => {
   
 
   useEffect(() => {
-    async function fetchBalance() {
-      const balanceData = await GetBalance(org_id);
-      if (balanceData) {
-        setBalances(balanceData.data.data);
-      }
-    }
     fetchBalance();
   }, []);
 
+  async function fetchBalance() {
+    const balanceData = await GetBalance(org_id);
+    if (balanceData) {
+      setBalances(balanceData.data.data);
+    }
+  }
   const getRewards = async () => {
     try {
       const res = await GetRecharges(org_id);
@@ -132,34 +132,36 @@ const DataUnits = () => {
             
           </div>
 
-          <div className="grid grid-cols-4 gap-4 p-8">
-            {loading ? (
-              <p>Loading...</p>
-            ) : (
-              balances.map((balance, index) => (
-                <div key={index} className="border-1 shadow-sm rounded-lg p-6 flex flex-col">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">{balance.package} MBs</div>
-                    <div>
-                      <span>
-                        <Image
-                          style={{ color: "#F58426" }}
-                          className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
-                          src={`/images/Icon-${index % 4}.svg`}
-                          blurDataURL="/bluriconloader.png"
-                          placeholder="blur"
-                          alt="Icon"
-                          priority
-                        />
-                      </span>
+          <div className="overflow-x-auto p-8">
+            <div className="flex space-x-4">
+              {loading ? (
+                <p>Loading...</p>
+              ) : (
+                balances.map((balance, index) => (
+                  <div key={index} className="border-[1.5px] shadow-sm rounded-lg p-6 flex-shrink-0 w-60">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="text-gray-500">{balance.module} MBs</div>
+                      <div>
+                        <span>
+                          <Image
+                            style={{ color: "#F58426" }}
+                            className="w-12 h-12 rounded-lg"
+                            width={60}
+                            height={60}
+                            src={`/images/Icon-${index % 4}.svg`}
+                            blurDataURL="/bluriconloader.png"
+                            placeholder="blur"
+                            alt="Icon"
+                            priority
+                          />
+                        </span>
+                      </div>
                     </div>
+                    <div className="text-2xl font-bold">{balance.units} Units</div>
                   </div>
-                  <div className="text-2xl font-bold">{balance.units} Units</div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col">
