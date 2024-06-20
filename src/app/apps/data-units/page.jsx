@@ -64,9 +64,9 @@ const DataUnits = () => {
       renderCell: (params) => {
         const getStatusLabel = (status) => {
           switch (status) {
-            case "TOPUP_APPROVED":
+            case "APPROVED":
               return { label: "Approved", color: "green" };
-            case "TOPUP_SUBMITTED":
+            case "PENDING":
               return { label: "Pending", color: "orange" };
             default:
               return { label: status, color: "black" }; // Default color if needed
@@ -101,6 +101,8 @@ const DataUnits = () => {
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
+
+      console.log('ppppp',res.data.data)
         setRecharges(res.data.data);
         setLoading(false);
         setLoadingData(false);
