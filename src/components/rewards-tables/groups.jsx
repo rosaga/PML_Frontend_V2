@@ -101,7 +101,6 @@ const GroupsTable = () => {
     setGroupID(id);
     
   };
-// console.log('pppppp',groupDetailsOpen)
   return (
     <>
       {isModalOpen && <NewGroupModal closeModal={closeModal} />}
