@@ -69,7 +69,7 @@ const DataUnits = () => {
             case "PENDING":
               return { label: "Pending", color: "orange" };
             default:
-              return { label: status, color: "black" }; // Default color if needed
+              return { label: status, color: "black" }; 
           }
         };
 
