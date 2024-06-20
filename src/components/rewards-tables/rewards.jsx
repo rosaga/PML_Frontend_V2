@@ -11,7 +11,7 @@ import RequestUnitsModal from "../modal/requestUnits";
 import SendDataRewardsModal from "../modal/sendDataReward"
 import SendBatchRewardsModal from "../modal/sendBatchRewards"
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-import { format } from "date-fns";
+import { format,parseISO } from "date-fns";
 import { getToken } from "../../utils/auth";
 import { GetRewards } from "../../app/api/actions/reward/reward"
 
@@ -52,7 +52,16 @@ const RewardsTable = () => {
 
   const columns= [
     { field: "id", headerName: "Request ID", flex: 1 },
-    { field: "created_at", headerName: "Date Created", flex: 1 },
+    { field: "created_at", headerName: "Date Created", flex: 1, 
+    valueFormatter: (params) => {
+      try {
+        const date = parseISO(params);
+        return format(date, "yyyy-MM-dd HH:mm");
+      } catch (error) {
+        return "Invalid Date";
+      }
+    },
+   },
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
     {
       field: 'mobile_no',

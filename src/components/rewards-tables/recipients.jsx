@@ -6,7 +6,7 @@ import PeakButton from "../button/button";
 import PeakSearch from "../search/search";
 import axios from "axios";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import UploadRecipientsModal from "../modal/uploadRecipients";
 import NewContactModal from "../modal/newContact"
 import { getToken } from "@/utils/auth";
@@ -77,7 +77,16 @@ const UploadRecipients = () => {
     // { value: "ilike__last_name", label: "Status" },
   ];
   const columns = [
-    { field: "created_at", headerName: "Date of Onboarding", flex: 1 },
+    { field: "created_at", headerName: "Date of Onboarding", flex: 1,
+    valueFormatter: (params) => {
+      try {
+        const date = parseISO(params);
+        return format(date, "yyyy-MM-dd HH:mm");
+      } catch (error) {
+        return "Invalid Date";
+      }
+    },
+   },
     { field: "mobile_no", headerName: "Phone Number", flex: 1 },
     {
       field: "status",
@@ -111,12 +120,12 @@ const UploadRecipients = () => {
         <p className="mt-4 font-medium text-lg">All Contacts</p>
         <div className="ml-auto flex space-x-4">
           <PeakSearch filterOptions={filterOptions} selectedFilter="" />
-          {/* <PeakButton
+          <PeakButton
             buttonText="Upload CSV File"
             icon={IosShareIcon}
             className="bg-[#E88A17] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
             onClick={openModal}
-          /> */}
+          />
           <PeakButton
             buttonText="New Contact"
             icon={AddIcon}

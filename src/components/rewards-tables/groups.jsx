@@ -7,7 +7,7 @@ import PeakSearch from "../search/search";
 import RequestUnitsModal from "../modal/requestUnits";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import axios from "axios";
-import { format } from "date-fns";
+import { format,parseISO } from "date-fns";
 import NewGroupModal from "../modal/newGroup"
 import { getToken } from "@/utils/auth";
 import { GetGroups } from "@/app/api/actions/group/group";
@@ -71,7 +71,16 @@ const GroupsTable = () => {
     { field: "name", headerName: "Group Name", flex: 1 },
     { field: "contact_count", headerName: "No of Contacts", flex: 1 },
     { field: "description", headerName: "Description", flex: 1 },
-    { field: "created_at", headerName: "Date Created", flex: 1 },
+    { field: "created_at", headerName: "Date Created", flex: 1 ,
+    valueFormatter: (params) => {
+      try {
+        const date = parseISO(params);
+        return format(date, "yyyy-MM-dd HH:mm");
+      } catch (error) {
+        return "Invalid Date";
+      }
+    },
+  },
     {
       field: "action",
       headerName: "Action",

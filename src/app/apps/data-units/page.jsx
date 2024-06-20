@@ -10,6 +10,8 @@ import PeakSearch from "../../../components/search/search";
 import RequestUnitsModal from "../../../components/modal/requestUnits";
 import * as XLSX from 'xlsx';
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
+import { format,parseISO } from "date-fns";
+
 
 const DataUnits = () => {
 
@@ -43,8 +45,16 @@ const DataUnits = () => {
 
   const columns = [
     { field: "id", headerName: "Transaction Reference", flex: 1 },
-    { field: "created_by", headerName: "Created By", flex: 1 },
-    { field: "expires_on", headerName: "End Date", flex: 1 },
+    { field: "created_by", headerName: "Created By", flex: 1, },
+    { field: "expires_on", headerName: "End Date", flex: 1,
+    valueFormatter: (params) => {
+      try {
+        const date = parseISO(params);
+        return format(date, "yyyy-MM-dd HH:mm");
+      } catch (error) {
+        return "Invalid Date";
+      }
+    }, },
     { field: "package", headerName: "Data Bundle", flex: 1 },
     { field: "units", headerName: "Units", flex: 1 },
     {
@@ -74,8 +84,6 @@ const DataUnits = () => {
     setLoadingData(true);
 
   }
-
-  
 
   useEffect(() => {
     fetchBalance();
