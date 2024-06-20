@@ -3,9 +3,13 @@ import apiUrl from "../../utils/apiUtils/apiUrl";
 import { authHeaders } from '../../../api/utils/headers/headers';
 import { groupCreate } from '../group/group'
 
-export async function GetContacts(org_id) {
-    
-    const contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact`;
+export async function GetContacts(org_id,page,pageSize) {
+    let contactsUrl  
+    if (page || pageSize) {
+     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?size=${pageSize}&page=${page}`;
+    }else{
+     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact`;
+    }
   
     try {
       const config = await authHeaders();
