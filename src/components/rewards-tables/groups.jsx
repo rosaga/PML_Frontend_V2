@@ -39,7 +39,7 @@ const GroupsTable = () => {
 
   const getGroups = async () => {
     try {
-      const res = await GetGroups(org_id);
+      const res = await GetGroups(org_id,paginationModel.page, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {

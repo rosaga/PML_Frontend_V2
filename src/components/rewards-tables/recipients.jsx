@@ -29,10 +29,14 @@ const UploadRecipients = () => {
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [contacts, setContacts] = useState([]);
+  const [paginationModel, setPaginationModel] = React.useState({
+    pageSize: 10,
+    page: 0,
+  });
 
   const getContacts = async () => {
     try {
-      const res = await GetContacts(org_id);
+      const res = await GetContacts(org_id, paginationModel.page, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -62,10 +66,7 @@ const UploadRecipients = () => {
     setIsModalOpen(false);
     setIsModalOpen1(false);
   };
-  const [paginationModel, setPaginationModel] = React.useState({
-    pageSize: 10,
-    page: 0,
-  });
+
 
   const filterOptions = [
     // { value: "eq__external_id", label: "" },
