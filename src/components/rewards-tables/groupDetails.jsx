@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../button/button";
@@ -7,19 +7,16 @@ import PeakSearch from "../search/search";
 import RequestUnitsModal from "../modal/requestUnits";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import axios from "axios";
-import { format, parseISO } from "date-fns";
-import NewGroupModal from "../modal/newGroup";
+import { format,parseISO } from "date-fns";
+import NewGroupModal from "../modal/newGroup"
 import { getToken } from "@/utils/auth";
-import { GetGroups } from "@/app/api/actions/group/group";
-import  GroupContactDetails  from "./groupDetails";
+import { GetGroupDetails } from "@/app/api/actions/group/group";
 
-const GroupsTable = () => {
+const GroupContactDetails = ( group_id ) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
-  const [groupID, setGroupID] = useState(null);
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
@@ -32,24 +29,23 @@ const GroupsTable = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
-
-  const [paginationModel, setPaginationModel] = useState({
+  const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
-    page: 0,
+    page: 1,
   });
-
   const [isLoaded, setIsLoaded] = useState(false);
   const [contacts, setContacts] = useState([]);
 
-  const getGroups = async () => {
+  const getDetails = async () => {
     try {
-      const res = await GetGroups(org_id, paginationModel.page, paginationModel.pageSize);
+      const res = await GetGroupDetails(org_id,group_id.groupID,paginationModel.page, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
         setContacts(res.data.data);
         setIsLoaded(true);
         setLoading(false);
+      
       }
     } catch (err) {
       console.log(err);
@@ -57,8 +53,8 @@ const GroupsTable = () => {
   };
 
   useEffect(() => {
-    getGroups();
-  }, [isModalOpen, paginationModel.page, org_id]);
+    getDetails();
+  }, [isModalOpen,page, org_id]);
 
   const filterOptions = [
     { value: "eq__external_id", label: "Transaction Reference" },
@@ -70,21 +66,42 @@ const GroupsTable = () => {
   ];
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "name", headerName: "Group Name", flex: 1 },
-    { field: "contact_count", headerName: "No of Contacts", flex: 1 },
-    { field: "description", headerName: "Description", flex: 1 },
+
+    // { field: "contact_id", headerName: "ID", flex: 1},
+    { field: "created_at", headerName: "Date of Onboarding", flex: 1,
+    valueFormatter: (params) => { 
+      try {
+        const date = parseISO(params);
+        return format(date, "yyyy-MM-dd HH:mm");
+      } catch (error) {
+        return "Invalid Date";
+      }
+    }, },
+    { field: "contact", headerName: "Phone Number", flex: 1,
+    valueFormatter: (params) => {
+      return params.mobile_no;
+
+    },
+    },
     {
-      field: "created_at",
-      headerName: "Date Created",
+      field: "status_id",
+      headerName: "Status",
       flex: 1,
-      valueFormatter: (params) => { 
-        try {
-          const date = parseISO(params);
-          return format(date, "yyyy-MM-dd HH:mm");
-        } catch (error) {
-          return "Invalid Date";
-        }
+      renderCell: (params) => {
+        const getColor = (status) => {
+          switch (status) {
+            case "ACTIVE":
+              return "green";
+            case "INACTIVE":
+              return "grey";
+            default:
+              return "black"; // Default color if needed
+          }
+        };
+
+        return (
+          <span style={{ color: getColor(params.value) }}>{params.value}</span>
+        );
       },
     },
     {
@@ -95,19 +112,9 @@ const GroupsTable = () => {
     },
   ];
 
-  const groupDetails = (id) => {
-
-    setGroupDetailsOpen(true);
-    setGroupID(id);
-    
-  };
-// console.log('pppppp',groupDetailsOpen)
   return (
     <>
       {isModalOpen && <NewGroupModal closeModal={closeModal} />}
-      {groupDetailsOpen ? <GroupContactDetails groupID={groupID} />
-      :
-      <>
       <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Groups</p>
         <div className="ml-auto flex space-x-4">
@@ -135,7 +142,6 @@ const GroupsTable = () => {
             loading={loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
-            onRowClick={(params) => groupDetails(params.row.id)}
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",
@@ -147,12 +153,8 @@ const GroupsTable = () => {
           />
         </div>
       </div>
-      </>
-    }
     </>
-    
-   
   );
 };
 
-export default GroupsTable;
+export default GroupContactDetails;
