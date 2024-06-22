@@ -220,9 +220,7 @@ const Dashboard = () => {
               <p className="m-1 font-semibold text-lg">Summary Tiles</p>
               <div className="flex items-center justify-between">
                 <p className="m-1 text-md">Data Rewards Summary</p>
-                <Button variant="outlined" startIcon={<IosShareIcon />}>
-                  Export
-                </Button>
+
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 p-8">

@@ -1,10 +1,9 @@
-import { getSession } from 'next-auth/react';
+import { getToken } from "../../../../utils/auth"
 
 export async function authHeaders() {
     if (typeof window !== 'undefined') {
       try {
-        const session = await getSession();
-        const token = session.accessToken;
+        let token = getToken();
         const authToken = `Bearer ${token}`;
         return {
           headers: {
@@ -15,7 +14,6 @@ export async function authHeaders() {
         };
       } catch (error) {
         console.error('Error fetching session:', error);
-        // Handle error case: return headers without Authorization if token retrieval fails
         return {
           headers: {
             Accept: 'application/json',
