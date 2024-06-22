@@ -3,28 +3,100 @@ import React, { useState } from "react";
 import { Card, CardContent, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import GoogleButton from "react-google-button";
+import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import apiUrl from "../api/utils/apiUtils/apiUrl"
+import "react-toastify/dist/ReactToastify.css";
 import "../../app/globals.css";
+
 
 const SignUp = () => {
   const router = useRouter();
 
-  const handleButtonClick = () => {
-    const keycloakUrl = `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/registrations`;
-    const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID;
-    const redirectUri = "http://localhost:3000/api/auth/callback";
+  const [firstname, setFirstName] = useState("");
+  const [lastname, setLastName] = useState("");
+  const [organization, setOrganization] = useState(""); // Added state for organization
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
-    const registrationUrl = `${keycloakUrl}?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    window.location.href = registrationUrl;
+  const validateEmail = (email) => {
+    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return re.test(String(email).toLowerCase());
   };
 
-  
+  const validateForm = () => {
+    const newErrors = {};
 
+    if (!firstname) newErrors.firstname = "First name is required";
+    if (!lastname) newErrors.lastname = "Last name is required";
+    if (!organization) newErrors.organization = "Organization name is required";
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!validateEmail(email)) {
+      newErrors.email = "Invalid email address";
+    }
+    if (!password) newErrors.password = "Password is required";
+    if (!agreeToTerms) newErrors.agreeToTerms = "Please agree to terms & conditions";
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Confirm Password is required";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+     if (!validateForm()) {
+      return;
+    }
+    setIsLoading(true)
+    const signupPayload = {
+      firstname: firstname,
+      lastName: lastname,
+      email: email,
+      credentials: [
+          {
+              type: "password",
+              value: password,
+              temporary: false
+          }
+      ],
+      attributes: {
+          ACCOUNT: [
+              organization
+          ]
+      }
+  }
+
+    try {
+      const res = await axios.post(apiUrl.SIGN_UP, signupPayload);
+      if (res.status === 200) {
+        setIsLoading(false)
+        toast.success("LOGIN SUCCESS")
+      } else {
+        setIsLoading(false)
+        toast.error("SIGN UP FAILED")
+      }
+    } catch (error) {
+      setIsLoading(false)
+      toast.error("SIGN UP FAILED")
+    }
+  };
 
   const handleLoginClick = () => {
     router.push("/signin");
   };
 
   return (
+    <>
+    <ToastContainer />
     <div
       className="relative h-screen w-full flex items-center"
       style={{
@@ -35,8 +107,6 @@ const SignUp = () => {
     >
       <div className="w-2/5 h-full"></div> {/* Left half, empty */}
       <div className="w-3/5 h-full flex items-center justify-center">
-        {" "}
-        {/* Right half */}
         <Card
           sx={{
             borderRadius: "lg",
@@ -55,56 +125,76 @@ const SignUp = () => {
                 <input
                   type="text"
                   placeholder="Your First Name *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-5 mt-2 rounded-md border-white"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 mt-2 rounded-md border-white"
+                  value={firstname}
+                  onChange={(e) => setFirstName(e.target.value)}
                 />
+                {errors.firstname && <p className="text-red-500 text-xs mb-4">{errors.firstname}</p>}
 
                 <input
                   type="text"
                   placeholder="Your Last Name *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={lastname}
+                  onChange={(e) => setLastName(e.target.value)}
                 />
+                {errors.lastname && <p className="text-red-500 text-xs mb-4">{errors.lastname}</p>}
 
                 <input
                   type="text"
                   placeholder="Your Organization Name *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
                 />
+                {errors.organization && <p className="text-red-500 text-xs mb-4">{errors.organization}</p>}
 
                 <input
                   type="email"
                   placeholder="Your Email *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
+                {errors.email && <p className="text-red-500 text-xs mb-4">{errors.email}</p>}
 
                 <input
                   type="password"
                   placeholder="Your Password *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
+                {errors.password && <p className="text-red-500 text-xs mb-4">{errors.password}</p>}
 
                 <input
                   type="password"
                   placeholder="Confirm Password *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
+                {errors.confirmPassword && <p className="text-red-500 text-xs mb-4">{errors.confirmPassword}</p>}
               </div>
 
               <div className="flex items-center mb-4 mt-2 justify-center">
-                <input type="checkbox" className="mr-2" />
+                <input type="checkbox" className="mr-2" checked={agreeToTerms}
+                  onChange={() => setAgreeToTerms(!agreeToTerms)}/>
                 <p className="text-sm font-md">
                   Agree to our terms & conditions ?
                 </p>
+                
               </div>
+              {errors.agreeToTerms && <p className="text-red-500 text-xs mb-4">{errors.agreeToTerms}</p>}
               <button
                 className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md"
-                onClick={handleButtonClick}
+                onClick={handleSignup}
               >
-                {" "}
-                Sign-up{" "}
+                {isLoading ? "Please wait..." : " Sign-Up"}
               </button>
               <p className="flex text-sm font-md justify-center mt-4">
                 Already have an account?{" "}
-                <span className="text-[#E88A17] cursor-pointer ml-2" onClick={handleLoginClick}>{" "}Login</span>
+                <span className="text-[#E88A17] cursor-pointer ml-2" onClick={handleLoginClick}> Login</span>
               </p>
               <p className="flex justify-center items-center m-1 relative">
                 <span className="line"></span>
@@ -126,6 +216,7 @@ const SignUp = () => {
         </Card>
       </div>
     </div>
+    </>
   );
 };
 

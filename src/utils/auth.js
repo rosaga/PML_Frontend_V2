@@ -2,8 +2,8 @@ export const getToken = () => {
   const token = localStorage.getItem('token');
   const expirationTime = localStorage.getItem('tokenExpiration');
   if (!token || !expirationTime) {
-    // alert('Session Expired, Please login again')
-    // window.location.href = '/signin';
+    alert('Session Expired, Please login again')
+    window.location.href = '/signin';
     return null;
   }
 
@@ -17,12 +17,13 @@ export const getToken = () => {
   return token;
 };
 
-export const setToken = (token: string) => {
+export const setToken = (token) => {
   const expirationTime = Date.now() + 3600000;
   localStorage.setItem('token', token);
   localStorage.setItem('tokenExpiration', expirationTime.toString());
 };
-export const setOrganisation = (orgId: string,orgName:string) => {
+
+export const setOrganisation = (orgId,orgName) => {
   localStorage.setItem('orgId', orgId);
   localStorage.setItem('orgName', orgName);
 }
@@ -32,4 +33,5 @@ export const clearToken = () => {
   localStorage.removeItem('tokenExpiration');
   localStorage.removeItem('orgId');
   localStorage.removeItem('orgName');
+  localStorage.removeItem('selectedAccountId');
 };

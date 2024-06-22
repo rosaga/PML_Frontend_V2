@@ -5,12 +5,13 @@ import React from "react";
 import Profile from "../profile/profile"
 import Image from "next/image";
 import { signOut } from "next-auth/react";
+import { clearToken } from '@/utils/auth';
 
 const Sidebar = () => {
 
   const handleSignOut = () => {
     if (typeof window !== 'undefined') {
-    localStorage.removeItem('selectedAccountId');
+    clearToken()
     }
     signOut({ callbackUrl: '/signin' });
   };

@@ -8,7 +8,6 @@ import {GetAccounts} from '../api/actions/accounts/accounts'
 import '../../app/globals.css';
 
 const UserOrgs = () => {
-  const { data: session, status } = useSession();
   const [isLoaded, setIsLoaded] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const router = useRouter();
@@ -28,17 +27,16 @@ const UserOrgs = () => {
   };
 
   useEffect(() => {
-    if (session) {
       getAccounts();
-    }
-  }, [session]);
+  }, []);
 
   const handleAccountClick = (account) => {
-    if (typeof window !== 'undefined') {
-    localStorage.removeItem('selectedAccountId');
-    localStorage.setItem('selectedAccountId', account.id);
-    }
+    
     router.push("/apps/dashboard");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('selectedAccountId');
+      localStorage.setItem('selectedAccountId', account.id);
+      }
   };
 
   return (
