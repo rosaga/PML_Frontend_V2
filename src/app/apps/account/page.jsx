@@ -3,16 +3,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-data-grid";
-import Button from "@mui/material/Button";
-import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from '@mui/icons-material/Add';
 import PeakButton from "../../../components/button/button";
-import PeakSearch from "../../../components/search/search"
-import InviteUserModal from "../../../components/modal/inviteUser"
 import apiUrl from "../../api/utils/apiUtils/apiUrl";
 import { getToken } from "@/utils/auth";
+import { GetAccounts } from "@/app/api/actions/accounts/accounts";
 
-const Users = () => {
+const Accounts = () => {
   let org_id = null;
   let token = null;
   if (typeof window !== 'undefined') {
@@ -21,7 +18,7 @@ const Users = () => {
   }
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [rows, setRows] = useState<GridRowsProp>([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const openModal = () => {
@@ -40,39 +37,28 @@ const Users = () => {
     
   ];
 
-  useEffect(() => {
-    fetchUsers();
-  }, [isModalOpen]);
-
-  const fetchUsers = async () => {
+  const getAccounts = async () => {
     try {
-      const usersResponse = await axios.get(`${apiUrl.USERS}/${org_id}/users?page=1&size=20&orderby=id DESC`, {headers: {
-        Accept: 'application/json',
-        'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        }
-      });
-      const users = usersResponse.data.data.map((user: any) => ({
-        id: user.id, 
-        first_name: user.firstName,
-        last_name: user.lastName,
-        email: user.email,
-        verified: user.emailVerified
-      }));
-
-      setRows(users);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching users data:", error);
-      setLoading(false);
+      const res = await GetAccounts();
+      if (res.errors) {
+        setLoading
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        setLoading(false);
+        setRows(res.data);
+      }
+    } catch (err) {
+      console.log(err);
     }
   };
 
-  const columns: GridColDef[] = [
-    { field: "first_name", headerName: "First Name", flex: 1 },
-    { field: "last_name", headerName: "Last Name", flex: 1 },
-    { field: "email", headerName: "Email", flex: 1 },
-    { field: "verified", headerName: "Verified", flex: 1 },
+  useEffect(() => {
+      getAccounts();
+  }, []);
+
+  const columns = [
+    { field: "id", headerName: "ACCOUNT ID", flex: 1 },
+    { field: "name", headerName: "ACCOUNT NAME", flex: 1 },
   ];
 
   return (
@@ -81,15 +67,15 @@ const Users = () => {
         <div className="flex flex-col">
           <div className="p-4">
             <div className="flex items-center justify-between">
-              <p className="mt-4 font-medium text-lg">Users</p>
+              <p className="mt-4 font-medium text-lg">Accounts</p>
               <div className="ml-auto flex space-x-4">
-                <PeakSearch filterOptions={filterOptions} selectedFilter="" />
                 <PeakButton
-                  buttonText="Invite User"
+                  buttonText="Add Account"
                   icon={AddIcon}
-                  className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
+                  className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
                   onClick={openModal}
                 />
+
               </div>
             </div>
 
@@ -118,9 +104,9 @@ const Users = () => {
           </div>
         </div>
       </div>
-      {isModalOpen && <InviteUserModal closeModal={closeModal} />}
+      {/* {isModalOpen && <InviteUserModal closeModal={closeModal} />} */}
     </div>
   );
 };
 
-export default Users;
+export default Accounts;
