@@ -119,11 +119,12 @@ const RequestUnitsModal = ({ closeModal }) => {
                       required
                     >
                       <option value="">Select Bundle</option>
-                      {bundles.map((bundle) => (
-                        <option key={bundle.package} value={bundle.package}>
-                          {bundle.module}
-                        </option>
-                      ))}
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="200">200</option>
+                      <option value="1000">1000</option>
                     </select>
                   </div>
                   <div>
