@@ -173,7 +173,7 @@ export async function GetRewards(org_id) {
 
   export async function GetRecharges(org_id) {
     
-    const rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}`;
+    const rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=1&size=20&orderby=id DESC`;
   
     try {
       const config = await authHeaders();
