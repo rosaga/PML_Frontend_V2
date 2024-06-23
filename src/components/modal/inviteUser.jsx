@@ -1,24 +1,98 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import apiUrl from "../../app/api/utils/apiUtils/apiUrl";
+import "react-toastify/dist/ReactToastify.css";
+import { getToken } from "@/utils/auth";
 
 const InviteUserModal = ({ closeModal }) => {
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-          if (event.target.id === "authentication-modal") {
-            closeModal();
+  let org_id = null;
+  let token = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+    token = getToken();
+  }
+
+  const [firstname, setFirstName] = useState("");
+  const [lastname, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateEmail = (email) => {
+    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!firstname) newErrors.firstname = "First name is required";
+    if (!lastname) newErrors.lastname = "Last name is required";
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!validateEmail(email)) {
+      newErrors.email = "Invalid email address";
+    }
+    if (!password) newErrors.password = "Password is required";
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Confirm Password is required";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+     if (!validateForm()) {
+      return;
+    }
+    setIsLoading(true)
+
+    const invitePayload = {
+      firstname: firstname,
+      lastName: lastname,
+      email: email,
+      credentials: [
+          {
+              type: "password",
+              value: password,
+              temporary: false
           }
-        };
-    
-        window.addEventListener("click", handleClickOutside);
-    
-        return () => {
-          window.removeEventListener("click", handleClickOutside);
-        };
-      }, [closeModal]);
+      ]
+  }
+
+    try {
+      const res = await axios.post(`${apiUrl.USERS}/${org_id}/users`, invitePayload, {headers: {
+        Accept: 'application/json',
+        'content-type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        }
+      });
+      if (res.status === 202) {
+        setIsLoading(false)
+        toast.success("INVITE USER SUCCESS")
+      } else {
+        setIsLoading(false)
+        toast.error("INVITE USER FAILED")
+      }
+    } catch (error) {
+      setIsLoading(false)
+      toast.error("INVITE USER FAILED")
+    }
+  };
 
       
   return (
+    <>
+    <ToastContainer />
     <div
       id="authentication-modal"
       tabIndex="-1"
@@ -64,13 +138,13 @@ const InviteUserModal = ({ closeModal }) => {
                   First Name
                 </label>
                 <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  placeholder="robina"
-                  required
+                  type="text"
+                  placeholder="Your First Name *"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 mt-2 rounded-md border-white"
+                  value={firstname}
+                  onChange={(e) => setFirstName(e.target.value)}
                 />
+                {errors.firstname && <p className="text-red-500 text-xs mb-4">{errors.firstname}</p>}
               </div>
               <div>
                 <label
@@ -80,13 +154,13 @@ const InviteUserModal = ({ closeModal }) => {
                   Last Name
                 </label>
                 <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  placeholder="rasanga"
-                  required
+                  type="text"
+                  placeholder="Your Last Name *"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={lastname}
+                  onChange={(e) => setLastName(e.target.value)}
                 />
+                {errors.lastname && <p className="text-red-500 text-xs mb-4">{errors.lastname}</p>}
               </div>
               <div className="mb-4">
                 <label
@@ -97,27 +171,61 @@ const InviteUserModal = ({ closeModal }) => {
                 </label>
                 <input
                   type="email"
-                  name="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  placeholder="robina@gmail.com"
-                  required
+                  placeholder="Your Email *"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
+                {errors.email && <p className="text-red-500 text-xs mb-4">{errors.email}</p>}
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="email"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="Your Password *"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                {errors.password && <p className="text-red-500 text-xs mb-4">{errors.password}</p>}
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="email"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="Your Password *"
+                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                {errors.confirmPassword && <p className="text-red-500 text-xs mb-4">{errors.confirmPassword}</p>}
               </div>
               
               <div className="flex space-x-2">
                   <button
-                    type="submit"
+                    type="button"
                     className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    onClick={closeModal}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                    onClick={closeModal}
+                    onClick={handleInvite}
                   >
-                    Invite
+                    {isLoading ? "Inviting..." : "Invite"}
                   </button>
                 </div>
 
@@ -126,6 +234,7 @@ const InviteUserModal = ({ closeModal }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
