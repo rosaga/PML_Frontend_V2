@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Box from "@mui/material/Box";
-import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-data-grid";
+import { DataGrid, GridRowsProp, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from '@mui/icons-material/Add';
@@ -11,6 +11,7 @@ import PeakSearch from "../../../components/search/search"
 import InviteUserModal from "../../../components/modal/inviteUser"
 import apiUrl from "../../api/utils/apiUtils/apiUrl";
 import { getToken } from "@/utils/auth";
+import CustomToolbar from "../../../components/toolbar/toobar"
 
 const Users = () => {
   let org_id = null;
@@ -110,6 +111,7 @@ const Users = () => {
                         border: "none",
                       },
                     }}
+                    slots={{ toolbar: GridToolbar }}
                   />
                 )}
 

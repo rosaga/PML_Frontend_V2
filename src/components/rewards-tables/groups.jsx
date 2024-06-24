@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridRowsProp, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../button/button";
@@ -117,12 +117,12 @@ const GroupsTable = () => {
             className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
             onClick={openModal}
           />
-          <PeakButton
+          {/* <PeakButton
             buttonText="Export"
             icon={IosShareIcon}
             className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
             onClick={openModal}
-          />
+          /> */}
         </div>
       </div>
 
@@ -143,6 +143,7 @@ const GroupsTable = () => {
                 border: "none",
               },
             }}
+            slots={{ toolbar: GridToolbar }}
           />
         </div>
       </div>
