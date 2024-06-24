@@ -33,17 +33,33 @@ const UploadRecipientsModal = ({ closeModal }) => {
     }
     return csvRows.join("\n");
   }
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-          if (event.target.id === "authentication-modal") {
-            closeModal();
-          }
-        };
-        window.addEventListener("click", handleClickOutside);
-        return () => {
-          window.removeEventListener("click", handleClickOutside);
-        };
-      }, [closeModal]);
+
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+
+  //   if (!contactsFile) {
+  //     console.log('Please select a file and a group');
+  //     return;
+  //   }
+
+  //   const newRecipientsPayload = {
+  //     contacts: contactsFile,
+  //     group_id: selectedBundle,
+  //   };
+
+  //   const res = batchReward({org_id,newRecipientsPayload}).then((res) => {
+  //     if (res.status === 200) {
+  //       setSuccessMessage(`The data has been sent`);
+  //       setErrorMessage(""); 
+  //     } else {
+  //       setErrorMessage("Failed to send data. Please try again.");
+  //     }
+  //   });
+
+  //   return res;
+  // };
+
+
 
       
   return (

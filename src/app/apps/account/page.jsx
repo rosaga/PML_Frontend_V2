@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Box from "@mui/material/Box";
-import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel } from "@mui/x-data-grid";
+import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from '@mui/icons-material/Add';
 import PeakButton from "../../../components/button/button";
 import apiUrl from "../../api/utils/apiUtils/apiUrl";
@@ -96,6 +96,7 @@ const Accounts = () => {
                         border: "none",
                       },
                     }}
+                    slots={{ toolbar: GridToolbar }}
                   />
                 )}
 
