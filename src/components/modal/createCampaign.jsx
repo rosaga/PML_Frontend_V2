@@ -190,8 +190,8 @@ const CreateCampaignModal = ({ closeModal }) => {
                       >
                         <option value="">Select Bundle</option>
                         {bundles.map((bundle) => (
-                          <option key={bundle.units} value={bundle.units}>
-                            {bundle.units} MB
+                          <option key={bundle.module} value={bundle.module}>
+                            {bundle.module} MB
                           </option>
                         ))}
                       </select>
