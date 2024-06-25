@@ -89,7 +89,7 @@ const DataUnits = () => {
         flex: 1,
         valueFormatter: (params) => {
           try {
-            const date = parseISO(params.value);
+            const date = parseISO(params);
             return format(date, "yyyy-MM-dd HH:mm");
           } catch (error) {
             return "Invalid Date";
