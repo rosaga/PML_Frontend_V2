@@ -66,7 +66,6 @@ const VouchersTable = () => {
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
-        console.log('row',res)
         setRows(res.data.data);
         setLoading(false);
       }
