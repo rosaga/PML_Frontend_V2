@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
@@ -10,10 +10,24 @@ import InviteUserModal from "../../components/modal/inviteUser"
 import AddIcon from "@mui/icons-material/Add";
 import PeakSearch from "../search/search";
 import GenerateVoucherModal from "../modal/generateVoucher"
+import { GetVouchers } from "@/app/api/actions/vouchers/vouchers";
+import { format,parseISO } from "date-fns";
+
 
 const VouchersTable = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [paginationModel, setPaginationModel] = React.useState({
+    pageSize: 10,
+    page: 1,
+  });
+  const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(0); // Pagination state
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+  const [loading,setLoading] = useState(true);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -29,80 +43,41 @@ const VouchersTable = () => {
     { value: 'ilike__last_name', label: 'Last Name' },
 ];
 
-  const rows= [
-    {
-      id: 1,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Ida Rasanga",
-      no_of_units: "20",
-    },
-    {
-      id: 2,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Marianne Mwangi",
-      no_of_units: "20",
-    },
-    {
-      id: 3,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Linet Atieno",
-      no_of_units: "20",
-    },
-    {
-      id: 4,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Robina Rasanga",
-      no_of_units: "20",
-    },
-    {
-      id: 5,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Ida Rasanga",
-      no_of_units: "20",
-    },
-    {
-      id: 6,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Marianne Mwangi",
-      no_of_units: "20",
-    },
-    {
-      id: 7,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Linet Atieno",
-      no_of_units: "20",
-    },
-    {
-      id: 8,
-      voucher_id: "001",
-      date_created: "2024-05-19",
-      bundle_type: "10MB",
-      created_by: "Robina Rasanga",
-      no_of_units: "20",
-    },
-  ];
+  
 
   const columns = [
-    { field: "voucher_id", headerName: "Voucher ID", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
+    { field: "id", headerName: "Voucher ID", flex: 1 },
+    { field: "created_at", headerName: "Date Created", flex: 1 ,
+    valueFormatter: (params) => { 
+      try {
+        const date = parseISO(params);
+        return format(date, "yyyy-MM-dd HH:mm");
+      } catch (error) {
+        return "Invalid Date";
+      }
+    },},
     { field: "created_by", headerName: "Created by", flex: 1 },
-    { field: "no_of_units", headerName: "No of Units", flex: 1 },
-    { field: "bundle_type", headerName: "Bundle Type", flex: 1 },
+    { field: "total", headerName: "No of Units", flex: 1 },
+    { field: "bundle_size", headerName: "Bundle Type", flex: 1 },
   ];
+  const getVouchers = async () => {
+    try {
+      const res = await GetVouchers(org_id, paginationModel.page, paginationModel.pageSize);
+      if (res.errors) {
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        console.log('row',res)
+        setRows(res.data.data);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    getVouchers();
+}, []);
 
   return (
     <>
@@ -131,6 +106,9 @@ const VouchersTable = () => {
           <DataGrid
             rows={rows}
             columns={columns}
+            loading={loading}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",

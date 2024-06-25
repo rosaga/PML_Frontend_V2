@@ -41,19 +41,19 @@ export async function CreateVouchers(formValues) {
     }
   }
 
-  export async function GetCampaigns(org_id,campaing_id,page,pageSize) {
+  export async function GetVouchers(org_id,page,pageSize) {
 
-    let campaignUrl
+    let voucherUrl
     if (page || pageSize) {
-      campaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/campaign?size=${pageSize}&page=${page}`;
+      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?size=${pageSize}&page=${page}`;
     }else{
-      campaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/campaign`;
+      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher`;
     }
   
     try {
       const config = await authHeaders();
   
-      const res = await axios.get(campaignUrl, config);
+      const res = await axios.get(voucherUrl, config);
   
       if (res.data && res.status === 200) {
         console.log("THE RESPONSE IS !!!!!!!", res);
