@@ -1,8 +1,29 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { GetBalance } from "@/app/api/actions/reward/reward";
+import { CreateVouchers } from "@/app/api/actions/vouchers/vouchers";
+
 
 const GenerateVoucherModal = ({ closeModal }) => {
+  const [bundles, setBundles] = useState([]);
+  const [selectedBundle, setSelectedBundle] = useState("");
+  const [voucherNumber, setVoucherNumber] = useState("");
+  const { v4: uuidv4 } = require('uuid');
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
+
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+  async function getBundles() {
+    const balanceData = await GetBalance(org_id);
+    if (balanceData) {
+      setBundles(balanceData.data.data);
+    }
+    
+  }
     useEffect(() => {
         const handleClickOutside = (event) => {
           if (event.target.id === "authentication-modal") {
@@ -17,7 +38,32 @@ const GenerateVoucherModal = ({ closeModal }) => {
         };
       }, [closeModal]);
 
-      
+    
+      useEffect(() => {
+        getBundles()
+      }, []);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+    
+        const newReward = {
+          org_id: org_id,
+          total: parseInt(voucherNumber) ,
+          request_id: uuidv4(),
+          bundle_size: selectedBundle
+        };
+    
+        const res = CreateVouchers(newReward).then((res) => {
+          if (res.status === 201) {
+            setSuccessMessage(`The Voucher has been created`);
+            setErrorMessage(""); 
+          } else {
+            setErrorMessage("Failed to create Vouchers. Please try again.");
+          }
+        });
+    
+        return res;
+      }; 
   return (
     <div
       id="authentication-modal"
@@ -34,7 +80,27 @@ const GenerateVoucherModal = ({ closeModal }) => {
 
           </div>
           <div className="p-4 md:p-5">
-            <form className="space-y-2" action="#">
+          {successMessage ? (
+              <div className="p-4 text-center">
+                <div className="mb-4 text-2xl font-semibold text-green-500">
+                  Success!
+                </div>
+                <div className="mb-4 text-gray-900 dark:text-white">
+                  {successMessage}
+                </div>
+                <button
+                  onClick={() => {
+                    setSuccessMessage("");
+                    closeModal();
+                  }}
+                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  OK
+                </button>
+              </div>
+            ) : (
+              <>
+            <form className="space-y-2" onSubmit={handleSubmit}>
             <div>
                 <label
                   htmlFor="email"
@@ -43,29 +109,39 @@ const GenerateVoucherModal = ({ closeModal }) => {
                   Number of vouchers to generate
                 </label>
                 <input
-                  type="email"
-                  name="email"
-                  id="email"
+                  type="text"
+                  name="text"
+                  id="text"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   placeholder="200"
+                  value={voucherNumber}
+                  onChange={(e) => setVoucherNumber(e.target.value)}
                   required
                 />
               </div>
               <div>
                 <label
-                  htmlFor="email"
+                  htmlFor="bundle"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
                   Bundle Amount
                 </label>
-                <input
-                  type="text"
-                  name="vouchers"
-                  id="vouchers"
+                <select
+                  name="bundle"
+                  id="bundle"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  placeholder="10MB"
+                  value={selectedBundle}
+                  onChange={(e) => setSelectedBundle(e.target.value)}
                   required
-                />
+                >
+                  <option value="">Select Bundle</option>
+                  {bundles.map((bundle) => (
+                    <option key={bundle.package} value={bundle.package}>
+                      {bundle.module}
+                    </option>
+                  ))}
+                </select>
+
               </div>
               
               <div className="flex space-x-2">
@@ -78,14 +154,17 @@ const GenerateVoucherModal = ({ closeModal }) => {
                   <button
                     type="button"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                    onClick={closeModal}
+                    onClick={handleSubmit}
                   >
                     Submit
                   </button>
                 </div>
 
             </form>
+            </>
+            )}
           </div>
+          
         </div>
       </div>
     </div>
