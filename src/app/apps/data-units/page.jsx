@@ -11,13 +11,20 @@ import RequestUnitsModal from "../../../components/modal/requestUnits";
 import * as XLSX from 'xlsx';
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
 import { format,parseISO } from "date-fns";
+import { getToken } from "@/utils/auth";
+import { hasRole } from "../../../utils/decodeToken"
+import apiUrl from "../../api/utils/apiUtils/apiUrl"
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 
 const DataUnits = () => {
 
   let org_id = null;
+  let token = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
+    token = getToken();
   }
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,6 +32,9 @@ const DataUnits = () => {
   const [recharges, setRecharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
+  const [isApproved, setIsApproved] = useState(false);
+
+  const [columns, setColumns] = useState([]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -43,42 +53,93 @@ const DataUnits = () => {
     { value: "ilike__last_name", label: "Status" },
   ];
 
-  const columns = [
-    { field: "id", headerName: "Transaction Reference", flex: 1 },
-    { field: "created_by", headerName: "Created By", flex: 1, },
-    { field: "expires_on", headerName: "End Date", flex: 1,
-    valueFormatter: (params) => {
-      try {
-        const date = parseISO(params);
-        return format(date, "yyyy-MM-dd HH:mm");
-      } catch (error) {
-        return "Invalid Date";
+  const handleApprove = async (id) => {
+    const approvalUrl = `https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2/admin/recharge/${id}`;
+    try {
+      const response = await axios.put(approvalUrl, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+  
+      if (response.status === 202) {
+        toast.success("APPROVE SUCCESS!!!");
+        setIsApproved(true);
+      } else {
+        toast.error("APPROVE FAILED");
+        setIsApproved(true);
       }
-    }, },
-    { field: "package", headerName: "Data Bundle", flex: 1 },
-    { field: "units", headerName: "Units", flex: 1 },
-    {
-      field: "status",
-      headerName: "Status",
-      flex: 1,
-      renderCell: (params) => {
-        const getStatusLabel = (status) => {
-          switch (status) {
-            case "APPROVED":
-              return { label: "Approved", color: "green" };
-            case "PENDING":
-              return { label: "Pending", color: "orange" };
-            default:
-              return { label: status, color: "black" }; 
+      console.log('Transaction approved:', response.data);
+    } catch (error) {
+      toast.error("APPROVE FAILED");
+      setIsApproved(true);
+      console.error('Error approving transaction:', error);
+    }
+  };
+
+ 
+
+  useEffect(() => {
+    const baseColumns = [
+      { field: "id", headerName: "Transaction Reference", flex: 1 },
+      { field: "created_by", headerName: "Created By", flex: 1 },
+      {
+        field: "expires_on",
+        headerName: "End Date",
+        flex: 1,
+        valueFormatter: (params) => {
+          try {
+            const date = parseISO(params.value);
+            return format(date, "yyyy-MM-dd HH:mm");
+          } catch (error) {
+            return "Invalid Date";
           }
-        };
-
-        const statusInfo = getStatusLabel(params.value);
-
-        return <span style={{ color: statusInfo.color }}>{statusInfo.label}</span>;
+        },
       },
-    },
-  ];
+      { field: "package", headerName: "Data Bundle", flex: 1 },
+      { field: "units", headerName: "Units", flex: 1 },
+      {
+        field: "status",
+        headerName: "Status",
+        flex: 1,
+        renderCell: (params) => {
+          const getStatusLabel = (status) => {
+            switch (status) {
+              case "APPROVED":
+                return { label: "Approved", color: "green" };
+              case "PENDING":
+                return { label: "Pending", color: "orange" };
+              default:
+                return { label: status, color: "black" }; 
+            }
+          };
+
+          const statusInfo = getStatusLabel(params.value);
+
+          return <span style={{ color: statusInfo.color }}>{statusInfo.label}</span>;
+        },
+      },
+    ];
+
+    if (hasRole(token, 'SuperAdmin')) {
+      baseColumns.push({
+        field: "approve",
+        headerName: "Review",
+        flex: 1,
+        renderCell: (params) => {
+          if (params.row.status === 'PENDING') {
+            return <button className="bg-green-400 text-white border-1 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.id)}>Approve</button>;
+          }else{
+            return <button className="bg-gray-100 text-gray-600 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.id)}>Approved</button>;
+          }
+          return null;
+        },
+      });
+    }
+
+    setColumns(baseColumns);
+  }, [token]);
+
   const refreshPage = () => {
     setIsModalOpen(false);
     setLoadingData(true);
@@ -95,7 +156,7 @@ const DataUnits = () => {
       setBalances(balanceData.data.data);
     }
   }
-  const getRewards = async () => {
+  const getRecharges = async () => {
     try {
       const res = await GetRecharges(org_id);
       if (res.errors) {
@@ -114,26 +175,12 @@ const DataUnits = () => {
   };
 
   useEffect(() => {
-      getRewards();
-  }, [isModalOpen, org_id]);
-
-
-  const exportToExcel = () => {
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(rechargeData);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Units");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
-    const excelBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-    const url = URL.createObjectURL(excelBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "data_units.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+      getRecharges();
+  }, [isModalOpen, org_id, isApproved]);
 
   return (
+    <>
+    <ToastContainer />
     <div className="p-4 sm:ml-64 h-screen">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
         <div className="flex flex-col h-full">
@@ -142,7 +189,7 @@ const DataUnits = () => {
             
           </div>
 
-          <div className="overflow-x-auto p-8">
+          <div className="p-2">
             <div className="flex space-x-4">
               {loading ? (
                 <p>Loading...</p>
@@ -186,6 +233,7 @@ const DataUnits = () => {
                     className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
                     onClick={openModal}
                   />
+     
                   {/* <PeakButton
                     buttonText="Export"
                     icon={IosShareIcon}
@@ -219,6 +267,7 @@ const DataUnits = () => {
       </div>
       {isModalOpen && <RequestUnitsModal closeModal={refreshPage} />}
     </div>
+    </>
   );
 };
 
