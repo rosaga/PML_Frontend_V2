@@ -7,12 +7,13 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import PeakButton from "../button/button";
 import AddIcon from "@mui/icons-material/Add";
 import PeakSearch from "../search/search";
-import { format } from "date-fns";
+import { format,parseISO } from "date-fns";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
 import CreateCampaignModal from "../modal/createCampaign"
 import CampaignDetails from "./campaignDetails";
 import { getToken } from "@/utils/auth";
+import { GetCampaigns } from "@/app/api/actions/campaigns/campaigns";
 
 const CampaignsTable = () => {
 
@@ -22,11 +23,15 @@ const CampaignsTable = () => {
     const [loading, setLoading] = useState(true);
     const [openCampaignDetails, setOpenCampaignDetails] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
-    let token = getToken();
+    let org_id = null;
+    if (typeof window !== 'undefined') {
+      org_id = localStorage.getItem('selectedAccountId');
+    }
 
   const openModal = () => {
     setIsModalOpen(true);
   };
+ 
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -45,13 +50,22 @@ const CampaignsTable = () => {
 
   const columns= [
     { field: "id", headerName: "ID", flex: 1 },
-    { field: "campaign", headerName: "Campaign Name", flex: 1 },
-    { field: "created_date", headerName: "Date Created", flex: 1 },
-    { field: "group", headerName: "Group Name", flex: 1 },
-    { field: "owner", headerName: "Owner", flex: 1 },
-    { field: "contact_count", headerName: "Contact Counts", flex: 1 },
+    { field: "name", headerName: "Campaign Name", flex: 1 },
+    { field: "created_at", headerName: "Date Created", flex: 1 ,
+    valueFormatter: (params) => { 
+      try {
+        const date = parseISO(params);
+        return format(date, "yyyy-MM-dd HH:mm");
+      } catch (error) {
+        return "Invalid Date";
+      }
+    },
+  },
+    { field: "group_name", headerName: "Group Name", flex: 1 },
+    { field: "created_by", headerName: "Owner", flex: 1 },
+    { field: "contacts_count", headerName: "Contact Counts", flex: 1 },
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
-    { field: "bundle_type", headerName: "Data Bundle Type", flex: 1 },
+    { field: "bundle_size", headerName: "Data Bundle Type", flex: 1 },
 
   ];
   const [paginationModel, setPaginationModel] = React.useState({
@@ -60,34 +74,22 @@ const CampaignsTable = () => {
   });
 
 
-  const fetchData = async () => {
-    setLoading(true);
+  const getCampaigns = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/campaign/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      const transformedData = response.data.map((item) => ({
-        id: item.id,
-        created_date: format(new Date(item.createdat), "dd-MM-yyyy, h:mm a"),
-        campaign: item.name,
-        group: item.group_name,
-        owner: item.owner,
-        contact_count: item.contacts,
-        bundle_amount: '', //update api to have total bundle amount per campaign
-        bundle_type: item.bundle, 
-      }));
-      setData(transformedData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+      const res = await GetCampaigns(org_id, paginationModel.page, paginationModel.pageSize);
+      if (res.errors) {
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        setLoading(false);
+        setData(res.data.data);
+      }
+    } catch (err) {
+      console.log(err);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    getCampaigns();
   }, [page]);
 
   const handleRowClick = (params) => {
