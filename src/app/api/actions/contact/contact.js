@@ -102,7 +102,7 @@ export async function GetContacts(org_id,page,pageSize) {
   
       const formData = new FormData();
       formData.append("contacts", selectedFile);
-      formData.append("groupId", groupId);
+      formData.append("group_id", groupId);
   
       return axios.post(uploadContactsUrl, formData, {
         headers: {
