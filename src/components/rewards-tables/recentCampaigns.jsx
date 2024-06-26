@@ -6,17 +6,20 @@ import PeakButton from "../button/button";
 import PeakSearch from "../search/search";
 import RequestUnitsModal from "../modal/requestUnits";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import CampaignDetails from "./campaignDetails";
 import axios from "axios";
 import { format, parseISO } from "date-fns";
 import NewGroupModal from "../modal/newGroup"
-import { getToken } from "@/utils/auth";
-import {  GetRecentCampaigns } from "@/app/api/actions/campaigns/campaigns";
+import {  GetCampaigns } from "@/app/api/actions/campaigns/campaigns";
 
 
 const RecentCampaigns = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(0); 
+  const [openCampaignDetails, setOpenCampaignDetails] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const childActive = "campaigns"
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
@@ -25,18 +28,18 @@ const RecentCampaigns = () => {
     pageSize: 4,
     page: 1,
   });
+  // const navigate = useNavigate();
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
 
   const getCampaigns = async () => {
     try {
-      const res = await GetRecentCampaigns(org_id,paginationModel.page, paginationModel.pageSize);
+      const res = await GetCampaigns(org_id,1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
         setCampaigns(res.data.data);
-        console.log('ppppppp',res.data.data)
         setIsLoaded(true);
         setLoading(false);
       
@@ -50,11 +53,11 @@ const RecentCampaigns = () => {
       getCampaigns();
   }, [isModalOpen,page, org_id]);
 
-
-  const columns = [
+  const columns= [
     { field: "id", headerName: "ID", flex: 1 },
     { field: "name", headerName: "Campaign Name", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1, valueFormatter: (params) => {
+    { field: "created_at", headerName: "Date Created", flex: 1 ,
+    valueFormatter: (params) => { 
       try {
         const date = parseISO(params);
         return format(date, "yyyy-MM-dd HH:mm");
@@ -62,37 +65,55 @@ const RecentCampaigns = () => {
         return "Invalid Date";
       }
     },
-    }, 
-    { field: "group_name", headerName: "Group Name", flex: 1 },
-    { field: "owner", headerName: "Owner", flex: 1 },
-    { field: "contact_counts", headerName: "Contact Counts", flex: 1 },
-    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
-    { field: "data_bundle_type", headerName: "Data Bundle Type", flex: 1 },
+  },
+    { field: "groups", headerName: "Group Name", flex: 1,
+    valueGetter: (params) => { 
+        return params?.name
+      }, },
+    { field: "created_by", headerName: "Owner", flex: 1 },
+    { field: "contacts_count", headerName: "Contact Counts", flex: 1 },
+    { 
+      field: "", 
+      headerName: "Bundle Amount", 
+      flex: 1,
+      valueGetter: (params) => {
+        console.log(params)
+        const contactCount = params?.row?.contacts_count || 0;
+        const bundleSize = params?.row?.bundle_size || 0;
+        return contactCount * bundleSize;
+      }
+    },
+    { field: "bundle_size", headerName: "Data Bundle Type", flex: 1 },
+
   ];
   
 
   return (
-    <>
-      <div className="mt-4">
-        <div style={{ width: "100%" }}>
-          <DataGrid
-            rows={campaigns}
-            columns={columns}
-            loading={loading}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            sx={{
-              "& .MuiDataGrid-columnHeader": {
-                backgroundColor: "#F1F2F3",
-              },
-              "&.MuiDataGrid-root": {
-                border: "none",
-              },
-            }}
-          />
-        </div>
-      </div>
-    </>
+     
+        <>
+          <div className="mt-4">
+            <div style={{ width: "100%" }}>
+              <DataGrid
+                rows={campaigns}
+                columns={columns}
+                loading={loading}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                onRowClick={() => {
+                  window.location.href = "/apps/data-rewards";
+                }}
+                sx={{
+                  "& .MuiDataGrid-columnHeader": {
+                    backgroundColor: "#F1F2F3",
+                  },
+                  "&.MuiDataGrid-root": {
+                    border: "none",
+                  },
+                }}
+              />
+            </div>
+          </div>    
+     </>
   );
 };
 
