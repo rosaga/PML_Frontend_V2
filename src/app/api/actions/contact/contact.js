@@ -6,7 +6,7 @@ import { groupCreate } from '../group/group'
 export async function GetContacts(org_id,page,pageSize) {
     let contactsUrl  
     if (page || pageSize) {
-     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?size=${pageSize}&page=${page}`;
+     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?orderby=id DESC&size=${pageSize}&page=${page}`;
     }else{
      contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact`;
     }
