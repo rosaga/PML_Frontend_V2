@@ -76,7 +76,7 @@ export async function GetDataBalance(org_id) {
       const progress = unitsBought > 0 ? (unitsBought - unitBalance) / unitsBought * 100 : 0;
       return {
         id: id,
-        data_bundle: module + 'MB',
+        data_bundle: module ,
         units_bought: unitsBought,
         unit_balance: unitBalance,
         progress: parseInt(progress.toFixed(0)), 
