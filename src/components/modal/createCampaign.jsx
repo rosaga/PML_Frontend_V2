@@ -70,7 +70,7 @@ const CreateCampaignModal = ({ closeModal }) => {
     };
     const res = CreateCampaign(formData)
     .then((res) => {
-      if (res.status === 201) {
+      if (res.status === 202) {
         setSuccessMessage(`The campaign has been created`);
         setErrorMessage("");
       } else {
