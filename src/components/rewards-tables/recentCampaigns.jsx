@@ -28,7 +28,6 @@ const RecentCampaigns = () => {
     pageSize: 4,
     page: 1,
   });
-  // const navigate = useNavigate();
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
@@ -77,7 +76,6 @@ const RecentCampaigns = () => {
       headerName: "Bundle Amount", 
       flex: 1,
       valueGetter: (params) => {
-        console.log(params)
         const contactCount = params?.row?.contacts_count || 0;
         const bundleSize = params?.row?.bundle_size || 0;
         return contactCount * bundleSize;
