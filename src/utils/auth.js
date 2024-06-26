@@ -34,4 +34,6 @@ export const clearToken = () => {
   localStorage.removeItem('orgId');
   localStorage.removeItem('orgName');
   localStorage.removeItem('selectedAccountId');
+  localStorage.removeItem('selectedAccountName');
+
 };

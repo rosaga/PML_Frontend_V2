@@ -1,12 +1,26 @@
-import React from "react";
+"use client"
+import React, {useEffect,useState}from "react";
 import Image from "next/image";
 import Profile from "../profile/profile";
 
 const Navbar = () => {
+  let org_id = null;
+  let name = null
+ 
+
+  const [accountName, setAccountName] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+       name = localStorage.getItem('selectedAccountName');
+      org_id = localStorage.getItem('selectedAccountId');
+      setAccountName(name);
+    }
+  }, []);
   return (
     <div class="flex justify-between items-center mt-2 mb-0 mr-8 sm:ml-64">
       <div className="ml-8">
-        <p className="text-xl font-bold">Zawadi Test Account</p>
+        <p className="text-xl font-bold">{accountName}</p>
       </div>
       <div class="flex space-x-8">
         <div>

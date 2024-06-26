@@ -36,6 +36,9 @@ const UserOrgs = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('selectedAccountId');
       localStorage.setItem('selectedAccountId', account.id);
+      localStorage.setItem('selectedAccountName', account.name)
+      localStorage.removeItem('selectedAccountName');
+
       }
   };
 
