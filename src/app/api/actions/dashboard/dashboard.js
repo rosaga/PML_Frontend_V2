@@ -65,18 +65,18 @@ export async function GetDataBalance(org_id) {
     const unitsBoughtData = unitsBoughtRes.data;
     
     const dashboardSummary = unitsBalanceData.map(unitBalanceItem => {
-      const module =  unitBalanceItem.module;
+      const bundleModule =  unitBalanceItem.module;
       const id = unitBalanceItem.id;
 
       // Filter the corresponding items in unitsBought array
-      const unitsBoughtItem = unitsBoughtData.find(unitsBoughtItem => unitsBoughtItem.package === module);
+      const unitsBoughtItem = unitsBoughtData.find(unitsBoughtItem => unitsBoughtItem.package === bundleModule);
 
       const unitsBought = unitsBoughtItem ? parseInt(unitsBoughtItem.total) : 0;
       const unitBalance = parseInt(unitBalanceItem.units);
       const progress = unitsBought > 0 ? (unitsBought - unitBalance) / unitsBought * 100 : 0;
       return {
         id: id,
-        data_bundle: module ,
+        data_bundle: bundleModule + 'MB',
         units_bought: unitsBought,
         unit_balance: unitBalance,
         progress: parseInt(progress.toFixed(0)), 
