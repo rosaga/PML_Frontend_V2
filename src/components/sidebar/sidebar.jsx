@@ -1,19 +1,35 @@
 // MyComponent.js
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Profile from "../profile/profile"
 import Image from "next/image";
 import { signOut } from "next-auth/react";
 import { clearToken } from '@/utils/auth';
+import ConfirmSignOutModal  from "../modal/confirmSignout"
 
 const Sidebar = () => {
+
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleLogoutClick = () => {
+    setModalOpen(true);
+  };
 
   const handleSignOut = () => {
     if (typeof window !== 'undefined') {
     clearToken()
     }
     signOut({ callbackUrl: '/signin' });
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const handleConfirmLogout = () => {
+    handleSignOut();
+    setModalOpen(false);
   };
 
   return (
@@ -133,7 +149,7 @@ const Sidebar = () => {
             </li>
             <li>
             <a
-                href="#"
+                href={`/apps/reports`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -152,7 +168,7 @@ const Sidebar = () => {
             </li>
             <li>
               <a
-                href="#"
+                href={`/apps/flowbuilder`}
                 className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <Image
@@ -174,7 +190,7 @@ const Sidebar = () => {
           <ul className="font-medium mt-40">
             <li>
               <a
-                onClick={handleSignOut}
+                onClick={handleLogoutClick}
                 className="flex items-center cursor-pointer p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
               >
                 <svg
@@ -194,6 +210,12 @@ const Sidebar = () => {
           </ul>
         </div>
       </aside>
+      {modalOpen && (
+        <ConfirmSignOutModal
+          onClose={handleCloseModal}
+          onConfirm={handleConfirmLogout}
+        />
+      )}
 
     </div>
   );
