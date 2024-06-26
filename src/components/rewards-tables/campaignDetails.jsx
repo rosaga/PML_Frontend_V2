@@ -13,6 +13,8 @@ import { format } from "date-fns";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
 import { getToken } from "@/utils/auth";
+import { GetCampaignDetails } from "@/app/api/actions/campaigns/campaigns";
+
 
 
 const CampaignDetails = (campaignId,closeDetails) => {
@@ -29,6 +31,10 @@ const CampaignDetails = (campaignId,closeDetails) => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
   
   const filterOptions = [
     { value: 'eq__external_id', label: 'Phone Number' },
@@ -73,17 +79,13 @@ const CampaignDetails = (campaignId,closeDetails) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/organization/${process.env.NEXT_PUBLIC_ORG_ID}/campaign/${campaignId.campaignId}/rewards/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      const transformedData = response.data.map((item) => ({
+      const response = await GetCampaignDetails(org_id,campaignId.campaignId, page, paginationModel.pageSize);
+      const transformedData = response.data.data.map((item) => ({
         id: item.id,
         request_id: item.request_id,
-        phone_number: item.mobile_no,
+        phone_number: item.contact.mobile_no,
         bundle: item.bundle_amount,
-        created_date: format(new Date(item.createdat), "dd-MM-yyyy, h:mm a"),
+        created_date: format(new Date(item.created_at), "dd-MM-yyyy, h:mm a"),
         status: item.status_id === "SUCCESS_DISPATCH" ? "Success Dispatch" : "Failed Dispatch",
       }));
       setData(transformedData);

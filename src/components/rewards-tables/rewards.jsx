@@ -79,9 +79,9 @@ const RewardsTable = () => {
       renderCell: (params) => {
         const getColor = (status) => {
           switch (status) {
-            case "Success Dispatch":
+            case "SUCCESS":
               return "green";
-            case "Failed Dispatch":
+            case "FAILED":
               return "orange";
             default:
               return "black"; // Default color if needed
