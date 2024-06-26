@@ -10,6 +10,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
+import RecentCampaigns from "@/components/rewards-tables/recentCampaigns";
 import { getToken } from "@/utils/auth";
 import GroupDashboard from "@/components/rewards-tables/groupDashboard";
 
@@ -425,23 +426,8 @@ const Dashboard = () => {
                 </span>
               </div>
               <div className="mt-4">
-                <div style={{ height: 350, width: "100%" }}>
-                  <DataGrid
-                    rows={rows3}
-                    columns={columns3}
-                    paginationModel={paginationModel}
-                    onPaginationModelChange={setPaginationModel}
-                    sx={{
-                      "& .MuiDataGrid-columnHeader": {
-                        backgroundColor: "#F1F2F3",
-                      },
-                      "&.MuiDataGrid-root": {
-                        border: "none",
-                      },
-                    }}
-                  />
-                </div>
-              </div>
+                <RecentCampaigns/>
+               </div>
             </div>
           </div>
         </div>
