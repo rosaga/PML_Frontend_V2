@@ -76,13 +76,13 @@ export async function CreateCampaign(formValues) {
       };
     }
   }
-  export async function GetCampaignDetails(org_id,page,pageSize) {
+  export async function GetCampaignDetails(org_id,campaing_id,page,pageSize) {
 
     let groupUrl
     if (page || pageSize) {
-     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group/contact?eq__group_id=${group_id}&size=${pageSize}&page=${page}`;
+     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?eq__campaign_id=${campaing_id}&size=${pageSize}&page=${page}`;
     }else{
-      groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group/contact`;
+      groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?eq__campaign_id=${campaing_id}`;
     }
   
     try {
@@ -100,6 +100,40 @@ export async function CreateCampaign(formValues) {
         return {
           errors: {
             _error: 'The contacts could not be returned.',
+          },
+        };
+      }
+      return {
+        errors: {
+          _error: 'Network error. Please try again.',
+        },
+      };
+    }
+  }
+  export async function GetRecentCampaigns(org_id,page,pageSize) {
+
+    let recentCampaignUrl
+    if (page || pageSize) {
+      recentCampaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?eq__groups.status=ACTIVE&size=${pageSize}&page=${page}`;
+    }else{
+      recentCampaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?eq__groups.status=ACTIVE`;
+    }
+  
+    try {
+      const config = await authHeaders();
+  
+      const res = await axios.get(recentCampaignUrl, config);
+  
+      if (res.data && res.status === 200) {
+        console.log("THE RESPONSE IS !!!!!!!", res);
+      }
+  
+      return res;
+    } catch (error) {
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The campaigns could not be returned.',
           },
         };
       }
