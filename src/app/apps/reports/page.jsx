@@ -14,7 +14,7 @@ const Reports = () => {
             <div className="flex flex-col items-center justify-center h-screen text-center p-6">
               <h1 className="text-4xl font-bold mb-4">🛠️ Oops! 🚧</h1>
               <p className="text-xl mb-4">
-                We're busy brewing up something awesome here!
+                We are busy brewing up something awesome here!
               </p>
               <img
                 src="https://via.placeholder.com/400x300?text=Under+Construction"
