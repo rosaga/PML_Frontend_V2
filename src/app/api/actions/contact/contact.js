@@ -84,6 +84,43 @@ export async function GetContacts(org_id,page,pageSize) {
     }
   }
 
+  export async function contactsUploadBatch(formValues) {
+    const uploadContactsUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/contact/upload`;
+    try {
+      const selectedFile = formValues.contacts;
+  
+      const authHeaderObject = await authHeaders();
+      const headers = authHeaderObject.headers;
+  
+      const formData = new FormData();
+      formData.append("contacts", selectedFile);
+  
+      return axios.post(uploadContactsUrl, formData, {
+        headers: {
+          ...headers,
+          "Content-Type": "multipart/form-data",
+        },
+      })
+        .then((res) => {
+          console.log("Response:", res.data);
+          return res;
+        });
+    } catch (error) {
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The contacts could not be uploaded.',
+          },
+        };
+      }
+      return {
+        errors: {
+          _error: 'Network error. Please try again.',
+        },
+      };
+    }
+  }
+
   export async function contactsUpload(formValues) {
     const uploadContactsUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/contact/upload`;
     try {

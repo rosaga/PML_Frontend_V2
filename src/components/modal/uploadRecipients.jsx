@@ -1,7 +1,18 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect , useState} from "react";
+import { contactsUploadBatch } from '../../../src/app/api/actions/contact/contact';
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const UploadRecipientsModal = ({ closeModal }) => {
+
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+
+  const [csvFile, setCsvFile] = useState(null); 
+
   function handleDownloadTemplate() {
     const templateData = [
       {
@@ -34,35 +45,41 @@ const UploadRecipientsModal = ({ closeModal }) => {
     return csvRows.join("\n");
   }
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-
-  //   if (!contactsFile) {
-  //     console.log('Please select a file and a group');
-  //     return;
-  //   }
-
-  //   const newRecipientsPayload = {
-  //     contacts: contactsFile,
-  //     group_id: selectedBundle,
-  //   };
-
-  //   const res = batchReward({org_id,newRecipientsPayload}).then((res) => {
-  //     if (res.status === 200) {
-  //       setSuccessMessage(`The data has been sent`);
-  //       setErrorMessage(""); 
-  //     } else {
-  //       setErrorMessage("Failed to send data. Please try again.");
-  //     }
-  //   });
-
-  //   return res;
-  // };
+  const handleUploadContacts = (e) => {
+    e.preventDefault();
+  
+    if (!csvFile) {
+      console.log('Please select a file');
+      return;
+    }
+  
+    const formValues = {
+      org_id: org_id,
+      contacts: csvFile,
+    };
+  
+    const res = contactsUploadBatch(formValues)
+      .then((res) => {
+        if (res.status === 201) {
+          toast.success("CONTACTS UPLOAD SUCCESS")
+        } else {
+          toast.error("CONTACTS UPLOAD FAILED")
+        }
+      })
+      .catch((error) => {
+        toast.error("CONTACTS UPLOAD FAILED")
+        console.log("Error:", error);
+      });
+  
+    return res;
+  };
 
 
 
       
   return (
+    <>
+    <ToastContainer />
     <div
       id="authentication-modal"
       tabIndex="-1"
@@ -89,24 +106,25 @@ const UploadRecipientsModal = ({ closeModal }) => {
                 </button>
               </div>
               <input
-                type="file"
-                name="file"
-                id="file"
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                placeholder="robina"
-                required
-              />
+                      type="file"
+                      name="csvFile"
+                      id="csvFile"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      onChange={(e) => setCsvFile(e.target.files[0])}
+                      required
+                    />
               <div className="flex space-x-2">
                 <button
-                  type="submit"
+                  type="button"
                   className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  onClick={closeModal}                
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                  onClick={closeModal}
+                  onClick={handleUploadContacts}
                 >
                   Submit
                 </button>
@@ -116,6 +134,7 @@ const UploadRecipientsModal = ({ closeModal }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

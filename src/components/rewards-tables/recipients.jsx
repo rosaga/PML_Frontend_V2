@@ -52,7 +52,7 @@ const UploadRecipients = () => {
 
   useEffect(() => {
       getContacts();
-  }, [isModalOpen1,page, org_id]);
+  }, [isModalOpen1,page, org_id, isModalOpen]);
 
   const openModal = () => {
     setIsModalOpen(true);
