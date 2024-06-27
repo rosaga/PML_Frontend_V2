@@ -12,7 +12,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
 import { getToken } from "@/utils/auth";
 import GroupDashboard from "@/components/rewards-tables/groupDashboard";
-
+import { useRouter } from 'next/navigation';
 
 interface RowData {
   id: number;
@@ -23,6 +23,9 @@ interface RowData {
 }
 
 const Dashboard = () => {
+
+  const router = useRouter();
+
   const rows: GridRowsProp<RowData> = [
     {
       id: 1,
@@ -209,7 +212,10 @@ const Dashboard = () => {
     { field: "data_bundle_type", headerName: "Data Bundle Type", flex: 1 },
   ];
 
- 
+  const handleHelp = () => {
+    router.push("/apps/help");
+  };
+
 
   return (
     <div className="p-4 sm:ml-64 h-screen ">
@@ -330,7 +336,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex flex-col gap-4">
-              <div className="rounded-3xl border-[1.5px] p-8">
+              <div onClick={handleHelp} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
                 <span>
                   <Image
                     style={{ color: "#F58426" }}
