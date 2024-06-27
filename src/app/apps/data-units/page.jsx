@@ -45,7 +45,7 @@ const DataUnits = () => {
   };
 
   const filterOptions = [
-    { value: "eq__external_id", label: "Transaction Reference" },
+    { value: "eq__external_id", label: "Trans Ref" },
     { value: "ilike__first_name", label: "Start Date" },
     { value: "ilike__last_name", label: "End Date" },
     { value: "eq__external_id", label: "Data Bundle" },
@@ -69,11 +69,9 @@ const DataUnits = () => {
         toast.error("APPROVE FAILED");
         setIsApproved(true);
       }
-      console.log('Transaction approved:', response.data);
     } catch (error) {
       toast.error("APPROVE FAILED");
       setIsApproved(true);
-      console.error('Error approving transaction:', error);
     }
   };
 

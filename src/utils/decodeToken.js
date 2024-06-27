@@ -12,3 +12,17 @@ export function hasRole(token, role) {
   }
   return false;
 }
+
+export function getUserInfo(token) {
+  try {
+    const decoded = jwt.decode(token);
+    if (decoded) {
+      const name = decoded.name;
+      const email = decoded.email;
+      return { name, email };
+    }
+  } catch (error) {
+    console.error('Failed to decode token', error);
+  }
+  return null;
+}

@@ -4,12 +4,10 @@ import Image from "next/image";
 import Profile from "../profile/profile";
 
 
-const Navbar = () => {
 
+const Navbar = () => {
   let org_id = null;
   let name = null
- 
-
   const [accountName, setAccountName] = useState("");
 
   useEffect(() => {

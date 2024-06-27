@@ -1,16 +1,18 @@
-// MyComponent.js
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Profile from "../profile/profile"
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
 import { clearToken } from '@/utils/auth';
-import ConfirmSignOutModal  from "../modal/confirmSignout"
+import ConfirmSignOutModal from "../modal/confirmSignout";
 
 const Sidebar = () => {
-
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeLink, setActiveLink] = useState('');
+
+  useEffect(() => {
+    setActiveLink(window.location.pathname);
+  }, []);
 
   const handleLogoutClick = () => {
     setModalOpen(true);
@@ -18,7 +20,7 @@ const Sidebar = () => {
 
   const handleSignOut = () => {
     if (typeof window !== 'undefined') {
-    clearToken()
+      clearToken();
     }
     signOut({ callbackUrl: '/signin' });
   };
@@ -31,6 +33,20 @@ const Sidebar = () => {
     handleSignOut();
     setModalOpen(false);
   };
+
+  const handleLinkClick = (link) => {
+    setActiveLink(link);
+  };
+
+  const links = [
+    { href: '/apps/dashboard', src: '/images/dashboard.svg', alt: 'Dashboard', label: 'Dashboard' },
+    { href: '/apps/data-rewards', src: '/images/vector.svg', alt: 'Data Rewards', label: 'Data Rewards' },
+    { href: '/apps/data-units', src: '/images/dataunits.svg', alt: 'Data Units', label: 'Data Units' },
+    { href: '/apps/users', src: '/images/users.svg', alt: 'Users', label: 'Users' },
+    { href: '/apps/account', src: '/images/Account.svg', alt: 'Account', label: 'Account' },
+    { href: '/apps/reports', src: '/images/Reports.svg', alt: 'Reports', label: 'Reports' },
+    { href: '/apps/flowbuilder', src: '/images/flowbuillder.svg', alt: 'Flow Builder', label: 'Flow Builder' },
+  ];
 
   return (
     <div>
@@ -46,146 +62,30 @@ const Sidebar = () => {
             alt="Peak Logo"
           />
           <ul className="space-y-4 font-medium">
-            <li>
-              <a
-                href={`/apps/dashboard`}
-                className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-              >
-                <Image
-                  style={{ color: "#F58426" }}
-                  className="icon w-8 h-8 rounded-lg"
-                  width={40}
-                  height={40}
-                  src="/images/dashboard.svg"
-                  blurDataURL="/bluriconloader.png"
-                  placeholder="blur"
-                  alt="Recipients reached"
-                  priority
-                />
-                <span className="ms-3">Dashboard</span>
-              </a>
-            </li>
-            <li>
-              <a
-                href={`/apps/data-rewards`}
-                className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-              >
-                <Image
-                  style={{ color: "#F58426" }}
-                  className="icon w-8 h-8 rounded-lg"
-                  width={40}
-                  height={40}
-                  src="/images/vector.svg"
-                  blurDataURL="/bluriconloader.png"
-                  placeholder="blur"
-                  alt="Recipients reached"
-                  priority
-                />
-                <span className="flex-1 ms-3 whitespace-nowrap">
-                  Data Rewards
-                </span>
-                <span className="inline-flex items-center justify-center px-2 ms-3 text-sm font-medium text-gray-800 bg-gray-100 rounded-full dark:bg-gray-700 dark:text-gray-300"></span>
-              </a>
-            </li>
-
-            <li>
-              <a
-                href={`/apps/data-units`}
-                className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-              >
-                <Image
-                  style={{ color: "#F58426" }}
-                  className="icon w-8 h-8 rounded-lg"
-                  width={40}
-                  height={40}
-                  src="/images/dataunits.svg"
-                  blurDataURL="/bluriconloader.png"
-                  placeholder="blur"
-                  alt="Recipients reached"
-                  priority
-                />
-                <span className="flex-1 ms-3 whitespace-nowrap">
-                  Data Units
-                </span>
-              </a>
-            </li>
-            <li>
-              <a
-                href={`/apps/users`}
-                className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-              >
-                <Image
-                  style={{ color: "#F58426" }}
-                  className="icon w-8 h-8 rounded-lg"
-                  width={40}
-                  height={40}
-                  src="/images/users.svg"
-                  blurDataURL="/bluriconloader.png"
-                  placeholder="blur"
-                  alt="Recipients reached"
-                  priority
-                />
-                <span className="flex-1 ms-3 whitespace-nowrap">Users</span>
-              </a>
-            </li>
-            <li>
-              <a
-                href={`/apps/account`}
-                className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-              >
-                <Image
-                  style={{ color: "#F58426" }}
-                  className="icon w-8 h-8 rounded-lg"
-                  width={40}
-                  height={40}
-                  src="/images/Account.svg"
-                  blurDataURL="/bluriconloader.png"
-                  placeholder="blur"
-                  alt="Recipients reached"
-                  priority
-                />
-                <span className="flex-1 ms-3 whitespace-nowrap">Account</span>
-              </a>
-            </li>
-            <li>
-            <a
-                href={`/apps/reports`}
-                className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-              >
-                <Image
-                  style={{ color: "#F58426" }}
-                  className="icon w-8 h-8 rounded-lg"
-                  width={40}
-                  height={40}
-                  src="/images/Reports.svg"
-                  blurDataURL="/bluriconloader.png"
-                  placeholder="blur"
-                  alt="Recipients reached"
-                  priority
-                />
-                <span className="flex-1 ms-3 whitespace-nowrap">Reports</span>
-              </a>
-            </li>
-            <li>
-              <a
-                href={`/apps/flowbuilder`}
-                className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-              >
-                <Image
-                  style={{ color: "#F58426" }}
-                  className="icon w-8 h-8 rounded-lg"
-                  width={40}
-                  height={40}
-                  src="/images/flowbuillder.svg"
-                  blurDataURL="/bluriconloader.png"
-                  placeholder="blur"
-                  alt="Recipients reached"
-                  priority
-                />
-                <span className="flex-1 ms-3 whitespace-nowrap">Flow Builder</span>
-              </a>
-
-            </li>
+            {links.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  onClick={() => handleLinkClick(link.href)}
+                  className={`icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white ${
+                    activeLink === link.href ? 'bg-[#001F3D] text-white' : 'hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700'
+                  } group`}
+                >
+                  <Image
+                    style={{ color: "#F58426" }}
+                    className={`icon w-8 h-8 rounded-lg ${activeLink === link.href ? 'filter invert' : ''}`}
+                    width={40}
+                    height={40}
+                    src={link.src}
+                    blurDataURL="/bluriconloader.png"
+                    placeholder="blur"
+                    alt={link.alt}
+                    priority
+                  />
+                  <span className="ms-3">{link.label}</span>
+                </a>
+              </li>
+            ))}
           </ul>
           <ul className="font-medium mt-40">
             <li>
@@ -216,7 +116,6 @@ const Sidebar = () => {
           onConfirm={handleConfirmLogout}
         />
       )}
-
     </div>
   );
 };

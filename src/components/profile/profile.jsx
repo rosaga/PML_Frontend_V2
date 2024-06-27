@@ -4,8 +4,16 @@
 import React from "react";
 import Image from "next/image";
 import { useSession } from 'next-auth/react';
+import { getUserInfo } from "../../utils/decodeToken"
+import { getToken } from "@/utils/auth";
 
 const Profile = () => {
+
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = getToken();
+  }
+  const userInfo = getUserInfo(token);
 
   const { data: session, status } = useSession();
 
@@ -30,8 +38,8 @@ const Profile = () => {
             priority
           />
           <div className="ml-4">
-            <p className="text-sm text-left">{ session && session.user && session.user.name }</p>
-            <p className="text-sm text-left">{ session && session.user && session.user.email}</p>
+            <p className="text-sm text-left">{ userInfo.email }</p>
+            <p className="text-sm text-left">{ userInfo.name }</p>
           </div>
         </div>
 
