@@ -166,7 +166,7 @@ export default function Faqs() {
         <AccordionDetails>
           <Typography>
             If you encounter any technical issues, you can reach out to our
-            support team through the "Help" section on the platform, or email us
+            support team through the -Help- section on the platform, or email us
             at support@peak.co.ke. We also have a comprehensive help center with
             articles and tutorials.
           </Typography>
@@ -281,8 +281,8 @@ export default function Faqs() {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-            To purchase data bundles, navigate to the "Rewards" section of your
-            dashboard, select "Data Units," choose the desired bundle type, and
+            To purchase data bundles, navigate to the -Rewards- section of your
+            dashboard, select -Data Units- , choose the desired bundle type, and
             specify the contact or group of contacts to receive the bundle.
           </Typography>
         </AccordionDetails>
@@ -329,7 +329,7 @@ export default function Faqs() {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-          Yes, All data bundles typically have an expiration date. The data bundles on Peak expire within 60 days from the date of contacts' issuance. 
+          Yes, All data bundles typically have an expiration date. The data bundles on Peak expire within 60 days from the date of contacts issuance. 
 
           </Typography>
         </AccordionDetails>
@@ -375,7 +375,7 @@ export default function Faqs() {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-          To distribute vouchers, go to the "Rewards" section, select "Vouchers," choose the type of voucher you want to send, enter the contact details, and complete the purchase. Vouchers can be sent directly to the contact's email or mobile number
+          To distribute vouchers, go to the -Rewards- section, select -Vouchers-, choose the type of voucher you want to send, enter the contact details, and complete the purchase. Vouchers can be sent directly to the contacts email or mobile number
 
           </Typography>
         </AccordionDetails>
