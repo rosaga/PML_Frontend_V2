@@ -6,7 +6,7 @@ import { groupCreate } from '../group/group'
 export async function GetContacts(org_id,page,pageSize) {
     let contactsUrl  
     if (page || pageSize) {
-     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?size=${pageSize}&page=${page}`;
+     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?orderby=id DESC&size=${pageSize}&page=${page}`;
     }else{
      contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact`;
     }
@@ -73,6 +73,43 @@ export async function GetContacts(org_id,page,pageSize) {
         return {
           errors: {
             _error: 'The contacts could not be returned.',
+          },
+        };
+      }
+      return {
+        errors: {
+          _error: 'Network error. Please try again.',
+        },
+      };
+    }
+  }
+
+  export async function contactsUploadBatch(formValues) {
+    const uploadContactsUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/contact/upload`;
+    try {
+      const selectedFile = formValues.contacts;
+  
+      const authHeaderObject = await authHeaders();
+      const headers = authHeaderObject.headers;
+  
+      const formData = new FormData();
+      formData.append("contacts", selectedFile);
+  
+      return axios.post(uploadContactsUrl, formData, {
+        headers: {
+          ...headers,
+          "Content-Type": "multipart/form-data",
+        },
+      })
+        .then((res) => {
+          console.log("Response:", res.data);
+          return res;
+        });
+    } catch (error) {
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The contacts could not be uploaded.',
           },
         };
       }

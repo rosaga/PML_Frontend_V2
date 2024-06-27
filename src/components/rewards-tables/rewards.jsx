@@ -82,7 +82,7 @@ const RewardsTable = () => {
             case "SUCCESS":
               return "green";
             case "FAILED":
-              return "orange";
+              return "red";
             default:
               return "black"; // Default color if needed
           }

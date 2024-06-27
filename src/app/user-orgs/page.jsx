@@ -11,6 +11,7 @@ const UserOrgs = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const getAccounts = async () => {
     try {
@@ -31,13 +32,13 @@ const UserOrgs = () => {
   }, []);
 
   const handleAccountClick = (account) => {
-    
+    setIsLoading(true);
     router.push("/apps/dashboard");
     if (typeof window !== 'undefined') {
       localStorage.removeItem('selectedAccountId');
+      localStorage.removeItem('selectedAccountName');
       localStorage.setItem('selectedAccountId', account.id);
-      localStorage.setItem('selectedAccountName', account.name)
-
+      localStorage.setItem('selectedAccountName', account.name);
       }
   };
 
@@ -71,7 +72,7 @@ const UserOrgs = () => {
                       className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
                       onClick={() => handleAccountClick(account)}
                     >
-                      {account.name}
+                     {isLoading ? "loading..." : account.name}
                     </button>
                   ))
                 ) : (

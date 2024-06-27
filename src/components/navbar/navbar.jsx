@@ -3,7 +3,9 @@ import React, {useEffect,useState}from "react";
 import Image from "next/image";
 import Profile from "../profile/profile";
 
+
 const Navbar = () => {
+
   let org_id = null;
   let name = null
  
