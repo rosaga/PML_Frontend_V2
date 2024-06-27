@@ -1,6 +1,6 @@
 "use client";
 import Sidebar from "@/components/sidebar/sidebar";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import Image from "next/image";
 import Button from '@mui/material/Button';
@@ -10,9 +10,11 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
+import RecentCampaigns from "@/components/rewards-tables/recentCampaigns";
 import { getToken } from "@/utils/auth";
 import GroupDashboard from "@/components/rewards-tables/groupDashboard";
-import { useRouter } from 'next/navigation';
+import { GetDashboardSummary, GetDataBalance } from "@/app/api/actions/dashboard/dashboard"
+import { set } from "date-fns";
 
 interface RowData {
   id: number;
@@ -26,36 +28,43 @@ const Dashboard = () => {
 
   const router = useRouter();
 
-  const rows: GridRowsProp<RowData> = [
-    {
-      id: 1,
-      data_bundle: '10MB',
-      units_bought: 100,
-      unit_balance: 50,
-      progress: 50,
-    },
-    {
-      id: 2,
-      data_bundle: '20MB',
-      units_bought: 200,
-      unit_balance: 100,
-      progress: 50,
-    },
-    {
-      id: 3,
-      data_bundle: '30MB',
-      units_bought: 300,
-      unit_balance: 200,
-      progress: 66.67,
-    },
-    {
-      id: 4,
-      data_bundle: '40MB',
-      units_bought: 20,
-      unit_balance: 5,
-      progress: 25,
-    },
-  ];
+  let org_id: string | null = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
+  const [rows, setRows] = useState([]);
+
+  // const rows: GridRowsProp<RowData> = [
+  //   {
+  //     id: 1,
+  //     data_bundle: '10MB',
+  //     units_bought: 100,
+  //     unit_balance: 50,
+  //     progress: 50,
+  //   },
+  //   {
+  //     id: 2,
+  //     data_bundle: '20MB',
+  //     units_bought: 200,
+  //     unit_balance: 100,
+  //     progress: 50,
+  //   },
+  //   {
+  //     id: 3,
+  //     data_bundle: '30MB',
+  //     units_bought: 300,
+  //     unit_balance: 200,
+  //     progress: 66.67,
+  //   },
+  //   {
+  //     id: 4,
+  //     data_bundle: '40MB',
+  //     units_bought: 20,
+  //     unit_balance: 5,
+  //     progress: 25,
+  //   },
+  // ];
+
 
   const calculateProgress = (unitsBought: number, unitBalance: number): number => {
     return ((unitsBought - unitBalance) / unitsBought) * 100;
@@ -87,32 +96,7 @@ const Dashboard = () => {
     { field: "progress", headerName: "Progress", flex: 2, renderCell: renderProgress },
   ];
 
-  const rows1: GridRowsProp = [
-    {
-      id: 1,
-      date_of_onboarding: "2024-05-16",
-      phone_number: "0711223344",
-      status: "Active",
-    },
-    {
-      id: 2,
-      date_of_onboarding: "2024-05-16",
-      phone_number: "0711223344",
-      status: "Active",
-    },
-    {
-      id: 3,
-      date_of_onboarding: "2024-05-16",
-      phone_number: "0711223344",
-      status: "Active",
-    },
-    {
-      id: 4,
-      date_of_onboarding: "2024-05-16",
-      phone_number: "0711223344",
-      status: "Active",
-    },
-  ];
+ 
 
   const columns1: GridColDef[] = [
     { field: "date_of_onboarding", headerName: "Date of Onboarding", flex: 1 },
@@ -120,36 +104,7 @@ const Dashboard = () => {
     { field: "status", headerName: "Status", flex: 1 },
     { field: "Action", headerName: "Action", flex: 0, renderCell: (params) => <DeleteIcon /> },
   ];
-  const rows2: GridRowsProp = [
-    {
-      id: 1,
-      group_name: "Group 1",
-      no_contact: 10,
-      description: "Group 1 description",
-      date_created: "2024-05-16",  
-    },
-    {
-      id:2,
-      group_name: "Group 2",
-      no_contact: 5,
-      description: "Group 2 description",
-      date_created: "2024-05-17",        
-    },
-    {
-      id:3,
-      group_name: "Group 3",
-      no_contact: 20,
-      description: "Group 3 description",
-      date_created: "2024-04-16",  
-    },
-    {
-      id:4,
-      group_name: "Group 4",
-      no_contact: 100,
-      description: "Group 4 description",
-      date_created: "2023-04-16",  
-    },
-  ];
+ 
 
   const columns2: GridColDef[] = [
     { field: "id", headerName: "ID", flex: 1 },
@@ -158,48 +113,7 @@ const Dashboard = () => {
     { field: "description", headerName: "Description", flex: 1 },
     { field: "date_created", headerName: "Date Created", flex: 1 },
   ];
-  const rows3: GridRowsProp = [
-    {
-      id: 1,
-      campaign_name: "Kuza Talanta",
-      date_created: "29-04-24, 8:00pm",
-      group_name: "Gen-Z",
-      owner: "James Karoti",
-      contact_counts: 10,
-      bundle_amount: 10,
-      data_bundle_type: 10,
-    },
-    {
-      id: 2,
-      campaign_name: "Kuza Talanta",
-      date_created: "29-04-24, 8:00pm",
-      group_name: "Gen-Z",
-      owner: "James Karoti",
-      contact_counts: 10,
-      bundle_amount: 10,
-      data_bundle_type: 10,
-    },
-    {
-      id: 3,
-      campaign_name: "Kuza Talanta",
-      date_created: "29-04-24, 8:00pm",
-      group_name: "Gen-Z",
-      owner: "James Karoti",
-      contact_counts: 10,
-      bundle_amount: 10,
-      data_bundle_type: 10,
-    },
-    {
-      id: 4,
-      campaign_name: "Kuza Talanta",
-      date_created: "29-04-24, 8:00pm",
-      group_name: "Gen-Z",
-      owner: "James Karoti",
-      contact_counts: 10,
-      bundle_amount: 10,
-      data_bundle_type: 10,
-    },
-  ];
+ 
   
   const columns3: GridColDef[] = [
     { field: "id", headerName: "ID", flex: 1 },
@@ -211,10 +125,23 @@ const Dashboard = () => {
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
     { field: "data_bundle_type", headerName: "Data Bundle Type", flex: 1 },
   ];
+  const fetchDashboardSummary = async () => {
+    const summary = await GetDashboardSummary (org_id);
+    console.log("Dashboard Summary:", summary);
+  };
+  const fetchDataBundle = async () => {
+    const dataBalance = await GetDataBalance (org_id);
+    setRows(dataBalance);
+  };
 
   const handleHelp = () => {
     router.push("/apps/help");
   };
+
+ useEffect(() => {
+  fetchDashboardSummary()
+  fetchDataBundle()
+  }, []);
 
 
   return (
@@ -431,23 +358,8 @@ const Dashboard = () => {
                 </span>
               </div>
               <div className="mt-4">
-                <div style={{ height: 350, width: "100%" }}>
-                  <DataGrid
-                    rows={rows3}
-                    columns={columns3}
-                    paginationModel={paginationModel}
-                    onPaginationModelChange={setPaginationModel}
-                    sx={{
-                      "& .MuiDataGrid-columnHeader": {
-                        backgroundColor: "#F1F2F3",
-                      },
-                      "&.MuiDataGrid-root": {
-                        border: "none",
-                      },
-                    }}
-                  />
-                </div>
-              </div>
+                <RecentCampaigns/>
+               </div>
             </div>
           </div>
         </div>

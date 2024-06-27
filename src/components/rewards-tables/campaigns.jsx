@@ -61,10 +61,23 @@ const CampaignsTable = () => {
       }
     },
   },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
+    { field: "groups", headerName: "Group Name", flex: 1,
+    valueGetter: (params) => { 
+        return params?.name
+      }, },
     { field: "created_by", headerName: "Owner", flex: 1 },
     { field: "contacts_count", headerName: "Contact Counts", flex: 1 },
-    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
+    { 
+      field: "", 
+      headerName: "Bundle Amount", 
+      flex: 1,
+      valueGetter: (params) => {
+        console.log(params)
+        const contactCount = params?.row?.contacts_count || 0;
+        const bundleSize = params?.row?.bundle_size || 0;
+        return contactCount * bundleSize;
+      }
+    },
     { field: "bundle_size", headerName: "Data Bundle Type", flex: 1 },
 
   ];
