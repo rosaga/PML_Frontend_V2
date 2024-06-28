@@ -15,8 +15,6 @@ const Profile = () => {
   }
   const userInfo = getUserInfo(token);
 
-  const { data: session, status } = useSession();
-
   return (
     <div>
       <button
@@ -38,8 +36,8 @@ const Profile = () => {
             priority
           />
           <div className="ml-4">
-            <p className="text-sm text-left">{ userInfo.email }</p>
-            <p className="text-sm text-left">{ userInfo.name }</p>
+            <p className="text-sm text-left">{ userInfo && userInfo.email || "..."}</p>
+            <p className="text-sm text-left">{ userInfo && userInfo.name  || "..."}</p>
           </div>
         </div>
 

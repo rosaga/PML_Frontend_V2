@@ -14,9 +14,13 @@ export function hasRole(token, role) {
 }
 
 export function getUserInfo(token) {
+  if (typeof window === 'undefined') {
+    // If it's on the server side, return null
+    return null;
+  }
   try {
     const decoded = jwt.decode(token);
-    if (decoded) {
+    if (decoded && decoded.email) {
       const name = decoded.name;
       const email = decoded.email;
       return { name, email };
