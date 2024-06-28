@@ -73,8 +73,14 @@ const CreateCampaignModal = ({ closeModal }) => {
       if (res.status === 202) {
         setSuccessMessage(`The campaign has been created`);
         setErrorMessage("");
+        
       } else {
         setErrorMessage("Failed to create Campaign. Please try again.");
+        setCampaignName("");
+        setSelectedGroup("");
+        setSelectedBundle("");
+        setDescription("");
+        setMessage("");
       }
     })
     .catch((error) => {
