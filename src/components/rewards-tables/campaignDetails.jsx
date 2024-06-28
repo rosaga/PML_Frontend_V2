@@ -86,7 +86,7 @@ const CampaignDetails = (campaignId,closeDetails) => {
         phone_number: item.contact.mobile_no,
         bundle: item.bundle_amount,
         created_date: format(new Date(item.created_at), "dd-MM-yyyy, h:mm a"),
-        status: item.status_id === "SUCCESS_DISPATCH" ? "Success Dispatch" : "Failed Dispatch",
+        status: item.status === "SUCCESS" ? "Success Dispatch" : "Failed Dispatch",
       }));
       setData(transformedData);
     } catch (error) {

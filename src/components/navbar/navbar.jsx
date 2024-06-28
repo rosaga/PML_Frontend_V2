@@ -2,6 +2,8 @@
 import React, {useEffect,useState}from "react";
 import Image from "next/image";
 import Profile from "../profile/profile";
+import { useRouter } from 'next/navigation';
+
 
 
 
@@ -9,6 +11,11 @@ const Navbar = () => {
   let org_id = null;
   let name = null
   const [accountName, setAccountName] = useState("");
+  const router = useRouter();
+  const handleSwitchAccount = () => {
+    router.push('/user-orgs');
+
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -52,6 +59,12 @@ const Navbar = () => {
                         priority
                       />
             </span>
+        </div>
+        <div>
+          <button className=" text-white  py-2 px-4 rounded" style={{ backgroundColor: "#F58426" }}
+          onClick={handleSwitchAccount}>
+            Switch Accounts
+          </button>
         </div>
         <div>
             <Profile/>

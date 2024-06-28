@@ -68,17 +68,30 @@ const CreateCampaignModal = ({ closeModal }) => {
       // description: description,
       // content: message,
     };
-    const res = CreateCampaign(formData)
+    const res = await CreateCampaign(formData)
     .then((res) => {
+      console.log({res});
       if (res.status === 202) {
         setSuccessMessage(`The campaign has been created`);
         setErrorMessage("");
+        
       } else {
         setErrorMessage("Failed to create Campaign. Please try again.");
+        setCampaignName("");
+        setSelectedGroup("");
+        setSelectedBundle("");
+        setDescription("");
+        setMessage("");
       }
     })
     .catch((error) => {
       console.log("Error:", error);
+        setErrorMessage("Failed to create Campaign. Please try again.");
+        setCampaignName("");
+        setSelectedGroup("");
+        setSelectedBundle("");
+        setDescription("");
+        setMessage("");
     });
 
   return res;
@@ -112,17 +125,36 @@ const CreateCampaignModal = ({ closeModal }) => {
                 OK
               </button>
             </div>
-          ) : (
+          ) :
+          errorMessage ? (
+            <div className="p-4 text-center">
+              <div className="mb-4 text-2xl font-semibold text-red-500">
+                Error!
+              </div>
+              <div className="mb-4 text-gray-900 dark:text-white">
+                {errorMessage}
+              </div>
+              <button
+                onClick={() => {
+                  setErrorMessage("");
+                }}
+                className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                OK
+              </button>
+            </div>
+          )
+          : (
           <><div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Create Campaign
                 </h3>
-                <button
+                {/* <button
                   type="button"
                   className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                 >
                   + Schedule Campaign
-                </button>
+                </button> */}
                 <button
                   type="button"
                   className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"

@@ -45,7 +45,7 @@ export async function groupCreate(formValues) {
 
     let groupUrl
     if (page || pageSize) {
-     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?orderby=id DESC&size=${pageSize}&page=${page}`;
+     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?&size=${pageSize}&page=${page}`;
     }else{
       groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group`;
     }
