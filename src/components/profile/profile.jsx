@@ -1,13 +1,21 @@
 // MyComponent.js
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { useSession } from 'next-auth/react';
+import { getUserInfo } from "../../utils/decodeToken";
+import { getToken } from "@/utils/auth";
 
 const Profile = () => {
+  const [userInfo, setUserInfo] = useState({ name: "", email: "" });
 
-  const { data: session, status } = useSession();
+  useEffect(() => {
+    const token = getToken();
+    const info = getUserInfo(token);
+    if (info) {
+      setUserInfo(info);
+    }
+  }, []);
 
   return (
     <div>
@@ -30,8 +38,8 @@ const Profile = () => {
             priority
           />
           <div className="ml-4">
-            <p className="text-sm text-left">{ session && session.user && session.user.name }</p>
-            <p className="text-sm text-left">{ session && session.user && session.user.email}</p>
+            <p className="text-sm text-left">{userInfo.email || "..."}</p>
+            <p className="text-sm text-left">{userInfo.name || "..."}</p>
           </div>
         </div>
 
@@ -58,11 +66,11 @@ const Profile = () => {
       >
         <div className="px-4 py-3 text-sm text-gray-900 dark:text-white">
           <div className="font-medium ">Pro User</div>
-          <div className="truncate">name@flowbite.com</div>
+          <div className="truncate">{userInfo.email || "name@flowbite.com"}</div>
         </div>
         <ul
           className="py-2 text-sm text-gray-700 dark:text-gray-200"
-          aria-labelledby="dropdownInformdropdownAvatarNameButtonationButton"
+          aria-labelledby="dropdownAvatarNameButton"
         >
           <li>
             <a

@@ -6,12 +6,10 @@ import { useRouter } from 'next/navigation';
 
 
 
-const Navbar = () => {
 
+const Navbar = () => {
   let org_id = null;
   let name = null
- 
-
   const [accountName, setAccountName] = useState("");
   const router = useRouter();
   const handleSwitchAccount = () => {
