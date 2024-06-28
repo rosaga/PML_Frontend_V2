@@ -163,7 +163,6 @@ const DataUnits = () => {
         console.log("AN ERROR HAS OCCURRED");
       } else {
 
-      console.log('ppppp',res.data.data)
         setRecharges(res.data.data);
         setLoading(false);
         setLoadingData(false);
