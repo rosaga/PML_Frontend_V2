@@ -11,7 +11,6 @@ export async function CreateCampaign(formValues) {
     }
     
     const createCampaignUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/campaign`;
-    console.log('kkkk',createCampaignUrl,newCampaign )
     try {
     const config = await authHeaders();
   
