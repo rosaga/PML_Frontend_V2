@@ -18,14 +18,12 @@ export async function GetDashboardSummary(org_id) {
     ];
 
     const [recipientsReachedRes, consumedDataRes, activeCampaignsRes] = await Promise.all(requests);
-
  
     const dashboardSummary = {
-      recipientsReached: recipientsReachedRes.data,
-      consumedData: consumedDataRes.data,
-      activeCampaigns: activeCampaignsRes.data[0].count,
+      recipientsReached: recipientsReachedRes.data.customer_reach || 0,
+      consumedData: consumedDataRes.data.total_bundle || 0,
+      activeCampaigns: activeCampaignsRes.data.data[0].count || 0,
     };
-    console.log("THE RESPONSE IS1111111111111 !!!!!!!",  activeCampaignsRes)
 
     return dashboardSummary;
   } catch (error) {
@@ -38,7 +36,7 @@ export async function GetDashboardSummary(org_id) {
     }
     return {
       errors: {
-        _error: 'Network error. Please try again.',
+        _error: 'Network error. Please try again.111',
       },
     };
   }
@@ -82,7 +80,6 @@ export async function GetDataBalance(org_id) {
         progress: parseInt(progress.toFixed(0)), 
       };
     });
-    console.log({dashboardSummary})
 
     return dashboardSummary;
   } catch (error) {

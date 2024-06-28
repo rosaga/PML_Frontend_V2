@@ -34,37 +34,10 @@ const Dashboard = () => {
     org_id = localStorage.getItem('selectedAccountId');
   }
   const [rows, setRows] = useState([]);
+  const [recipientsReached, setRecipientsReached] = useState('');
+  const [consumedData, setConsumedData] = useState('');
+  const [activeCampaigns, setActiveCampaigns] = useState('');
 
-  // const rows: GridRowsProp<RowData> = [
-  //   {
-  //     id: 1,
-  //     data_bundle: '10MB',
-  //     units_bought: 100,
-  //     unit_balance: 50,
-  //     progress: 50,
-  //   },
-  //   {
-  //     id: 2,
-  //     data_bundle: '20MB',
-  //     units_bought: 200,
-  //     unit_balance: 100,
-  //     progress: 50,
-  //   },
-  //   {
-  //     id: 3,
-  //     data_bundle: '30MB',
-  //     units_bought: 300,
-  //     unit_balance: 200,
-  //     progress: 66.67,
-  //   },
-  //   {
-  //     id: 4,
-  //     data_bundle: '40MB',
-  //     units_bought: 20,
-  //     unit_balance: 5,
-  //     progress: 25,
-  //   },
-  // ];
 
 
   const calculateProgress = (unitsBought: number, unitBalance: number): number => {
@@ -127,11 +100,15 @@ const Dashboard = () => {
     { field: "data_bundle_type", headerName: "Data Bundle Type", flex: 1 },
   ];
   const fetchDashboardSummary = async () => {
-    const summary = await GetDashboardSummary (org_id);
-    console.log("Dashboard Summary:", summary);
+    const summary = await GetDashboardSummary(org_id);
+    if ('recipientsReached' in summary) {
+      setRecipientsReached(summary.recipientsReached);
+      setConsumedData(summary.consumedData);
+      setActiveCampaigns(summary.activeCampaigns);
+    }
   };
   const fetchDataBundle = async () => {
-    const dataBalance = await GetDataBalance (org_id);
+    const dataBalance = await GetDataBalance(org_id);
     setRows(dataBalance);
   };
 
@@ -177,7 +154,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">20</div>
+                <div className="text-2xl font-bold">{recipientsReached}</div>
               </div>
               <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
@@ -198,7 +175,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">10,000 MBS</div>
+                <div className="text-2xl font-bold">{consumedData} MBS</div>
               </div>
               <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
@@ -219,7 +196,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">5</div>
+                <div className="text-2xl font-bold">{activeCampaigns}</div>
               </div>
               <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
@@ -240,7 +217,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">8</div>
+                <div className="text-2xl font-bold">0</div>
               </div>
             </div>
           </div>
