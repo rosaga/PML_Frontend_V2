@@ -58,53 +58,16 @@ const Sidebar = () => {
   return (
     <div>
       <aside
-      id="logo-sidebar"
-      className="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0 shadow-lg"
-      aria-label="Sidebar"
+        id="logo-sidebar"
+        className="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0 shadow-lg"
+        aria-label="Sidebar"
       >
-      <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50 light:bg-gray-800">
-        <img
-        src="/images/peaklogo.png"
-        className="h-30 me-24 sm:h-24"
-        alt="Peak Logo"
-        />
-        <ul className="space-y-4 font-medium">
-        <li>
-          <a
-          href={`/apps/dashboard`}
-          className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-          >
-          <Image
-            style={{ color: "#F58426" }}
-            className="icon w-8 h-8 rounded-lg"
-            width={40}
-            height={40}
-            src="/images/dashboard.svg"
-            blurDataURL="/bluriconloader.png"
-            placeholder="blur"
-            alt="Recipients reached"
-            priority
+        <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50 light:bg-gray-800">
+          <img
+            src="/images/peaklogo.png"
+            className="h-30 me-24 sm:h-24"
+            alt="Peak Logo"
           />
-          <span className="ms-3">Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a
-          href={`/apps/data-rewards`}
-          className="icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
-          >
-          <Image
-            style={{ color: "#F58426" }}
-            className="icon w-8 h-8 rounded-lg"
-            width={40}
-            height={40}
-            src="/images/vector.svg"
-            blurDataURL="/bluriconloader.png"
-            placeholder="blur"
-            alt="Recipients reached"
-            priority
-          />
-
           <ul className="space-y-4 font-medium">
             {links.map((link) => (
               <li key={link.href}>
@@ -153,13 +116,12 @@ const Sidebar = () => {
             </li>
           </ul>
         </div>
-
       </aside>
       {modalOpen && (
-      <ConfirmSignOutModal
-        onClose={handleCloseModal}
-        onConfirm={handleConfirmLogout}
-      />
+        <ConfirmSignOutModal
+          onClose={handleCloseModal}
+          onConfirm={handleConfirmLogout}
+        />
       )}
     </div>
     );
