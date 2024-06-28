@@ -197,7 +197,7 @@ const Sidebar = () => {
         </ul>
         
         <ul className="font-medium mt-40">
-        <li>
+        {/* <li>
           <a
           onClick={handleSwitchAccount}
           className="flex items-center cursor-pointer p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
@@ -220,7 +220,7 @@ const Sidebar = () => {
           </svg>
           <span className="flex-1 ms-3 whitespace-nowrap">Switch Accounts</span>
           </a>
-        </li>
+        </li> */}
         <li>
           <a
           onClick={handleLogoutClick}
