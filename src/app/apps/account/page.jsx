@@ -8,6 +8,7 @@ import PeakButton from "../../../components/button/button";
 import apiUrl from "../../api/utils/apiUtils/apiUrl";
 import { getToken } from "@/utils/auth";
 import { GetAccounts } from "@/app/api/actions/accounts/accounts";
+import NewAccountModal from "../../../components/modal/newAccountModal"
 
 const Accounts = () => {
   let org_id = null;
@@ -29,14 +30,6 @@ const Accounts = () => {
     setIsModalOpen(false);
   };
 
-  const filterOptions = [
-    { value: '', label: 'All Categories' },
-    { value: 'ilike__first_name', label: 'First Name' },
-    { value: 'ilike__last_name', label: 'Last Name' },
-    { value: 'ilike__email', label: 'Email' },
-    
-  ];
-
   const getAccounts = async () => {
     try {
       const res = await GetAccounts();
@@ -54,7 +47,7 @@ const Accounts = () => {
 
   useEffect(() => {
       getAccounts();
-  }, []);
+  }, [isModalOpen]);
 
   const columns = [
     { field: "id", headerName: "ACCOUNT ID", flex: 1 },
@@ -105,7 +98,7 @@ const Accounts = () => {
           </div>
         </div>
       </div>
-      {/* {isModalOpen && <InviteUserModal closeModal={closeModal} />} */}
+      {isModalOpen && <NewAccountModal closeModal={closeModal} />}
     </div>
   );
 };
