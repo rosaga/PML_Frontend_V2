@@ -15,11 +15,11 @@ import  GroupContactDetails  from "./groupDetails";
 
 const GroupsTable = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
   const [groupID, setGroupID] = useState(null);
+  const [total, setTotal] = useState(0);
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
@@ -43,11 +43,12 @@ const GroupsTable = () => {
 
   const getGroups = async () => {
     try {
-      const res = await GetGroups(org_id, paginationModel.page, paginationModel.pageSize);
+      const res = await GetGroups(org_id, paginationModel.page+1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
         setContacts(res.data.data);
+        setTotal(res.data.count);
         setIsLoaded(true);
         setLoading(false);
       }
@@ -58,7 +59,7 @@ const GroupsTable = () => {
 
   useEffect(() => {
     getGroups();
-  }, [isModalOpen, paginationModel.page, org_id]);
+  }, [isModalOpen, paginationModel.page,paginationModel.pageSize, org_id]);
 
   const filterOptions = [
     { value: "eq__external_id", label: "Transaction Reference" },
@@ -135,6 +136,8 @@ const GroupsTable = () => {
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             onRowClick={(params) => groupDetails(params.row.id)}
+            rowCount={total}
+            paginationMode="server"
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",

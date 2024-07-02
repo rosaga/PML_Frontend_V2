@@ -2,9 +2,14 @@ import axios from 'axios';
 import apiUrl from "../../utils/apiUtils/apiUrl";
 import { authHeaders } from '../../../api/utils/headers/headers';
 
-export async function GetRewards(org_id) {
-    
-    const rewardsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward`;
+export async function GetRewards(org_id,page,pageSize) {
+
+    let rewardsUrl
+    if (page || pageSize) {
+      rewardsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?orderby=created_at DESC&size=${pageSize}&page=${page}`;
+    }else{
+      rewardsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?orderby=created_at DESC`;
+    }  
   
     try {
       const config = await authHeaders();
@@ -171,9 +176,9 @@ export async function GetRewards(org_id) {
     }
   }
 
-  export async function GetRecharges(org_id) {
+  export async function GetRecharges(org_id,page,pageSize) {
     
-    const rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=1&size=10&orderby=id DESC`;
+    const rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=${page}&size=${pageSize}&orderby=created_at DESC`;
   
     try {
       const config = await authHeaders();

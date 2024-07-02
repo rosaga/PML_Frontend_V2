@@ -19,10 +19,10 @@ const VouchersTable = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
-    page: 1,
+    page: 0,
   });
   const [rows, setRows] = useState([]);
-  const [page, setPage] = useState(0); // Pagination state
+  const [total, setTotal] = useState(0);
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
@@ -62,10 +62,11 @@ const VouchersTable = () => {
   ];
   const getVouchers = async () => {
     try {
-      const res = await GetVouchers(org_id, paginationModel.page, paginationModel.pageSize);
+      const res = await GetVouchers(org_id, paginationModel.page+1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
+        setTotal(res.data.count);
         setRows(res.data.data);
         setLoading(false);
       }
@@ -108,6 +109,8 @@ const VouchersTable = () => {
             loading={loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
+            rowCount={total}
+            paginationMode="server"
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",

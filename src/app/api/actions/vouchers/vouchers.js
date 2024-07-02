@@ -45,9 +45,9 @@ export async function CreateVouchers(formValues) {
 
     let voucherUrl
     if (page || pageSize) {
-      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?size=${pageSize}&page=${page}`;
+      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?orderby=created_at DESC&size=${pageSize}&page=${page}`;
     }else{
-      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher`;
+      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucherorderby=created_at DESC`;
     }
   
     try {
