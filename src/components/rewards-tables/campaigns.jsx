@@ -18,7 +18,7 @@ import { GetCampaigns } from "@/app/api/actions/campaigns/campaigns";
 const CampaignsTable = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [page, setPage] = useState(0); // Pagination state
+    const [total, setTotal] = useState(0);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openCampaignDetails, setOpenCampaignDetails] = useState(false);
@@ -89,12 +89,13 @@ const CampaignsTable = () => {
 
   const getCampaigns = async () => {
     try {
-      const res = await GetCampaigns(org_id, paginationModel.page, paginationModel.pageSize);
+      const res = await GetCampaigns(org_id, paginationModel.page+1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
         setLoading(false);
         setData(res.data.data);
+        setTotal(res.data.count);
       }
     } catch (err) {
       console.log(err);
@@ -103,7 +104,7 @@ const CampaignsTable = () => {
 
   useEffect(() => {
     getCampaigns();
-  }, [page, isModalOpen]);
+  }, [ org_id, paginationModel.page, paginationModel.pageSize]);
 
   const handleRowClick = (params) => {
     const { id } = params.row;
@@ -156,7 +157,9 @@ const CampaignsTable = () => {
                 loading={loading}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
-                onRowClick={handleRowClick} // Add this line to handle row click
+                onRowClick={handleRowClick}
+                rowCount={total}
+                paginationMode="server"
                 sx={{
                   "& .MuiDataGrid-columnHeader": {
                     backgroundColor: "#F1F2F3",

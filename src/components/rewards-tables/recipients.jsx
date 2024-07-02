@@ -6,7 +6,7 @@ import PeakButton from "../button/button";
 import PeakSearch from "../search/search";
 import axios from "axios";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-import { format, parseISO } from "date-fns";
+import { format, parseISO, set } from "date-fns";
 import UploadRecipientsModal from "../modal/uploadRecipients";
 import NewContactModal from "../modal/newContact"
 import { getToken } from "@/utils/auth";
@@ -29,9 +29,9 @@ const UploadRecipients = () => {
   const { data: session, status } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpen1, setIsModalOpen1] = useState(false);
-  const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
 
   const [isDeleted, setIsDeleted] = useState(false);
   const [contacts, setContacts] = useState([]);
@@ -42,10 +42,11 @@ const UploadRecipients = () => {
 
   const getContacts = async () => {
     try {
-      const res = await GetContacts(org_id, paginationModel.page, paginationModel.pageSize);
+      const res = await GetContacts(org_id, paginationModel.page+1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
+        setTotal(res.data.count);
         setContacts(res.data.data);
         setLoading(false);
       
@@ -57,7 +58,7 @@ const UploadRecipients = () => {
 
   useEffect(() => {
       getContacts();
-  }, [isModalOpen1,page, org_id, isModalOpen, isDeleted]);
+  }, [isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, isModalOpen, isDeleted]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -197,6 +198,8 @@ const UploadRecipients = () => {
             loading={loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
+            rowCount={total}
+            paginationMode="server"
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",

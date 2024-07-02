@@ -20,7 +20,7 @@ import { GetCampaignDetails } from "@/app/api/actions/campaigns/campaigns";
 const CampaignDetails = (campaignId,closeDetails) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [page, setPage] = useState(0); 
+  const [total, setTotal] = useState(0);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   let token = getToken();
@@ -79,7 +79,7 @@ const CampaignDetails = (campaignId,closeDetails) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await GetCampaignDetails(org_id,campaignId.campaignId, page, paginationModel.pageSize);
+      const response = await GetCampaignDetails(org_id,campaignId.campaignId, paginationModel.page+1, paginationModel.pageSize);
       const transformedData = response.data.data.map((item) => ({
         id: item.id,
         request_id: item.request_id,
@@ -88,6 +88,7 @@ const CampaignDetails = (campaignId,closeDetails) => {
         created_date: format(new Date(item.created_at), "dd-MM-yyyy, h:mm a"),
         status: item.status === "SUCCESS" ? "Success Dispatch" : "Failed Dispatch",
       }));
+      setTotal(response.data.count)
       setData(transformedData);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -98,7 +99,7 @@ const CampaignDetails = (campaignId,closeDetails) => {
 
   useEffect(() => {
     fetchData();
-  }, [page]);
+  }, [paginationModel.page, paginationModel.pageSize, org_id, campaignId.campaignId]);
 
   return (
     <>
@@ -130,6 +131,8 @@ const CampaignDetails = (campaignId,closeDetails) => {
             loading={loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
+            rowCount={total}
+            paginationMode="server"
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",

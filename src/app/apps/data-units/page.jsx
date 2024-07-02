@@ -33,6 +33,7 @@ const DataUnits = () => {
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
+  const [total, setTotal] = useState(0);
 
   const [columns, setColumns] = useState([]);
 
@@ -43,6 +44,10 @@ const DataUnits = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
+  const [paginationModel, setPaginationModel] = React.useState({
+    pageSize: 10,
+    page: 0,
+  });
 
   const filterOptions = [
     { value: "eq__external_id", label: "Trans Ref" },
@@ -128,7 +133,7 @@ const DataUnits = () => {
           if (params.row.status === 'PENDING') {
             return <button className="bg-green-400 text-white border-1 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.id)}>Approve</button>;
           }else{
-            return <button className="bg-gray-100 text-gray-600 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.id)}>Approved</button>;
+            return <button className="bg-gray-100 text-gray-600 text-sm rounded-[2px] px-2 shadow-sm outline-none" >Approved</button>;
           }
           return null;
         },
@@ -144,9 +149,7 @@ const DataUnits = () => {
 
   }
 
-  useEffect(() => {
-    fetchBalance();
-  }, []);
+  
 
   async function fetchBalance() {
     const balanceData = await GetBalance(org_id);
@@ -156,11 +159,11 @@ const DataUnits = () => {
   }
   const getRecharges = async () => {
     try {
-      const res = await GetRecharges(org_id);
+      const res = await GetRecharges(org_id, paginationModel.page+1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
-
+        setTotal(res.data.count);
         setRecharges(res.data.data);
         setLoading(false);
         setLoadingData(false);
@@ -173,7 +176,8 @@ const DataUnits = () => {
 
   useEffect(() => {
       getRecharges();
-  }, [isModalOpen, org_id, isApproved]);
+      fetchBalance()
+  }, [isModalOpen, org_id, isApproved, paginationModel.page, paginationModel.pageSize]);
 
   return (
     <>
@@ -246,6 +250,10 @@ const DataUnits = () => {
                   <DataGrid
                     rows={recharges}
                     columns={columns}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
+                    rowCount={total}
+                    paginationMode="server"
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",

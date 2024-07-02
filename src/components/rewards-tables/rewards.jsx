@@ -26,7 +26,7 @@ const RewardsTable = () => {
     const [isModalOpen1, setIsModalOpen1] = useState(false);
     const [page, setPage] = useState(0); // Pagination state
     const [loading, setLoading] = useState(true);
-
+    const [total, setTotal] = useState(0);
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -105,7 +105,7 @@ const RewardsTable = () => {
 
   const getRewards = async () => {
     try {
-      const res = await GetRewards(org_id);
+      const res = await GetRewards(org_id, paginationModel.page + 1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -113,6 +113,7 @@ const RewardsTable = () => {
           ...item,
           mobile_no: item.contact?.mobile_no || ""
         })));
+        setTotal(res.data.count);
         setIsLoaded(true);
         setLoading(false);
       
@@ -124,7 +125,7 @@ const RewardsTable = () => {
 
   useEffect(() => {
       getRewards();
-  }, [isModalOpen,isModalOpen1,page, org_id]);
+  }, [isModalOpen,isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id]);
 
 
   return (
@@ -164,6 +165,8 @@ const RewardsTable = () => {
             loading={loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
+            rowCount={total}
+            paginationMode="server"
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",
