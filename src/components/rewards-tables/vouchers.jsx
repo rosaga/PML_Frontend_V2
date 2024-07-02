@@ -76,7 +76,7 @@ const VouchersTable = () => {
 
   useEffect(() => {
     getVouchers();
-}, []);
+}, [isModalOpen]);
 
   return (
     <>

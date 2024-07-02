@@ -116,6 +116,10 @@ const Dashboard = () => {
     router.push("/apps/help");
   };
 
+  const handleNotifications = () => {
+    router.push("/apps/notification");
+  };
+
  useEffect(() => {
   fetchDashboardSummary()
   fetchDataBundle()
@@ -257,7 +261,7 @@ const Dashboard = () => {
                 </span>
                 <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
               </div>
-              <div className="rounded-3xl border-[1.5px] p-8">
+              <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
                 <span>
                   <Image
                     style={{ color: "#F58426" }}

@@ -103,7 +103,7 @@ const CampaignsTable = () => {
 
   useEffect(() => {
     getCampaigns();
-  }, [page]);
+  }, [page, isModalOpen]);
 
   const handleRowClick = (params) => {
     const { id } = params.row;

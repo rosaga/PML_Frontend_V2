@@ -28,6 +28,7 @@ const NewAccountModal = ({ closeModal }) => {
 
     const res = createAccount({org_id,newAccount}).then((res) => {
       if (res.status === 200) {
+        closeModal();
         toast.success("CREATE ACCOUNT SUCCESS")
       } else {
         toast.error("CREATE ACCOUNT FAILED")
@@ -52,6 +53,8 @@ const NewAccountModal = ({ closeModal }) => {
   }, [closeModal]);
 
   return (
+    <>
+    <ToastContainer />
     <div
       id="authentication-modal"
       tabIndex="-1"
@@ -145,6 +148,7 @@ const NewAccountModal = ({ closeModal }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
