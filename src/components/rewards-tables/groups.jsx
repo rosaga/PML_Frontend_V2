@@ -12,18 +12,25 @@ import NewGroupModal from "../modal/newGroup";
 import { getToken } from "@/utils/auth";
 import { GetGroups } from "@/app/api/actions/group/group";
 import  GroupContactDetails  from "./groupDetails";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const GroupsTable = () => {
+
+  let org_id = null;
+  let token = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+    token = getToken();
+  }
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
   const [groupID, setGroupID] = useState(null);
+  const [isDeleted, setIsDeleted] = useState(false);
   const [total, setTotal] = useState(0);
-  let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
-  }
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -57,9 +64,32 @@ const GroupsTable = () => {
     }
   };
 
+  const deleteGroup = async (id) => {
+    
+    const deleteUrl = `https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2/organization/${org_id}/group/${id}`
+    try {
+      const response = await axios.delete(deleteUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+  
+      if (response.status === 204) {
+        setIsDeleted(true);
+        toast.success("DELETE SUCCESSUL!!!");
+      } else {
+        toast.error("DELETE FAILED");
+      }
+    } catch (error) {
+      console.log(error)
+      toast.error("DELETE FAILED");
+
+    }
+  };
+
   useEffect(() => {
     getGroups();
-  }, [isModalOpen, paginationModel.page,paginationModel.pageSize, org_id]);
+  }, [isModalOpen, paginationModel.page,paginationModel.pageSize, org_id, isDeleted]);
 
   const filterOptions = [
     { value: "eq__external_id", label: "Transaction Reference" },
@@ -89,10 +119,21 @@ const GroupsTable = () => {
       },
     },
     {
-      field: "action",
+      field: "Action",
       headerName: "Action",
-      flex: 0,
-      renderCell: (params) => <DeleteIcon />,
+      flex: 0.5,
+      renderCell: (params) => {
+        const handleDelete = () => {
+          deleteGroup(params.id);
+        };
+  
+        return (
+          <DeleteIcon
+            style={{ cursor: 'pointer', color: 'red' }}
+            onClick={handleDelete}
+          />
+        );
+      },
     },
   ];
 
@@ -104,6 +145,7 @@ const GroupsTable = () => {
   };
   return (
     <>
+    <ToastContainer />
       {isModalOpen && <NewGroupModal closeModal={closeModal} />}
       {groupDetailsOpen ? <GroupContactDetails groupID={groupID} />
       :

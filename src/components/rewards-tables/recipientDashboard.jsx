@@ -51,6 +51,8 @@ const RecipientDashboard = () => {
       },
     },
     { field: "mobile_no", headerName: "Phone Number", flex: 1 },
+    { field: "created_by", headerName: "Created By", flex: 1 },
+    { field: "created_at", headerName: "Created At", flex: 1 },
     {
       field: "status",
       headerName: "Status",
@@ -72,12 +74,12 @@ const RecipientDashboard = () => {
         );
       },
     },
-    {
-      field: "Action",
-      headerName: "Action",
-      flex: 0,
-      renderCell: (params) => <DeleteIcon />,
-    },
+    // {
+    //   field: "Action",
+    //   headerName: "Action",
+    //   flex: 0,
+    //   renderCell: (params) => <DeleteIcon />,
+    // },
   ];
 
   return (

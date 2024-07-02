@@ -12,12 +12,18 @@ import NewContactModal from "../modal/newContact"
 import { getToken } from "@/utils/auth";
 import { GetContacts } from "../../app/api/actions/contact/contact"
 import { signIn, signOut, useSession } from 'next-auth/react';
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+
 
 
 const UploadRecipients = () => {
+
   let org_id = null;
+  let token = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
+    token = getToken();
   }
 
   const { data: session, status } = useSession();
@@ -27,7 +33,7 @@ const UploadRecipients = () => {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
@@ -42,7 +48,6 @@ const UploadRecipients = () => {
       } else {
         setTotal(res.data.count);
         setContacts(res.data.data);
-        setIsLoaded(true);
         setLoading(false);
       
       }
@@ -53,7 +58,7 @@ const UploadRecipients = () => {
 
   useEffect(() => {
       getContacts();
-  }, [isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, isModalOpen]);
+  }, [isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, isModalOpen, isDeleted]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -77,6 +82,30 @@ const UploadRecipients = () => {
     // { value: "ilike__first_name", label: "Units" },
     // { value: "ilike__last_name", label: "Status" },
   ];
+
+  const deleteContact = async (id) => {
+    
+    const deleteUrl = `https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2/organization/${org_id}/contact/${id}`
+    try {
+      const response = await axios.delete(deleteUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+  
+      if (response.status === 204) {
+        setIsDeleted(true);
+        toast.success("DELETE SUCCESSUL!!!");
+      } else {
+        toast.error("DELETE FAILED");
+      }
+    } catch (error) {
+      console.log(error)
+      toast.error("DELETE FAILED");
+
+    }
+  };
+
   const columns = [
     { field: "created_at", headerName: "Date of Onboarding", flex: 1,
     valueFormatter: (params) => {
@@ -89,6 +118,8 @@ const UploadRecipients = () => {
     },
    },
     { field: "mobile_no", headerName: "Phone Number", flex: 1 },
+    { field: "created_by", headerName: "Created By", flex: 1 },
+    { field: "created_at", headerName: "Created At", flex: 1 },
     {
       field: "status",
       headerName: "Status",
@@ -110,11 +141,28 @@ const UploadRecipients = () => {
         );
       },
     },
-    { field: "Action", headerName: "Action", flex: 0, renderCell: (params) => <DeleteIcon /> },
+    {
+      field: "Action",
+      headerName: "Action",
+      flex: 0.5,
+      renderCell: (params) => {
+        const handleDelete = () => {
+          deleteContact(params.id);
+        };
+  
+        return (
+          <DeleteIcon
+            style={{ cursor: 'pointer', color: 'red' }}
+            onClick={handleDelete}
+          />
+        );
+      },
+    },
   ];
 
   return (
     <>
+    <ToastContainer />
       {isModalOpen && <UploadRecipientsModal closeModal={closeModal} />}
       {isModalOpen1 && <NewContactModal closeModal={closeModal} />}
       <div className="flex items-center justify-between">
