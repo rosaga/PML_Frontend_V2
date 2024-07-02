@@ -67,12 +67,12 @@ const GroupDashboard = () => {
       }
     },
    },
-    {
-      field: "action",
-      headerName: "Action",
-      flex: 0,
-      renderCell: (params) => <DeleteIcon />,
-    },
+    // {
+    //   field: "action",
+    //   headerName: "Action",
+    //   flex: 0,
+    //   renderCell: (params) => <DeleteIcon />,
+    // },
   ];
 
   return (
