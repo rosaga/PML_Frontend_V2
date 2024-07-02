@@ -78,6 +78,7 @@ const InviteUserModal = ({ closeModal }) => {
       });
       if (res.status === 202) {
         setIsLoading(false)
+        closeModal();
         toast.success("INVITE USER SUCCESS")
       } else {
         setIsLoading(false)
