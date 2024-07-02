@@ -15,15 +15,15 @@ const RecipientDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 4,
-    page: 1,
+    page: 0,
   });
-  const [total,setTotal] = useState(0)
+  const [total, setTotal] = useState(0);
 
   const getContacts = async () => {
     try {
       const res = await GetContacts(org_id, paginationModel.page + 1, paginationModel.pageSize); 
       if (!res.errors) {
-        setTotal(res.data.count)
+        setTotal(res.data.count);
         setContacts(res.data.data);
         setLoading(false);
       }
@@ -33,8 +33,9 @@ const RecipientDashboard = () => {
   };
 
   useEffect(() => {
+    setLoading(true);
     getContacts();
-  }, [ paginationModel.page, org_id,total]);
+  }, [paginationModel.page, paginationModel.pageSize, org_id]);
   const columns = [
     {
       field: "created_at",
@@ -88,6 +89,8 @@ const RecipientDashboard = () => {
           loading={loading}
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
+          rowCount={total}
+          paginationMode="server"
           sx={{
             "& .MuiDataGrid-columnHeader": {
               backgroundColor: "#F1F2F3",

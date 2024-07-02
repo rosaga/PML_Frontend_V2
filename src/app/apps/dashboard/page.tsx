@@ -59,7 +59,7 @@ const Dashboard = () => {
     );
   };
   const [paginationModel, setPaginationModel] = React.useState({
-    pageSize: 4,
+    pageSize: 10,
     page: 0,
   });
 
@@ -154,7 +154,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">{recipientsReached}</div>
+                <div className="text-2xl font-bold">{recipientsReached? recipientsReached : 0}</div>
               </div>
               <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
@@ -175,7 +175,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">{consumedData} MBS</div>
+                <div className="text-2xl font-bold">{consumedData? consumedData : 0} MBS</div>
               </div>
               <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
@@ -196,7 +196,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold">{activeCampaigns}</div>
+                <div className="text-2xl font-bold">{activeCampaigns?activeCampaigns:0}</div>
               </div>
               <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">

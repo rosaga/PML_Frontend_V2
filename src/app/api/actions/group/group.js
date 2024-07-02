@@ -45,9 +45,9 @@ export async function groupCreate(formValues) {
 
     let groupUrl
     if (page || pageSize) {
-     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?&size=${pageSize}&page=${page}`;
+     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?orderby=created_at DESC&size=${pageSize}&page=${page}`;
     }else{
-      groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group`;
+      groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?orderby=created_at DESC`;
     }
   
     try {
@@ -79,7 +79,7 @@ export async function groupCreate(formValues) {
 
     let groupUrl
     if (page || pageSize) {
-     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group/contact?eq__group_id=${group_id}&size=${pageSize}&page=${page}`;
+     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group/contact?orderby=created_at DESC&eq__group_id=${group_id}&size=${pageSize}&page=${page}`;
     }else{
       groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group/contact`;
     }

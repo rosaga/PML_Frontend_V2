@@ -17,13 +17,14 @@ const GroupDashboard = () => {
   const [page, setPage] = useState(0); // Pagination state
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
   }
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 4,
-    page: 1,
+    page: 0
   });
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -31,10 +32,11 @@ const GroupDashboard = () => {
 
   const getGroups = async () => {
     try {
-      const res = await GetGroups(org_id,paginationModel.page, paginationModel.pageSize);
+      const res = await GetGroups(org_id,paginationModel.page+1, paginationModel.pageSize);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
+        setTotal(res.data.count);
         setContacts(res.data.data);
         setIsLoaded(true);
         setLoading(false);
@@ -83,6 +85,8 @@ const GroupDashboard = () => {
             loading={loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
+            rowCount={total}
+            paginationMode="server"
             sx={{
               "& .MuiDataGrid-columnHeader": {
                 backgroundColor: "#F1F2F3",
