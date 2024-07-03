@@ -11,7 +11,6 @@ import UploadRecipientsModal from "../modal/uploadRecipients";
 import NewContactModal from "../modal/newContact"
 import { getToken } from "@/utils/auth";
 import { GetContacts } from "../../app/api/actions/contact/contact"
-import { signIn, signOut, useSession } from 'next-auth/react';
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 

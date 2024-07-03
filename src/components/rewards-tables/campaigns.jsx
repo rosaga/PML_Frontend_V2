@@ -23,6 +23,8 @@ const CampaignsTable = () => {
     const [loading, setLoading] = useState(true);
     const [openCampaignDetails, setOpenCampaignDetails] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
+    const [searchParams, setSearchParams] = useState({});
+
     let org_id = null;
     if (typeof window !== 'undefined') {
       org_id = localStorage.getItem('selectedAccountId');
@@ -38,13 +40,17 @@ const CampaignsTable = () => {
   };
 
   const filterOptions = [
-    { value: "eq__external_id", label: "Transaction Reference" },
-    { value: "ilike__first_name", label: "Start Date" },
-    { value: "ilike__last_name", label: "End Date" },
-    { value: "eq__external_id", label: "Data Bundle" },
-    { value: "ilike__first_name", label: "Units" },
-    { value: "ilike__last_name", label: "Status" },
+    { value: "ilike__name", label: "Name" },
+    { value: "ilike__created_by", label: "Owner" },
   ];
+
+  const handleSearch = (filter, value) => {
+    setSearchParams({ [filter]: value });
+  };
+
+  const handleClearSearch = () => {
+    setSearchParams({});
+  };
 
   
 
@@ -89,7 +95,7 @@ const CampaignsTable = () => {
 
   const getCampaigns = async () => {
     try {
-      const res = await GetCampaigns(org_id, paginationModel.page+1, paginationModel.pageSize);
+      const res = await GetCampaigns(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -104,7 +110,7 @@ const CampaignsTable = () => {
 
   useEffect(() => {
     getCampaigns();
-  }, [ org_id, paginationModel.page, paginationModel.pageSize, isModalOpen]);
+  }, [ org_id, paginationModel.page, paginationModel.pageSize, isModalOpen, searchParams]);
 
   const handleRowClick = (params) => {
     const { id } = params.row;
@@ -127,7 +133,7 @@ const CampaignsTable = () => {
           <div className="flex items-center justify-between">
             <p className="mt-4 font-medium text-lg">All Campaigns</p>
             <div className="ml-auto flex space-x-4">
-              <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+            <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
               <PeakButton
                 buttonText="Schedule Campaign"
                 icon={AddIcon}
