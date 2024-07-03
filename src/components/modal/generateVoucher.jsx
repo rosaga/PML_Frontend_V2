@@ -56,8 +56,7 @@ const GenerateVoucherModal = ({ closeModal }) => {
     
         const res = CreateVouchers(newReward).then((res) => {
           if (res.status === 201) {
-            setSuccessMessage(`The Voucher has been created`);
-            console.log("resssss",res)
+            setSuccessMessage(`The Voucher has been created and downloaded successfully.`);
             exportToExcel(res.data);
             setErrorMessage(""); 
           } else {
