@@ -104,7 +104,7 @@ const CampaignsTable = () => {
 
   useEffect(() => {
     getCampaigns();
-  }, [ org_id, paginationModel.page, paginationModel.pageSize]);
+  }, [ org_id, paginationModel.page, paginationModel.pageSize, isModalOpen]);
 
   const handleRowClick = (params) => {
     const { id } = params.row;

@@ -41,14 +41,20 @@ export async function groupCreate(formValues) {
     }
   }
 
-  export async function GetGroups(org_id,page,pageSize) {
+  export async function GetGroups(org_id, page, pageSize, searchParams) {
 
-    let groupUrl
-    if (page || pageSize) {
-     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?eq__is_deleted=false&orderby=created_at DESC&size=${pageSize}&page=${page}`;
-    }else{
-      groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?orderby=created_at DESC`;
+    let groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group?eq__is_deleted=false&orderby=created_at DESC`;
+
+    if (page) {
+      groupUrl += `&page=${page}`;
     }
+    if (pageSize) {
+      groupUrl += `&size=${pageSize}`;
+    }
+    if (searchParams) {
+      const searchParamsString = new URLSearchParams(searchParams).toString();
+      groupUrl += `&${searchParamsString}`;
+    }  
   
     try {
       const config = await authHeaders();

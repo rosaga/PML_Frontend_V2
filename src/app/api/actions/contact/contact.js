@@ -3,39 +3,45 @@ import apiUrl from "../../utils/apiUtils/apiUrl";
 import { authHeaders } from '../../../api/utils/headers/headers';
 import { groupCreate } from '../group/group'
 
-export async function GetContacts(org_id,page,pageSize) {
-    let contactsUrl  
-    if (page || pageSize) {
-     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?eq__is_deleted=false&orderby=created_at DESC&size=${pageSize}&page=${page}`;
-    }else{
-     contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact`;
+export async function GetContacts(org_id, page, pageSize, searchParams) {
+  let contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?eq__is_deleted=false&orderby=created_at DESC`;
+
+  if (page) {
+    contactsUrl += `&page=${page}`;
+  }
+  if (pageSize) {
+    contactsUrl += `&size=${pageSize}`;
+  }
+  if (searchParams) {
+    const searchParamsString = new URLSearchParams(searchParams).toString();
+    contactsUrl += `&${searchParamsString}`;
+  }
+
+  try {
+    const config = await authHeaders();
+    const res = await axios.get(contactsUrl, config);
+
+    if (res.data && res.status === 200) {
+      console.log("THE RESPONSE IS !!!!!!!", res);
     }
-  
-    try {
-      const config = await authHeaders();
-  
-      const res = await axios.get(contactsUrl, config);
-  
-      if (res.data && res.status === 200) {
-        console.log("THE RESPONSE IS !!!!!!!", res);
-      }
-  
-      return res;
-    } catch (error) {
-      if (error.response) {
-        return {
-          errors: {
-            _error: 'The contacts could not be returned.',
-          },
-        };
-      }
+
+    return res;
+  } catch (error) {
+    if (error.response) {
       return {
         errors: {
-          _error: 'Network error. Please try again.',
+          _error: 'The contacts could not be returned.',
         },
       };
     }
+    return {
+      errors: {
+        _error: 'Network error. Please try again.',
+      },
+    };
   }
+}
+
 
   export async function fetchContacts(query, org_id) {
     const contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?ilike__mobile_no=${query}`;

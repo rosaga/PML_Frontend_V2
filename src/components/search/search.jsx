@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-const PeakSearch = ({ filterOptions, selectedFilter }) => {
+const PeakSearch = ({ filterOptions, selectedFilter, onSearch, onClearSearch }) => {
   const [inputValue, setInputValue] = useState("");
   const [filter, setFilter] = useState(selectedFilter);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -20,8 +20,9 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
 
   const handleClick = (event) => {
     event.preventDefault();
-    // Add your search logic here
-    console.log("Search clicked");
+    if (filter && inputValue) {
+      onSearch(filter, inputValue);
+    }
   };
 
   const toggleDropdown = () => {
@@ -29,7 +30,7 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
   };
 
   const handleOptionClick = (option) => {
-    setFilter(option);
+    setFilter(option.value);
     setDropdownOpen(false);
   };
 
@@ -37,6 +38,12 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
       setDropdownOpen(false);
     }
+  };
+
+  const handleClearSearch = () => {
+    setInputValue("");
+    setFilter("");
+    onClearSearch();
   };
 
   useEffect(() => {
@@ -62,7 +69,7 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
             className="flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center text-gray-900 bg-gray-100 border border-gray-300 rounded-s-lg hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:focus:ring-gray-700 dark:text-white dark:border-gray-600"
             type="button"
           >
-            {filter || "All categories"}
+            {filterOptions.find(option => option.value === filter)?.label || "All categories"}
             <svg
               className="w-2.5 h-2.5 ms-2.5"
               aria-hidden="true"
@@ -95,7 +102,7 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
                     <button
                       type="button"
                       className="inline-flex w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                      onClick={() => handleOptionClick(option.label)}
+                      onClick={() => handleOptionClick(option)}
                     >
                       {option.label}
                     </button>
@@ -117,7 +124,8 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
             />
             <button
               type="submit"
-              className="absolute top-0 right-0 p-2.5 text-sm font-medium h-full text-white bg-[#090A29] rounded-e-lg border hover:bg-orange-400 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-300 dark:hover:bg-gray-300 dark:focus:ring-gray-300"
+              className="absolute top-0 right-0 p-2.5 text-sm font-medium h-full text-white bg-[#090A29] rounded-e-lg border hover:bg-orange-400 dark:bg-gray-300 dark:hover:bg-gray-300 dark:focus:ring-gray-300"
+              onClick={handleClick}
             >
               <svg
                 className="w-4 h-4"
@@ -137,6 +145,13 @@ const PeakSearch = ({ filterOptions, selectedFilter }) => {
               <span className="sr-only">Search</span>
             </button>
           </div>
+          <button
+            type="button"
+            className="ml-2 text-2xl font-light text-gray-400"
+            onClick={handleClearSearch}
+          >
+            X
+          </button>
         </div>
       </form>
     </div>

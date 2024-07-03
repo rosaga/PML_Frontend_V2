@@ -26,12 +26,11 @@ const UploadRecipients = () => {
     token = getToken();
   }
 
-  const { data: session, status } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpen1, setIsModalOpen1] = useState(false);
-  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [searchParams, setSearchParams] = useState({});
 
   const [isDeleted, setIsDeleted] = useState(false);
   const [contacts, setContacts] = useState([]);
@@ -42,7 +41,7 @@ const UploadRecipients = () => {
 
   const getContacts = async () => {
     try {
-      const res = await GetContacts(org_id, paginationModel.page+1, paginationModel.pageSize);
+      const res = await GetContacts(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -58,7 +57,7 @@ const UploadRecipients = () => {
 
   useEffect(() => {
       getContacts();
-  }, [isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, isModalOpen, isDeleted]);
+  }, [isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, isModalOpen, isDeleted, searchParams]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -75,13 +74,17 @@ const UploadRecipients = () => {
 
 
   const filterOptions = [
-    // { value: "eq__external_id", label: "" },
-    { value: "ilike__first_name", label: "Date of Onboarding" },
-    { value: "ilike__phone", label: "Phone Number" },
-    { value: "ilike_status", label: "Status" },
-    // { value: "ilike__first_name", label: "Units" },
-    // { value: "ilike__last_name", label: "Status" },
+    { value: "ilike__created_by", label: "Created By" },
+    { value: "ilike__mobile_no", label: "Phone Number" },
   ];
+
+  const handleSearch = (filter, value) => {
+    setSearchParams({ [filter]: value });
+  };
+
+  const handleClearSearch = () => {
+    setSearchParams({});
+  };
 
   const deleteContact = async (id) => {
     
@@ -168,7 +171,7 @@ const UploadRecipients = () => {
       <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Contacts</p>
         <div className="ml-auto flex space-x-4">
-          <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+          <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
           <PeakButton
             buttonText="Upload CSV File"
             icon={IosShareIcon}
@@ -181,12 +184,6 @@ const UploadRecipients = () => {
             className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
             onClick={openModal1}
           />
-          {/* <PeakButton
-            buttonText="Export"
-            icon={IosShareIcon}
-            className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
-            onClick={openModal}
-          /> */}
         </div>
       </div>
 

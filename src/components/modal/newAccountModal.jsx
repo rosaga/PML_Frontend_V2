@@ -28,29 +28,19 @@ const NewAccountModal = ({ closeModal }) => {
 
     const res = createAccount({org_id,newAccount}).then((res) => {
       if (res.status === 200) {
-        closeModal();
+        console.log("STATUS IS 200")
         toast.success("CREATE ACCOUNT SUCCESS")
+        closeModal();
       } else {
         toast.error("CREATE ACCOUNT FAILED")
       }
+    })
+    .catch((error) => {
+      console.log("Error:", error);
     });
 
     return res;
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (event.target.id === "authentication-modal") {
-        closeModal();
-      }
-    };
-
-    window.addEventListener("click", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-    };
-  }, [closeModal]);
 
   return (
     <>
