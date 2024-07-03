@@ -1,15 +1,21 @@
-import * as React from "react";
+import React, { useState, useEffect } from "react";
 import Accordion from "@mui/material/Accordion";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Button } from '@mui/material';
 
 export default function Faqs() {
-  const [expanded, setExpanded] = React.useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   const handleChange = (panel) => (event, isExpanded) => {
     setExpanded(isExpanded ? panel : false);
+  };
+
+  const handleShowMore = () => {
+    setShowMore(!showMore);
   };
 
   return (
@@ -288,8 +294,8 @@ export default function Faqs() {
         </AccordionDetails>
       </Accordion>
 
-
-
+      {showMore && (
+        <>
       <Accordion
         expanded={expanded === "panel13"}
         onChange={handleChange("panel13")}
@@ -516,7 +522,11 @@ Vouchers          </Typography>
           </Typography>
         </AccordionDetails>
       </Accordion>
-      
+      </>
+      )}
+      <Button onClick={handleShowMore} variant="contained" sx={{ marginTop: 2 , backgroundColor: "#F58426", alignContent: "centre"}}>
+        {showMore ? "Show Less" : "Load More"}
+      </Button>
     </div>
   );
 }

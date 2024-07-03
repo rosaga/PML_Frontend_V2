@@ -84,7 +84,7 @@ const Users = () => {
             <div className="flex items-center justify-between">
               <p className="mt-4 font-medium text-lg">Users</p>
               <div className="ml-auto flex space-x-4">
-                <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+                {/* <PeakSearch filterOptions={filterOptions} selectedFilter="" /> */}
                 <PeakButton
                   buttonText="Invite User"
                   icon={AddIcon}

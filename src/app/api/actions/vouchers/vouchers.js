@@ -41,15 +41,20 @@ export async function CreateVouchers(formValues) {
     }
   }
 
-  export async function GetVouchers(org_id,page,pageSize) {
+  export async function GetVouchers(org_id,page,pageSize,searchParams) {
 
-    let voucherUrl
-    if (page || pageSize) {
-      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?orderby=created_at DESC&size=${pageSize}&page=${page}`;
-    }else{
-      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucherorderby=created_at DESC`;
+    let vouchersUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?orderby=created_at DESC`;
+    // console.log("SEARCH PARAMS", searchParams)
+    if (page) {
+      vouchersUrl += `&page=${page}`;
     }
-  
+    if (pageSize) {
+      vouchersUrl += `&size=${pageSize}`;
+    }
+    if (searchParams) {
+      const searchParamsString = new URLSearchParams(searchParams).toString();
+      vouchersUrl += `&${searchParamsString}`;
+    }
     try {
       const config = await authHeaders();
   
