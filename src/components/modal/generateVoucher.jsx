@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 import { CreateVouchers } from "@/app/api/actions/vouchers/vouchers";
+import * as XLSX from 'xlsx';
 
 
 const GenerateVoucherModal = ({ closeModal }) => {
@@ -56,6 +57,8 @@ const GenerateVoucherModal = ({ closeModal }) => {
         const res = CreateVouchers(newReward).then((res) => {
           if (res.status === 201) {
             setSuccessMessage(`The Voucher has been created`);
+            console.log("resssss",res)
+            exportToExcel(res.data);
             setErrorMessage(""); 
           } else {
             setErrorMessage("Failed to create Vouchers. Please try again.");
@@ -64,6 +67,12 @@ const GenerateVoucherModal = ({ closeModal }) => {
     
         return res;
       }; 
+      const exportToExcel = (voucherData) => {
+        const worksheet = XLSX.utils.json_to_sheet(voucherData.map(v => ({ Voucher_Code: v.voucher_code, Message : "To Redeem send this voucher code "+v.voucher_code+" to 24995"})));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Vouchers");
+        XLSX.writeFile(workbook, "vouchers_"+new Date().toISOString()+".xlsx");
+      };
   return (
     <div
       id="authentication-modal"
