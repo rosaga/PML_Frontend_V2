@@ -109,7 +109,11 @@ const UploadRecipients = () => {
   };
 
   const columns = [
-    { field: "created_at", headerName: "Date of Onboarding", flex: 1,
+    
+   { field: "id", headerName: "ID", flex: 1 },
+    { field: "mobile_no", headerName: "Phone Number", flex: 1 },
+    { field: "created_by", headerName: "Created By", flex: 1 },
+    { field: "created_at", headerName: "Created At", flex: 1,
     valueFormatter: (params) => {
       try {
         const date = parseISO(params);
@@ -117,11 +121,7 @@ const UploadRecipients = () => {
       } catch (error) {
         return "Invalid Date";
       }
-    },
-   },
-    { field: "mobile_no", headerName: "Phone Number", flex: 1 },
-    { field: "created_by", headerName: "Created By", flex: 1 },
-    { field: "created_at", headerName: "Created At", flex: 1 },
+    }, },
     {
       field: "status",
       headerName: "Status",
