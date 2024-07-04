@@ -34,6 +34,7 @@ const DataUnits = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
   const [total, setTotal] = useState(0);
+  const [searchParams, setSearchParams] = useState({});
 
   const [columns, setColumns] = useState([]);
 
@@ -50,13 +51,19 @@ const DataUnits = () => {
   });
 
   const filterOptions = [
-    { value: "eq__external_id", label: "Trans Ref" },
-    { value: "ilike__first_name", label: "Start Date" },
-    { value: "ilike__last_name", label: "End Date" },
-    { value: "eq__external_id", label: "Data Bundle" },
-    { value: "ilike__first_name", label: "Units" },
-    { value: "ilike__last_name", label: "Status" },
+    { value: "ilike__created_by", label: "Created By" },
+    { value: "eq__package", label: "Package" },
+    { value: "eq__status", label: "Status" },
   ];
+
+  const handleSearch = (filter, value) => {
+    setSearchParams({ [filter]: value });
+  };
+
+  const handleClearSearch = () => {
+    setSearchParams({});
+  };
+
 
   const handleApprove = async (id) => {
     const approvalUrl = `https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2/admin/recharge/${id}`;
@@ -159,7 +166,7 @@ const DataUnits = () => {
   }
   const getRecharges = async () => {
     try {
-      const res = await GetRecharges(org_id, paginationModel.page+1, paginationModel.pageSize);
+      const res = await GetRecharges(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -177,7 +184,7 @@ const DataUnits = () => {
   useEffect(() => {
       getRecharges();
       fetchBalance()
-  }, [isModalOpen, org_id, isApproved, paginationModel.page, paginationModel.pageSize]);
+  }, [isModalOpen, org_id, isApproved, paginationModel.page, paginationModel.pageSize, searchParams]);
 
   return (
     <>
@@ -227,7 +234,7 @@ const DataUnits = () => {
               <div className="flex items-center justify-between">
                 <p className="mt-4 font-medium text-lg">Data Units</p>
                 <div className="ml-auto flex space-x-4">
-                  <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+                <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
                   <PeakButton
                     buttonText="Request Data Units"
                     icon={AddIcon}

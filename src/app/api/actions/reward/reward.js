@@ -182,9 +182,14 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
     }
   }
 
-  export async function GetRecharges(org_id,page,pageSize) {
+  export async function GetRecharges(org_id,page,pageSize, searchParams) {
     
-    const rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=${page}&size=${pageSize}&orderby=created_at DESC`;
+    let rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=${page}&size=${pageSize}&orderby=created_at DESC`;
+
+    if (searchParams) {
+      const searchParamsString = new URLSearchParams(searchParams).toString();
+      rechargeUrl += `&${searchParamsString}`;
+    }
   
     try {
       const config = await authHeaders();
