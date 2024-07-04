@@ -41,20 +41,15 @@ export async function CreateVouchers(formValues) {
     }
   }
 
-  export async function GetVouchers(org_id,page,pageSize,searchParams) {
+  export async function GetVouchers(org_id,page,pageSize) {
 
-    let vouchersUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?orderby=created_at DESC`;
-    // console.log("SEARCH PARAMS", searchParams)
-    if (page) {
-      vouchersUrl += `&page=${page}`;
+    let voucherUrl
+    if (page || pageSize) {
+      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?size=${pageSize}&page=${page}`;
+    }else{
+      voucherUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher`;
     }
-    if (pageSize) {
-      vouchersUrl += `&size=${pageSize}`;
-    }
-    if (searchParams) {
-      const searchParamsString = new URLSearchParams(searchParams).toString();
-      vouchersUrl += `&${searchParamsString}`;
-    }
+  
     try {
       const config = await authHeaders();
   
@@ -80,6 +75,7 @@ export async function CreateVouchers(formValues) {
       };
     }
   }
+
   export async function GetCampaignDetails(org_id,page,pageSize) {
 
     let groupUrl

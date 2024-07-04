@@ -42,6 +42,7 @@ const CampaignsTable = () => {
   const filterOptions = [
     { value: "ilike__name", label: "Name" },
     { value: "ilike__created_by", label: "Owner" },
+    { value: "eq__bundle_size", label: "Bundle Amt" },
   ];
 
   const handleSearch = (filter, value) => {
@@ -78,7 +79,7 @@ const CampaignsTable = () => {
       headerName: "Bundle Amount", 
       flex: 1,
       valueGetter: (params) => {
-        console.log(params)
+        console.log("PARAMS IS",params)
         const contactCount = params?.row?.contacts_count || 0;
         const bundleSize = params?.row?.bundle_size || 0;
         return contactCount * bundleSize;

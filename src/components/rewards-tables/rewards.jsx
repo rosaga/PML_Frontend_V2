@@ -46,6 +46,7 @@ const RewardsTable = () => {
     { value: "ilike__created_by", label: "Created By" },
     { value: "eq__status", label: "Status" },
     { value: "ilike__mobile_no", label: "Phone" },
+    { value: "eq__bundle_amount", label: "Bundle Amt" },
   ];
 
   const handleSearch = (filter, value) => {
@@ -73,10 +74,6 @@ const RewardsTable = () => {
       field: 'mobile_no',
       headerName: 'Phone Number',
       flex: 1,
-      // valueGetter: (params) => {
-      //   console.log('params for phone_number:', params); // Debug log
-      //   return params.row?.contact?.mobile_no;
-      // },
     },
     {
       field: "status",
@@ -98,6 +95,11 @@ const RewardsTable = () => {
           <span style={{ color: getColor(params.value) }}>{params.value}</span>
         );
       },
+    },
+    {
+      field: 'status_desc',
+      headerName: 'Status Description',
+      flex: 1,
     },
   ];
   const [paginationModel, setPaginationModel] = React.useState({
