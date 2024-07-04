@@ -27,6 +27,8 @@ const RewardsTable = () => {
     const [page, setPage] = useState(0); // Pagination state
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
+    const [searchParams, setSearchParams] = useState({});
+
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -41,14 +43,19 @@ const RewardsTable = () => {
   };
 
   const filterOptions = [
-    { value: "eq__external_id", label: "Transaction Reference" },
-    { value: "ilike__first_name", label: "Start Date" },
-    { value: "ilike__last_name", label: "End Date" },
-    { value: "eq__external_id", label: "Data Bundle" },
-    { value: "ilike__first_name", label: "Units" },
-    { value: "ilike__last_name", label: "Status" },
+    { value: "ilike__created_by", label: "Created By" },
+    { value: "eq__status", label: "Status" },
+    { value: "ilike__mobile_no", label: "Phone" },
+    { value: "eq__bundle_amount", label: "Bundle Amt" },
   ];
 
+  const handleSearch = (filter, value) => {
+    setSearchParams({ [filter]: value });
+  };
+
+  const handleClearSearch = () => {
+    setSearchParams({});
+  };
 
   const columns= [
     { field: "id", headerName: "Request ID", flex: 1 },
@@ -67,10 +74,6 @@ const RewardsTable = () => {
       field: 'mobile_no',
       headerName: 'Phone Number',
       flex: 1,
-      // valueGetter: (params) => {
-      //   console.log('params for phone_number:', params); // Debug log
-      //   return params.row?.contact?.mobile_no;
-      // },
     },
     {
       field: "status",
@@ -93,6 +96,11 @@ const RewardsTable = () => {
         );
       },
     },
+    {
+      field: 'status_desc',
+      headerName: 'Status Description',
+      flex: 1,
+    },
   ];
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
@@ -105,7 +113,7 @@ const RewardsTable = () => {
 
   const getRewards = async () => {
     try {
-      const res = await GetRewards(org_id, paginationModel.page + 1, paginationModel.pageSize);
+      const res = await GetRewards(org_id, paginationModel.page + 1, paginationModel.pageSize, searchParams);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -125,7 +133,7 @@ const RewardsTable = () => {
 
   useEffect(() => {
       getRewards();
-  }, [isModalOpen,isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id]);
+  }, [isModalOpen,isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, searchParams]);
 
 
   return (
@@ -135,7 +143,7 @@ const RewardsTable = () => {
       <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Rewards</p>
         <div className="ml-auto flex space-x-4">
-          <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+        <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
           <PeakButton
             buttonText="Send Data Rewards"
             icon={AddIcon}

@@ -52,6 +52,16 @@ const Accounts = () => {
   const columns = [
     { field: "id", headerName: "ACCOUNT ID", flex: 1 },
     { field: "name", headerName: "ACCOUNT NAME", flex: 1 },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+      renderCell: (params) => {
+        return (
+          <span style={{ color: "green" }}>ACTIVE</span>
+        );
+      },
+    },
   ];
 
   return (
@@ -73,7 +83,7 @@ const Accounts = () => {
             </div>
 
             <div className="mt-4">
-              <div style={{ height: 350, width: "100%" }}>
+              <div style={{ width: "100%" }}>
 
                 {loading ? (
                   <p>Loading...</p>

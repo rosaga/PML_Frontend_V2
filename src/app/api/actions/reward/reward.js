@@ -2,14 +2,20 @@ import axios from 'axios';
 import apiUrl from "../../utils/apiUtils/apiUrl";
 import { authHeaders } from '../../../api/utils/headers/headers';
 
-export async function GetRewards(org_id,page,pageSize) {
+export async function GetRewards(org_id,page,pageSize, searchParams) {
 
-    let rewardsUrl
-    if (page || pageSize) {
-      rewardsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?orderby=created_at DESC&size=${pageSize}&page=${page}`;
-    }else{
-      rewardsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?orderby=created_at DESC`;
-    }  
+    let rewardsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?orderby=created_at DESC`
+
+    if (page) {
+    rewardsUrl += `&page=${page}`;
+  }
+  if (pageSize) {
+    rewardsUrl += `&size=${pageSize}`;
+  }
+  if (searchParams) {
+    const searchParamsString = new URLSearchParams(searchParams).toString();
+    rewardsUrl += `&${searchParamsString}`;
+  }
   
     try {
       const config = await authHeaders();

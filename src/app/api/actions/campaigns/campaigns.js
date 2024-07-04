@@ -41,15 +41,20 @@ export async function CreateCampaign(formValues) {
     }
   }
 
-  export async function GetCampaigns(org_id,page,pageSize) {
+  export async function GetCampaigns(org_id,page,pageSize,searchParams ) {
 
-    let campaignUrl
-    if (page || pageSize) {
-      campaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/campaign?orderby=created_at DESC&size=${pageSize}&page=${page}`;
-    }else{
-      campaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/campaign`;
-    }
-  
+    let campaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/campaign?orderby=created_at DESC`
+
+    if (page) {
+    campaignUrl += `&page=${page}`;
+  }
+  if (pageSize) {
+    campaignUrl += `&size=${pageSize}`;
+  }
+  if (searchParams) {
+    const searchParamsString = new URLSearchParams(searchParams).toString();
+    campaignUrl += `&${searchParamsString}`;
+  }
     try {
       const config = await authHeaders();
   

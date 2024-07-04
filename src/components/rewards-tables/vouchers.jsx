@@ -28,6 +28,7 @@ const VouchersTable = () => {
     org_id = localStorage.getItem('selectedAccountId');
   }
   const [loading,setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useState({});
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -38,10 +39,17 @@ const VouchersTable = () => {
   };
   
   const filterOptions = [
-    { value: 'eq__external_id', label: 'Phone Number' },
-    { value: 'ilike__first_name', label: 'First Name' },
-    { value: 'ilike__last_name', label: 'Last Name' },
+    { value: 'ilike__created_by', label: 'Created By' },
+    { value: 'eq__bundle_size', label: 'Bundle Size' },
 ];
+
+  const handleSearch = (filter, value) => {
+    setSearchParams({ [filter]: value });
+  };
+
+  const handleClearSearch = () => {
+    setSearchParams({});
+  };
 
   
 
@@ -64,7 +72,7 @@ const VouchersTable = () => {
     try {
       const res = await GetVouchers(org_id, paginationModel.page+1, paginationModel.pageSize);
       if (res.errors) {
-        console.log("AN ERROR HAS OCCURRED");
+        console.log("AN ERROR HAS OCCURRED", res.errors);
       } else {
         setTotal(res.data.count);
         setRows(res.data.data);
@@ -85,7 +93,7 @@ const VouchersTable = () => {
     <div className="flex items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Vouchers</p>
         <div className="ml-auto flex space-x-4">
-          <PeakSearch filterOptions={filterOptions} selectedFilter="" />
+        <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
           <PeakButton
             buttonText="Generate Voucher"
             icon={AddIcon}
