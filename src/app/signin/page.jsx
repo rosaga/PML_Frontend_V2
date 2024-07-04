@@ -43,6 +43,10 @@ const SignIn = () => {
     }
   };
 
+  const handleRegister = () => {
+    router.push("/signup");
+  };
+
   return (
     <>
     <ToastContainer />
@@ -92,7 +96,13 @@ const SignIn = () => {
               >
                {isLoading ? "Please wait..." : " Sign In"}
               </button>
-              <p className="flex text-sm font-md justify-end mt-4">Forgot Password?</p>
+              <div className='flex justify-between'>
+              <p className="flex text-sm font-md justify-start mt-4">
+              Don't have an account ?{" "}
+                <span className="text-[#E88A17] cursor-pointer ml-2" onClick={handleRegister}> Register</span>
+              </p>
+              <p className="flex text-sm font-md justify-end mt-4">Forgot Password ?</p>
+              </div>
             </div>
           </CardContent>
         </Card>

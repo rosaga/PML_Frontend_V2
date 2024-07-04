@@ -70,9 +70,9 @@ const VouchersTable = () => {
   ];
   const getVouchers = async () => {
     try {
-      const res = await GetVouchers(org_id, paginationModel.page+1, paginationModel.pageSize);
+      const res = await GetVouchers(org_id, paginationModel.page+1, paginationModel.pageSize,searchParams);
       if (res.errors) {
-        console.log("AN ERROR HAS OCCURRED", res.errors);
+        console.log("AN ERROR HAS OCCURRED", res);
       } else {
         setTotal(res.data.count);
         setRows(res.data.data);
@@ -85,7 +85,7 @@ const VouchersTable = () => {
 
   useEffect(() => {
     getVouchers();
-}, [isModalOpen]);
+}, [isModalOpen, searchParams]);
 
   return (
     <>
