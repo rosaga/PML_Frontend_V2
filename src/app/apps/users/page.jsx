@@ -22,8 +22,9 @@ const Users = () => {
   }
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [rows, setRows] = useState<GridRowsProp>([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useState({});
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -34,26 +35,40 @@ const Users = () => {
   };
 
   const filterOptions = [
-    { value: '', label: 'All Categories' },
-    { value: 'ilike__first_name', label: 'First Name' },
-    { value: 'ilike__last_name', label: 'Last Name' },
-    { value: 'ilike__email', label: 'Email' },
-    
+    { value: "ilike__firstName", label: "First Name" },
+    { value: "ilike__lastName", label: "Last Name" },
+    { value: "ilike__email", label: "Email" },
   ];
+
+  const handleSearch = (filter, value) => {
+    setSearchParams({ [filter]: value });
+  };
+
+  const handleClearSearch = () => {
+    setSearchParams({});
+  };
 
   useEffect(() => {
     fetchUsers();
-  }, [isModalOpen]);
+  }, [isModalOpen, searchParams]);
 
   const fetchUsers = async () => {
+
+    let usersUrl = `${apiUrl.USERS}/${org_id}/users?page=1&size=20&orderby=id DESC`;
+
+    if (searchParams) {
+      const searchParamsString = new URLSearchParams(searchParams).toString();
+      usersUrl += `&${searchParamsString}`;
+    }
+
     try {
-      const usersResponse = await axios.get(`${apiUrl.USERS}/${org_id}/users?page=1&size=20&orderby=id DESC`, {headers: {
+      const usersResponse = await axios.get(usersUrl, {headers: {
         Accept: 'application/json',
         'content-type': 'application/json',
         Authorization: `Bearer ${token}`,
         }
       });
-      const users = usersResponse.data.data.map((user: any) => ({
+      const users = usersResponse.data.data.map((user) => ({
         id: user.id, 
         first_name: user.firstName,
         last_name: user.lastName,
@@ -69,7 +84,7 @@ const Users = () => {
     }
   };
 
-  const columns: GridColDef[] = [
+  const columns = [
     { field: "first_name", headerName: "First Name", flex: 1 },
     { field: "last_name", headerName: "Last Name", flex: 1 },
     { field: "email", headerName: "Email", flex: 1 },
@@ -84,7 +99,7 @@ const Users = () => {
             <div className="flex items-center justify-between">
               <p className="mt-4 font-medium text-lg">Users</p>
               <div className="ml-auto flex space-x-4">
-                {/* <PeakSearch filterOptions={filterOptions} selectedFilter="" /> */}
+              <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
                 <PeakButton
                   buttonText="Invite User"
                   icon={AddIcon}
