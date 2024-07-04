@@ -70,9 +70,8 @@ const CreateCampaignModal = ({ closeModal }) => {
     };
     const res = await CreateCampaign(formData)
     .then((res) => {
-      console.log({res});
       if (res.status === 202) {
-        setSuccessMessage(`The campaign has been created`);
+        setSuccessMessage(`Data has been dispatched successfully under campaign`);
         setErrorMessage("");
         
       } else {
