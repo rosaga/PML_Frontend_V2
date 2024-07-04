@@ -181,7 +181,7 @@ const SignUp = () => {
                 <input type="checkbox" className="mr-2" checked={agreeToTerms}
                   onChange={() => setAgreeToTerms(!agreeToTerms)}/>
                 <p className="text-sm font-md">
-                  Agree to our terms & conditions ?
+                  Agree to our <a href='pdf/Peak T&Cs.pdf' target="_blank" className="text-[#E88A17] underline">terms & conditions</a>?
                 </p>
                 
               </div>
