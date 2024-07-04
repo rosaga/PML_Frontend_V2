@@ -79,10 +79,10 @@ const SignUp = () => {
       const res = await axios.post(apiUrl.SIGN_UP, signupPayload);
       if (res.status === 200) {
         setIsLoading(false)
-        toast.success("LOGIN SUCCESS")
+        toast.success("Your Sign Up was successful! Please verify your email to complete registration.")
       } else {
         setIsLoading(false)
-        toast.error("SIGN UP FAILED")
+        toast.error("SIGN UP FAILED, EMAIL ALREADY EXISTS")
       }
     } catch (error) {
       setIsLoading(false)
