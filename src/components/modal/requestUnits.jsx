@@ -124,6 +124,7 @@ const RequestUnitsModal = ({ closeModal }) => {
                       <option value="50">50</option>
                       <option value="100">100</option>
                       <option value="200">200</option>
+                      <option value="500">500</option>
                       <option value="1024">1024</option>
                       <option value="3072">3072</option>
                     </select>
