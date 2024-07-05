@@ -80,7 +80,9 @@ const SignUp = () => {
       if (res.status === 200) {
         setIsLoading(false)
         toast.success("Your Sign Up was successful! Please verify your email to complete registration.")
-        router.push("/signin");
+        setTimeout(() => {
+          router.push("/signin");
+        }, 2000);
       } else {
         setIsLoading(false)
         toast.error("SIGN UP FAILED, EMAIL ALREADY EXISTS")
