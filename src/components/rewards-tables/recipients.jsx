@@ -108,8 +108,7 @@ const UploadRecipients = () => {
     }
   };
 
-  const columns = [
-    
+  const columns = [    
    { field: "id", headerName: "ID", flex: 1 },
     { field: "mobile_no", headerName: "Phone Number", flex: 1 },
     { field: "created_by", headerName: "Created By", flex: 1 },
