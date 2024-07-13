@@ -12,6 +12,8 @@ const UploadRecipientsModal = ({ closeModal }) => {
   }
 
   const [csvFile, setCsvFile] = useState(null); 
+  const [successMessage, setSuccessMessage] = useState("");
+
 
   function handleDownloadTemplate() {
     const templateData = [
@@ -62,6 +64,8 @@ const UploadRecipientsModal = ({ closeModal }) => {
       .then((res) => {
         if (res.status === 201) {
           toast.success("CONTACTS UPLOAD SUCCESS")
+          setSuccessMessage(`Contacts Upload Successful`);
+
         } else {
           toast.error("CONTACTS UPLOAD FAILED")
         }
@@ -86,6 +90,27 @@ const UploadRecipientsModal = ({ closeModal }) => {
       aria-hidden="true"
       className="fixed inset-0 z-50 flex justify-center items-center w-full h-screen bg-black bg-opacity-50"
     >
+      <div className="relative p-4 w-full max-w-2xl max-h-full">
+      <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      {successMessage ? (
+              <div className="p-4 text-center">
+                <div className="mb-4 text-2xl font-semibold text-green-500">
+                  Success!
+                </div>
+                <div className="mb-4 text-gray-900 dark:text-white">
+                  {successMessage}
+                </div>
+                <button
+                  onClick={() => {
+                    setSuccessMessage("");
+                    closeModal();
+                  }}
+                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  OK
+                </button>
+              </div>
+            ) : (
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
           <div className="p-4 md:p-5">
@@ -133,6 +158,9 @@ const UploadRecipientsModal = ({ closeModal }) => {
           </div>
         </div>
       </div>
+            )}
+          </div>
+          </div>
     </div>
     </>
   );

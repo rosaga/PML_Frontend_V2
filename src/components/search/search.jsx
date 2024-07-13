@@ -115,43 +115,61 @@ const PeakSearch = ({ filterOptions, selectedFilter, onSearch, onClearSearch }) 
             <input
               type="search"
               id="search-dropdown"
-              className="block p-2.5 w-full z-20 text-sm text-gray-900 bg-gray-50 rounded-e-lg border-s-gray-50 border-s-2 border border-gray-300 focus:ring-gray-300 focus:border-gray-300 dark:bg-gray-300 dark:border-s-gray-300 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-gray-300"
+              className="block p-2.5 w-full z-20 text-sm text-gray-900 bg-gray-50 rounded-none border border-gray-300 focus:ring-gray-300 focus:border-gray-300 dark:bg-gray-300 dark:border-gray-300 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-gray-300"
               placeholder="Search & Filter"
               required
               value={inputValue}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
             />
-            <button
-              type="submit"
-              className="absolute top-0 right-0 p-2.5 text-sm font-medium h-full text-white bg-[#090A29] rounded-e-lg border hover:bg-orange-400 dark:bg-gray-300 dark:hover:bg-gray-300 dark:focus:ring-gray-300"
-              onClick={handleClick}
-            >
-              <svg
-                className="w-4 h-4"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 20 20"
+            <div className="absolute top-0 right-0 flex items-center h-full">
+              <button
+                type="submit"
+                className="p-2.5 text-sm font-medium text-white bg-[#090A29] border-l border-gray-300 rounded-none hover:bg-orange-400 dark:bg-gray-300 dark:hover:bg-gray-300 dark:focus:ring-gray-300"
+                onClick={handleClick}
+                title="Search"
               >
-                <path
+                <svg
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                  />
+                </svg>
+                <span className="sr-only">Search</span>
+              </button>
+              <button
+                type="button"
+                className="p-2.5 text-xl font-light text-white bg-[#090A29] border-l border-gray-300 rounded-none hover:bg-orange-400 dark:bg-gray-300 dark:hover:bg-gray-300 dark:focus:ring-gray-300"
+                onClick={handleClearSearch}
+                title="Clear Filter"
+              >
+                <svg
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
                   stroke="currentColor"
+                >
+                  <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                />
-              </svg>
-              <span className="sr-only">Search</span>
-            </button>
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            className="ml-2 text-2xl font-light text-gray-400"
-            onClick={handleClearSearch}
-          >
-            X
-          </button>
         </div>
       </form>
     </div>

@@ -54,7 +54,7 @@ const SendDataRewardModal = ({ closeModal }) => {
 
     const res = sendReward({org_id,newReward}).then((res) => {
       if (res.status === 200) {
-        setSuccessMessage(`The data has been sent`);
+        setSuccessMessage(`You have dispatched data Succesfully`);
         setErrorMessage(""); 
       } else {
         setErrorMessage("Failed to send data. Please try again.");
