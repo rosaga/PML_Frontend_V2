@@ -79,7 +79,10 @@ const SignUp = () => {
       const res = await axios.post(apiUrl.SIGN_UP, signupPayload);
       if (res.status === 200) {
         setIsLoading(false)
-        toast.success("LOGIN SUCCESS")
+        toast.success("SIGNUP SUCCESS")
+        localStorage.setItem('signupEmail', email);
+        router.push("/otp");
+
       } else {
         setIsLoading(false)
         toast.error("SIGN UP FAILED")
