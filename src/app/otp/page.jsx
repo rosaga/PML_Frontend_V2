@@ -14,7 +14,10 @@ const Otp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState('');
   
-  const email = localStorage.getItem('signupEmail');
+  let email = null;
+  if (typeof window !== 'undefined') {
+    email = localStorage.getItem('signupEmail');
+  }
 
   const handleVerify = async (e) => {
     e.preventDefault();
