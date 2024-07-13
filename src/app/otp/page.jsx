@@ -39,9 +39,7 @@ const Otp = () => {
         toast.error("VERIFICATION FAILED")
       }
     } catch (error) {
-      console.log("VERIFY ERROR", error)
       setIsLoading(false)
-      toast.error("VERIFICATION FAILED")
     }
   };
 
