@@ -85,7 +85,7 @@ const VouchersTable = () => {
 
   useEffect(() => {
     getVouchers();
-}, [isModalOpen, searchParams]);
+}, [isModalOpen,paginationModel.page, paginationModel.pageSize, org_id, searchParams]);
 
   return (
     <>
