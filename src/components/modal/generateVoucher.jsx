@@ -4,7 +4,6 @@ import { GetBalance } from "@/app/api/actions/reward/reward";
 import { CreateVouchers } from "@/app/api/actions/vouchers/vouchers";
 import * as XLSX from 'xlsx';
 
-
 const GenerateVoucherModal = ({ closeModal }) => {
   const [bundles, setBundles] = useState([]);
   const [selectedBundle, setSelectedBundle] = useState("");
@@ -150,11 +149,7 @@ const GenerateVoucherModal = ({ closeModal }) => {
                       </option>
                     ))}
                   </select>
-              </div>
-              </div>
-              
                 </div>
-              
                 <div className="flex space-x-2">
                   <button
                     type="button"
@@ -170,11 +165,7 @@ const GenerateVoucherModal = ({ closeModal }) => {
                     Submit
                   </button>
                 </div>
-            </form>
-            </form>
-            </>
               </form>
-            </>
             )}
           </div>
         </div>

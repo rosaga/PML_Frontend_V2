@@ -79,7 +79,6 @@ const CampaignsTable = () => {
       headerName: "Bundle Amount", 
       flex: 1,
       valueGetter: (params) => {
-        console.log("PARAMS IS",params)
         const contactCount = params?.row?.contacts_count || 0;
         const bundleSize = params?.row?.bundle_size || 0;
         return contactCount * bundleSize;
