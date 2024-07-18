@@ -44,11 +44,9 @@ const VerifyReset = () => {
       toast.error("An error occurred, please try again.");
     }
   };
-  // useEffect(() => {
-  //   if (queryEmail) {
-  //     setEmail(queryEmail);
-  //   }
-  // }, [queryEmail]);
+  const handleLogin = ()=>{
+    router.push('/signin')
+  }
 
   return (
     <>
@@ -148,9 +146,12 @@ const VerifyReset = () => {
                   {isLoading ? "Please wait..." : "Reset Password"}
                 </button>
 
-                <p className="flex text-xs text-gray-600 font-md justify-center mt-8">
-                  **Please check your email for further instructions**{" "}
-                </p>
+                <p className="flex text-sm font-md justify-center mt-4">
+                Back to Login?{" "}
+                <span className="text-[#E88A17] cursor-pointer ml-2" onClick={handleLogin}>
+                  Signin
+                </span>
+              </p>
               </div>
             </CardContent>
           </Card>
