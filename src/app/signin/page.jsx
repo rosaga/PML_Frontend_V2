@@ -46,6 +46,9 @@ const SignIn = () => {
   const handleRegister = () => {
     router.push("/signup");
   };
+  const handleForgetPassword = () => {
+    router.push("/reset");
+  };
 
   return (
     <>
@@ -104,7 +107,10 @@ const SignIn = () => {
                 </span>
               </p>
 
-              <p className="flex text-sm font-md justify-end mt-4">Forgot Password ?</p>
+              <p className="flex text-sm font-md justify-end mt-4">Forgot Password ?
+              <span className="text-[#E88A17] cursor-pointer ml-2" onClick={handleForgetPassword}>
+                  click here
+                </span></p>
               </div>
             </div>
           </CardContent>
