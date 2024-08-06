@@ -6,6 +6,9 @@ import GoogleButton from "react-google-button";
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import apiUrl from "../api/utils/apiUtils/apiUrl"
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import "react-toastify/dist/ReactToastify.css";
 import "../../app/globals.css";
 
@@ -22,6 +25,7 @@ const SignUp = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const validateEmail = (email) => {
     const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
@@ -160,23 +164,49 @@ const SignUp = () => {
                 />
                 {errors.email && <p className="text-red-500 text-xs mb-4">{errors.email}</p>}
 
-                <input
-                  type="password"
-                  placeholder="Your Password *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                {errors.password && <p className="text-red-500 text-xs mb-4">{errors.password}</p>}
+                <div className="relative w-full">
+                    <input
+                      type={isPasswordVisible ? "text" : "password"}
+                      placeholder="Your Password *"
+                      className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white pr-10"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <IconButton
+                      aria-label="delete"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      {isPasswordVisible ? (
+                        <VisibilityIcon />
+                      ) : (
+                        <VisibilityOffIcon />
+                      )}
+                    </IconButton>
+                  </div>
+                {/* {errors.password && <p className="text-red-500 text-xs mb-4">{errors.password}</p>} */}
+                <div className="relative w-full">
+                    <input
+                      type={isPasswordVisible ? "text" : "password"}
+                      placeholder="Your Password *"
+                      className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white pr-10"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <IconButton
+                      aria-label="delete"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      {isPasswordVisible ? (
+                        <VisibilityIcon />
+                      ) : (
+                        <VisibilityOffIcon />
+                      )}
+                    </IconButton>
+                  </div>
 
-                <input
-                  type="password"
-                  placeholder="Confirm Password *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-                {errors.confirmPassword && <p className="text-red-500 text-xs mb-4">{errors.confirmPassword}</p>}
+                {/* {errors.confirmPassword && <p className="text-red-500 text-xs mb-4">{errors.confirmPassword}</p>} */}
               </div>
 
               <div className="flex items-center mb-4 mt-2 justify-center">
