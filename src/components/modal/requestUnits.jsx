@@ -18,7 +18,14 @@ const RequestUnitsModal = ({ closeModal }) => {
   const [numberOfUnitsError, setNumberOfUnitsError] = useState(false);
 
   const handleRequest = async () => {
-    const results = await Promise.all(requests.map(async (request) => {
+    const currentRequest = bundleAmount && numberOfUnits ? {
+      bundleAmount,
+      numberOfUnits
+    } : null;
+
+    const allRequests = currentRequest ? [...requests, currentRequest] : requests;
+
+    const results = await Promise.all(allRequests.map(async (request) => {
       const newRequest = {
         package: request.bundleAmount,
         units: parseInt(request.numberOfUnits),
@@ -65,14 +72,19 @@ const RequestUnitsModal = ({ closeModal }) => {
   };
 
   const calculateTotalCost = () => {
-    return requests.reduce((total, request) => {
+    const currentRequestCost = bundleAmount && numberOfUnits ? 
+      parseFloat(bundleAmount) * parseFloat(numberOfUnits) * 0.22 : 0;
+
+    const totalCost = requests.reduce((total, request) => {
       const bundleAmount = parseFloat(request.bundleAmount);
       const numberOfUnits = parseFloat(request.numberOfUnits);
       if (!isNaN(bundleAmount) && !isNaN(numberOfUnits)) {
         return total + (bundleAmount * numberOfUnits * 0.22);
       }
       return total;
-    }, 0).toFixed(2);
+    }, 0);
+
+    return (totalCost + currentRequestCost).toFixed(2);
   };
 
   useEffect(() => {
@@ -99,17 +111,22 @@ const RequestUnitsModal = ({ closeModal }) => {
               Request Data Units
             </h3>
             <div className="flex space-x-4">
-            <div className="px-2 py-2 bg-gray-400 text-gray-900 rounded-md border border-gray-400">
-              Total Cost: Ksh. {calculateTotalCost()}
+              <div className="px-2 py-2 bg-gray-400 text-gray-900 rounded-md border border-gray-400">
+                Total Cost: Ksh. {calculateTotalCost()}
+              </div>
+              {!successMessage ? (
+                <button
+                onClick={handleAddRequest}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white  rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 dark:focus:ring-orange-800"
+                style={{ backgroundColor: "#F58426" }}
+              >
+                + New
+              </button>
+                ):(
+                  ''
+                )}
+              
             </div>
-            <button
-              onClick={handleAddRequest}
-              className="flex items-center px-4 py-2 text-sm font-medium text-white  rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 dark:focus:ring-orange-800"
-              style={{ backgroundColor: "#F58426" }}
-            >
-              + New
-            </button>
-          </div>
           </div>
           <div className="p-4 md:p-5 space-y-4">
             {successMessage ? (
@@ -132,7 +149,7 @@ const RequestUnitsModal = ({ closeModal }) => {
               </div>
             ) : (
               <>
-                  {requests.map((request, index) => (
+                {requests.map((request, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-green-100 rounded">
                     <span>
                       {request.numberOfUnits} units of {request.bundleAmount}MB
