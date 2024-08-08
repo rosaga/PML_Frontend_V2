@@ -4,7 +4,7 @@ import { authHeaders } from '../../../api/utils/headers/headers';
 import { groupCreate } from '../group/group'
 
 export async function GetContacts(org_id, page, pageSize, searchParams) {
-  let contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?&orderby=created_at DESC`;
+  let contactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/contact?orderby=created_at ASC`;
 
   if (page) {
     contactsUrl += `&page=${page}`;
