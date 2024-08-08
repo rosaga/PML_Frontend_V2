@@ -174,16 +174,12 @@ const UploadRecipients = () => {
                 <DeleteIcon
                   style={{ cursor: 'pointer', color: 'red' }}
                   onClick={handleDelete}
-                  onMouseEnter={() => {}} // Add an empty function body or replace with your desired logic
-                  onMouseLeave={() => console.log("Mouse left")}
                 />
               </Tooltip>
             ) : (
               <Tooltip title="ReActivate">
                 <RecyclingOutlinedIcon 
                   style={{ cursor: 'pointer', color: 'red' }}
-                  onMouseEnter={() => console.log("Mouse entered")}
-                  onMouseLeave={() => console.log("Mouse left")}
                 />
               </Tooltip>
             )}
