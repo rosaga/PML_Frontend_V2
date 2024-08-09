@@ -3,6 +3,7 @@ import React, {useEffect,useState}from "react";
 import Image from "next/image";
 import Profile from "../profile/profile";
 import { useRouter } from 'next/navigation';
+import { Tooltip } from "@mui/material";
 
 
 
@@ -47,6 +48,7 @@ const Navbar = () => {
         </div>
         <div>
         <span>
+          <Tooltip title="Notifications">
             <Image
                         style={{ color: "#F58426" }}
                         className="w-10 h-10  rounded-lg "
@@ -57,7 +59,9 @@ const Navbar = () => {
                         placeholder="blur"
                         alt="Recipients reached"
                         priority
+                        onClick={() => router.push("/apps/notification")}
                       />
+            </Tooltip>
             </span>
         </div>
         <div>

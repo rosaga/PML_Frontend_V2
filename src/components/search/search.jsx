@@ -116,7 +116,7 @@ const PeakSearch = ({ filterOptions, selectedFilter, onSearch, onClearSearch }) 
               type="search"
               id="search-dropdown"
               className="block p-2.5 w-full z-20 text-sm text-gray-900 bg-gray-50 rounded-none border border-gray-300 focus:ring-gray-300 focus:border-gray-300 dark:bg-gray-300 dark:border-gray-300 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-gray-300"
-              placeholder="Search & Filter"
+              placeholder="Filter"
               required
               value={inputValue}
               onChange={handleChange}

@@ -19,12 +19,12 @@ const Profile = () => {
 
   return (
     <div>
-      <button
+      {/* <button
         id="dropdownAvatarNameButton"
         data-dropdown-toggle="dropdownAvatarName"
         className="flex items-center text-sm pe-1 font-medium text-gray-900 rounded-full hover:text-blue-600 dark:hover:text-blue-500 md:me-0 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-white"
         type="button"
-      >
+      > */}
         <span className="sr-only">Open user menu</span>
         <div className="flex items-center">
           <Image
@@ -43,7 +43,7 @@ const Profile = () => {
           </div>
         </div>
 
-        <svg
+        {/* <svg
           className="w-2.5 h-2.5 ms-3"
           aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
@@ -57,10 +57,10 @@ const Profile = () => {
             strokeWidth="2"
             d="m1 1 4 4 4-4"
           />
-        </svg>
-      </button>
+        </svg> */}
+      {/* </button> */}
 
-      <div
+      {/* <div
         id="dropdownAvatarName"
         className="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600"
       >
@@ -105,7 +105,7 @@ const Profile = () => {
             Sign out
           </a>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

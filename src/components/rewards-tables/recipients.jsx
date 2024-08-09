@@ -13,6 +13,8 @@ import { getToken } from "@/utils/auth";
 import { GetContacts } from "../../app/api/actions/contact/contact"
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import RecyclingOutlinedIcon from '@mui/icons-material/RecyclingOutlined';
+import Tooltip from '@mui/material/Tooltip';
 
 
 
@@ -130,15 +132,26 @@ const UploadRecipients = () => {
           switch (status) {
             case "ACTIVE":
               return "green";
-            case "Inactive":
+            case "DEACTIVE":
               return "red";
             default:
               return "black"; // Default color if needed
           }
         };
+        const getName = (status) => {
+          switch (status) {
+            case "ACTIVE":
+              return "ACTIVE";
+            case "DEACTIVE":
+              return "DEACTIVATED";
+            default:
+              return "black"; // Default color if needed
+          }
+        };
+
 
         return (
-          <span style={{ color: getColor(params.value) }}>{params.value}</span>
+          <span style={{ color: getColor(params.value) }}>{getName(params.value)}</span>
         );
       },
     },
@@ -150,12 +163,27 @@ const UploadRecipients = () => {
         const handleDelete = () => {
           deleteContact(params.id);
         };
+        const handleReactivate = () => {
+          //have code for reactivate here
+        }
   
         return (
-          <DeleteIcon
-            style={{ cursor: 'pointer', color: 'red' }}
-            onClick={handleDelete}
-          />
+          <>
+            {params.row.status === "ACTIVE" ? (
+              <Tooltip title="Deactivate">
+                <DeleteIcon
+                  style={{ cursor: 'pointer', color: 'red' }}
+                  onClick={handleDelete}
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip title="ReActivate">
+                <RecyclingOutlinedIcon 
+                  style={{ cursor: 'pointer', color: 'red' }}
+                />
+              </Tooltip>
+            )}
+          </>
         );
       },
     },
