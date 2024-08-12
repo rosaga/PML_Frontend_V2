@@ -8,5 +8,6 @@ export default {
     USERS: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
     APPROVE_UNITS: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/admin/recharge`,
     resetPassword: `${process.env.NEXT_PUBLIC_BASE_URL}/public/passwordreset`,
-    confirmPasswordReset: `${process.env.NEXT_PUBLIC_BASE_URL}/public/reset/otp`
+    confirmPasswordReset: `${process.env.NEXT_PUBLIC_BASE_URL}/public/reset/otp`,
+    getNotifiations: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
 };
