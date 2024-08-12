@@ -79,7 +79,7 @@ const Notifications = () => {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-gray-900 dark:text-white">{notification.content}</p>
+                        <p className="text-gray-900 dark:text-white">Notification Channel: {notification.channel}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {notification.content}
                         </p>
