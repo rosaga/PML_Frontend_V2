@@ -188,10 +188,10 @@ const SignUp = () => {
                 <div className="relative w-full">
                     <input
                       type={isPasswordVisible ? "text" : "password"}
-                      placeholder="Your Password *"
+                      placeholder="Confirm Password *"
                       className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white pr-10"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                     <IconButton
                       aria-label="delete"
