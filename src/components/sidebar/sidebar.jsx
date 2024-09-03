@@ -5,25 +5,26 @@ import Image from "next/image";
 import { signOut } from "next-auth/react";
 import { clearToken } from '@/utils/auth';
 import { useRouter } from 'next/navigation';
-import ConfirmSignOutModal  from "../modal/confirmSignout"
+import ConfirmSignOutModal from "../modal/confirmSignout";
 
 const Sidebar = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // New state for sidebar toggle
 
   useEffect(() => {
     setActiveLink(window.location.pathname);
   }, []);
+
   const router = useRouter();
 
   const handleLogoutClick = () => {
     setModalOpen(true);
   };
+
   const handleSwitchAccount = () => {
     router.push('/user-orgs');
-
-  }
-
+  };
 
   const handleSignOut = () => {
     if (typeof window !== 'undefined') {
@@ -45,6 +46,10 @@ const Sidebar = () => {
     setActiveLink(link);
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   const links = [
     { href: '/apps/dashboard', src: '/images/dashboard.svg', alt: 'Dashboard', label: 'Dashboard' },
     { href: '/apps/data-rewards', src: '/images/vector.svg', alt: 'Data Rewards', label: 'Data Rewards' },
@@ -57,12 +62,15 @@ const Sidebar = () => {
 
   return (
     <div>
+      <button onClick={toggleSidebar} className="sm:hidden block p-2 bg-gray-700 text-white">
+        SideBar
+      </button>
       <aside
         id="logo-sidebar"
-        className="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0 shadow-lg"
+        className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0 shadow-lg`}
         aria-label="Sidebar"
       >
-        <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50 light:bg-gray-800">
+        <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
           <img
             src="/images/peaklogo.png"
             className="h-30 me-24 sm:h-24"
@@ -124,7 +132,7 @@ const Sidebar = () => {
         />
       )}
     </div>
-    );
+  );
 };
 
 export default Sidebar;

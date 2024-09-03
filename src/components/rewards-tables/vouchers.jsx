@@ -90,9 +90,9 @@ const VouchersTable = () => {
   return (
     <>
     {isModalOpen && <GenerateVoucherModal closeModal={closeModal} />}
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col md:flex-row items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Vouchers</p>
-        <div className="ml-auto flex space-x-4">
+        <div className="md:ml-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
         <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
           <PeakButton
             buttonText="Generate Voucher"

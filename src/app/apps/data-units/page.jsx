@@ -188,99 +188,93 @@ const DataUnits = () => {
 
   return (
     <>
-    <ToastContainer />
-    <div className="p-4 sm:ml-64 h-screen">
-      <div className="p-4 h-full rounded-lg dark:border-gray-700">
-        <div className="flex flex-col h-full">
-          <div className="p-8">
-            <p className="m-1 font-semibold text-lg">Data Bundle Balance</p>
-            
-          </div>
-
-          <div className="p-2">
-            <div className="flex space-x-4">
-              {loading ? (
-                <p>Loading...</p>
-              ) : (
-                balances.map((balance, index) => (
-                  <div key={index} className="border-[1.5px] shadow-sm rounded-lg p-6 flex-shrink-0 w-60">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="text-gray-500">{balance.module} MBs</div>
-                      <div>
-                        <span>
-                          <Image
-                            style={{ color: "#F58426" }}
-                            className="w-12 h-12 rounded-lg"
-                            width={60}
-                            height={60}
-                            src={`/images/Icon-${index % 4}.svg`}
-                            blurDataURL="/bluriconloader.png"
-                            placeholder="blur"
-                            alt="Icon"
-                            priority
-                          />
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold">{balance.units} Units</div>
-                  </div>
-                ))
-              )}
+      <ToastContainer />
+      <div className="p-4 sm:ml-64 h-screen">
+        <div className="p-4 h-full rounded-lg dark:border-gray-700">
+          <div className="flex flex-col h-full">
+            <div className="p-8">
+              <p className="m-1 font-semibold text-lg">Data Bundle Balance</p>
             </div>
-          </div>
 
-          <div className="flex flex-col">
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <p className="mt-4 font-medium text-lg">Data Units</p>
-                <div className="ml-auto flex space-x-4">
-                <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
-                  <PeakButton
-                    buttonText="Request Data Units"
-                    icon={AddIcon}
-                    className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-                    onClick={openModal}
-                  />
-     
-                  {/* <PeakButton
-                    buttonText="Export"
-                    icon={IosShareIcon}
-                    className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
-                    onClick={exportToExcel}
-                  /> */}
-                </div>
+            <div className="p-2">
+              <div className="flex flex-wrap justify-left">
+                {loading ? (
+                  <p>Loading...</p>
+                ) : (
+                  balances.map((balance, index) => (
+                    <div key={index} className="border-[1.5px] shadow-sm rounded-lg p-6 flex-shrink-0 w-60 m-2">
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="text-gray-500">{balance.module} MBs</div>
+                        <div>
+                          <span>
+                            <Image
+                              style={{ color: "#F58426" }}
+                              className="w-12 h-12 rounded-lg"
+                              width={60}
+                              height={60}
+                              src={`/images/Icon-${index % 4}.svg`}
+                              blurDataURL="/bluriconloader.png"
+                              placeholder="blur"
+                              alt="Icon"
+                              priority
+                            />
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold">{balance.units} Units</div>
+                    </div>
+                  ))
+                )}
               </div>
-                
-              <div className="mt-4">
-                <div style={{ width: "100%" }}>
-                  {loadingData ? <p>Loading...</p> : 
-                  <DataGrid
-                    rows={recharges}
-                    columns={columns}
-                    paginationModel={paginationModel}
-                    onPaginationModelChange={setPaginationModel}
-                    rowCount={total}
-                    paginationMode="server"
-                    sx={{
-                      "& .MuiDataGrid-columnHeader": {
-                        backgroundColor: "#F1F2F3",
-                      },
-                      "&.MuiDataGrid-root": {
-                        border: "none",
-                      },
-                    }}
-                    slots={{ toolbar: GridToolbar }}
-                  />}
+            </div>
+
+            <div className="flex flex-col">
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <p className="mt-4 font-medium text-lg">Data Units</p>
+                  <div className="ml-auto flex space-x-4">
+                    <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch} />
+                    <PeakButton
+                      buttonText="Request Data Units"
+                      icon={AddIcon}
+                      className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
+                      onClick={openModal}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div style={{ width: "100%" }}>
+                    {loadingData ? (
+                      <p>Loading...</p>
+                    ) : (
+                      <DataGrid
+                        rows={recharges}
+                        columns={columns}
+                        paginationModel={paginationModel}
+                        onPaginationModelChange={setPaginationModel}
+                        rowCount={total}
+                        paginationMode="server"
+                        sx={{
+                          "& .MuiDataGrid-columnHeader": {
+                            backgroundColor: "#F1F2F3",
+                          },
+                          "&.MuiDataGrid-root": {
+                            border: "none",
+                          },
+                        }}
+                        slots={{ toolbar: GridToolbar }}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        {isModalOpen && <RequestUnitsModal closeModal={refreshPage} />}
       </div>
-      {isModalOpen && <RequestUnitsModal closeModal={refreshPage} />}
-    </div>
     </>
   );
 };
-
 export default DataUnits;
