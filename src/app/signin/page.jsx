@@ -75,7 +75,7 @@ const SignIn = () => {
               borderRadius: "lg",
               boxShadow: "md",
               width: "90%",
-              maxWidth: "400px", // Max width to keep it compact on larger screens
+              maxWidth: "500px", // Max width to keep it compact on larger screens
               padding: 0,
             }}
           >
