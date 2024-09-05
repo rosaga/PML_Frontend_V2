@@ -41,6 +41,8 @@ const Navbar = () => {
               placeholder="blur"
               alt="Settings"
               priority
+              onClick={() => router.push("/apps/settings")}
+
             />
           </span>
         </div>
