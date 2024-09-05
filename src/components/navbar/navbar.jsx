@@ -34,17 +34,18 @@ const Navbar = () => {
         <div>
             <span>
             <Image
-                        style={{ color: "#F58426" }}
-                        className="w-10 h-10  rounded-lg "
-                        width={60}
-                        height={60}
-                        src="/images/Settings.svg"
-                        blurDataURL="/bluriconloader.png"
-                        placeholder="blur"
-                        alt="Recipients reached"
-                        priority
-                      />
-            </span>
+              style={{ color: "#F58426" }}
+              className="w-8 h-8 rounded-lg"
+              width={40}
+              height={40}
+              src="/images/Settings.svg"
+              blurDataURL="/bluriconloader.png"
+              placeholder="blur"
+              alt="Settings"
+              priority
+              onClick={() => router.push("/apps/settings")}
+            />
+          </span>
         </div>
         <div>
         <span>

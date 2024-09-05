@@ -1,28 +1,28 @@
-// components/SignIn.js
-"use client";
-
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, LinearProgress } from "@mui/material";
+"use client"
+import React, { useState } from "react";
+import { Card, CardContent } from "@mui/material";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { setToken } from "@/utils/auth";
 import { ToastContainer, toast } from "react-toastify";
 import apiUrl from "../api/utils/apiUtils/apiUrl";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
-import "react-toastify/dist/ReactToastify.css";
-import "../../app/globals.css";
 import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import Modal from "@mui/material/Modal";
+import "../../app/globals.css";
+import "react-toastify/dist/ReactToastify.css";
+import { GetSenderId } from "../api/actions/sms/sms";
 
 const SignIn = () => {
+ 
   const router = useRouter();
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -37,8 +37,8 @@ const SignIn = () => {
       if (res.status === 200) {
         setIsLoading(false);
         toast.success("LOGIN SUCCESS");
-        router.push("/user-orgs");
         setToken(res.data.access_token);
+        router.push("/user-orgs"); 
       } else {
         setIsLoading(false);
         toast.error("WRONG USERNAME/PASSWORD");
@@ -52,12 +52,15 @@ const SignIn = () => {
   const handleRegister = () => {
     router.push("/signup");
   };
+
   const handleForgetPassword = () => {
     router.push("/reset");
   };
 
+
   return (
     <>
+
       <ToastContainer />
       <div
         className="relative h-screen w-full flex items-center"
@@ -67,20 +70,24 @@ const SignIn = () => {
           backgroundPosition: "center",
         }}
       >
-        <div className="w-2/5 h-full"></div>
-        <div className="w-3/5 h-full flex items-center justify-center mr-28">
+        <div className="hidden sm:block sm:w-2/5 h-full"></div>
+
+        <div className="w-full sm:w-3/5 h-full flex items-center justify-center p-4">
           <Card
             sx={{
               borderRadius: "lg",
               boxShadow: "md",
-              width: "60%",
-              padding: 2,
+              width: "90%",
+              maxWidth: "500px",
+              padding: 0,
             }}
           >
             <CardContent>
-              <div>
-                <p className="text-xl font-lg mb-4 mt-2">Welcome Back!</p>
-                <div>
+              <div className="flex flex-col">
+                <p className="text-xl font-lg mb-4 mt-2 text-center sm:text-left">
+                  Welcome Back!
+                </p>
+                <div className="mb-4">
                   <input
                     type="email"
                     placeholder="Your Email *"
@@ -142,6 +149,9 @@ const SignIn = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modal for success */}
+    
     </>
   );
 };
