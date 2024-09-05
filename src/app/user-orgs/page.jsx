@@ -6,12 +6,18 @@ import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import {GetAccounts} from '../api/actions/accounts/accounts'
 import '../../app/globals.css';
+import { GetSenderId } from "../api/actions/sms/sms";
+import { set } from 'date-fns';
+import Modal from '@mui/material/Modal';
+
 
 const UserOrgs = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [signInSuccess, setSignInSuccess] = useState(false);
+
 
   const getAccounts = async () => {
     try {
@@ -26,6 +32,24 @@ const UserOrgs = () => {
       console.log(err);
     }
   };
+  const getSenderIds = async (org_id) => {
+    try {
+      const res = await GetSenderId(org_id);
+      if (res.errors) {
+        console.log("AN ERROR HAS OCCURRED");
+      } else {
+        if (res.data.length === 0) {
+          setSignInSuccess(true);
+        } else {
+          router.push("/apps/dashboard");
+        }
+        setIsLoaded(true);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
 
   useEffect(() => {
       getAccounts();
@@ -33,7 +57,7 @@ const UserOrgs = () => {
 
   const handleAccountClick = (account) => {
     setIsLoading(true);
-    router.push("/apps/dashboard");
+    getSenderIds(account.id);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('selectedAccountId');
       localStorage.removeItem('selectedAccountName');
@@ -42,8 +66,17 @@ const UserOrgs = () => {
       localStorage.setItem('selectedAccountName', account.name);
       }
   };
+  const handleCloseModal = () => {
+    router.push("/apps/dashboard"); 
+    setSignInSuccess(false);
+  };
+
+  const goToSettings = () => {
+    router.push("/apps/settings");
+  };
 
   return (
+    <>
     <div
       className="relative h-screen w-full flex items-center"
       style={{
@@ -85,6 +118,31 @@ const UserOrgs = () => {
         </Card>
       </div>
     </div>
+    <Modal
+        open={signInSuccess}
+        onClose={handleCloseModal}
+        className="flex items-center justify-center"
+      >
+        <div className="bg-white p-10 rounded-2xl  shadow-2xl  relative max-w-lg w-full">
+          <h2 className="text-2xl font-bold mb-4 text-lefte">
+            Congratulations!
+          </h2>
+          <h3 className="text-[#E88A17] text-xl font-semibold mb-2 text-left">
+            Set up your Sender ID
+          </h3>
+          <p className="text-left text-base mb-6">
+            By continuing to our settings page and completing the sender ID
+            form!
+          </p>
+          <button
+            className="bg-[#001F3D] w-full p-3 text-white text-lg rounded-md"
+            onClick={goToSettings}
+          >
+            Go to settings
+          </button>
+        </div>
+      </Modal>
+    </>
   );
 };
 
