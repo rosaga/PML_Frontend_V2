@@ -78,39 +78,43 @@ const UserOrgs = () => {
   return (
     <>
     <div
-      className="relative h-screen w-full flex items-center"
+      className="relative h-screen w-full flex flex-col sm:flex-row items-center"
       style={{
         backgroundImage: "url('/images/onblogin.png')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
-      <div className="w-2/5 h-full"></div>
-      <div className="w-3/5 h-full flex items-center justify-center mr-28">
+      <div className="hidden sm:block sm:w-2/5 h-full"></div>
+
+      <div className="w-full sm:w-3/5 h-full flex items-center justify-center p-4">
         <Card
           sx={{
             borderRadius: 'lg',
             boxShadow: 'md',
-            width: '60%',
+            width: '90%',
+            maxWidth: '500px', // Set a max width for larger screens
             padding: 2,
           }}
         >
           <CardContent>
-            <div>
-              <p className="text-xl font-lg mb-4 mt-2 text-center">Select An Account</p>
-              <div>
+            <div className="flex flex-col">
+              <p className="text-xl font-lg mb-4 mt-2 text-center">
+                Select An Account
+              </p>
+              <div className="space-y-4">
                 {isLoaded ? (
                   accounts.map((account) => (
                     <button
                       key={account.id}
-                      className="w-full bg-[#F1F2F3] p-2.5 mb-5 rounded-md border-white"
+                      className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm"
                       onClick={() => handleAccountClick(account)}
                     >
-                     {isLoading ? "loading..." : account.name}
+                      {isLoading ? "loading..." : account.name}
                     </button>
                   ))
                 ) : (
-                  <p>Loading accounts...</p>
+                  <p className="text-center">Loading accounts...</p>
                 )}
               </div>
             </div>

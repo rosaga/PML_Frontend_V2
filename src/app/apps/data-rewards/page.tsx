@@ -29,32 +29,45 @@ const DataRewards = () => {
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
-              <div className="flex items-center justify-between w-full rounded-lg bg-[#F1F2F3]">
-                <div 
-                    onClick={() => { setActive("recipients");
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full rounded-lg bg-[#F1F2F3]">
+                <div
+                  onClick={() => {
+                    setActive("recipients");
                     setChildActive("recipients");
-                    }} className={active === "recipients" ? "flex-1 flex justify-center text-center bg-[#090A29] m-2 rounded-md cursor-pointer": "flex-1 flex justify-center text-center bg-white m-2 cursor-pointer rounded-md"}>
-                  <span                  
-                    className={
+                  }}
+                  className={`flex-1 flex justify-center text-center mb-2 sm:mb-0 sm:mr-2 ${
+                    active === "recipients"
+                      ? "bg-[#090A29] rounded-md cursor-pointer"
+                      : "bg-white rounded-md cursor-pointer"
+                  }`}
+                >
+                  <span
+                    className={`${
                       active === "recipients"
                         ? "text-white bg-[#090A29] py-2 rounded"
-                        : "rounded text-[#E88A17] py-2"
-                    }
+                        : "text-[#E88A17] py-2"
+                    }`}
                   >
                     Recipients
                   </span>
                 </div>
-                <div    
-                      onClick={() => {
-                      setActive("data-dispatch");
-                      setChildActive("rewards");
-                    }} className={active === "data-dispatch" ? "flex-1 flex justify-center text-center bg-[#090A29] m-2 rounded-md cursor-pointer ": "flex-1 flex justify-center text-center bg-white m-2 rounded-md cursor-pointer"}>
+                <div
+                  onClick={() => {
+                    setActive("data-dispatch");
+                    setChildActive("rewards");
+                  }}
+                  className={`flex-1 flex justify-center text-center mb-2 sm:mb-0 sm:ml-2 ${
+                    active === "data-dispatch"
+                      ? "bg-[#090A29] rounded-md cursor-pointer"
+                      : "bg-white rounded-md cursor-pointer"
+                  }`}
+                >
                   <span
-                    className={
+                    className={`${
                       active === "data-dispatch"
                         ? "text-white bg-[#090A29] py-2 rounded"
-                        : "rounded text-[#E88A17] py-2"
-                    }
+                        : "text-[#E88A17] py-2"
+                    }`}
                   >
                     Data Dispatch
                   </span>
@@ -63,93 +76,93 @@ const DataRewards = () => {
 
               {active === "recipients" && (
                 <>
-                  <div className="flex rounded-lg mt-2 border-[1.5px] mb-2">
-                    <div className="m-2 flex">
+                  <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
+                    <div className="m-2 flex-1">
                       <span
                         onClick={() => setChildActive("recipients")}
-                        className={
+                        className={`flex-1 flex justify-center text-center ${
                           childActive === "recipients"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
-                        }
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                        }`}
                       >
                         Recipients
                       </span>
                     </div>
-                    <div className="flex m-2">
+                    <div className="m-2 flex-1">
                       <span
                         onClick={() => setChildActive("groups")}
-                        className={
+                        className={`flex-1 flex justify-center text-center ${
                           childActive === "groups"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
-                        }
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                        }`}
                       >
                         Groups
                       </span>
                     </div>
                   </div>
 
-                  {childActive === "recipients" && ( // Check if the child "Recipients" tab is selected
+                  {childActive === "recipients" && (
                     <RecipientsTable />
                   )}
 
-                  {childActive === "groups" && ( // Check if the child "Groups" tab is selected
+                  {childActive === "groups" && (
                     <GroupsTable />
                   )}
                 </>
               )}
 
-              {active === "data-dispatch" && ( // Check if the "Dispatch Data" tab is selected
+              {active === "data-dispatch" && (
                 <>
-                  <div className="flex rounded-lg mt-2 border-[1.5px] mb-2">
-                    <div className="m-2 flex">
+                  <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
+                    <div className="m-2 flex-1">
                       <span
                         onClick={() => setChildActive("rewards")}
-                        className={
+                        className={`${
                           childActive === "rewards"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
-                        }
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                        }`}
                       >
                         Rewards
                       </span>
                     </div>
-                    <div className="m-2 flex">
+                    <div className="m-2 flex-1">
                       <span
                         onClick={() => setChildActive("campaigns")}
-                        className={
+                        className={`${
                           childActive === "campaigns"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
-                        }
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                        }`}
                       >
                         Campaigns
                       </span>
                     </div>
-                    <div className="m-2 flex">
+                    <div className="m-2 flex-1">
                       <span
                         onClick={() => setChildActive("vouchers")}
-                        className={
+                        className={`${
                           childActive === "vouchers"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-16 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-16 rounded cursor-pointer"
-                        }
+                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                        }`}
                       >
                         Vouchers
                       </span>
                     </div>
                   </div>
 
-                  {childActive === "rewards" && ( // Check if the child "Recipients" tab is selected
+                  {childActive === "rewards" && (
                     <RewardsTable />
                   )}
 
-                  {childActive === "campaigns" && ( // Check if the child "Groups" tab is selected
+                  {childActive === "campaigns" && (
                     <CampaignsTable />
                   )}
 
-                  {childActive === "vouchers" && ( // Check if the child "Groups" tab is selected
+                  {childActive === "vouchers" && (
                     <VouchersTable />
                   )}
                 </>
@@ -161,5 +174,4 @@ const DataRewards = () => {
     </div>
   );
 };
-
 export default DataRewards;
