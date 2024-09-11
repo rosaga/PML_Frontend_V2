@@ -12,6 +12,7 @@ const CreateCampaignModal = ({ closeModal }) => {
   let token = getToken();
   const [groups, setGroups] = useState([]);
   const [bundles, setBundles] = useState([]);
+  const [senderName, setSenderName] = useState(["PeakSMS"]);
   const [campaignName, setCampaignName] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedBundle, setSelectedBundle] = useState("");
@@ -223,6 +224,29 @@ const CreateCampaignModal = ({ closeModal }) => {
                         {bundles.map((bundle) => (
                           <option key={bundle.module} value={bundle.module}>
                             {bundle.module} MB
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mb-4">
+                      <label
+                        htmlFor="bundle"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Select Sender Name
+                      </label>
+                      <select
+                        name="bundle"
+                        id="bundle"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        value={selectedBundle}
+                        // onChange={(e) => setSenderName(e.target.value)}
+                        
+                      > 
+                        <option value="">Select SenderName</option>
+                        {senderName.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
                           </option>
                         ))}
                       </select>

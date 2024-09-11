@@ -102,78 +102,82 @@ const SignUp = () => {
 
   return (
     <>
-    <ToastContainer />
-    <div
-      className="relative h-screen w-full flex items-center"
-      style={{
-        backgroundImage: "url('/images/signup.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="w-2/5 h-full"></div> {/* Left half, empty */}
-      <div className="w-3/5 h-full flex items-center justify-center">
-        <Card
-          sx={{
-            borderRadius: "lg",
-            boxShadow: "md",
-            width: "60%", // Adjust the width as needed
-            padding: 2,
-          }}
-        >
-          <CardContent>
-            <div>
-              <p className="text-xl font-lg mb-4 mt-2">
-                Welcome To Peak Mobile!
-              </p>
+      <ToastContainer />
+      <div
+        className="relative h-screen w-full flex flex-col sm:flex-row items-center"
+        style={{
+          backgroundImage: "url('/images/signup.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Left half (hidden on small screens) */}
+        <div className="hidden sm:block sm:w-2/5 h-full"></div>
 
-              <div>
-                <input
-                  type="text"
-                  placeholder="Your First Name *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 mt-2 rounded-md border-white"
-                  value={firstname}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-                {errors.firstname && <p className="text-red-500 text-xs mb-4">{errors.firstname}</p>}
+        {/* Right half */}
+        <div className="w-full sm:w-3/5 h-full flex items-center justify-center p-4">
+          <Card
+            sx={{
+              borderRadius: "lg",
+              boxShadow: "md",
+              width: "90%",
+              maxWidth: "500px", // Set a max width for larger screens
+              padding: 0,
+            }}
+          >
+            <CardContent>
+              <div className="flex flex-col">
+                <p className="text-xl font-lg mb-4 mt-2 text-center">
+                  Welcome To Peak Mobile!
+                </p>
 
-                <input
-                  type="text"
-                  placeholder="Your Last Name *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
-                  value={lastname}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-                {errors.lastname && <p className="text-red-500 text-xs mb-4">{errors.lastname}</p>}
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Your First Name *"
+                    className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white"
+                    value={firstname}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                  {errors.firstname && <p className="text-red-500 text-xs mb-2">{errors.firstname}</p>}
 
-                <input
-                  type="text"
-                  placeholder="Your Organization Name *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
-                  value={organization}
-                  onChange={(e) => setOrganization(e.target.value)}
-                />
-                {errors.organization && <p className="text-red-500 text-xs mb-4">{errors.organization}</p>}
+                  <input
+                    type="text"
+                    placeholder="Your Last Name *"
+                    className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white"
+                    value={lastname}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                  {errors.lastname && <p className="text-red-500 text-xs mb-2">{errors.lastname}</p>}
 
-                <input
-                  type="email"
-                  placeholder="Your Email *"
-                  className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                {errors.email && <p className="text-red-500 text-xs mb-4">{errors.email}</p>}
+                  <input
+                    type="text"
+                    placeholder="Your Organization Name *"
+                    className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white"
+                    value={organization}
+                    onChange={(e) => setOrganization(e.target.value)}
+                  />
+                  {errors.organization && <p className="text-red-500 text-xs mb-2">{errors.organization}</p>}
 
-                <div className="relative w-full">
+                  <input
+                    type="email"
+                    placeholder="Your Email *"
+                    className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  {errors.email && <p className="text-red-500 text-xs mb-2">{errors.email}</p>}
+
+                  <div className="relative w-full">
                     <input
                       type={isPasswordVisible ? "text" : "password"}
                       placeholder="Your Password *"
-                      className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white pr-10"
+                      className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white pr-10"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <IconButton
-                      aria-label="delete"
+                      aria-label="toggle password visibility"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
                       onClick={() => setIsPasswordVisible(!isPasswordVisible)}
                     >
@@ -184,17 +188,18 @@ const SignUp = () => {
                       )}
                     </IconButton>
                   </div>
-                {/* {errors.password && <p className="text-red-500 text-xs mb-4">{errors.password}</p>} */}
-                <div className="relative w-full">
+                  
+                  {/* Uncomment if you need confirmation password field */}
+                  {/* <div className="relative w-full">
                     <input
                       type={isPasswordVisible ? "text" : "password"}
-                      placeholder="Confirm Password *"
-                      className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white pr-10"
+                      placeholder="Confirm Your Password *"
+                      className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white pr-10"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                     <IconButton
-                      aria-label="delete"
+                      aria-label="toggle password visibility"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
                       onClick={() => setIsPasswordVisible(!isPasswordVisible)}
                     >
@@ -205,51 +210,68 @@ const SignUp = () => {
                       )}
                     </IconButton>
                   </div>
+                  {errors.confirmPassword && <p className="text-red-500 text-xs mb-2">{errors.confirmPassword}</p>} */}
+                  
+                  <div className="flex items-center mb-4">
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={agreeToTerms}
+                      onChange={() => setAgreeToTerms(!agreeToTerms)}
+                    />
+                    <p className="text-sm">
+                      Agree to our{" "}
+                      <a
+                        href="pdf/Peak T&Cs.pdf"
+                        target="_blank"
+                        className="text-[#E88A17] underline"
+                      >
+                        terms & conditions
+                      </a>
+                      ?
+                    </p>
+                  </div>
+                  {errors.agreeToTerms && <p className="text-red-500 text-xs mb-4">{errors.agreeToTerms}</p>}
+                  
+                  <button
+                    className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md"
+                    onClick={handleSignup}
+                  >
+                    {isLoading ? "Please wait..." : "Sign-Up"}
+                  </button>
 
-                {/* {errors.confirmPassword && <p className="text-red-500 text-xs mb-4">{errors.confirmPassword}</p>} */}
-              </div>
+                  <p className="text-sm text-center mt-4">
+                    Already have an account?{" "}
+                    <span
+                      className="text-[#E88A17] cursor-pointer"
+                      onClick={handleLoginClick}
+                    >
+                      Login
+                    </span>
+                  </p>
 
-              <div className="flex items-center mb-4 mt-2 justify-center">
-                <input type="checkbox" className="mr-2" checked={agreeToTerms}
-                  onChange={() => setAgreeToTerms(!agreeToTerms)}/>
-                <p className="text-sm font-md">
-                  Agree to our <a href='pdf/Peak T&Cs.pdf' target="_blank" className="text-[#E88A17] underline">terms & conditions</a>?
-                </p>
-                
-              </div>
-              {errors.agreeToTerms && <p className="text-red-500 text-xs mb-4">{errors.agreeToTerms}</p>}
-              <button
-                className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md"
-                onClick={handleSignup}
-              >
-                {isLoading ? "Please wait..." : " Sign-Up"}
-              </button>
-              <p className="flex text-sm font-md justify-center mt-4">
-                Already have an account?{" "}
-                <span className="text-[#E88A17] cursor-pointer ml-2" onClick={handleLoginClick}> Login</span>
-              </p>
-              <p className="flex justify-center items-center m-1 relative">
-                <span className="line"></span>
-                <span className="mx-2">Or</span>
-                <span className="line"></span>
-              </p>
+                  <div className="flex justify-center items-center mt-4 relative">
+                    <span className="line w-1/3 border-t border-gray-300"></span>
+                    <span className="mx-2">Or</span>
+                    <span className="line w-1/3 border-t border-gray-300"></span>
+                  </div>
 
-              <div className="flex justify-center m-2 ">
-                <GoogleButton
-                  type="dark"
-                  label="Google"
-                  onClick={() => {
-                    console.log("Google button clicked");
-                  }}
-                />
+                  <div className="flex justify-center mt-4">
+                    <GoogleButton
+                      type="dark"
+                      label="Google"
+                      onClick={() => {
+                        console.log("Google button clicked");
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
     </>
   );
 };
-
 export default SignUp;
