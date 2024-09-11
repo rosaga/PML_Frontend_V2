@@ -52,7 +52,7 @@ const Sidebar = () => {
     { href: '/apps/users', src: '/images/users.svg', alt: 'Users', label: 'Users' },
     { href: '/apps/account', src: '/images/Account.svg', alt: 'Account', label: 'Account' },
     // { href: '/apps/reports', src: '/images/Reports.svg', alt: 'Reports', label: 'Reports' },
-    { href: '/apps/flowbuilder', src: '/images/flowbuillder.svg', alt: 'Flow Builder', label: 'Flow Builder' },
+    // { href: '/apps/flowbuilder', src: '/images/flowbuillder.svg', alt: 'Flow Builder', label: 'Flow Builder' },
   ];
 
   return (
