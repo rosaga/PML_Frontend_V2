@@ -38,11 +38,12 @@ const UserOrgs = () => {
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
-        if (res.data.length === 0) {
-          setSignInSuccess(true);
-        } else {
-          router.push("/apps/dashboard");
-        }
+        // if (res.data.length === 0) {
+        //   setSignInSuccess(true);
+        // } else {
+        //   router.push("/apps/dashboard");
+        // }
+        router.push("/apps/dashboard");
         setIsLoaded(true);
       }
     } catch (err) {
