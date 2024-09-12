@@ -111,10 +111,10 @@ const UploadRecipients = () => {
   };
 
   const columns = [    
-   { field: "id", headerName: "ID", flex: 1 },
-    { field: "mobile_no", headerName: "Phone Number", flex: 1 },
-    { field: "created_by", headerName: "Created By", flex: 1 },
-    { field: "created_at", headerName: "Created At", flex: 1,
+   { field: "id", headerName: "ID", flex: 1, minWidth: 150 },
+    { field: "mobile_no", headerName: "Phone Number", flex: 1, minWidth: 150 },
+    { field: "created_by", headerName: "Created By", flex: 1, minWidth: 200 },
+    { field: "created_at", headerName: "Created At", flex: 1, minWidth:150,
     valueFormatter: (params) => {
       try {
         const date = parseISO(params);
@@ -127,6 +127,7 @@ const UploadRecipients = () => {
       field: "status",
       headerName: "Status",
       flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
         const getColor = (status) => {
           switch (status) {

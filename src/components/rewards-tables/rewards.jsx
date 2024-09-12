@@ -58,8 +58,8 @@ const RewardsTable = () => {
   };
 
   const columns= [
-    { field: "id", headerName: "Request ID", flex: 1 },
-    { field: "created_at", headerName: "Date Created", flex: 1, 
+    { field: "id", headerName: "Request ID", flex: 1, minWidth: 100 },
+    { field: "created_at", headerName: "Date Created", flex: 1, minWidth: 150, 
     valueFormatter: (params) => {
       try {
         const date = parseISO(params);
@@ -69,16 +69,18 @@ const RewardsTable = () => {
       }
     },
    },
-    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
+    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1, minWidth: 150 },
     {
       field: 'mobile_no',
       headerName: 'Phone Number',
       flex: 1,
+      minWidth: 200,
     },
     {
       field: "status",
       headerName: "Status ID",
       flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
         const getColor = (status) => {
           switch (status) {
@@ -100,6 +102,7 @@ const RewardsTable = () => {
       field: 'status_desc',
       headerName: 'Status Description',
       flex: 1,
+      minWidth: 200,
     },
   ];
   const [paginationModel, setPaginationModel] = React.useState({

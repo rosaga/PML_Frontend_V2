@@ -44,14 +44,15 @@ const CampaignDetails = (campaignId,closeDetails) => {
 
 
   const columns = [
-    { field: "request_id", headerName: "RequestID", flex: 1 },
-    { field: "created_date", headerName: "Date Created", flex: 1 },
-    { field: "bundle", headerName: "Bundle Amount", flex: 1 },
-    { field: "phone_number", headerName: "Phone Number", flex: 1 },
+    { field: "request_id", headerName: "RequestID", flex: 1, minWidth: 150 },
+    { field: "created_date", headerName: "Date Created", flex: 1, minWidth: 150 },
+    { field: "bundle", headerName: "Bundle Amount", flex: 1, minWidth: 150 },
+    { field: "phone_number", headerName: "Phone Number", flex: 1, minWidth: 150 },
     {
       field: "status",
       headerName: "Status ID",
       flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
         const getColor = (status) => {
           switch (status) {

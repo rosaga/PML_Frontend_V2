@@ -56,9 +56,9 @@ const CampaignsTable = () => {
   
 
   const columns= [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "name", headerName: "Campaign Name", flex: 1 },
-    { field: "created_at", headerName: "Date Created", flex: 1 ,
+    { field: "id", headerName: "ID", flex: 1, minWidth: 100 },
+    { field: "name", headerName: "Campaign Name", flex: 1, minWidth: 200 },
+    { field: "created_at", headerName: "Date Created", flex: 1 , minWidth: 150,
     valueFormatter: (params) => { 
       try {
         const date = parseISO(params);
@@ -68,23 +68,24 @@ const CampaignsTable = () => {
       }
     },
   },
-    { field: "groups", headerName: "Group Name", flex: 1,
+    { field: "groups", headerName: "Group Name", flex: 1, minWidth: 200,
     valueGetter: (params) => { 
         return params?.name
       }, },
-    { field: "created_by", headerName: "Owner", flex: 1 },
-    { field: "contacts_count", headerName: "Contact Counts", flex: 1 },
+    { field: "created_by", headerName: "Owner", flex: 1, minWidth: 250 },
+    { field: "contacts_count", headerName: "Contact Counts", flex: 1, minWidth: 150 },
     { 
       field: "", 
       headerName: "Bundle Amount", 
       flex: 1,
+      minWidth:150,
       valueGetter: (params) => {
         const contactCount = params?.row?.contacts_count || 0;
         const bundleSize = params?.row?.bundle_size || 0;
         return contactCount * bundleSize;
       }
     },
-    { field: "bundle_size", headerName: "Data Bundle Type", flex: 1 },
+    { field: "bundle_size", headerName: "Data Bundle Type", flex: 1, minWidth: 150 },
 
   ];
   const [paginationModel, setPaginationModel] = React.useState({

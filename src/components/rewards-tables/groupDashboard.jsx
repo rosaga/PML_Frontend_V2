@@ -53,11 +53,11 @@ const GroupDashboard = () => {
 
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 1},
-    { field: "name", headerName: "Group Name", flex: 1 },
-    { field: "contact_count", headerName: "No of Contacts", flex: 1 },
-    { field: "description", headerName: "Description", flex: 1 },
-    { field: "created_at", headerName: "Date Created", flex: 1,
+    { field: "id", headerName: "ID", flex: 1, minWidth: 90 },
+  { field: "name", headerName: "Group Name", flex: 2, minWidth: 150 },
+  { field: "contact_count", headerName: "No of Contacts", flex: 2, minWidth: 150 },
+  { field: "description", headerName: "Description", flex: 3, minWidth: 200 },
+  { field: "created_at", headerName: "Date Created", flex: 2, minWidth: 150,
     valueFormatter: (params) => {
       try {
         const date = parseISO(params);

@@ -54,11 +54,12 @@ const RecentCampaigns = () => {
   }, [paginationModel.page, paginationModel.pageSize, isModalOpen, org_id]);
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "name", headerName: "Campaign Name", flex: 1 },
+    { field: "id", headerName: "ID", flex: 1, minWidth: 100 },
+    { field: "name", headerName: "Campaign Name", flex: 1, minWidth: 250 },
     {
       field: "created_at",
       headerName: "Date Created",
+      minWidth: 200,
       flex: 1,
       valueFormatter: (params) => {
         try {
@@ -72,16 +73,18 @@ const RecentCampaigns = () => {
     {
       field: "groups",
       headerName: "Group Name",
+      minWidth: 150,
       flex: 1,
       valueGetter: (params) => {
         return params?.name || "";
       },
     },
-    { field: "created_by", headerName: "Owner", flex: 1 },
-    { field: "contacts_count", headerName: "Contact Counts", flex: 1 },
+    { field: "created_by", headerName: "Owner", flex: 1, minWidth: 150 },
+    { field: "contacts_count", headerName: "Contact Counts", flex: 1, minWidth: 150 },
     {
       field: "",
       headerName: "Bundle Amount",
+      minWidth: 150,
       flex: 1,
       valueGetter: (params) => {
         const contactCount = params?.row?.contacts_count || 0;
@@ -89,7 +92,7 @@ const RecentCampaigns = () => {
         return contactCount * bundleSize;
       },
     },
-    { field: "bundle_size", headerName: "Data Bundle Type", flex: 1 },
+    { field: "bundle_size", headerName: "Data Bundle Type", flex: 1, minWidth: 150 },
   ];
 
   return (

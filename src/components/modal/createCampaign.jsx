@@ -228,7 +228,7 @@ const CreateCampaignModal = ({ closeModal }) => {
                         ))}
                       </select>
                     </div>
-                    <div className="mb-4">
+                    {/* <div className="mb-4">
                       <label
                         htmlFor="bundle"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -250,7 +250,7 @@ const CreateCampaignModal = ({ closeModal }) => {
                           </option>
                         ))}
                       </select>
-                    </div>
+                    </div> */}
 
                     <div className="mb-4">
                       <label

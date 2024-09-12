@@ -107,14 +107,15 @@ const GroupsTable = () => {
 
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "name", headerName: "Group Name", flex: 1 },
-    { field: "contact_count", headerName: "No of Contacts", flex: 1 },
-    { field: "description", headerName: "Description", flex: 1 },
+    { field: "id", headerName: "ID", flex: 1, minWidth: 100 },
+    { field: "name", headerName: "Group Name", flex: 1, minWidth: 200 },
+    { field: "contact_count", headerName: "No of Contacts", flex: 1, minWidth: 150 },
+    { field: "description", headerName: "Description", flex: 1, minWidth: 200 },
     {
       field: "created_at",
       headerName: "Date Created",
       flex: 1,
+      minWidth: 150,
       valueFormatter: (params) => { 
         try {
           const date = parseISO(params);
@@ -128,6 +129,7 @@ const GroupsTable = () => {
       field: "Action",
       headerName: "Action",
       flex: 0.5,
+      minWidth: 100,
       renderCell: (params) => {
         const handleDelete = () => {
           deleteGroup(params.id);

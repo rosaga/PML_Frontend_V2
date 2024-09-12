@@ -38,9 +38,9 @@ const RecipientDashboard = () => {
   }, [paginationModel.page, paginationModel.pageSize, org_id]);
   const columns = [
     { field: "id", headerName: "ID", flex: 1},
-    { field: "mobile_no", headerName: "Phone Number", flex: 1 },
-    { field: "created_by", headerName: "Created By", flex: 1 },
-    { field: "created_at", headerName: "Created At", flex: 1,
+    { field: "mobile_no", headerName: "Phone Number", flex: 1, minWidth: 150 },
+    { field: "created_by", headerName: "Created By", flex: 1, minWidth: 150 },
+    { field: "created_at", headerName: "Created At", flex: 1, minWidth:150,
     valueFormatter: (params) => {
           try {
             const date = parseISO(params);
@@ -52,6 +52,7 @@ const RecipientDashboard = () => {
     {
       field: "status",
       headerName: "Status",
+      minWidth: 150,
       flex: 1,
       renderCell: (params) => {
         const getColor = (status) => {

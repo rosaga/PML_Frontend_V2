@@ -54,8 +54,8 @@ const VouchersTable = () => {
   
 
   const columns = [
-    { field: "id", headerName: "Voucher ID", flex: 1 },
-    { field: "created_at", headerName: "Date Created", flex: 1 ,
+    { field: "id", headerName: "Voucher ID", flex: 1, minWidth: 100 },
+    { field: "created_at", headerName: "Date Created", flex: 1 , minWidth: 150,
     valueFormatter: (params) => { 
       try {
         const date = parseISO(params);
@@ -64,9 +64,9 @@ const VouchersTable = () => {
         return "Invalid Date";
       }
     },},
-    { field: "created_by", headerName: "Created by", flex: 1 },
-    { field: "total", headerName: "No of Units", flex: 1 },
-    { field: "bundle_size", headerName: "Bundle Type", flex: 1 },
+    { field: "created_by", headerName: "Created by", flex: 1, minWidth: 200 },
+    { field: "total", headerName: "No of Units", flex: 1, minWidth: 150 },
+    { field: "bundle_size", headerName: "Bundle Type", flex: 1, minWidth: 150 },
   ];
   const getVouchers = async () => {
     try {

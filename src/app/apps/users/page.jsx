@@ -85,10 +85,10 @@ const Users = () => {
   };
 
   const columns = [
-    { field: "first_name", headerName: "First Name", flex: 1 },
-    { field: "last_name", headerName: "Last Name", flex: 1 },
-    { field: "email", headerName: "Email", flex: 1 },
-    { field: "verified", headerName: "Verified", flex: 1 },
+    { field: "first_name", headerName: "First Name", flex: 1, minWidth: 150 },
+    { field: "last_name", headerName: "Last Name", flex: 1, minWidth: 150 },
+    { field: "email", headerName: "Email", flex: 1, minWidth: 200 },
+    { field: "verified", headerName: "Verified", flex: 1, minWidth: 150 },
   ];
 
   return (
