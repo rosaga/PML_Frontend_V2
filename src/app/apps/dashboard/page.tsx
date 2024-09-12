@@ -64,10 +64,10 @@ const Dashboard = () => {
   });
 
   const columns: GridColDef[] = [
-    { field: "data_bundle", headerName: "Data Bundle", flex: 1 },
-    { field: "units_bought", headerName: "Units Bought", flex: 1 },
-    { field: "unit_balance", headerName: "Unit Balance", flex: 1 },
-    { field: "progress", headerName: "Progress", flex: 2, renderCell: renderProgress },
+    { field: "data_bundle", headerName: "Data Bundle", flex: 1, minWidth: 150 },
+    { field: "units_bought", headerName: "Units Bought", flex: 1, minWidth: 150 },
+    { field: "unit_balance", headerName: "Unit Balance", flex: 1, minWidth: 150 },
+    { field: "progress", headerName: "Progress", flex: 2, renderCell: renderProgress, minWidth: 200 },
   ];
 
  
@@ -275,7 +275,7 @@ const Dashboard = () => {
                         priority
                       />
                     </span>
-                    <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-red-600">Notification</p>
+                    <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-wrap text-red-600">Notification</p>
                   </div>
                 </div>
               </div>

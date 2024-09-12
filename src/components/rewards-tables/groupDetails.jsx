@@ -68,7 +68,7 @@ const GroupContactDetails = ( group_id ) => {
   const columns = [
 
     // { field: "contact_id", headerName: "ID", flex: 1},
-    { field: "created_at", headerName: "Date of Onboarding", flex: 1,
+    { field: "created_at", headerName: "Date of Onboarding", flex: 1, minWidth: 200,
     valueFormatter: (params) => { 
       try {
         const date = parseISO(params);
@@ -77,7 +77,7 @@ const GroupContactDetails = ( group_id ) => {
         return "Invalid Date";
       }
     }, },
-    { field: "contact", headerName: "Phone Number", flex: 1,
+    { field: "contact", headerName: "Phone Number", flex: 1, minWidth: 150,
     valueFormatter: (params) => {
       return params.mobile_no;
 
@@ -87,6 +87,7 @@ const GroupContactDetails = ( group_id ) => {
       field: "status_id",
       headerName: "Status",
       flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
         const getColor = (status) => {
           switch (status) {

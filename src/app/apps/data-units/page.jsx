@@ -91,12 +91,13 @@ const DataUnits = () => {
 
   useEffect(() => {
     const baseColumns = [
-      { field: "id", headerName: "Transaction Reference", flex: 1 },
-      { field: "created_by", headerName: "Created By", flex: 1 },
+      { field: "id", headerName: "Transaction Reference", flex: 1, minWidth: 150 },
+      { field: "created_by", headerName: "Created By", flex: 1, minWidth:200 },
       {
         field: "expires_on",
         headerName: "End Date",
         flex: 1,
+        minWidth: 150,
         valueFormatter: (params) => {
           try {
             const date = parseISO(params);
@@ -106,12 +107,13 @@ const DataUnits = () => {
           }
         },
       },
-      { field: "package", headerName: "Data Bundle", flex: 1 },
-      { field: "units", headerName: "Units", flex: 1 },
+      { field: "package", headerName: "Data Bundle", flex: 1, minWidth: 150 },
+      { field: "units", headerName: "Units", flex: 1, minWidth: 150 },
       {
         field: "status",
         headerName: "Status",
         flex: 1,
+        minWidth: 150,
         renderCell: (params) => {
           const getStatusLabel = (status) => {
             switch (status) {
@@ -136,6 +138,7 @@ const DataUnits = () => {
         field: "approve",
         headerName: "Review",
         flex: 1,
+        minWidth: 150,
         renderCell: (params) => {
           if (params.row.status === 'PENDING') {
             return <button className="bg-green-400 text-white border-1 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.id)}>Approve</button>;
