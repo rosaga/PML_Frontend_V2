@@ -4,11 +4,10 @@ import axios from "axios";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from '@mui/icons-material/Add';
-import PeakButton from "../../../components/button/button";
-import apiUrl from "../../api/utils/apiUtils/apiUrl";
+import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetSenderId } from "@/app/api/actions/sms/sms";
-import NewSenderID from "../../../components/modal/newSenderID"
+import NewSenderID from "../../../../components/modal/newSenderID"
 
 const Settings = () => {
   let org_id = null;

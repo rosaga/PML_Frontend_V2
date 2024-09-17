@@ -1,8 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import PeakButton from "../../../components/button/button";
-import apiUrl from "../../api/utils/apiUtils/apiUrl";
 import {GetNotifications} from "@/app/api/actions/notifications/notifications";
 
 

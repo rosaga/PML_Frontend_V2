@@ -7,7 +7,7 @@ import { clearToken } from '@/utils/auth';
 import { useRouter } from 'next/navigation';
 import ConfirmSignOutModal from "../modal/confirmSignout";
 
-const Sidebar = () => {
+const SidebarData = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // New state for sidebar toggle
@@ -51,13 +51,13 @@ const Sidebar = () => {
   };
 
   const links = [
-    { href: '/apps/dashboard', src: '/images/dashboard.svg', alt: 'Dashboard', label: 'Dashboard' },
-    { href: '/apps/data-rewards', src: '/images/vector.svg', alt: 'Data Rewards', label: 'Data Rewards' },
-    { href: '/apps/data-units', src: '/images/dataunits.svg', alt: 'Data Units', label: 'Data Units' },
-    { href: '/apps/users', src: '/images/users.svg', alt: 'Users', label: 'Users' },
-    { href: '/apps/account', src: '/images/Account.svg', alt: 'Account', label: 'Account' },
+    { href: '/apps/data/dashboard', src: '/images/dashboard.svg', alt: 'Dashboard', label: 'Dashboard' },
+    { href: '/apps/data/data-rewards', src: '/images/vector.svg', alt: 'Data Rewards', label: 'Data Rewards' },
+    { href: '/apps/data/data-units', src: '/images/dataunits.svg', alt: 'Data Units', label: 'Data Units' },
+    { href: '/apps/data/users', src: '/images/users.svg', alt: 'Users', label: 'Users' },
+    { href: '/apps/data/account', src: '/images/Account.svg', alt: 'Account', label: 'Account' },
 
-    { href: '/apps/reports', src: '/images/Reports.svg', alt: 'Reports', label: 'Reports' },
+    { href: '/apps/data/reports', src: '/images/Reports.svg', alt: 'Reports', label: 'Reports' },
     // { href: '/apps/flowbuilder', src: '/images/flowbuillder.svg', alt: 'Flow Builder', label: 'Flow Builder' },
   ];
 
@@ -138,4 +138,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default SidebarData;
