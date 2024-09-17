@@ -1,5 +1,5 @@
 "use client";
-import Sidebar from "@/components/sidebar/sidebar";
+import SidebarData from "@/components/sidebardata/sidebardata";
 import React, { useEffect, useState } from "react";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import Image from "next/image";
@@ -113,11 +113,11 @@ const Dashboard = () => {
   };
 
   const handleHelp = () => {
-    router.push("/apps/help");
+    router.push("/apps/data/help");
   };
 
   const handleNotifications = () => {
-    router.push("/apps/notification");
+    router.push("/apps/data/notification");
   };
 
  useEffect(() => {

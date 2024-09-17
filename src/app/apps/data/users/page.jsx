@@ -6,12 +6,11 @@ import { DataGrid, GridRowsProp, GridColDef, GridToolbar } from "@mui/x-data-gri
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from '@mui/icons-material/Add';
-import PeakButton from "../../../components/button/button";
-import PeakSearch from "../../../components/search/search"
-import InviteUserModal from "../../../components/modal/inviteUser"
-import apiUrl from "../../api/utils/apiUtils/apiUrl";
+import PeakButton from "../../../../components/button/button";
+import PeakSearch from "../../../../components/search/search"
+import InviteUserModal from "../../../../components/modal/inviteUser"
+import apiUrl from "../../../api/utils/apiUtils/apiUrl";
 import { getToken } from "@/utils/auth";
-import CustomToolbar from "../../../components/toolbar/toobar"
 
 const Users = () => {
   let org_id = null;

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "flowbite-react";
 import { FaHeadphones } from "react-icons/fa";
-import Faqs from "../../../components/faqs/faq"
+import Faqs from "../../../../components/faqs/faq"
 
 const Help = () => {
   return (

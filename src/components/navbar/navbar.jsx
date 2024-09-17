@@ -41,7 +41,7 @@ const Navbar = () => {
               placeholder="blur"
               alt="Settings"
               priority
-              onClick={() => router.push("/apps/settings")}
+              onClick={() => router.push("/apps/data/settings")}
 
             />
           </span>
@@ -59,7 +59,7 @@ const Navbar = () => {
                 placeholder="blur"
                 alt="Notifications"
                 priority
-                onClick={() => router.push("/apps/notification")}
+                onClick={() => router.push("/apps/data/notification")}
               />
             </Tooltip>
           </span>

@@ -4,11 +4,10 @@ import axios from "axios";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from '@mui/icons-material/Add';
-import PeakButton from "../../../components/button/button";
-import apiUrl from "../../api/utils/apiUtils/apiUrl";
+import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetAccounts } from "@/app/api/actions/accounts/accounts";
-import NewAccountModal from "../../../components/modal/newAccountModal"
+import NewAccountModal from "../../../../components/modal/newAccountModal"
 
 const Accounts = () => {
   let org_id = null;
