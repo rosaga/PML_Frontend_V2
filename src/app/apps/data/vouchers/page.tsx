@@ -4,10 +4,10 @@ import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
-import PeakButton from "../../../components/button/button";
+import PeakButton from "../../../../components/button/button";
 import AddIcon from '@mui/icons-material/Add';
-import SearchVouchers from "../../../components/search/searchVouchers"
-import InviteUserModal from "../../../components/modal/inviteUser"
+import SearchVouchers from "../../../../components/search/searchVouchers"
+import InviteUserModal from "../../../../components/modal/inviteUser"
 
 const Vouchers = () => {
 

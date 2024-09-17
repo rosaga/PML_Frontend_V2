@@ -162,7 +162,7 @@ const SendSmsModal = ({ closeModal }) => {
                   >
                     <option value="">Select a bundle</option>
                     {channels.map((channel) => (
-                      <option value={channel}>{channel}</option>
+                      <option key={index} value={channel}>{channel}</option>
                     ))}
                   </select>
                 </div>
