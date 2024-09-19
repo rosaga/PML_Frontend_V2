@@ -86,11 +86,11 @@ const Notifications = () => {
                           </p>
                         </div>
                       </div>
-                      <button
+                      {/* <button
                         className="mt-2 sm:mt-0 text-sm sm:text-base bg-[#090A29] text-white rounded px-4 py-2 hover:bg-[#0a0b2f] dark:bg-[#090A29] dark:text-white dark:hover:bg-[#0a0b2f]"
                       >
                         Go to Page
-                      </button>
+                      </button> */}
                     </div>
                   ))
                 )}
