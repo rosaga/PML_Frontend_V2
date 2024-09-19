@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getToken } from "@/utils/auth";
 import { appservicesAction } from "../../app/api/actions/appservices/appservicesAction";
+import { GetGroups } from "../../components/../app/api/actions/group/group"
 import { sendSms } from "../../app/api/actions/messages/messagesAction";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
@@ -13,7 +14,7 @@ import MaterialUIPickers from "../../components/utils/timePicker";
 import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 
-const SendSmsModal = ({ closeModal }) => {
+const SendBulkModal = ({ closeModal }) => {
   let org_id = null;
   let token = null;
   if (typeof window !== "undefined") {
@@ -37,9 +38,11 @@ const SendSmsModal = ({ closeModal }) => {
   };
 
   const initialState = {
-    destination: "",
     content: "",
-    scheduled: value,
+    name: "",
+    description: "",
+    scheduled: "",
+    channel: ""
   };
 
   const [state, setState] = React.useState(initialState);
@@ -49,6 +52,11 @@ const SendSmsModal = ({ closeModal }) => {
   const [selectedSenderId, setSelectedSenderId] = useState("");
   const [isButtonClicked, setIsButtonClicked] = useState(false);
   const [schedule, setSchedule] = useState(false);
+  const [groups, setGroups] = useState([]);
+  const [searchParams, setSearchParams] = useState({});
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(100);
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -60,31 +68,49 @@ const SendSmsModal = ({ closeModal }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setIsButtonClicked(true);
 
-    const originalContent = state.content;
-    const formattedContent = originalContent.replace(/\n/g, "\\n");
+    const originalContent = state.content
+    const formattedContent = originalContent.replace(/\n/g, '\\n');
 
     const newSms = {
-      destination: state.destination,
-      content: formattedContent,
+      name: state.name,
+      group_id: selectedGroup,
+      description: state.description,
+      service_id: selectedSenderId,
       requestid: randomUuid,
+      content: formattedContent,
       scheduled: value,
       channel: selectedChannel,
-      organization_id: org_id,
-    };
+      organization_id: app_id
+  };
 
-    const res = sendSms({ selectedSenderId, newSms }).then((res) => {
-      if (res.status === 202) {
-        // closeModal()
+    const res = broadcastMessages({selectedSenderId,newSms}).then((res) => {
+      setIsButtonClicked(false);
+      if (res.status === 200) {
         toast.success("SMS SENT SUCCESSFULLY!!!");
       } else {
-        // closeModal()
-        toast.error("SEND SMS FAILED")
+        toast.error("SEND SMS FAILED");
       }
-      setIsButtonClicked(false);
+      setState(initialState);
     });
-    setState(initialState);
+
     return res;
+  };
+
+  const getGroups = () => {
+    GetGroups( org_id, page, limit, searchParams )
+      .then((res) => {
+        if (res.errors) {
+          console.log("AN ERROR HAS OCCURED");
+        } else {
+          setGroups(res.data.data);
+          setSelectedGroup(res.data[0]?.group_id || "");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   const getAppServices = () => {
@@ -103,6 +129,10 @@ const SendSmsModal = ({ closeModal }) => {
   };
 
   useEffect(() => {
+    getGroups();
+  }, [page, limit, org_id]);
+
+  useEffect(() => {
     getAppServices();
   }, [org_id, selectedChannel]);
 
@@ -119,7 +149,7 @@ const SendSmsModal = ({ closeModal }) => {
           <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
             <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Send SMS
+                Send Bulk SMS
               </h3>
               <button
                 type="button"
@@ -146,26 +176,96 @@ const SendSmsModal = ({ closeModal }) => {
             </div>
             <div className="p-4 md:p-5">
               <form className="space-y-2" action="#">
-                <div>
-                  <label
-                    htmlFor="bundle"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Select Channel
-                  </label>
-                  <select
-                    name="bundle"
-                    id="bundle"
+              <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                    Campaign Name*
+                    </label>
+                    <input
+                    type="text"
+                    name="name"
+                    id="name"
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    onChange={(e) => setSelectedChannel(e.target.value)}
+                    placeholder="Campaign A"
+                    onChange={handleChange}
+                    value={state.name}
                     required
-                  >
-                    <option value="">Select a channel</option>
-                    {channels.map((channel) => (
-                      <option key={channel} value={channel}>{channel}</option>
-                    ))}
-                  </select>
+                  />
+                  </div>
+
+                  <div className="flex-1">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                    Campaign Description*
+                    </label>
+                    <input
+                    type="text"
+                    name="description"
+                    id="description"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    placeholder="Marketing campaign for Product A"
+                    onChange={handleChange}
+                    value={state.description}
+                    required
+                  />
+                  </div>
                 </div>
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Channel
+                    </label>
+                    <select
+                      name="bundle"
+                      id="bundle"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      onChange={(e) => setSelectedChannel(e.target.value)}
+                      required
+                    >
+                      <option value="">Select a channel</option>
+                      {channels.map((channel) => (
+                        <option key={channel} value={channel}>
+                          {channel}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex-1">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Group
+                    </label>
+                    <select
+                      name="bundle"
+                      id="bundle"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      onChange={(e) => setSelectedSenderId(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Group</option>
+                      {groups.map((group) => (
+                        <option
+                          key={group.group_id}
+                          value={group.group_id}
+                        >
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label
                     htmlFor="bundle"
@@ -191,24 +291,6 @@ const SendSmsModal = ({ closeModal }) => {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label
-                    htmlFor="destination"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Enter Mobile Number
-                  </label>
-                  <input
-                    type="text"
-                    name="destination"
-                    id="destination"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="254711438911"
-                    onChange={handleChange}
-                    value={state.destination}
-                    required
-                  />
-                </div>
 
                 <div>
                   <label
@@ -229,9 +311,6 @@ const SendSmsModal = ({ closeModal }) => {
                     required
                   />
                 </div>
-                <div>
-
-                </div>
 
                 <FormGroup>
                   <FormControlLabel
@@ -244,15 +323,14 @@ const SendSmsModal = ({ closeModal }) => {
                     label="*Turn on to send scheduled Message*"
                   />
                 </FormGroup>
-                {schedule ? (
+
+                {schedule && (
                   <div className="my-4">
                     <MaterialUIPickers
                       value={value}
                       onChange={handleDateTimeChange}
                     />
                   </div>
-                ) : (
-                  <></>
                 )}
 
                 <div className="flex space-x-2 mt-4">
@@ -267,9 +345,9 @@ const SendSmsModal = ({ closeModal }) => {
                     type="button"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                     onClick={(e) => {
-                        handleSubmit(e);
-                        setIsButtonClicked(true);
-                      }}
+                      handleSubmit(e);
+                      setIsButtonClicked(true);
+                    }}
                   >
                     {isButtonClicked ? "SENDING..." : "SEND"}
                   </button>
@@ -283,4 +361,4 @@ const SendSmsModal = ({ closeModal }) => {
   );
 };
 
-export default SendSmsModal;
+export default SendBulkModal;

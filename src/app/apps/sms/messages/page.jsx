@@ -10,8 +10,9 @@ import PeakButton from "../../../../components/button/button";
 import PeakSearch from "../../../../components/search/search"
 import InviteUserModal from "../../../../components/modal/inviteUser"
 import SendSmsModal from "../../../../components/modal/sendSms"
-import SendBulkModal from "../../../../components/modal/sendBulk"
+import SendBulkModal from "../../../../components/modal/sendBulkSms"
 import apiUrl from "../../../api/utils/apiUtils/apiUrl";
+import { messagesAction } from "../../../api/actions/messages/messagesAction";
 import { getToken } from "@/utils/auth";
 
 const Messages = () => {
@@ -24,9 +25,12 @@ const Messages = () => {
 
   const [isSingleModalOpen, setIsSingleModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-  const [rows, setRows] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useState({});
+
+  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(10)
 
   const openSendSingle = () => {
     setIsSingleModalOpen(true);
@@ -55,47 +59,39 @@ const Messages = () => {
     setSearchParams({});
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, [isSingleModalOpen,isBulkModalOpen, searchParams]);
 
-  const fetchUsers = async () => {
-
-    let usersUrl = `${apiUrl.USERS}/${org_id}/users?page=1&size=20&orderby=id DESC`;
-
-    if (searchParams) {
-      const searchParamsString = new URLSearchParams(searchParams).toString();
-      usersUrl += `&${searchParamsString}`;
-    }
-
-    try {
-      const usersResponse = await axios.get(usersUrl, {headers: {
-        Accept: 'application/json',
-        'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
+  const getMessages = () => {
+    if (org_id) {
+    messagesAction({org_id,page,limit})
+      .then((res) => {
+        if (res.errors) {
+          console.log("AN ERROR HAS OCCURED")
+        } else {
+          setMessages(res.data)
+          setLoading(false)
         }
+      })
+      .catch((err) => {
+        console.log(err)
       });
-      const users = usersResponse.data.data.map((user) => ({
-        id: user.id, 
-        first_name: user.firstName,
-        last_name: user.lastName,
-        email: user.email,
-        verified: user.emailVerified
-      }));
-
-      setRows(users);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching users data:", error);
-      setLoading(false);
-    }
+    } else {
+      console.log("org_id is null or undefined. Skipping API call.");
+    }  
   };
 
+
+  useEffect(() => {
+    getMessages();
+  }, [isSingleModalOpen,isBulkModalOpen, searchParams]);
+
   const columns = [
-    { field: "first_name", headerName: "First Name", flex: 1, minWidth: 150 },
-    { field: "last_name", headerName: "Last Name", flex: 1, minWidth: 150 },
-    { field: "email", headerName: "Email", flex: 1, minWidth: 200 },
-    { field: "verified", headerName: "Verified", flex: 1, minWidth: 150 },
+    { field: "source", headerName: "SOURCE", flex: 1, minWidth: 150 },
+    { field: "destination", headerName: "DESTINATION", flex: 1, minWidth: 150 },
+    { field: "content", headerName: "CONTENT", flex: 1, minWidth: 200 },
+    { field: "channel", headerName: "CHANNEL", flex: 1, minWidth: 150 },
+    { field: "direction", headerName: "DIRECTION", flex: 1, minWidth: 150 },
+    { field: "status_desc", headerName: "STATUS", flex: 1, minWidth: 200 },
+    { field: "createdat", headerName: "DATE", flex: 1, minWidth: 150 },
   ];
 
   return (
@@ -129,7 +125,7 @@ const Messages = () => {
                   <p>Loading...</p>
                 ) : (
                   <DataGrid
-                    rows={rows}
+                    rows={messages}
                     columns={columns}
                     sx={{
                       "& .MuiDataGrid-columnHeader": {

@@ -15,4 +15,5 @@ export default {
 
     LIST_APP_SERVICES: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/application`,
     SEND_SMS: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
+    LIST_MESSAGES: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
 };
