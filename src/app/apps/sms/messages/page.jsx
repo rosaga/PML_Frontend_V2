@@ -94,6 +94,7 @@ const Messages = () => {
   }, [isSingleModalOpen, isBulkModalOpen, searchParams]);
 
   const columns = [
+    { field: "id", headerName: "ID", flex: 1, minWidth: 150 },
     { field: "source", headerName: "SOURCE", flex: 1, minWidth: 150 },
     { field: "destination", headerName: "DESTINATION", flex: 1, minWidth: 150 },
     { field: "content", headerName: "CONTENT", flex: 1, minWidth: 200 },
