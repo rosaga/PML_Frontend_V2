@@ -12,7 +12,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import Modal from "@mui/material/Modal";
 import "../../app/globals.css";
 import "react-toastify/dist/ReactToastify.css";
-import { GetSenderId } from "../api/actions/sms/sms";
+import { GetSenderId } from "../api/actions/senderId/senderId";
 
 const SignIn = () => {
  

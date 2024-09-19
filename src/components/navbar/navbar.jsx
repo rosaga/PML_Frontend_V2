@@ -29,7 +29,7 @@ const Navbar = () => {
         <p className="text-xl font-bold">{accountName}</p>
       </div>
       <div className="flex flex-row space-x-4 mt-2 sm:mt-0">
-        <div>
+        {/* <div>
           <span>
             <Image
               style={{ color: "#F58426" }}
@@ -45,7 +45,7 @@ const Navbar = () => {
 
             />
           </span>
-        </div>
+        </div> */}
         <div>
           <span>
             <Tooltip title="Notifications">

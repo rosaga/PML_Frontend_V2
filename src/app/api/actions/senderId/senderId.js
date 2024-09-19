@@ -1,6 +1,6 @@
 import axios from 'axios';
 import apiUrl from "../../utils/apiUtils/apiUrl";
-import { authHeaders } from '../../../api/utils/headers/headers';
+import { authHeaders } from '../../utils/headers/headers';
 
 export async function GetSenderId(org_id,page,pageSize) {
 
