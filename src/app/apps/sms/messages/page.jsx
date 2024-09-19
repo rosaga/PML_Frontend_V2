@@ -79,7 +79,6 @@ const Messages = () => {
     }  
   };
 
-
   useEffect(() => {
     getMessages();
   }, [isSingleModalOpen,isBulkModalOpen, searchParams]);
