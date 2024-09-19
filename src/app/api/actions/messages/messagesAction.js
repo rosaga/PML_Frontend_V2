@@ -5,7 +5,7 @@ import { authHeaders } from '../../../api/utils/headers/headers';
 
 export async function messagesAction(formValues) {
     // const messagesUrl = apiUrl.LIST_MESSAGES;
-    const messagesUrl = `${apiUrl.LIST_MESSAGES}/${formValues.app_id}/list?page=${formValues.page}&limit=${formValues.limit}`;
+    const messagesUrl = `${apiUrl.LIST_MESSAGES}/${formValues.org_id}/list?page=${formValues.page}&limit=${formValues.limit}`;
     try{
     const config = await authHeaders();
   
