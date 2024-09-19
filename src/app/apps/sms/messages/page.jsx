@@ -139,6 +139,7 @@ const Messages = () => {
                   rows={messages}
                   columns={columns}
                   loading={loading}
+                  getRowId={(row) => row.id}
                   paginationModel={paginationModel}
                   onPaginationModelChange={setPaginationModel}
                   rowCount={total}
