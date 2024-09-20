@@ -21,7 +21,6 @@
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",
     "@mui/x-data-grid": "^7.4.0",
     "@mui/x-date-pickers": "^7.17.0",
-    "ajv": "^8.17.1",
     "axios": "^1.7.1",
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
