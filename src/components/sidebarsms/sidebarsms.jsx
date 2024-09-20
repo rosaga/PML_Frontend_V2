@@ -49,7 +49,7 @@ const SidebarSms = () => {
   const links = [
     { href: '/apps/sms/dashboard', src: '/images/dashboard.svg', alt: 'Dashboard', label: 'Dashboard' },
     { href: '/apps/sms/contacts', src: '/images/vector.svg', alt: 'Contacts', label: 'Contacts' },
-    { href: '/apps/sms/messages', src: '/images/users.svg', alt: 'Messages', label: 'Messages' },
+    { href: '/apps/sms/messages', src: '/images/users.svg', alt: 'Messages', label: 'Message' },
     { href: '/apps/sms/account', src: '/images/Account.svg', alt: 'Request Units', label: 'Request Units' },
 
     { href: '/apps/data/reports', src: '/images/Reports.svg', alt: 'Support', label: 'Support' },
