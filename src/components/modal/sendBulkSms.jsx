@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { getToken } from "@/utils/auth";
 import { appservicesAction } from "../../app/api/actions/appservices/appservicesAction";
 import { GetGroups } from "../../components/../app/api/actions/group/group"
-import { sendSms } from "../../app/api/actions/messages/messagesAction";
+import { broadcastMessages } from "../../app/api/actions/messages/messagesAction";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
 import Switch from "@mui/material/Switch";
@@ -48,6 +48,7 @@ const SendBulkModal = ({ closeModal }) => {
   const [state, setState] = React.useState(initialState);
 
   const [appservices, setAppservices] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedChannel, setSelectedChannel] = useState("");
   const [selectedSenderId, setSelectedSenderId] = useState("");
   const [isButtonClicked, setIsButtonClicked] = useState(false);
@@ -75,14 +76,14 @@ const SendBulkModal = ({ closeModal }) => {
 
     const newSms = {
       name: state.name,
-      group_id: selectedGroup,
+      group_id: parseInt(selectedGroup),
       description: state.description,
-      service_id: selectedSenderId,
+      service_id: parseInt(selectedSenderId),
       requestid: randomUuid,
       content: formattedContent,
       scheduled: value,
       channel: selectedChannel,
-      organization_id: app_id
+      organization_id: org_id
   };
 
     const res = broadcastMessages({selectedSenderId,newSms}).then((res) => {
@@ -247,17 +248,17 @@ const SendBulkModal = ({ closeModal }) => {
                       Select Group
                     </label>
                     <select
-                      name="bundle"
-                      id="bundle"
+                      name="group"
+                      id="group"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      onChange={(e) => setSelectedSenderId(e.target.value)}
+                      onChange={(e) => setSelectedGroup(e.target.value)}
                       required
                     >
                       <option value="">Select Group</option>
                       {groups.map((group) => (
                         <option
-                          key={group.group_id}
-                          value={group.group_id}
+                          key={group.id}
+                          value={group.id}
                         >
                           {group.name}
                         </option>
