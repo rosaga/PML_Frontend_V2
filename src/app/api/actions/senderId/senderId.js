@@ -38,11 +38,15 @@ export async function GetSenderId(org_id,page,pageSize) {
 }
 
 export async function CreateSenderID(formValues) {
-  const createSenderIDUrl = `${apiUrl.peakSMS}/${formValues.org_id}/create/`;
+  const createSenderIDUrl = `${apiUrl.peakSMS}/service/${formValues.org_id}/create`;
   try {
     const authorizationLetter = formValues.authorizationLetter;
     const businessCertificate = formValues.businessCertificate;
-    const senderName = formValues.senderName;
+    const channel = formValues.channel;
+    const senderName = formValues.name;
+    const country_code = 'KE';
+    const provider = 'Safaricom';
+
 
    
 
@@ -50,9 +54,12 @@ export async function CreateSenderID(formValues) {
     const headers = authHeaderObject.headers;
 
     const formData = new FormData();
-    formData.append("authorizationLetter", authorizationLetter);
-    formData.append("businessCertificate", businessCertificate);
-    formData.append("senderName", senderName);
+    formData.append("country_code", country_code);
+    formData.append("provider", provider);
+    formData.append("authorization_letter", authorizationLetter);
+    formData.append("business_certificate", businessCertificate);
+    formData.append("sender", senderName);
+    formData.append("channel", channel);
 
     return axios.post(createSenderIDUrl, formData, {
       headers: {

@@ -54,6 +54,7 @@ const SenderId = () => {
   const columns = [
     { field: "date_created", headerName: "Date of Onboarding", flex: 1 },
     { field: "sendername", headerName: "Sender ID", flex: 1 },
+    { field: "channel", headerName: "Channel", flex: 1 },
     {
       field: "status",
       headerName: "Status",
@@ -103,6 +104,7 @@ const SenderId = () => {
                       },
                     }}
                     slots={{ toolbar: GridToolbar }}
+                    getRowId={(row) => row.sendername} // Set the specific column as the id for the row
                   />
                 )}
 
