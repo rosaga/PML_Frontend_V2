@@ -6,17 +6,27 @@ import { signOut } from "next-auth/react";
 import { clearToken } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import ConfirmSignOutModal from "../modal/confirmSignout";
+import Joyride from "react-joyride";
 
 const SidebarData = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State to track the Settings sub-menu
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tourActive, setTourActive] = useState(false); 
+  const [isClient, setIsClient] = useState(false);
 
   const router = useRouter();
 
   useEffect(() => {
-    setActiveLink(window.location.pathname);
+    setIsClient(true);
+    if (typeof window !== "undefined") {
+      setActiveLink(window.location.pathname);
+      if (typeof window !== "undefined" && !localStorage.getItem("sideTourActive")) {
+        setTourActive(true);
+        localStorage.setItem("sideTourActive", "true");
+      }
+    }
   }, []);
 
   const handleLogoutClick = () => {
@@ -62,33 +72,84 @@ const SidebarData = () => {
   };
 
   const links = [
-    { href: "/apps/data/dashboard", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard" },
-    { href: "/apps/data/data-rewards", src: "/images/vector.svg", alt: "Data Rewards", label: "Data Rewards" },
-    { href: "/apps/data/data-units", src: "/images/dataunits.svg", alt: "Data Units", label: "Data Units" },
-    { href: "/apps/data/users", src: "/images/users.svg", alt: "Users", label: "Users" },
-    { href: "/apps/data/account", src: "/images/Account.svg", alt: "Account", label: "Account" },
-
-    { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports" },
-    // Settings with sub-menu
+    { href: "/apps/data/dashboard", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard", className: "dashboard" },
+    { href: "/apps/data/data-rewards", src: "/images/vector.svg", alt: "Data Rewards", label: "Data Rewards", className: "data-rewards" },
+    { href: "/apps/data/data-units", src: "/images/dataunits.svg", alt: "Data Units", label: "Data Units", className: "data-units" },
+    { href: "/apps/data/users", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
+    { href: "/apps/data/account", src: "/images/Account.svg", alt: "Account", label: "Account", className: "account" },
+    { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
     {
       href: "/apps/data/settings",
       src: "/images/Settings.svg",
       alt: "Settings",
       label: "Settings",
+      className: "settings",
       subLinks: [
-        { href: "/apps/data/senderId", label: "Sender ID" },
-        { href: "/apps/data/threshold", label: "Notification Threshold" }
+        { href: "/apps/data/senderId", label: "Sender ID", className: "sender-id" },
+        { href: "/apps/data/threshold", label: "Notification Threshold", className: "notification-threshold" },
       ]
     },
   ];
 
+  const tourSteps = [
+    {
+      target: ".dashboard",
+      content: "This is the dashboard. Click to view summaries of dispatches and balances",
+    },
+    {
+      target: ".data-rewards",
+      content: "This is the data rewards section. Click to view and manage data rewards",
+    },
+    {
+      target: ".data-units",
+      content: "This is the data units section. Click to view and manage data units",
+    },
+    {
+      target: ".users",
+      content: "This is the users section. Click to view and manage users",
+    },
+    {
+      target: ".account",
+      content: "This is the account section. Click to view and manage account details",
+    },
+    {
+      target: ".reports",
+      content: "This is the reports section. Click to view and manage reports",
+    },
+    {
+      target: ".settings",
+      content: "This is the settings section. Click to view and manage sender ids and notification thresholds",
+    },
+    {
+      target: ".logout",
+      content: "Click here to logout",
+    },
+  ];
+
   return (
-    <div>
+    <div className="navbar">
       <button onClick={toggleSidebar} className="sm:hidden block p-2 bg-gray-700 text-white">
         <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
         </svg>
       </button>
+
+      {/* Joyride Component */}
+      {isClient && (<Joyride
+        steps={tourSteps}
+        continuous={true}
+        showProgress={true}
+        showSkipButton={true}
+        run={tourActive} // Start tour
+        styles={{
+          options: {
+            primaryColor: "#F58426", // Tour step color
+          },
+        }}
+      />
+
+      )}
+
       <aside
         id="logo-sidebar"
         className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0 shadow-lg`}
@@ -115,7 +176,7 @@ const SidebarData = () => {
                   }}
                   className={`icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white ${
                     activeLink === link.href ? "bg-[#001F3D] text-white" : "hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700"
-                  } group`}
+                  } group ${link.className}`}
                 >
                   <Image
                     className={`icon w-8 h-8 rounded-lg ${activeLink === link.href ? "filter invert" : ""}`}
@@ -139,10 +200,10 @@ const SidebarData = () => {
                       <li key={subLink.href}>
                         <a
                           href={subLink.href}
-                          onClick={() => handleSubMenuClick(subLink.href)} // Navigate on sub-menu item click
+                          onClick={() => handleSubMenuClick(subLink.href)}
                           className={`block p-2 text-gray-700 rounded-lg dark:text-gray-400 ${
-                            activeLink === subLink.href ? "bg-[#001F3D] text-white" : "hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700"
-                          }`}
+                            activeLink === subLink.href ? "bg-[#001F3D] text-white" : "hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700" 
+                          } ${subLink.className}`}
                         >
                           {subLink.label}
                         </a>
@@ -157,7 +218,7 @@ const SidebarData = () => {
             <li>
               <a
                 onClick={handleLogoutClick}
-                className="flex items-center cursor-pointer p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group"
+                className="flex items-center cursor-pointer p-2 text-black rounded-lg dark:text-white hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700 group logout"
               >
                 <svg
                   className="flex-shrink-0 w-5 h-5 text-black transition duration-75 dark:text-gray-400 group-hover:text-white dark:group-hover:text-white"
