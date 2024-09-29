@@ -11,6 +11,7 @@ const SidebarSms = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // New state for sidebar toggle
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     setActiveLink(window.location.pathname);
@@ -46,14 +47,31 @@ const SidebarSms = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const toggleSettingsSubMenu = (e) => {
+    e.preventDefault(); // Prevent redirect
+    setIsSettingsOpen(!isSettingsOpen); // Toggle the Settings sub-menu
+  };
+
+  const handleSubMenuClick = (href) => {
+    setActiveLink(href); // Update active link
+    router.push(href); // Navigate to the sub-menu page
+  };
+
   const links = [
     { href: '/apps/sms/dashboard', src: '/images/dashboard.svg', alt: 'Dashboard', label: 'Dashboard' },
     { href: '/apps/sms/contacts', src: '/images/vector.svg', alt: 'Contacts', label: 'Contacts' },
     { href: '/apps/sms/messages', src: '/images/users.svg', alt: 'Messages', label: 'Message' },
-    { href: '/apps/sms/account', src: '/images/Account.svg', alt: 'Request Units', label: 'Request Units' },
-
-    { href: '/apps/data/reports', src: '/images/Reports.svg', alt: 'Support', label: 'Support' },
-    // { href: '/apps/flowbuilder', src: '/images/flowbuillder.svg', alt: 'Flow Builder', label: 'Flow Builder' },
+    {
+      href: "/apps/sms/settings",
+      src: "/images/Settings.svg",
+      alt: "Settings",
+      label: "Settings",
+      className: "settings",
+      subLinks: [
+        { href: "/apps/sms/senderId", label: "Sender ID", className: "sender-id" },
+        { href: "/apps/sms/units", label: "SMS Units", className: "notification-threshold" },
+      ]
+    },
   ];
 
 
@@ -80,24 +98,51 @@ const SidebarSms = () => {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  onClick={() => handleLinkClick(link.href)}
+                  onClick={(e) => {
+                    if (link.subLinks) {
+                      toggleSettingsSubMenu(e); // Prevent immediate navigation and toggle sub-menu
+                    } else {
+                      handleLinkClick(link.href);
+                      router.push(link.href); // Navigate for non-submenu links
+                    }
+                  }}
                   className={`icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white ${
-                    activeLink === link.href ? 'bg-[#001F3D] text-white' : 'hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700'
-                  } group`}
+                    activeLink === link.href ? "bg-[#001F3D] text-white" : "hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700"
+                  } group ${link.className}`}
                 >
                   <Image
-                    style={{ color: "#F58426" }}
-                    className={`icon w-8 h-8 rounded-lg ${activeLink === link.href ? 'filter invert' : ''}`}
+                    className={`icon w-8 h-8 rounded-lg ${activeLink === link.href ? "filter invert" : ""}`}
                     width={40}
                     height={40}
                     src={link.src}
-                    blurDataURL="/bluriconloader.png"
-                    placeholder="blur"
                     alt={link.alt}
                     priority
                   />
                   <span className="ms-3">{link.label}</span>
+                  {link.subLinks && (
+                    <button onClick={toggleSettingsSubMenu} className="ml-auto text-white">
+                      {isSettingsOpen ? "▲" : "▼"}
+                    </button>
+                  )}
                 </a>
+                {/* Render sub-links for Settings */}
+                {link.subLinks && isSettingsOpen && (
+                  <ul className="ml-6 space-y-2">
+                    {link.subLinks.map((subLink) => (
+                      <li key={subLink.href}>
+                        <a
+                          href={subLink.href}
+                          onClick={() => handleSubMenuClick(subLink.href)}
+                          className={`block p-2 text-gray-700 rounded-lg dark:text-gray-400 ${
+                            activeLink === subLink.href ? "bg-[#001F3D] text-white" : "hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700" 
+                          } ${subLink.className}`}
+                        >
+                          {subLink.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>

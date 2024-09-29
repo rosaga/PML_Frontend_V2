@@ -128,13 +128,13 @@ const NewSenderID = ({ closeModal }) => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Create Sender ID
                 </h3>
-                <button
+                {/* <button
                   type="button"
                   className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                   onClick={handleDownloadTemplate}
                 >
                   Download CSV Template
-                </button>
+                </button> */}
               </div>
               <div className="p-4 md:p-5">
                 <form className="space-y-2" onSubmit={handleSenderIDCreate}>
@@ -170,10 +170,9 @@ const NewSenderID = ({ closeModal }) => {
                       required
                     >
                       <option value="">Select Channel</option>
+                      <option value="SENDERNAME">Sendername</option>
+                      <option value="SHORTCODE">Shortcode</option>
                       <option value="WHATSAPP">WhatsApp</option>
-                      <option value="TELEGRAM">Telegram</option>
-                      <option value="SMS">SMS</option>
-                      <option value="USSD">USSD</option>
                     </select>
                   </div>
                   <div>
