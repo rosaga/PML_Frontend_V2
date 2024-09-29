@@ -110,7 +110,7 @@ const Messages = () => {
         <div className="flex flex-col">
           <div className="p-4">
             <div className="flex items-center justify-between">
-              <p className="mt-4 font-medium text-lg">Users</p>
+              <p className="mt-4 font-medium text-lg">Messages</p>
               <div className="ml-auto flex space-x-4">
                 <PeakSearch
                   filterOptions={filterOptions}
