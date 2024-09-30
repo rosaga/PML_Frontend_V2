@@ -7,7 +7,10 @@ export async function CreateCampaign(formValues) {
     const newCampaign = {
         name: formValues.name,
         group_id: formValues.group_id,
-        bundle_size: formValues.bundle
+        bundle_size: formValues.bundle,
+        sender_id: formValues.sender_id,
+        content_message: formValues.content_message,
+        description: formValues.description,
     }
     
     const createCampaignUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/campaign`;

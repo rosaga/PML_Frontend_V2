@@ -6,16 +6,18 @@ import { GetGroups } from "@/app/api/actions/group/group";
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
 import { format, parseISO } from "date-fns";
 import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
+import { GetSenderId } from "@/app/api/actions/senderId/senderId";
 
 
 const CreateCampaignModal = ({ closeModal }) => {
   let token = getToken();
   const [groups, setGroups] = useState([]);
   const [bundles, setBundles] = useState([]);
-  const [senderName, setSenderName] = useState(["PeakSMS"]);
+  const [senderName, setSenderName] = useState([]);
   const [campaignName, setCampaignName] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedBundle, setSelectedBundle] = useState("");
+  const [selectedSenderName, setSelectedSenderName] = useState("");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -41,7 +43,6 @@ const CreateCampaignModal = ({ closeModal }) => {
 
 
 
-
   useEffect(() => {
     fetchBalanceandGroups();
 
@@ -57,7 +58,14 @@ const CreateCampaignModal = ({ closeModal }) => {
     if (groupData) {
       setGroups(groupData.data.data);
     }
+    const senderIdData = await GetSenderId(org_id);
+    if (senderIdData) {
+      setSenderName(senderIdData.data);
+      
+
+    }
   }
+
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -66,8 +74,10 @@ const CreateCampaignModal = ({ closeModal }) => {
       name: campaignName,
       group_id: parseInt(selectedGroup),
       bundle: selectedBundle,
-      // description: description,
+      description: description,
       // content: message,
+      content_message: message,
+      sender_id: parseInt(selectedSenderName),
     };
     const res = await CreateCampaign(formData)
     .then((res) => {
@@ -80,7 +90,6 @@ const CreateCampaignModal = ({ closeModal }) => {
         setCampaignName("");
         setSelectedGroup("");
         setSelectedBundle("");
-        setDescription("");
         setMessage("");
       }
     })
@@ -90,7 +99,6 @@ const CreateCampaignModal = ({ closeModal }) => {
         setCampaignName("");
         setSelectedGroup("");
         setSelectedBundle("");
-        setDescription("");
         setMessage("");
     });
 
@@ -228,7 +236,7 @@ const CreateCampaignModal = ({ closeModal }) => {
                         ))}
                       </select>
                     </div>
-                    {/* <div className="mb-4">
+                    <div className="mb-4">
                       <label
                         htmlFor="bundle"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -239,25 +247,25 @@ const CreateCampaignModal = ({ closeModal }) => {
                         name="bundle"
                         id="bundle"
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedBundle}
-                        // onChange={(e) => setSenderName(e.target.value)}
-                        
-                      > 
+                        value={selectedSenderName}
+                        onChange={(e) => setSelectedSenderName(e.target.value)}
+                      >
                         <option value="">Select SenderName</option>
-                        {senderName.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
+                        <option value="1">PeakSMS</option>
+                        {senderName?.map((senderid) => (
+                          <option key={senderid.service_id} value={senderid.service_id}>
+                            {senderid.sendername}
                           </option>
                         ))}
                       </select>
-                    </div> */}
+                    </div>
 
                     <div className="mb-4">
                       <label
                         htmlFor="description"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
-                        Description
+                        Campaign Description
                       </label>
                       <textarea
                         name="description"
@@ -267,13 +275,14 @@ const CreateCampaignModal = ({ closeModal }) => {
                         value={description}
                         onChange={(e) => setDescription(e.target.value)} />
                     </div>
-
-                    <div className="mb-4">
+                    {
+                      selectedSenderName ? 
+                      <div className="mb-4">
                       <label
                         htmlFor="content"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
-                        Message
+                        Message to Customers
                       </label>
                       <textarea
                         name="content"
@@ -282,7 +291,9 @@ const CreateCampaignModal = ({ closeModal }) => {
                         placeholder="Enter Message"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)} />
-                    </div>
+                    </div> : null
+
+                    }
 
                     <div className="flex space-x-2">
                       <button
