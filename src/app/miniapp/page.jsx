@@ -84,25 +84,25 @@ const MiniApp = () => {
                         className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
                         onClick={() => handleOptionSelect('data')}
                       >
-                        <span className="text-green-500">✔</span> DATA
+                        <span className="text-green-500">✔</span> PEAK DATA
                       </button>
                       <button
                         className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
                         onClick={() => handleOptionSelect('airtime')}
                       >
-                        <span className="text-green-500">✔</span> AIRTIME
+                        <span className="text-green-500">✔</span> PEAK AIRTIME
                       </button>
                       <button
                         className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
                         onClick={() => handleOptionSelect('sms')}
                       >
-                        <span className="text-green-500">✔</span> SMS
+                        <span className="text-green-500">✔</span> PEAK SMS
                       </button>
                       <button
                         className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
                         onClick={() => handleOptionSelect('flow-builder')}
                       >
-                        <span className="text-green-500">✔</span> FLOW BUILDER
+                        <span className="text-green-500">✔</span> PEAK FLOW BUILDER
                       </button>
                     </>
                   ) : (
