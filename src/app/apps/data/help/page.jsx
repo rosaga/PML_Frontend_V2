@@ -31,12 +31,12 @@ const Help = () => {
                   </p>
                   <Button>
                     <FaHeadphones className="mr-2 h-5 w-5 text-black" />
-                    <p className="text-black"> +254 768 432 908</p>
+                    <p className="text-black"> +254 759 422 480</p>
                   </Button>
                   <br/>
                   <Button>
                     <FaHeadphones className="mr-2 text-black h-5 w-5" />
-                    <p className="text-black"> +254 768 432 908</p>
+                    <p className="text-black"> +254 759 422 480</p>
                   </Button>
                 </div>
               </div>
