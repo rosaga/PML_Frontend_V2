@@ -19,24 +19,9 @@ const NewSenderID = ({ closeModal }) => {
   const [errorMessage, setErrorMessage] = useState("");
 
   function handleDownloadTemplate() {
-    const templateData = [
-      {
-        mobile: "0711223344",
-        firstName: "John",
-        lastName: "Doe",
-      },
-      {
-        mobile: "0722334455",
-        firstName: "Jane",
-        lastName: "Smith",
-      },
-    ];
-
-    const csvData = convertToCsv(templateData);
-
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
-    saveAs(blob, "contact_template.csv");
-  }
+    const fileUrl = "/pdf/Sender_ID_request_letter.pdf"; 
+    saveAs(fileUrl, "Sender_ID_request_letter.pdf"); 
+}
 
   function convertToCsv(data) {
     const csvRows = [];
@@ -128,13 +113,13 @@ const NewSenderID = ({ closeModal }) => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Create Sender ID
                 </h3>
-                {/* <button
+                <button
                   type="button"
                   className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                   onClick={handleDownloadTemplate}
                 >
-                  Download CSV Template
-                </button> */}
+                  Download  Template
+                </button>
               </div>
               <div className="p-4 md:p-5">
                 <form className="space-y-2" onSubmit={handleSenderIDCreate}>
