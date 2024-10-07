@@ -7,6 +7,9 @@ import { clearToken } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import Joyride from "react-joyride";
+import Modal from '@mui/material/Modal';
+import { set } from "date-fns";
+
 
 const SidebarData = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -15,6 +18,7 @@ const SidebarData = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [tourActive, setTourActive] = useState(false); 
   const [isClient, setIsClient] = useState(false);
+  const  [openTourModal, setOpenTourModal] = useState(false);
 
   const router = useRouter();
 
@@ -23,7 +27,7 @@ const SidebarData = () => {
     if (typeof window !== "undefined") {
       setActiveLink(window.location.pathname);
       if (typeof window !== "undefined" && !localStorage.getItem("sideTourActive")) {
-        setTourActive(true);
+        setOpenTourModal(true);
         localStorage.setItem("sideTourActive", "true");
       }
     }
@@ -94,15 +98,15 @@ const SidebarData = () => {
   const tourSteps = [
     {
       target: ".dashboard",
-      content: "This is the dashboard. Click to view summaries of dispatches and balances",
+      content: "Provides an overview of your Data Dispatches & Data Balances",
     },
     {
       target: ".data-rewards",
-      content: "This is the data rewards section. Click to view and manage data rewards",
+      content: "Manage contacts, contact groups and send data rewards to your customers",
     },
     {
       target: ".data-units",
-      content: "This is the data units section. Click to view and manage data units",
+      content: "Top up your account with Data Units or view your Float balance before dispatch.",
     },
     {
       target: ".users",
@@ -118,7 +122,7 @@ const SidebarData = () => {
     },
     {
       target: ".settings",
-      content: "This is the settings section. Click to view and manage sender ids and notification thresholds",
+      content: "Send Customizable Rewards Messages by adding your Sender ID. Also set your Notification Threshold",
     },
     {
       target: ".logout",
@@ -140,6 +144,14 @@ const SidebarData = () => {
         continuous={true}
         showProgress={true}
         showSkipButton={true}
+        // disableBeacon={true}
+        // callback={(data) => {
+        //   console.log(data)
+        //   // const { status } = data;
+        //   if (data.action === 'start' && data.type === 'beacon') {
+        //     setTourActive(true); 
+        //   }
+        // }}
         run={tourActive} // Start tour
         styles={{
           options: {
@@ -243,6 +255,45 @@ const SidebarData = () => {
           onConfirm={handleConfirmLogout}
         />
       )}
+        <Modal
+            open={openTourModal}
+            onClose={() => setOpenTourModal(false)}
+            className="flex items-center justify-center"
+          >
+            <div className="bg-white p-10 rounded-2xl shadow-2xl relative max-w-lg w-full">
+              <h2 className="text-2xl font-bold mb-4 text-left">
+              Welcome to Bulk Data Platform 
+              </h2>
+              <h3 className="text-[#E88A17] text-xl font-semibold mb-2 text-left">
+              We are thrilled to have  you onboard. 
+              
+              
+              </h3>
+              <p className="text-left text-base mb-6">
+              Get a quick tour to learn how to reward your customers with Mobile Data Bundles by clicking the button below and the orange beacon on your screen or skip to start using the platform.
+
+              </p>
+              <div className="flex justify-between space-x-4">
+                <button
+                  className="bg-[#001F3D] w-full p-3 text-white text-lg rounded-md"
+                  onClick={() => {
+                    setOpenTourModal(false);  // Close the modal
+                    setTimeout(() => {
+                      setTourActive(true);  // Start the tour after modal closes
+                    }, 300);  // Small delay to ensure modal closes first
+                  }}
+                >
+                  Take a tour
+                </button>
+                <button
+                  className="bg-[#001F3D] w-full p-3 text-white text-lg rounded-md"
+                  onClick={() => setOpenTourModal(false)}
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          </Modal>
     </div>
   );
 };
