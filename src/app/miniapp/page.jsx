@@ -116,7 +116,7 @@ const MiniApp = () => {
       </div>
 
       {/* Existing Modal */}
-      <Modal
+      {/* <Modal
         open={signInSuccess}
         onClose={() => setSignInSuccess(false)}
         className="flex items-center justify-center"
@@ -147,7 +147,7 @@ const MiniApp = () => {
           </button>
           </div>
         </div>
-      </Modal>
+      </Modal> */}
     </>
   );
 };
