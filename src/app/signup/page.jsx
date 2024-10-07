@@ -191,6 +191,7 @@ const SignUp = () => {
                   </div>
                   
                   {/* Uncomment if you need confirmation password field */}
+
                   <div className="relative w-full">
                     <input
                       type={isPasswordVisible ? "text" : "password"}
@@ -211,7 +212,8 @@ const SignUp = () => {
                       )}
                     </IconButton>
                   </div>
-                  {errors.confirmPassword && <p className="text-red-500 text-xs mb-2">{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p className="text-red-500 text-xs mb-2">{errors.confirmPassword}</p>} 
+
                   
                   <div className="flex items-center mb-4">
                     <input
