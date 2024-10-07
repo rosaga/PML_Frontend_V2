@@ -1,46 +1,30 @@
-// components/SignIn.js
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, LinearProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import {GetAccounts} from '../api/actions/accounts/accounts'
 import '../../app/globals.css';
 import { GetSenderId } from "../api/actions/senderId/senderId";
-import { set } from 'date-fns';
 import Modal from '@mui/material/Modal';
 
-
-const UserOrgs = () => {
+const MiniApp = () => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [accounts, setAccounts] = useState([]);
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [signInSuccess, setSignInSuccess] = useState(false);
   const [showOptionModal, setShowOptionModal] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState(null);
-
-  const getAccounts = async () => {
-    try {
-      const res = await GetAccounts();
-      if (res.errors) {
-        console.log("AN ERROR HAS OCCURRED");
-      } else {
-        setAccounts(res.data);
-        setIsLoaded(true);
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
   const getSenderIds = async (org_id) => {
     try {
       const res = await GetSenderId(org_id);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
-        setSignInSuccess(true); // Trigger the existing modal
+        if (res.data.length === 0) {
+          setSignInSuccess(true);
+        }
         setIsLoaded(true);
       }
     } catch (err) {
@@ -49,43 +33,29 @@ const UserOrgs = () => {
   };
 
   useEffect(() => {
-    getAccounts();
+    // Since no API call is needed, setting isLoaded to true directly.
+    getSenderIds(org_id);
+    setIsLoaded(true);
   }, []);
 
-  const handleAccountClick = (account) => {
-    setSelectedAccount(account);
-    setShowOptionModal(true); // Show the new modal
-    setIsLoading(true);
-    getSenderIds(account.id);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('selectedAccountId');
-      localStorage.removeItem('selectedAccountName');
-      localStorage.removeItem('signupEmail');
-      localStorage.setItem('selectedAccountId', account.id);
-      localStorage.setItem('selectedAccountName', account.name);
+  const handleOptionSelect = (option) => {
+    if (option === 'data') {
+      router.push('/apps/data/dashboard');
+    } else if (option === 'airtime') {
+      // router.push('/apps/airtime/dashboard');
+    } else if (option === 'sms') {
+      router.push('/apps/sms/dashboard');
+    } else if (option === 'flow-builder') {
+      // router.push('/apps/flow-builder/dashboard');
     }
-    router.push('/miniapp');
   };
-
-  const handleCloseOptionModal = () => {
-    setShowOptionModal(false);
-  };
-
-  // const handleOptionSelect = (option) => {
-  //   handleCloseOptionModal(); // Close the option modal
-  //   if (option === 'data') {
-  //     router.push('/apps/data/dashboard');
-  //   } else if (option === 'sms') {
-  //     router.push('/apps/sms/dashboard');
-  //   }
-  // };
 
   return (
     <>
       <div
         className="relative h-screen w-full flex flex-col sm:flex-row items-center"
         style={{
-          backgroundImage: "url('/images/onblogin.png')",
+          backgroundImage: "url('/images/onb1.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
@@ -105,21 +75,38 @@ const UserOrgs = () => {
             <CardContent>
               <div className="flex flex-col">
                 <p className="text-xl font-lg mb-4 mt-2 text-center">
-                  Select An Account
+                  Please Select A Product
                 </p>
                 <div className="space-y-4">
                   {isLoaded ? (
-                    accounts.map((account) => (
+                    <>
                       <button
-                        key={account.id}
-                        className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm"
-                        onClick={() => handleAccountClick(account)}
+                        className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
+                        onClick={() => handleOptionSelect('data')}
                       >
-                        {isLoading ? "loading..." : account.name}
+                        <span className="text-green-500">✔</span> PEAK DATA
                       </button>
-                    ))
+                      <button
+                        className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
+                        onClick={() => handleOptionSelect('airtime')}
+                      >
+                        <span className="text-green-500">✔</span> PEAK AIRTIME
+                      </button>
+                      <button
+                        className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
+                        onClick={() => handleOptionSelect('sms')}
+                      >
+                        <span className="text-green-500">✔</span> PEAK SMS
+                      </button>
+                      <button
+                        className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white shadow-sm text-left"
+                        onClick={() => handleOptionSelect('flow-builder')}
+                      >
+                        <span className="text-green-500">✔</span> PEAK FLOW BUILDER
+                      </button>
+                    </>
                   ) : (
-                    <p className="text-center">Loading accounts...</p>
+                    <p className="text-center">Loading...</p>
                   )}
                 </div>
               </div>
@@ -128,7 +115,7 @@ const UserOrgs = () => {
         </div>
       </div>
 
-      {/* Existing Modal
+      {/* Existing Modal */}
       <Modal
         open={signInSuccess}
         onClose={() => setSignInSuccess(false)}
@@ -145,40 +132,24 @@ const UserOrgs = () => {
             By continuing to our settings page and completing the sender ID
             form!
           </p>
+          <div className="flex justify-between space-x-4">
           <button
             className="bg-[#001F3D] w-full p-3 text-white text-lg rounded-md"
-            onClick={() => router.push('/apps/data/settings')}
+            onClick={() => router.push('/apps/data/senderId')}
           >
             Go to settings
           </button>
-        </div>
-      </Modal> */}
-
-      {/* New Modal for Options */}
-      {/* <Modal
-        open={showOptionModal}
-        onClose={handleCloseOptionModal}
-        className="flex items-center justify-center"
-      >
-        <div className="bg-white p-10 rounded-2xl shadow-2xl relative max-w-lg w-full">
-          <h2 className="text-2xl font-bold mb-4 text-left">
-            Choose an Option
-          </h2>
-          <button
-            className="bg-[#001F3D] w-full p-3 text-white text-lg rounded-md mb-4"
-            onClick={() => handleOptionSelect('data')}
-          >
-            Go to Data
-          </button>
           <button
             className="bg-[#001F3D] w-full p-3 text-white text-lg rounded-md"
-            onClick={() => handleOptionSelect('sms')}
+            onClick={() => setSignInSuccess(false)}
           >
-            Go to SMS
+            Cancel
           </button>
+          </div>
         </div>
-      </Modal> */}
+      </Modal>
     </>
   );
 };
-export default UserOrgs;
+
+export default MiniApp;

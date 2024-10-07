@@ -3,41 +3,25 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
 import { saveAs } from "file-saver";
-import { contactsUpload } from '../../../src/app/api/actions/contact/contact';
+import { CreateSenderID } from "../../app/api/actions/senderId/senderId";
 
 const NewSenderID = ({ closeModal }) => {
-
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
   }
 
-  const [senderName, setsenderName] = useState("");
+  const [senderName, setSenderName] = useState("");
   const [authLetterfile, setAuthLetterfile] = useState(null);
   const [businessFile, setBusinessfile] = useState(null);
-  const [description, setDescription] = useState("");
+  const [channel, setChannel] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   function handleDownloadTemplate() {
-    const templateData = [
-      {
-        mobile: "0711223344",
-        firstName: "John",
-        lastName: "Doe" 
-      },
-      {
-        mobile: "0722334455",
-        firstName: "Jane",
-        lastName: "Smith"
-      },
-    ];
-
-    const csvData = convertToCsv(templateData);
-
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
-    saveAs(blob, "contact_template.csv");
-  }
+    const fileUrl = "/pdf/Sender_ID_request_letter.pdf"; 
+    saveAs(fileUrl, "Sender_ID_request_letter.pdf"); 
+}
 
   function convertToCsv(data) {
     const csvRows = [];
@@ -54,20 +38,21 @@ const NewSenderID = ({ closeModal }) => {
 
   const handleSenderIDCreate = (e) => {
     e.preventDefault();
-  
+
     if (!authLetterfile || !businessFile || !senderName) {
-      console.log('Please select a file and a sender ID name');
+      console.log("Please select a file and a sender ID name");
       return;
     }
-  
+
     const formValues = {
       org_id: org_id,
       name: senderName,
       authorizationLetter: authLetterfile,
-      businessCertificate: businessFile
+      businessCertificate: businessFile,
+      channel: channel,
     };
-  
-    const res = contactsUpload(formValues)
+
+    CreateSenderID(formValues)
       .then((res) => {
         if (res.status === 201) {
           setSuccessMessage(`Request for SenderID has been submitted`);
@@ -79,8 +64,6 @@ const NewSenderID = ({ closeModal }) => {
       .catch((error) => {
         console.log("Error:", error);
       });
-  
-    return res;
   };
 
   useEffect(() => {
@@ -119,27 +102,27 @@ const NewSenderID = ({ closeModal }) => {
                   setSuccessMessage("");
                   closeModal();
                 }}
-                className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
               >
-                OK
+                Close
               </button>
             </div>
           ) : (
             <>
-            <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Create Sender ID
-            </h3>
-            <button
-              type="button"
-              className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-              onClick={handleDownloadTemplate}           
-            >
-              Download CSV Template
-            </button>
-          </div>
+              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Create Sender ID
+                </h3>
+                <button
+                  type="button"
+                  className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                  onClick={handleDownloadTemplate}
+                >
+                  Download  Template
+                </button>
+              </div>
               <div className="p-4 md:p-5">
-                <form className="space-y-2" action="#">
+                <form className="space-y-2" onSubmit={handleSenderIDCreate}>
                   <div>
                     <label
                       htmlFor="senderName"
@@ -153,13 +136,33 @@ const NewSenderID = ({ closeModal }) => {
                       id="senderName"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                       placeholder="Sender ID Name"
-                      onChange={(e) => setsenderName(e.target.value)}
+                      onChange={(e) => setSenderName(e.target.value)}
                       required
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor="csvFile"
+                      htmlFor="channel"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Channel
+                    </label>
+                    <select
+                      name="channel"
+                      id="channel"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      onChange={(e) => setChannel(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Channel</option>
+                      <option value="SENDERNAME">Sendername</option>
+                      <option value="SHORTCODE">Shortcode</option>
+                      <option value="WHATSAPP">WhatsApp</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="authLetterfile"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Authorization Letter
@@ -175,7 +178,7 @@ const NewSenderID = ({ closeModal }) => {
                   </div>
                   <div>
                     <label
-                      htmlFor="csvFile"
+                      htmlFor="businessfile"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Business Certificate
@@ -201,9 +204,8 @@ const NewSenderID = ({ closeModal }) => {
                       Cancel
                     </button>
                     <button
-                      type="button"
+                      type="submit"
                       className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                      onClick={handleSenderIDCreate}
                     >
                       Submit
                     </button>

@@ -50,13 +50,14 @@ const SignUp = () => {
     } else if (password !== confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
-
+    console.log('newErrors',newErrors)
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    console.log('valiared form', validateForm())
      if (!validateForm()) {
       return;
     }
@@ -78,7 +79,7 @@ const SignUp = () => {
           ]
       }
   }
-
+  console.log('ttttttttt',signupPayload, apiUrl.SIGN_UP)
     try {
       const res = await axios.post(apiUrl.SIGN_UP, signupPayload);
       if (res.status === 200) {
@@ -190,7 +191,8 @@ const SignUp = () => {
                   </div>
                   
                   {/* Uncomment if you need confirmation password field */}
-                   <div className="relative w-full">
+
+                  <div className="relative w-full">
                     <input
                       type={isPasswordVisible ? "text" : "password"}
                       placeholder="Confirm Your Password *"
@@ -211,6 +213,7 @@ const SignUp = () => {
                     </IconButton>
                   </div>
                   {errors.confirmPassword && <p className="text-red-500 text-xs mb-2">{errors.confirmPassword}</p>} 
+
                   
                   <div className="flex items-center mb-4">
                     <input

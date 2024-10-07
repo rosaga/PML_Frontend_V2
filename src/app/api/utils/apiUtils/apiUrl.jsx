@@ -12,4 +12,9 @@ export default {
     getNotifiations: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
     peakSMSAPP: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1/application`,
     peakSMS: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1`,
+
+    LIST_APP_SERVICES: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/application`,
+    SEND_SMS: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
+    LIST_MESSAGES: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
+    BROADCAST_MESSAGE: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
 };
