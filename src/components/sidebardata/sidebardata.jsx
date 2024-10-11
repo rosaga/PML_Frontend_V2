@@ -102,7 +102,7 @@ const SidebarData = () => {
     },
     {
       target: ".data-rewards",
-      content: "Manage contacts, contact groups and send data rewards to your customers",
+      content: "Add contacts or contact groups and send data.",
     },
     {
       target: ".data-units",
@@ -270,7 +270,7 @@ const SidebarData = () => {
               
               </h3>
               <p className="text-left text-base mb-6">
-              Get a quick tour to learn how to reward your customers with Mobile Data Bundles by clicking the button below and the orange beacon on your screen or skip to start using the platform.
+              Get a quick tour to learn how to reward your customers with Mobile Data Bundles 
 
               </p>
               <div className="flex justify-between space-x-4">
@@ -289,7 +289,7 @@ const SidebarData = () => {
                   className="bg-[#001F3D] w-full p-3 text-white text-lg rounded-md"
                   onClick={() => setOpenTourModal(false)}
                 >
-                  Skip
+                  Cancel
                 </button>
               </div>
             </div>
