@@ -16,7 +16,7 @@ import PeakSearch from "../../../../components/search/search";
 import InviteUserModal from "../../../../components/modal/inviteUser";
 import SendSmsModal from "../../../../components/modal/sendSms";
 import SendBulkModal from "../../../../components/modal/sendBulkSms";
-import apiUrl from "../../../api/utils/apiUtils/apiUrl";
+import { format,parseISO } from "date-fns";
 import { messagesAction } from "../../../api/actions/messages/messagesAction";
 import { getToken } from "@/utils/auth";
 
@@ -94,14 +94,47 @@ const Messages = () => {
   }, [isSingleModalOpen, isBulkModalOpen, searchParams]);
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 1, minWidth: 150 },
+    // { field: "id", headerName: "ID", flex: 1, minWidth: 50 },
     { field: "source", headerName: "SOURCE", flex: 1, minWidth: 150 },
-    { field: "destination", headerName: "DESTINATION", flex: 1, minWidth: 150 },
-    { field: "content", headerName: "CONTENT", flex: 1, minWidth: 200 },
+    { 
+      field: "destination", 
+      headerName: "DESTINATION", 
+      flex: 1, 
+      minWidth: 150,
+      renderCell: (params) => (
+        <span style={{ fontWeight: '550' }}>
+          {params.value}
+        </span>
+      ) 
+    },
+    { field: "content", headerName: "CONTENT", flex: 1, minWidth: 500 },
     { field: "channel", headerName: "CHANNEL", flex: 1, minWidth: 150 },
     { field: "direction", headerName: "DIRECTION", flex: 1, minWidth: 150 },
-    { field: "status_desc", headerName: "STATUS", flex: 1, minWidth: 200 },
-    { field: "createdat", headerName: "DATE", flex: 1, minWidth: 150 },
+    { 
+      field: "status_desc", 
+      headerName: "STATUS", 
+      flex: 1, 
+      minWidth: 150, 
+      renderCell: (params) => {
+        let color = 'inherit'; // Default color
+        if (params.value === "SUCCESS") {
+          color = 'green';
+        } else if (params.value === "InvalidMsisdn") {
+          color = 'red';
+        }
+        return <span style={{ color }}>{params.value}</span>;
+      }
+    },
+    { field: "createdat", headerName: "Date Created", flex: 1, minWidth: 150, 
+      valueFormatter: (params) => {
+        try {
+          const date = parseISO(params);
+          return format(date, "yyyy-MM-dd HH:mm");
+        } catch (error) {
+          return "Invalid Date";
+        }
+      },
+     },
   ];
 
   return (
