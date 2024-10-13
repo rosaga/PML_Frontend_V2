@@ -37,6 +37,41 @@ export async function GetSenderId(org_id,page,pageSize) {
   }
 }
 
+export async function GetRecharges(org_id,page,pageSize) {
+
+  let rechargesUrl
+  if (page || pageSize) {
+    rechargesUrl = `${apiUrl.MESSAGE_COUNTS}/recharge/${org_id}/requests/list?size=${pageSize}&page=${page}`;
+  }else{
+    rechargesUrl = `${apiUrl.MESSAGE_COUNTS}/recharge/${org_id}/requests/list`;
+  }
+
+  try {
+    const config = await authHeaders();
+
+    const res = await axios.get(rechargesUrl, config);
+
+    if (res.data && res.status === 200) {
+      console.log("THE RESPONSE IS !!!!!!!", res);
+    }
+
+    return res;
+  } catch (error) {
+    if (error.response) {
+      return {
+        errors: {
+          _error: 'The SenderID could not be returned.',
+        },
+      };
+    }
+    return {
+      errors: {
+        _error: 'Network error. Please try again.',
+      },
+    };
+  }
+}
+
 export async function CreateSenderID(formValues) {
   const createSenderIDUrl = `${apiUrl.peakSMS}/service/${formValues.org_id}/create`;
   try {

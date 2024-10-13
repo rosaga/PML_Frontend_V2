@@ -155,9 +155,9 @@ const NewSenderID = ({ closeModal }) => {
                       required
                     >
                       <option value="">Select Channel</option>
-                      <option value="SENDERNAME">Sendername</option>
-                      <option value="SHORTCODE">Shortcode</option>
-                      <option value="WHATSAPP">WhatsApp</option>
+                      <option value="SENDERNAME">SENDERNAME</option>
+                      <option value="SHORTCODE">SHORTCODE</option>
+                      {/* <option value="WHATSAPP">WhatsApp</option> */}
                     </select>
                   </div>
                   <div>
