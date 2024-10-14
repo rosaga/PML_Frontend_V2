@@ -1,116 +1,82 @@
 "use client";
-import SidebarData from "@/components/sidebardata/sidebardata";
 import React, { useEffect, useState } from "react";
 import { DataGrid, GridRowsProp, GridColDef } from "@mui/x-data-grid";
 import Image from "next/image";
-import Button from '@mui/material/Button';
-import IosShareIcon from '@mui/icons-material/IosShare';
-import LinearProgress from '@mui/material/LinearProgress';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
 import RecentCampaigns from "@/components/rewards-tables/recentCampaigns";
 import { getToken } from "@/utils/auth";
 import GroupDashboard from "@/components/rewards-tables/groupDashboard";
-import { GetDashboardSummary, GetDataBalance } from "@/app/api/actions/dashboard/dashboard"
+import { messagesAction, messageCountsAction } from "../../../api/actions/messages/messagesAction";
 import { set } from "date-fns";
 import { useRouter } from "next/navigation";
-
-interface RowData {
-  id: number;
-  data_bundle: string;
-  units_bought: number;
-  unit_balance: number;
-  progress: number;
-}
+import { format,parseISO } from "date-fns";
 
 const Dashboard = () => {
 
   const router = useRouter();
 
-  let org_id: string | null = null;
+  let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
   }
-  const [rows, setRows] = useState([]);
-  const [recipientsReached, setRecipientsReached] = useState('');
-  const [consumedData, setConsumedData] = useState('');
-  const [activeCampaigns, setActiveCampaigns] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalMessages, setTotalMessages] = useState('');
+  const [totalSuccess, setTotalSuccess] = useState('');
+  const [totalPending, setTotalPending] = useState('');
+  const [totalFailed, setTotalFailed] = useState(0);
 
+  const page = 1;
+  const limit = 5;
 
-
-  const calculateProgress = (unitsBought: number, unitBalance: number): number => {
-    return ((unitsBought - unitBalance) / unitsBought) * 100;
-  };
-
-  const renderProgress = (params: any) => {
-    const progress = calculateProgress(params.row.units_bought, params.row.unit_balance);
-    return (
-      <Box display="flex" alignItems="center">
-        <Box width="100%" mr={1}>
-          <LinearProgress variant="determinate" value={progress} />
-        </Box>
-        <Box minWidth={35}>
-          <Typography variant="body2" color="textSecondary">{`${Math.round(progress)}%`}</Typography>
-        </Box>
-        {progress > 70 && <Typography variant="body2" color="error" style={{ marginLeft: 8 }}>depleting</Typography>}
-      </Box>
-    );
-  };
   const [paginationModel, setPaginationModel] = React.useState({
-    pageSize: 10,
-    page: 0,
+    pageSize: 4,
+    page: 0
   });
 
-  const columns: GridColDef[] = [
-    { field: "data_bundle", headerName: "Data Bundle", flex: 1, minWidth: 150 },
-    { field: "units_bought", headerName: "Units Bought", flex: 1, minWidth: 150 },
-    { field: "unit_balance", headerName: "Unit Balance", flex: 1, minWidth: 150 },
-    { field: "progress", headerName: "Progress", flex: 2, renderCell: renderProgress, minWidth: 200 },
+  const columns = [
+    // { field: "id", headerName: "ID", flex: 1, minWidth: 50 },
+    { field: "source", headerName: "SOURCE", flex: 1, minWidth: 150 },
+    { 
+      field: "destination", 
+      headerName: "DESTINATION", 
+      flex: 1, 
+      minWidth: 150,
+      renderCell: (params) => (
+        <span style={{ fontWeight: '550' }}>
+          {params.value}
+        </span>
+      ) 
+    },
+    { field: "content", headerName: "CONTENT", flex: 1, minWidth: 150 },
+    { field: "channel", headerName: "CHANNEL", flex: 1, minWidth: 150 },
+    { field: "direction", headerName: "DIRECTION", flex: 1, minWidth: 150 },
+    { 
+      field: "status_desc", 
+      headerName: "STATUS", 
+      flex: 1, 
+      minWidth: 150, 
+      renderCell: (params) => {
+        let color = 'inherit'; // Default color
+        if (params.value === "SUCCESS") {
+          color = 'green';
+        } else if (params.value === "InvalidMsisdn") {
+          color = 'red';
+        }
+        return <span style={{ color }}>{params.value}</span>;
+      }
+    },
+    { field: "createdat", headerName: "Date Created", flex: 1, minWidth: 150, 
+      valueFormatter: (params) => {
+        try {
+          const date = parseISO(params);
+          return format(date, "yyyy-MM-dd HH:mm");
+        } catch (error) {
+          return "Invalid Date";
+        }
+      },
+     },
   ];
-
- 
-
-  const columns1: GridColDef[] = [
-    { field: "date_of_onboarding", headerName: "Date of Onboarding", flex: 1 },
-    { field: "phone_number", headerName: "Phone Number", flex: 1 },
-    { field: "status", headerName: "Status", flex: 1 },
-    { field: "Action", headerName: "Action", flex: 0, renderCell: (params) => <DeleteIcon /> },
-  ];
- 
-
-  const columns2: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
-    { field: "no_contact", headerName: "No of Contacts", flex: 1 },
-    { field: "description", headerName: "Description", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
-  ];
- 
-  
-  const columns3: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "campaign_name", headerName: "Campaign Name", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
-    { field: "owner", headerName: "Owner", flex: 1 },
-    { field: "contact_counts", headerName: "Contact Counts", flex: 1 },
-    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
-    { field: "data_bundle_type", headerName: "Data Bundle Type", flex: 1 },
-  ];
-  const fetchDashboardSummary = async () => {
-    const summary = await GetDashboardSummary(org_id);
-    if ('recipientsReached' in summary) {
-      setRecipientsReached(summary.recipientsReached);
-      setConsumedData(summary.consumedData);
-      setActiveCampaigns(summary.activeCampaigns);
-    }
-  };
-  const fetchDataBundle = async () => {
-    const dataBalance = await GetDataBalance(org_id);
-    setRows(dataBalance);
-  };
 
   const handleHelp = () => {
     router.push("/apps/data/help");
@@ -120,10 +86,67 @@ const Dashboard = () => {
     router.push("/apps/data/notification");
   };
 
- useEffect(() => {
-  fetchDashboardSummary()
-  fetchDataBundle()
+  const getMessageCounts = () => {
+    if (org_id) {
+      messageCountsAction({ org_id })
+        .then((res) => {
+          if (res.errors) {
+            console.log("AN ERROR HAS OCCURED");
+          } else {
+            // Set total message count
+            setTotalMessages(res.data.TotalMessageCount);
+  
+            // Initialize success and failed counts
+            let successCount = 0;
+            let pendingCount = 0;
+  
+            // Loop through the StatusCounts and calculate success/failed totals
+            res.data.StatusCounts.forEach((status) => {
+              if (status.StatusDescription === "Recieved Pending Confirmation" || status.StatusDescription === "SUCCESS") {
+                successCount += status.MessageCount;
+              } else if (status.StatusDescription === "Accepted for processing") {
+                pendingCount += status.MessageCount;
+              }
+            });
+  
+            // Set the state for total success and total failed
+            setTotalSuccess(successCount);
+            setTotalPending(pendingCount);
+  
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      console.log("org_id is null or undefined. Skipping API call.");
+    }
+  };
+  const getMessages = () => {
+    if (org_id) {
+      messagesAction({ org_id, page, limit })
+        .then((res) => {
+          if (res.errors) {
+            console.log("AN ERROR HAS OCCURED");
+          } else {
+            setMessages(res.data);
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      console.log("org_id is null or undefined. Skipping API call.");
+    }
+  };
+
+  useEffect(() => {
+    getMessages();
+    getMessageCounts();
   }, []);
+
 
 
   return (
@@ -135,13 +158,13 @@ const Dashboard = () => {
               <div className="p-8">
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
                 <div className="flex items-center justify-between">
-                  <p className="m-1 text-md">Data Rewards Summary</p>
+                  <p className="m-1 text-md">SMS Summary</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Recipients Reached</div>
+                    <div className="text-gray-500">Total Sent</div>
                     <div>
                       <span>
                         <Image
@@ -158,11 +181,11 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{recipientsReached ? recipientsReached : 0}</div>
+                  <div className="text-2xl font-bold">{totalMessages ? totalMessages : 0}</div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Consumed Data</div>
+                    <div className="text-gray-500">Total Success</div>
                     <div>
                       <span>
                         <Image
@@ -179,11 +202,11 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{consumedData ? consumedData : 0} MBS</div>
+                  <div className="text-2xl font-bold">{totalSuccess ? totalSuccess : 0}</div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Active Campaigns</div>
+                    <div className="text-gray-500">Total Pending</div>
                     <div>
                       <span>
                         <Image
@@ -200,11 +223,11 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{activeCampaigns ? activeCampaigns : 0}</div>
+                  <div className="text-2xl font-bold">{totalPending ? totalPending : 0}</div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Failed Campaigns</div>
+                    <div className="text-gray-500">Total Failed</div>
                     <div>
                       <span>
                         <Image
@@ -227,20 +250,25 @@ const Dashboard = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
                 <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
-                  <p className="mt-2 font-medium text-lg">Data Balance</p>
+                  <p className="mt-2 font-medium text-lg">Recent Messages</p>
                   <div className="mt-4">
                     <div style={{ height: 350, width: "100%" }}>
-                      <DataGrid
-                        rows={rows}
-                        columns={columns}
-                        paginationModel={paginationModel}
-                        onPaginationModelChange={setPaginationModel}
-                        sx={{
-                          "&.MuiDataGrid-root": {
-                            border: "none",
-                          },
-                        }}
-                      />
+                    <DataGrid
+                      rows={messages}
+                      columns={columns}
+                      pageSize={5} // Limits to 5 rows per page
+                      rowsPerPageOptions={[5]} // Restricts available page size options
+                      paginationModel={paginationModel}
+                      onPaginationModelChange={setPaginationModel}
+                      pagination // Enable pagination
+                      paginationMode="client" // Make sure pagination is handled on the client-side
+                      sx={{
+                        "&.MuiDataGrid-root": {
+                          border: "none",
+                        },
+                      }}
+                    />
+
                     </div>
                   </div>
                 </div>

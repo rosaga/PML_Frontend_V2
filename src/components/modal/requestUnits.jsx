@@ -186,6 +186,7 @@ const RequestUnitsModal = ({ closeModal }) => {
                       <option value="500">500</option>
                       <option value="1024">1024</option>
                       <option value="3072">3072</option>
+                      <option value="AIRTIME">AIRTIME</option>
                     </select>
                   </div>
                   <div>

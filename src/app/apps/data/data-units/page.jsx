@@ -66,7 +66,7 @@ const DataUnits = () => {
 
 
   const handleApprove = async (id) => {
-    const approvalUrl = `https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2/admin/recharge/${id}`;
+    const approvalUrl = `${apiUrl.APPROVE_UNITS}/${id}`;
     try {
       const response = await axios.put(approvalUrl, {}, {
         headers: {
