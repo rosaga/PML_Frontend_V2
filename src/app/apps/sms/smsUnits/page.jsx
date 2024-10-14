@@ -10,8 +10,6 @@ import { GetRecharges } from "@/app/api/actions/senderId/senderId";
 import RequestSmsUnitsModal from "../../../../components/modal/requestSmsUnits"
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 
-
-
 const Recharges = () => {
   let org_id = null;
   let token = null;
