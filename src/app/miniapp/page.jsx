@@ -52,12 +52,14 @@ const MiniApp = () => {
 
   return (
     <>
-            <div className="relative h-screen w-full flex flex-col sm:flex-row items-center"
+            <div className="flex h-screen w-full   sm:flex-row "
               style={{
-                backgroundImage: "url('/images/onb1.png')",
+                backgroundImage: "url('/images/miniapp_background.jpeg')",
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: 'relative',
               }}
+
+         
             >
               <div className="hidden sm:block sm:w-2/5 h-full"></div>
 
@@ -73,43 +75,50 @@ const MiniApp = () => {
                   }}
                 >
                   <CardContent>
-                    <div className="flex flex-col">
-                      <p className="text-2xl font-bold mb-6 mt-4 text-center"> 
-                        Please Select A Product
-                      </p>
+                      <div className="flex flex-col">
+                        <p className="text-2xl font-bold mb-6 mt-4 text-center">
+                          Please Select A Product
+                        </p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8"> 
-                        <button
-                          className="flex flex-col items-center justify-center space-y-4"  
-                          onClick={() => handleOptionSelect('data')}
-                        >
-                          <span className="flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full text-white"> {/* Increased icon size */}
-                            <img src="images/4g.jpg" alt="Data Icon" />
-                          </span>
-                          <span className="text-center text-base font-semibold">Bulk Data</span> 
-                        </button>
-                        <button
-                          className="flex flex-col items-center justify-center space-y-4"
-                          onClick={() => handleOptionSelect('sms')}
-                        >
-                          <span className="flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full text-white">
-                            <img src="/images/chat.jpg" alt="SMS Icon" />
-                          </span>
-                          <span className="text-center text-base font-semibold">SMS Connect</span>
-                        </button>
-                        <button
-                          className="flex flex-col items-center justify-center space-y-4"
-                          onClick={() => handleOptionSelect('flow-builder')}
-                        >
-                          <span className="flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full text-white">
-                            <img src="/images/whatapp.jpg" alt="Flowbot Icon" />
-                          </span>
-                          <span className="text-center text-base font-semibold">WhatsApp Flowbot (Coming Soon)</span>
-                        </button>
-       
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                          {/* Bulk Data Icon */}
+                          <button
+                            className="flex flex-col items-center justify-center space-y-4"
+                            onClick={() => handleOptionSelect('data')}
+                          >
+                            <span className="flex items-center justify-center  rounded-full text-white">
+                              <img src="images/4g.jpeg" alt="Data Icon" className="w-28 h-28 object-contain" />
+                            </span>
+                            <span className="text-center text-base font-semibold">Bulk Data</span>
+                          </button>
+
+                          {/* SMS Connect Icon */}
+                          <button
+                            className="flex flex-col items-center justify-center space-y-4"
+                            onClick={() => handleOptionSelect('sms')}
+                          >
+                            <span className="flex items-center justify-center rounded-full text-white">
+                              <img src="/images/sms.jpeg" alt="SMS Icon" className="w-28 h-28 object-contain" />
+                            </span>
+                            <span className="text-center text-base font-semibold">SMS Connect</span>
+                          </button>
+
+                          {/* WhatsApp Flowbot Icon */}
+                          <button
+                            className="flex flex-col items-center justify-center space-y-4"
+                            onClick={() => handleOptionSelect('flow-builder')}
+                          >
+                            <span className="flex items-center justify-center  rounded-full text-white">
+                              <img src="/images/whatsapp.jpeg" alt="Flowbot Icon" className="w-24 h-24 object-contain" />
+                            </span>
+                            <span className="text-center text-base font-semibold">
+                              WhatsApp Flowbot (Coming Soon)
+                            </span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+
                 </Card>
               </div>
             </div>
