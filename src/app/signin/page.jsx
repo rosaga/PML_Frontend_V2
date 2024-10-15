@@ -67,7 +67,7 @@ const SignIn = () => {
         style={{
           backgroundImage: "url('/images/signin_background.jpeg')",
           backgroundSize: "cover",
-          backgroundPosition: "center",
+          backgroundPosition: 'relative',
         }}
       >
         <div className="hidden sm:block sm:w-2/5 h-full"></div>
