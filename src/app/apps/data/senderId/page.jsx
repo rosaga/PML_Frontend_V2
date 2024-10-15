@@ -8,6 +8,7 @@ import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetSenderId } from "@/app/api/actions/senderId/senderId";
 import NewSenderID from "../../../../components/modal/newSenderID"
+import { hasRole } from "../../../../utils/decodeToken"
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 
 
@@ -52,22 +53,62 @@ const SenderId = () => {
   }, [isModalOpen]);
 
   const columns = [
-    { field: "service_id", headerName: "ID", flex: 1 },
-    { field: "telco", headerName: "Telco", flex: 1 },
-    { field: "sendername", headerName: "Sender ID", flex: 1 },
-    { field: "channel", headerName: "Channel", flex: 1 },
+    { field: "service_id", headerName: "ID", flex: 1,  minWidth: 150, },
+    { field: "telco", headerName: "Telco", flex: 1,  minWidth: 150, },
+    { field: "sendername", headerName: "Sender ID", flex: 1,  minWidth: 150, },
+    { field: "channel", headerName: "Channel", flex: 1, minWidth: 150, },
     {
-      field: "status",
+      field: "service_state",
       headerName: "Status",
       flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
         return (
-          <span style={{ color: "green" }}>ACTIVE</span>
+          params.value === "SVC202" ? <span style={{ color: "red" }}>INACTIVE</span> : <span style={{ color: "green" }}>ACTIVE</span>
+         
         );
       },
     },
-    { field: "Action", headerName: "Action", flex: 0, minwidth: 150, renderCell: (params) => <DeleteIcon /> },
+    
   ];
+  if (hasRole(token, 'SuperAdmin')) {
+      columns.push({
+        field: "approve_action",
+        headerName: "Approve",
+        flex: 1,
+        minWidth: 150,
+        renderCell: (params) => {
+          if (params.row.service_state === 'SVC202') {
+            return <button className="bg-green-400 text-white border-1 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.id)}>Approve</button>;
+          }else{
+            return <button className="bg-gray-100 text-gray-600 text-sm rounded-[2px] px-2 shadow-sm outline-none" >Approved</button>;
+          }
+          return null;
+        },
+      });
+  }
+  const handleApprove = async (id) => {
+    console.log('approved', id)
+    // const approvalUrl = `${apiUrl.APPROVE_UNITS}/${id}`;
+    // try {
+    //   const response = await axios.put(approvalUrl, {}, {
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //     }
+    //   });
+  
+    //   if (response.status === 202) {
+    //     toast.success("APPROVE SUCCESS!!!");
+    //     setIsApproved(true);
+    //   } else {
+    //     toast.error("APPROVE FAILED");
+    //     setIsApproved(true);
+    //   }
+    // } catch (error) {
+    //   toast.error("APPROVE FAILED");
+    //   setIsApproved(true);
+    // }
+  };
 
   return (
     <div className="p-4 sm:ml-64 h-screen ">

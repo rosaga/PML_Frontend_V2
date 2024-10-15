@@ -87,7 +87,7 @@ const UserOrgs = () => {
         style={{
           backgroundImage: "url('/images/onblogin.png')",
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'relative',
         }}
       >
         <div className="hidden sm:block sm:w-2/5 h-full"></div>
