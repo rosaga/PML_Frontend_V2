@@ -24,7 +24,7 @@ const SendBulkModal = ({ closeModal }) => {
 
   const randomUuid = uuidv4();
 
-  const channels = ["WHATSAPP", "SHORTCODE", "SENDERNAME"];
+  const channels = ["SHORTCODE", "SENDERNAME"];
 
   const currentDateTime = dayjs();
   const [value, setValue] = useState(currentDateTime);
