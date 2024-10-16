@@ -85,7 +85,7 @@ const UserOrgs = () => {
       <div
         className="relative h-screen w-full flex flex-col sm:flex-row items-center"
         style={{
-          backgroundImage: "url('/images/onblogin.png')",
+          backgroundImage: "url('/images/userorgs_background.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'relative',
         }}

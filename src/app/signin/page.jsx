@@ -65,7 +65,7 @@ const SignIn = () => {
       <div
         className="relative h-screen w-full flex flex-col sm:flex-row"
         style={{
-          backgroundImage: "url('/images/signin_background.jpeg')",
+          backgroundImage: "url('/images/miniapp_background.jpeg')",
           backgroundSize: "cover",
           backgroundPosition: 'relative',
         }}

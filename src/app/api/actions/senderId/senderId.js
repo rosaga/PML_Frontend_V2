@@ -36,6 +36,32 @@ export async function GetSenderId(org_id,page,pageSize) {
     };
   }
 }
+export async function approveSenderID(sender_id) {
+  const approveSenderIDUrl = `${apiUrl.peakSMS}/service/activate/${sender_id}`;
+  try {
+    const authHeaderObject = await authHeaders();
+    const headers = authHeaderObject.headers;
+
+
+    return axios.put(approveSenderIDUrl, null, { headers })
+      .then((res) => {
+      return res;
+      });
+  } catch (error) {
+    if (error.response) {
+      return {
+        errors: {
+          _error: 'The SenderID could not be approved.',
+        },
+      };
+    }
+    return {
+      errors: {
+        _error: 'Network error. Please try again.',
+      },
+    };
+  }
+}
 
 export async function GetRecharges(org_id,page,pageSize) {
 

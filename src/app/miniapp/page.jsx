@@ -54,7 +54,7 @@ const MiniApp = () => {
     <>
             <div className="flex h-screen w-full   sm:flex-row "
               style={{
-                backgroundImage: "url('/images/miniapp_background.jpeg')",
+                backgroundImage: "url('/images/signin_background.jpeg')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'relative',
               }}
