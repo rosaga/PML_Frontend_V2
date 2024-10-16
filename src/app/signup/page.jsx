@@ -79,7 +79,6 @@ const SignUp = () => {
           ]
       }
   }
-  console.log('ttttttttt',signupPayload, apiUrl.SIGN_UP)
     try {
       const res = await axios.post(apiUrl.SIGN_UP, signupPayload);
       if (res.status === 200) {

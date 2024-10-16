@@ -8,6 +8,9 @@ import "../../app/globals.css";
 import OtpInput from 'react-otp-input';
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 const VerifyReset = () => {
   const router = useRouter();
@@ -17,6 +20,8 @@ const VerifyReset = () => {
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
 
 
   const handleVerifyReset = async (e) => {
@@ -121,22 +126,44 @@ const VerifyReset = () => {
 
                 <div className="flex items-center justify-center">
                   <input
-                    type="password"
+                   type={isPasswordVisible ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full p-2 mb-4 border rounded-md"
                     placeholder="Enter new password"
                   />
+                  <IconButton
+                      aria-label="toggle password visibility"
+                      // className=" right-1  cursor-pointer"
+                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      {isPasswordVisible ? (
+                        <VisibilityIcon />
+                      ) : (
+                        <VisibilityOffIcon />
+                      )}
+                    </IconButton>
                 </div>
 
                 <div className="flex items-center justify-center">
                   <input
-                    type="password"
+                    type={isPasswordVisible ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full p-2 mb-4 border rounded-md"
                     placeholder="Confirm new password"
                   />
+                  <IconButton
+                      aria-label="toggle password visibility"
+                      // className=""
+                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      {isPasswordVisible ? (
+                        <VisibilityIcon />
+                      ) : (
+                        <VisibilityOffIcon />
+                      )}
+                    </IconButton>
                 </div>
 
                 <button
