@@ -8,7 +8,14 @@ import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetRecharges } from "@/app/api/actions/senderId/senderId";
 import RequestSmsUnitsModal from "../../../../components/modal/requestSmsUnits"
-import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import { hasRole } from "../../../../utils/decodeToken"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Material-UI approve icon
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import { grey, green } from "@mui/material/colors";
+import apiUrl from "../../../api/utils/apiUtils/apiUrl";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const Recharges = () => {
   let org_id = null;
@@ -21,6 +28,7 @@ const Recharges = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recharges, setRecharges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isApproved, setIsApproved] = useState(false);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -28,6 +36,28 @@ const Recharges = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
+  };
+
+  const handleApprove = async (id) => {
+    const approvalUrl = `${apiUrl.APPROVE_SMS_UNITS}/${id}`;
+    try {
+      const response = await axios.put(approvalUrl, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+  
+      if (response.status === 202) {
+        toast.success("APPROVE SUCCESS!!!");
+        setIsApproved(true);
+      } else {
+        toast.error("APPROVE FAILED");
+        setIsApproved(true);
+      }
+    } catch (error) {
+      toast.error("APPROVE FAILED");
+      setIsApproved(true);
+    }
   };
 
   const getRecharges = async () => {
@@ -47,28 +77,78 @@ const Recharges = () => {
 
   useEffect(() => {
       getRecharges();
-  }, [isModalOpen]);
+  }, [isModalOpen, isApproved, isModalOpen]);
 
   const columns = [
     { field: "id", headerName: "ID", flex: 1 },
     { field: "package", headerName: "Package", flex: 1 },
     { field: "units", headerName: "Units", flex: 1 },
     { field: "expireson", headerName: "Expiry", flex: 1 },
-   
     {
-      field: "status",
+      field: "status_code",
       headerName: "Status",
       flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
+        const getStatusLabel = (status) => {
+          switch (status) {
+            case "RCG200":
+              return { label: "Approved", color: "green" };
+            case "RCG202":
+              return { label: "Pending", color: "orange" };
+            default:
+              return { label: status, color: "black" }; 
+          }
+        };
+
+        const statusInfo = getStatusLabel(params.value);
+
+        return <span style={{ color: statusInfo.color }}>{statusInfo.label}</span>;
+      },
+    },
+    {
+      field: "approve",
+      headerName: "Approve",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => {
+        const { status_code } = params.row;
+  
+        // Check if the user has the 'SuperAdmin' role (implement hasRole function accordingly)
+        const userHasSuperAdminRole = hasRole(token, "SuperAdmin");
+  
+        if (!userHasSuperAdminRole) {
+          return null; // Don't show the Approve column for non-SuperAdmin users
+        }
+  
+        // Display the approve icon only for 'RCG202' status, disabled for 'RCG200'
+        const isApproved = status_code === "RCG200";
+        const canApprove = status_code === "RCG202";
+  
         return (
-          <span style={{ color: "grey" }}>PENDING</span>
+          <Tooltip title={isApproved ? "Already Approved" : "Approve"}>
+            <span>
+              <IconButton
+                onClick={() => handleApprove(params.row.id)} // Add your approve logic here
+                disabled={isApproved} // Disable if already approved
+                color={canApprove ? "primary" : "default"}
+              >
+                <CheckCircleIcon
+                  style={{
+                    color: isApproved ? grey[400] : green[500], // Grey out if already approved
+                  }}
+                />
+              </IconButton>
+            </span>
+          </Tooltip>
         );
       },
     },
-    // { field: "Action", headerName: "Action", flex: 0, minwidth: 150, renderCell: (params) => <DeleteIcon /> },
   ];
 
   return (
+    <>
+    <ToastContainer />
     <div className="p-4 sm:ml-64 h-screen ">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
@@ -115,6 +195,7 @@ const Recharges = () => {
       </div>
       {isModalOpen && <RequestSmsUnitsModal closeModal={closeModal} />}
     </div>
+    </>
   );
 };
 
