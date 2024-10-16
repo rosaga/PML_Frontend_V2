@@ -91,6 +91,8 @@ const SidebarData = () => {
       subLinks: [
         { href: "/apps/data/senderId", label: "Sender ID", className: "sender-id" },
         { href: "/apps/data/threshold", label: "Notification Threshold", className: "notification-threshold" },
+
+        // { href: "/apps/data/manageSenderId", label: "Manage Sender Ids", className: "notification-threshold" },
       ]
     },
   ];

@@ -9,13 +9,11 @@ import { getToken } from "@/utils/auth";
 import { GetSenderId, approveSenderID } from "@/app/api/actions/senderId/senderId";
 import NewSenderID from "../../../../components/modal/newSenderID"
 import { hasRole } from "../../../../utils/decodeToken"
-import { ToastContainer, toast } from 'react-toastify';
-import "react-toastify/dist/ReactToastify.css";
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
 
 
 
-
-const SenderId = () => {
+const ManageSenderId = () => {
   let org_id = null;
   let token = null;
   if (typeof window !== 'undefined') {
@@ -92,8 +90,8 @@ const SenderId = () => {
   }
   const handleApprove = async (id) => {
     const response = await approveSenderID(id);
-    
-    if (response.status === 200) {
+    console.log('response',response);
+    if (response.status === 202) {
       toast.success("APPROVE SUCCESS!!!");
       setIsApproved(true);
     } else {
@@ -105,10 +103,7 @@ const SenderId = () => {
   };
 
   return (
-  <>
-   <ToastContainer />
-  
-   <div className="p-4 sm:ml-64 h-screen ">
+    <div className="p-4 sm:ml-64 h-screen ">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
           <div className="p-4">
@@ -154,9 +149,7 @@ const SenderId = () => {
       </div>
       {isModalOpen && <NewSenderID closeModal={closeModal} />}
     </div>
-  </>
-    
   );
 };
 
-export default SenderId;
+export default ManageSenderId;
