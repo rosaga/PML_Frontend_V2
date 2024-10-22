@@ -3,19 +3,13 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
 import { saveAs } from "file-saver";
-import { CreateSenderID, GetActiveSenderId, GetSenderId, assignSenderID } from "../../app/api/actions/senderId/senderId";
+import { CreateSenderID, GetAllSenderId,GetSenderId, assignSenderID, } from "../../app/api/actions/senderId/senderId";
 import { set } from "date-fns";
 
 const AssignSenderID = ({ orgUnitId, closeModal, org_unit_name }) => {
-  let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
-  }
+ 
 
-  const [senderName, setSenderName] = useState("");
-  const [authLetterfile, setAuthLetterfile] = useState(null);
-  const [businessFile, setBusinessfile] = useState(null);
-  const [channel, setChannel] = useState("");
+
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [senderIDs, setSenderIDs] = useState([]);
@@ -30,20 +24,17 @@ const AssignSenderID = ({ orgUnitId, closeModal, org_unit_name }) => {
 
 
     const formValues = {
-      org_id: org_id,
-      name: senderName,
-      authorizationLetter: authLetterfile,
-      businessCertificate: businessFile,
-      channel: channel,
+      org_id: orgUnitId,
+      sender_id: selectedSenderID,
     };
 
-    CreateSenderID(formValues)
+    assignSenderID(formValues)
       .then((res) => {
         if (res.status === 201) {
-          setSuccessMessage(`Request for SenderID has been submitted`);
+          setSuccessMessage(`Assignment of SenderID has been successful`);
           setErrorMessage("");
         } else {
-          setErrorMessage("Failed to create request. Please try again.");
+          setErrorMessage("Failed to assign SenderID");
         }
       })
       .catch((error) => {
@@ -80,9 +71,24 @@ const AssignSenderID = ({ orgUnitId, closeModal, org_unit_name }) => {
       console.log(err);
     }
   };
+  const getAllSenderIds = async () => {
+    try {
+      const res = await GetAllSenderId(orgUnitId);
+      if (res.errors) { 
+        console.log("AN ERROR HAS OCCURRED");
+        setLoading(true);
+      } else {
+        setAvailableSenderIDs(res.data);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   useEffect(() => {
       getSenderIds();
+      getAllSenderIds();
   }, [orgUnitId,]);
 
 
@@ -151,11 +157,18 @@ const AssignSenderID = ({ orgUnitId, closeModal, org_unit_name }) => {
                               required
                             >
                               <option value="">Select Sender ID</option>
-                              {availableSenderIDs?.map((sender, index) => (
-                                <option key={index} value={sender.id}>
-                                  {sender.senderName}
-                                </option>
-                              ))}
+                              {availableSenderIDs
+                            ?.filter(
+                              (availableSender) =>
+                                !senderIDs.some(
+                                  (assignedSender) => assignedSender.sendername === availableSender.sendername
+                                )
+                            )
+                            .map((sender, index) => (
+                              <option key={index} value={sender.service_id}>
+                                {sender.sendername}
+                              </option>
+                            ))}
                             </select>
                           </div>
                           {errorMessage && (

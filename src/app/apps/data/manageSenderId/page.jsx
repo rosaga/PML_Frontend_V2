@@ -6,7 +6,7 @@ import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel, GridToolbar } fr
 import AddIcon from '@mui/icons-material/Add';
 import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
-import { GetSenderId, approveSenderID } from "@/app/api/actions/senderId/senderId";
+import { GetSenderId, approveSenderID, GetAllOrgUnits } from "@/app/api/actions/senderId/senderId";
 import AssignSenderID from "../../../../components/modal/assignSenderID"
 import { hasRole } from "../../../../utils/decodeToken"
 import EditIcon from '@mui/icons-material/Edit';
@@ -37,9 +37,9 @@ const ManageSenderId = () => {
     setIsModalOpen(false);
   };
 
-  const getSenderIds = async () => {
+  const getOrgUnits = async () => {
     try {
-      const res = await GetSenderId(org_id);
+      const res = await GetAllOrgUnits(org_id);
       if (res.errors) {
         setLoading
         console.log("AN ERROR HAS OCCURRED");
@@ -53,13 +53,12 @@ const ManageSenderId = () => {
   };
 
   useEffect(() => {
-      getSenderIds();
+    getOrgUnits();
   }, [isModalOpen]);
 
   const columns = [
     { field: "id", headerName: "Organisation unit ID", flex: 1,  minWidth: 150, },
-    { field: "Name", headerName: "Name", flex: 1,  minWidth: 150, },
-    { field: "Status", headerName: "Status", flex: 1,  minWidth: 150, },
+    { field: "name", headerName: "Name", flex: 1,  minWidth: 150, },
 
     
   ];
@@ -68,7 +67,7 @@ const ManageSenderId = () => {
         field: "approve_action",
         headerName: "Assign Sender Id",
         flex: 1,
-        width: 10,
+        width: 50,
         renderCell: (params) => {
             return <EditIcon className="flex items-center" onClick={() => handleAssignment(params.row)}></EditIcon>;
 
@@ -128,7 +127,7 @@ const ManageSenderId = () => {
                       },
                     }}
                     slots={{ toolbar: GridToolbar }}
-                    getRowId={(row) => row.sendername} // Set the specific column as the id for the row
+                    getRowId={(row) => row.id} // Set the specific column as the id for the row
                   />
                 )}
 

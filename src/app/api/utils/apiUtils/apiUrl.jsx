@@ -6,6 +6,8 @@ export default {
     SIGN_IN: `${process.env.NEXT_PUBLIC_BASE_URL}/public/login`,
     VERIFY_EMAIL: `${process.env.NEXT_PUBLIC_BASE_URL}/public/verify/email`,
     USERS: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
+    GET_All_Organizations: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization/list`,
+    GET_All_SENDERIDs: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1/service/list`,
     APPROVE_UNITS: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/admin/recharge`,
     resetPassword: `${process.env.NEXT_PUBLIC_BASE_URL}/public/passwordreset`,
     confirmPasswordReset: `${process.env.NEXT_PUBLIC_BASE_URL}/public/reset/otp`,
