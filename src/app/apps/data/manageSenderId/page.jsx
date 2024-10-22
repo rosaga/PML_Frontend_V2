@@ -7,9 +7,10 @@ import AddIcon from '@mui/icons-material/Add';
 import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetSenderId, approveSenderID } from "@/app/api/actions/senderId/senderId";
-import NewSenderID from "../../../../components/modal/newSenderID"
+import AssignSenderID from "../../../../components/modal/assignSenderID"
 import { hasRole } from "../../../../utils/decodeToken"
-import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import EditIcon from '@mui/icons-material/Edit';
+import { set } from "date-fns";
 
 
 
@@ -24,7 +25,9 @@ const ManageSenderId = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isApproved, setIsApproved] = useState(false);
+  const [orgUnitId, setOrgUnitId] = useState(null);
+  const [org_unit_name, setOrg_unit_name] = useState(null);
+  
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -54,50 +57,37 @@ const ManageSenderId = () => {
   }, [isModalOpen]);
 
   const columns = [
-    { field: "service_id", headerName: "ID", flex: 1,  minWidth: 150, },
-    { field: "telco", headerName: "Telco", flex: 1,  minWidth: 150, },
-    { field: "sendername", headerName: "Sender ID", flex: 1,  minWidth: 150, },
-    { field: "channel", headerName: "Channel", flex: 1, minWidth: 150, },
-    {
-      field: "service_state",
-      headerName: "Status",
-      flex: 1,
-      minWidth: 150,
-      renderCell: (params) => {
-        return (
-          params.value === "SVC202" ? <span style={{ color: "red" }}>INACTIVE</span> : <span style={{ color: "green" }}>ACTIVE</span>
-         
-        );
-      },
-    },
+    { field: "id", headerName: "Organisation unit ID", flex: 1,  minWidth: 150, },
+    { field: "Name", headerName: "Name", flex: 1,  minWidth: 150, },
+    { field: "Status", headerName: "Status", flex: 1,  minWidth: 150, },
+
     
   ];
   if (hasRole(token, 'SuperAdmin')) {
       columns.push({
         field: "approve_action",
-        headerName: "Approve",
+        headerName: "Assign Sender Id",
         flex: 1,
-        minWidth: 150,
+        width: 10,
         renderCell: (params) => {
-          if (params.row.service_state === 'SVC202') {
-            return <button className="bg-green-400 text-white border-1 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.service_id)}>Approve</button>;
-          }else{
-            return <button className="bg-gray-100 text-gray-600 text-sm rounded-[2px] px-2 shadow-sm outline-none" >Approved</button>;
-          }
-          return null;
+            return <EditIcon className="flex items-center" onClick={() => handleAssignment(params.row)}></EditIcon>;
+
         },
       });
   }
-  const handleApprove = async (id) => {
-    const response = await approveSenderID(id);
-    console.log('response',response);
-    if (response.status === 202) {
-      toast.success("APPROVE SUCCESS!!!");
-      setIsApproved(true);
-    } else {
-      toast.error("APPROVE FAILED");
-      setIsApproved(true);
-    }
+  const handleAssignment = (row) => {
+    // const response = await approveSenderID(id);
+    // console.log('response',response);
+    // if (response.status === 202) {
+    //   toast.success("APPROVE SUCCESS!!!");
+    //   setIsApproved(true);
+    // } else {
+    //   toast.error("APPROVE FAILED");
+    //   setIsApproved(true);
+    // }
+    setIsModalOpen(true);
+    setOrgUnitId(row.id);
+    setOrg_unit_name(row.name);
 
   
   };
@@ -108,14 +98,14 @@ const ManageSenderId = () => {
         <div className="flex flex-col">
           <div className="p-4">
             <div className="flex items-center justify-between">
-              <p className="mt-4 font-medium text-lg">All Sender IDs</p>
+              <p className="mt-4 font-medium text-lg">All Organisation Units </p>
               <div className="ml-auto flex space-x-4">
-                <PeakButton
+                {/* <PeakButton
                   buttonText="New Sender ID"
                   icon={AddIcon}
                   className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
                   onClick={openModal}
-                />
+                /> */}
 
               </div>
             </div>
@@ -147,7 +137,7 @@ const ManageSenderId = () => {
           </div>
         </div>
       </div>
-      {isModalOpen && <NewSenderID closeModal={closeModal} />}
+      {isModalOpen && <AssignSenderID orgUnitId = {orgUnitId} closeModal={closeModal} org_unit_name={org_unit_name} />}
     </div>
   );
 };

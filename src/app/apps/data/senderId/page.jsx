@@ -11,6 +11,7 @@ import NewSenderID from "../../../../components/modal/newSenderID"
 import { hasRole } from "../../../../utils/decodeToken"
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import { set } from "date-fns";
 
 
 
@@ -26,7 +27,7 @@ const SenderId = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isApproved, setIsApproved] = useState(false);
+  const [isApproved, setIsApproved] = useState(null);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -53,7 +54,7 @@ const SenderId = () => {
 
   useEffect(() => {
       getSenderIds();
-  }, [isModalOpen]);
+  }, [isModalOpen,isApproved]);
 
   const columns = [
     { field: "service_id", headerName: "ID", flex: 1,  minWidth: 150, },
@@ -95,10 +96,11 @@ const SenderId = () => {
     
     if (response.status === 200) {
       toast.success("APPROVE SUCCESS!!!");
-      setIsApproved(true);
+      setTimeout(() => {
+      setIsApproved(!isApproved);
+      }, 1000);
     } else {
       toast.error("APPROVE FAILED");
-      setIsApproved(true);
     }
 
   

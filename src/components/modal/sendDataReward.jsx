@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { fetchContacts } from "@/app/api/actions/contact/contact";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 import { sendReward } from "@/app/api/actions/reward/reward";
+import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 
 const SendDataRewardModal = ({ closeModal }) => {
 
@@ -14,6 +15,9 @@ const SendDataRewardModal = ({ closeModal }) => {
   const [selectedContact, setSelectedContact] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [senderName, setSenderName] = useState([]);
+  const [selectedSenderName, setSelectedSenderName] = useState("");
+  const [message, setMessage] = useState("");
 
   const { v4: uuidv4 } = require('uuid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +54,8 @@ const SendDataRewardModal = ({ closeModal }) => {
       request_id: uuidv4(),
       bundle_amount: selectedBundle,
       msisdn : selectedContact,
+      sender_id: parseInt(selectedSenderName) ,
+      message: message
     };
 
     const res = sendReward({org_id,newReward}).then((res) => {
@@ -84,6 +90,10 @@ const SendDataRewardModal = ({ closeModal }) => {
       if (balanceData) {
         setBundles(balanceData.data.data);
       }
+      const senderIdData = await GetActiveSenderId(org_id);
+        if (senderIdData) {
+          setSenderName(senderIdData.data);
+    }
     }
     fetchBalance();
   }, []);
@@ -178,6 +188,49 @@ const SendDataRewardModal = ({ closeModal }) => {
                       ))}
                     </select>
                   </div>
+                  <div className="mb-4">
+                      <label
+                        htmlFor="bundle"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Select Sender Name
+                      </label>
+                      <select
+                        name="bundle"
+                        id="bundle"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        value={selectedSenderName}
+                        onChange={(e) => setSelectedSenderName(e.target.value)}
+                      >
+                        <option value="">Select SenderName</option>
+                        {/* <option value="1">PeakSMS</option> */}
+                        {senderName?.map((senderid) => (
+                          <option key={senderid.service_id} value={senderid.service_id}>
+                            {senderid.sendername}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {
+                      selectedSenderName ? 
+                      <div className="mb-4">
+                      <label
+                        htmlFor="content"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Message to Customers
+                      </label>
+                      <textarea
+                        name="content"
+                        id="content"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        placeholder="Enter Message"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)} />
+                    </div> : null
+
+                    }
                   {errorMessage && (
                     <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
                   )}

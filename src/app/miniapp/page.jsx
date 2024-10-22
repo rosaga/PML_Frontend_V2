@@ -80,42 +80,43 @@ const MiniApp = () => {
                           Please Select A Product
                         </p>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                          {/* Bulk Data Icon */}
-                          <button
-                            className="flex flex-col items-center justify-center space-y-4"
-                            onClick={() => handleOptionSelect('data')}
-                          >
-                            <span className="flex items-center justify-center  rounded-full text-white">
-                              <img src="images/4g.jpeg" alt="Data Icon" className="w-28 h-28 object-contain" />
-                            </span>
-                            <span className="text-center text-base font-semibold">Bulk Data</span>
-                          </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-0">
+                            {/* Bulk Data Icon */}
+                            <button
+                              className="flex flex-col items-center justify-center"
+                              onClick={() => handleOptionSelect('data')}
+                            >
+                              <span className="flex items-center justify-center rounded-full text-white">
+                                <img src="images/DATA EDITED.png" alt="Data Icon" className="w-30 h-30 object-cover" />
+                              </span>
+                              <span className="text-center text-base font-semibold mt-1">Bulk Data</span>
+                            </button>
 
-                          {/* SMS Connect Icon */}
-                          <button
-                            className="flex flex-col items-center justify-center space-y-4"
-                            onClick={() => handleOptionSelect('sms')}
-                          >
-                            <span className="flex items-center justify-center rounded-full text-white">
-                              <img src="/images/sms.jpeg" alt="SMS Icon" className="w-28 h-28 object-contain" />
-                            </span>
-                            <span className="text-center text-base font-semibold">SMS Connect</span>
-                          </button>
+                            {/* SMS Connect Icon */}
+                            <button
+                              className="flex flex-col items-center justify-center"
+                              onClick={() => handleOptionSelect('sms')}
+                            >
+                              <span className="flex items-center justify-center rounded-full text-white">
+                                <img src="/images/BULK DATA SQUARE ICON.png" alt="SMS Icon" className="w-30 h-30 object-cover" />
+                              </span>
+                              <span className="text-center text-base font-semibold mt-1">SMS Connect</span>
+                            </button>
 
-                          {/* WhatsApp Flowbot Icon */}
-                          <button
-                            className="flex flex-col items-center justify-center space-y-4"
-                            onClick={() => handleOptionSelect('flow-builder')}
-                          >
-                            <span className="flex items-center justify-center  rounded-full text-white">
-                              <img src="/images/whatsapp.jpeg" alt="Flowbot Icon" className="w-24 h-24 object-contain" />
-                            </span>
-                            <span className="text-center text-base font-semibold">
-                              WhatsApp Flowbot (Coming Soon)
-                            </span>
-                          </button>
-                        </div>
+                            {/* WhatsApp Flowbot Icon */}
+                            <button
+                              className="flex flex-col items-center justify-center"
+                              onClick={() => handleOptionSelect('flow-builder')}
+                            >
+                              <span className="flex items-center justify-center rounded-full text-white">
+                                <img src="/images/WHATASAPP ICON.png" alt="Flowbot Icon" className="w-40 h-40 object-cover" />
+                              </span>
+                              <span className="text-center text-base font-bold mt-1">
+                                WhatsApp Flowbot (Coming Soon)
+                              </span>
+                            </button>
+                          </div>
+
                       </div>
                     </CardContent>
 

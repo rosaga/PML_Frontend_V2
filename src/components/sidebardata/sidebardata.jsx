@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import Joyride from "react-joyride";
 import Modal from '@mui/material/Modal';
+import { hasRole } from '../../utils/decodeToken';
+import { getToken } from "@/utils/auth";
 import { set } from "date-fns";
 
 
@@ -19,6 +21,8 @@ const SidebarData = () => {
   const [tourActive, setTourActive] = useState(false); 
   const [isClient, setIsClient] = useState(false);
   const  [openTourModal, setOpenTourModal] = useState(false);
+  let token = getToken();
+  
 
   const router = useRouter();
 
@@ -92,10 +96,12 @@ const SidebarData = () => {
         { href: "/apps/data/senderId", label: "Sender ID", className: "sender-id" },
         { href: "/apps/data/threshold", label: "Notification Threshold", className: "notification-threshold" },
 
-        // { href: "/apps/data/manageSenderId", label: "Manage Sender Ids", className: "notification-threshold" },
+        //{ href: "/apps/data/manageSenderId", label: "Manage Sender Ids", className: "notification-threshold" },
       ]
     },
   ];
+
+   hasRole(token,'SuperAdmin') && links[6].subLinks.push({ href: "",  label: "Manage Sender Ids", className: "notification-threshold" });
 
   const tourSteps = [
     {

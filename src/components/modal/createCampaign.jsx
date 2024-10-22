@@ -6,7 +6,7 @@ import { GetGroups } from "@/app/api/actions/group/group";
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
 import { format, parseISO } from "date-fns";
 import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
-import { GetSenderId } from "@/app/api/actions/senderId/senderId";
+import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 
 
 const CreateCampaignModal = ({ closeModal }) => {
@@ -58,7 +58,7 @@ const CreateCampaignModal = ({ closeModal }) => {
     if (groupData) {
       setGroups(groupData.data.data);
     }
-    const senderIdData = await GetSenderId(org_id);
+    const senderIdData = await GetActiveSenderId(org_id);
     if (senderIdData) {
       setSenderName(senderIdData.data);
       
@@ -188,6 +188,22 @@ const CreateCampaignModal = ({ closeModal }) => {
                         onChange={(e) => setCampaignName(e.target.value)}
                         required />
                     </div>
+                    <div className="mb-4">
+                      <label
+                        htmlFor="description"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Campaign Description
+                      </label>
+                      <input
+                        type="text"
+                        name="description"
+                        id="description"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        placeholder="Enter Description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)} />
+                    </div>
 
                     <div className="mb-4">
                       <label
@@ -251,7 +267,7 @@ const CreateCampaignModal = ({ closeModal }) => {
                         onChange={(e) => setSelectedSenderName(e.target.value)}
                       >
                         <option value="">Select SenderName</option>
-                        <option value="1">PeakSMS</option>
+                        {/* <option value="1">PeakSMS</option> */}
                         {senderName?.map((senderid) => (
                           <option key={senderid.service_id} value={senderid.service_id}>
                             {senderid.sendername}
@@ -260,21 +276,6 @@ const CreateCampaignModal = ({ closeModal }) => {
                       </select>
                     </div>
 
-                    <div className="mb-4">
-                      <label
-                        htmlFor="description"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Campaign Description
-                      </label>
-                      <textarea
-                        name="description"
-                        id="description"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Enter Description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)} />
-                    </div>
                     {
                       selectedSenderName ? 
                       <div className="mb-4">
