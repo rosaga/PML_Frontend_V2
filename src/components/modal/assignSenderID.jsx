@@ -161,12 +161,12 @@ const AssignSenderID = ({ orgUnitId, closeModal, org_unit_name }) => {
                             ?.filter(
                               (availableSender) =>
                                 !senderIDs.some(
-                                  (assignedSender) => assignedSender.sendername === availableSender.sendername
+                                  (assignedSender) => assignedSender.sendername === availableSender.SenderName
                                 )
                             )
                             .map((sender, index) => (
-                              <option key={index} value={sender.service_id}>
-                                {sender.sendername}
+                              <option key={index} value={sender.ID}>
+                                {sender.SenderName}
                               </option>
                             ))}
                             </select>
