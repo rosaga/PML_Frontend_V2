@@ -1,8 +1,14 @@
 export const getToken = () => {
+  if (typeof window === 'undefined') {
+    // Return null if the code is running server-side
+    return null;
+  }
+
   const token = localStorage.getItem('token');
   const expirationTime = localStorage.getItem('tokenExpiration');
+  
   if (!token || !expirationTime) {
-    alert('Session Expired, Please login again')
+    alert('Session Expired, Please login again');
     window.location.href = '/signin';
     return null;
   }
@@ -18,22 +24,28 @@ export const getToken = () => {
 };
 
 export const setToken = (token) => {
-  const expirationTime = Date.now() + 3600000;
-  localStorage.setItem('token', token);
-  localStorage.setItem('tokenExpiration', expirationTime.toString());
+  if (typeof window !== 'undefined') {
+    const expirationTime = Date.now() + 3600000; // 1 hour expiration
+    localStorage.setItem('token', token);
+    localStorage.setItem('tokenExpiration', expirationTime.toString());
+  }
 };
 
-export const setOrganisation = (orgId,orgName) => {
-  localStorage.setItem('orgId', orgId);
-  localStorage.setItem('orgName', orgName);
+export const setOrganisation = (orgId, orgName) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('orgId', orgId);
+    localStorage.setItem('orgName', orgName);
+  }
 }
 
 export const clearToken = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('tokenExpiration');
-  localStorage.removeItem('orgId');
-  localStorage.removeItem('orgName');
-  localStorage.removeItem('selectedAccountId');
-  localStorage.removeItem('selectedAccountName');
-  localStorage.removeItem("sideTourActive")
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('tokenExpiration');
+    localStorage.removeItem('orgId');
+    localStorage.removeItem('orgName');
+    localStorage.removeItem('selectedAccountId');
+    localStorage.removeItem('selectedAccountName');
+    localStorage.removeItem('sideTourActive');
+  }
 };
