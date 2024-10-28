@@ -1,31 +1,29 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import RecipientsTable from "../../../../components/rewards-tables/recipients";
 import GroupsTable from "../../../../components/rewards-tables/groups";
 import RewardsTable from "../../../../components/rewards-tables/rewards";
 import CampaignsTable from "../../../../components/rewards-tables/campaigns";
 import VouchersTable from "../../../../components/rewards-tables/vouchers";
-import { useRouter,useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 const DataRewards = () => {
-
   const [active, setActive] = useState("recipients");
-  const searchParams = useSearchParams()
+  const searchParams = useSearchParams();
   const [childActive, setChildActive] = useState("recipients");
   let tab = searchParams.get('tab');
-   
-  
 
   useEffect(() => {
-    if (searchParams.get('tab') === 'Rewards') {
+    if (tab === 'Rewards') {
       setActive('data-dispatch'); 
       setChildActive('rewards');
-    } else if (searchParams.get('tab') === 'Campaign') {
+    } else if (tab === 'Campaign') {
       setActive('data-dispatch');
       setChildActive('campaigns');
     }
   }, [tab]);
+
   return (
     <div className="p-4 sm:ml-64 h-screen">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
@@ -106,13 +104,10 @@ const DataRewards = () => {
                     </div>
                   </div>
 
-                  {childActive === "recipients" && (
-                    <RecipientsTable />
-                  )}
-
-                  {childActive === "groups" && (
-                    <GroupsTable />
-                  )}
+                  <Suspense fallback={<div>Loading Recipients...</div>}>
+                    {childActive === "recipients" && <RecipientsTable />}
+                    {childActive === "groups" && <GroupsTable />}
+                  </Suspense>
                 </>
               )}
 
@@ -157,17 +152,11 @@ const DataRewards = () => {
                     </div>
                   </div>
 
-                  {childActive === "rewards" && (
-                    <RewardsTable />
-                  )}
-
-                  {childActive === "campaigns" && (
-                    <CampaignsTable />
-                  )}
-
-                  {childActive === "vouchers" && (
-                    <VouchersTable />
-                  )}
+                  <Suspense fallback={<div>Loading Data Dispatch...</div>}>
+                    {childActive === "rewards" && <RewardsTable />}
+                    {childActive === "campaigns" && <CampaignsTable />}
+                    {childActive === "vouchers" && <VouchersTable />}
+                  </Suspense>
                 </>
               )}
             </div>
@@ -177,4 +166,5 @@ const DataRewards = () => {
     </div>
   );
 };
+
 export default DataRewards;
