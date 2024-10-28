@@ -1,14 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from 'next/navigation';
 import { contactCreate } from "@/app/api/actions/contact/contact";
 
 const NewContactModal = ({ closeModal }) => {
-
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
   }
-
+  const router = useRouter();
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -23,10 +23,10 @@ const NewContactModal = ({ closeModal }) => {
       metadata: {
         FIRSTNAME: firstname,
         LASTNAME: lastname
-    },
+      },
     };
 
-    const res = contactCreate({org_id,newContact}).then((res) => {
+    contactCreate({ org_id, newContact }).then((res) => {
       if (res.status === 201) {
         setSuccessMessage(`The contact ${phoneNumber} has been created`);
         setErrorMessage("");  // Clear any previous error messages
@@ -34,8 +34,10 @@ const NewContactModal = ({ closeModal }) => {
         setErrorMessage("Failed to create contact. Please try again.");
       }
     });
-
-    return res;
+  };
+  const goToDataDispatch = () => {
+    closeModal();
+    router.push('/apps/data/data-rewards?tab=Rewards'); // Navigates to DataRewards with 'Rewards' tab selected
   };
 
   useEffect(() => {
@@ -69,15 +71,23 @@ const NewContactModal = ({ closeModal }) => {
               <div className="mb-4 text-gray-900 dark:text-white">
                 {successMessage}
               </div>
-              <button
-                onClick={() => {
-                  setSuccessMessage("");
-                  closeModal();
-                }}
-                className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-              >
-                OK
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    setSuccessMessage("");
+                    closeModal();
+                  }}
+                  className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={goToDataDispatch}
+                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  Go to Data Dispatch
+                </button>
+              </div>
             </div>
           ) : (
             <>

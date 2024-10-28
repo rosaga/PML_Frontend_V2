@@ -4,6 +4,7 @@ import axios from "axios";
 import { getToken } from "../../utils/auth";
 import { saveAs } from "file-saver";
 import { contactsUpload } from '../../../src/app/api/actions/contact/contact';
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 const NewGroupModal = ({ closeModal }) => {
 
@@ -17,7 +18,7 @@ const NewGroupModal = ({ closeModal }) => {
   const [description, setDescription] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
+  const router = useRouter(); 
   function handleDownloadTemplate() {
     const templateData = [
       {
@@ -81,6 +82,10 @@ const NewGroupModal = ({ closeModal }) => {
   
     return res;
   };
+  const goToCampaign = () => {
+    closeModal();
+    router.push('/apps/data/data-rewards?tab=Campaign');
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -95,6 +100,7 @@ const NewGroupModal = ({ closeModal }) => {
       window.removeEventListener("click", handleClickOutside);
     };
   }, [closeModal]);
+
 
   return (
     <div
@@ -113,6 +119,7 @@ const NewGroupModal = ({ closeModal }) => {
               <div className="mb-4 text-gray-900 dark:text-white">
                 {successMessage}
               </div>
+              <div className="flex space-x-2">
               <button
                 onClick={() => {
                   setSuccessMessage("");
@@ -120,8 +127,16 @@ const NewGroupModal = ({ closeModal }) => {
                 }}
                 className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
               >
-                OK
+                Cancel
               </button>
+              <button
+                  onClick={goToCampaign}
+                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  Go to Campaigns
+                </button>
+              
+              </div>
             </div>
           ) : (
             <>

@@ -5,12 +5,27 @@ import GroupsTable from "../../../../components/rewards-tables/groups";
 import RewardsTable from "../../../../components/rewards-tables/rewards";
 import CampaignsTable from "../../../../components/rewards-tables/campaigns";
 import VouchersTable from "../../../../components/rewards-tables/vouchers";
+import { useRouter,useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
 const DataRewards = () => {
 
   const [active, setActive] = useState("recipients");
+  const searchParams = useSearchParams()
   const [childActive, setChildActive] = useState("recipients");
+  let tab = searchParams.get('tab');
+   
+  
 
+  useEffect(() => {
+    if (searchParams.get('tab') === 'Rewards') {
+      setActive('data-dispatch'); 
+      setChildActive('rewards');
+    } else if (searchParams.get('tab') === 'Campaign') {
+      setActive('data-dispatch');
+      setChildActive('campaigns');
+    }
+  }, [tab]);
   return (
     <div className="p-4 sm:ml-64 h-screen">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
