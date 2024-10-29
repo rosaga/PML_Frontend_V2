@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, Suspense } from "react";
+import React, { useState } from "react";
 import RecipientsTable from "../../../../components/rewards-tables/recipients";
 import GroupsTable from "../../../../components/rewards-tables/groups";
 import RewardsTable from "../../../../components/rewards-tables/rewards";
@@ -104,10 +104,10 @@ const DataRewards = () => {
                     </div>
                   </div>
 
-                  <Suspense fallback={<div>Loading Recipients...</div>}>
+                  {/* <Suspense fallback={<div>Loading Recipients...</div>}> */}
                     {childActive === "recipients" && <RecipientsTable />}
                     {childActive === "groups" && <GroupsTable />}
-                  </Suspense>
+                  {/* </Suspense> */}
                 </>
               )}
 
@@ -152,11 +152,11 @@ const DataRewards = () => {
                     </div>
                   </div>
 
-                  <Suspense fallback={<div>Loading Data Dispatch...</div>}>
+                  {/* <Suspense fallback={<div>Loading Data Dispatch...</div>}> */}
                     {childActive === "rewards" && <RewardsTable />}
                     {childActive === "campaigns" && <CampaignsTable />}
                     {childActive === "vouchers" && <VouchersTable />}
-                  </Suspense>
+                  {/* </Suspense> */}
                 </>
               )}
             </div>

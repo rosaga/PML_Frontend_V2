@@ -1,4 +1,4 @@
-const nextConfig = {
+export default {
   async redirects() {
     return [
       {
@@ -8,6 +8,7 @@ const nextConfig = {
       },
     ];
   },
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
 };
-
-export default nextConfig;
