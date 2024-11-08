@@ -37,8 +37,11 @@ const SendBatchRewardsModal = ({ closeModal }) => {
         setSuccessMessage(`The data has been sent`);
         setErrorMessage(""); 
       } else {
-        setErrorMessage("Failed to send data. Please try again.");
+        setErrorMessage("An error occured. Please try again");
+        setSuccessMessage("")
       }
+
+      
     });
 
     return res;

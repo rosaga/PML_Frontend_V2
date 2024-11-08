@@ -86,7 +86,7 @@ const CreateCampaignModal = ({ closeModal }) => {
         setErrorMessage("");
         
       } else {
-        setErrorMessage("Failed to create Campaign. Please try again.");
+        setErrorMessage("Failed too create Campaign. Please try again.");
         setCampaignName("");
         setSelectedGroup("");
         setSelectedBundle("");
@@ -94,12 +94,17 @@ const CreateCampaignModal = ({ closeModal }) => {
       }
     })
     .catch((error) => {
-      console.log("Error:", error);
-        setErrorMessage("Failed to create Campaign. Please try again.");
+      if (error.response && error.response.status === 400) {
+        console.log("Error:", error);
+        setErrorMessage("Sorry, you have insufficient units");
         setCampaignName("");
         setSelectedGroup("");
         setSelectedBundle("");
         setMessage("");
+      } else {
+        setErrorMessage(`Failed to send reward: ${error.message}`);
+      }
+      
     });
 
   return res;
