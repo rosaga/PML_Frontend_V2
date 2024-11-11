@@ -86,7 +86,7 @@ const CreateCampaignModal = ({ closeModal }) => {
         setErrorMessage("");
         
       } else {
-        setErrorMessage("Failed too create Campaign. Please try again.");
+        setErrorMessage("Failed to create Campaign. Please try again.");
         setCampaignName("");
         setSelectedGroup("");
         setSelectedBundle("");

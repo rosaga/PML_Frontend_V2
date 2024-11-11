@@ -10,6 +10,7 @@ import PeakSearch from "../search/search";
 import { format,parseISO } from "date-fns";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
+import ScheduleCampaignModal from "../modal/scheduleCampaign";
 import CreateCampaignModal from "../modal/createCampaign"
 import CampaignDetails from "./campaignDetails";
 import { getToken } from "@/utils/auth";
@@ -17,6 +18,7 @@ import { GetCampaigns } from "@/app/api/actions/campaigns/campaigns";
 
 const CampaignsTable = () => {
 
+    const [isScheduleModelOpen, setIsScheduleModelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [total, setTotal] = useState(0);
     const [data, setData] = useState([]);
@@ -38,6 +40,18 @@ const CampaignsTable = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
+
+  //schedule model
+  const openScheduleCampaignModal = () => {
+    setIsScheduleModelOpen(true);
+
+  }
+
+  const closeScheduleCampaignModal = () => {
+    setIsScheduleModelOpen(false);
+
+  }
+
 
   const filterOptions = [
     { value: "ilike__name", label: "Name" },
@@ -135,11 +149,13 @@ const CampaignsTable = () => {
             <p className="mt-4 font-medium text-lg">All Campaigns</p>
             <div className="md:ml-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
+            {isScheduleModelOpen && <ScheduleCampaignModal closeScheduleCampaignModal={closeScheduleCampaignModal} />}
+
               <PeakButton
                 buttonText="Schedule Campaign"
                 icon={AddIcon}
                 className="bg-orange-400 text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-                onClick={openModal}
+                onClick={openScheduleCampaignModal}
               />
               <PeakButton
                 buttonText="Create Campaign"
@@ -181,6 +197,10 @@ const CampaignsTable = () => {
           </div>
         </>
       )}
+
+     
+      
+    
     </>
   );
 };
