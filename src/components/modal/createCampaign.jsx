@@ -78,6 +78,7 @@ const CreateCampaignModal = ({ closeModal }) => {
       // content: message,
       content_message: message,
       sender_id: parseInt(selectedSenderName),
+      slogan: "5",
     };
     const res = await CreateCampaign(formData)
     .then((res) => {
