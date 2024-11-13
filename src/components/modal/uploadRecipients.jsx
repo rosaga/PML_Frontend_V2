@@ -13,6 +13,7 @@ const UploadRecipientsModal = ({ closeModal }) => {
 
   const [csvFile, setCsvFile] = useState(null); 
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
 
   function handleDownloadTemplate() {
@@ -61,21 +62,28 @@ const UploadRecipientsModal = ({ closeModal }) => {
     };
   
     const res = contactsUploadBatch(formValues)
-      .then((res) => {
-        if (res.status === 201) {
-          toast.success("CONTACTS UPLOAD SUCCESS")
-          setSuccessMessage(`Contacts Upload Successful`);
-
-        } else {
-          toast.error("CONTACTS UPLOAD FAILED")
-        }
-      })
-      .catch((error) => {
-        toast.error("CONTACTS UPLOAD FAILED")
+    .then((res) => {
+      if (res.status === 201) {
+        toast.success("CONTACTS UPLOAD SUCCESS");
+        setSuccessMessage("Contacts Upload Successful");
+      } else {
+        toast.error("CONTACTS UPLOAD FAILED");
+      }
+    })
+    .catch((error) => {
+      // Check for 400 error for incorrect file type
+      if (error.response && error.response.status === 400) {
+        toast.error("Wrong file type selected i.e. CSV");
+        setErrorMessage("Wrong file type selected i.e. CSV");
+      } else {
+        toast.error("CONTACTS UPLOAD FAILED");
         console.log("Error:", error);
-      });
+        setErrorMessage("Contacts upload failed. Please try again.");
+      }
+    });
   
-    return res;
+  return res;
+  
   };
 
 
@@ -110,7 +118,26 @@ const UploadRecipientsModal = ({ closeModal }) => {
                   OK
                 </button>
               </div>
-            ) : (
+            ) :
+            errorMessage ? (
+              <div className="p-4 text-center">
+                <div className="mb-4 text-2xl font-semibold text-red-500">
+                  Oops!
+                </div>
+                <div className="mb-4 text-gray-900 dark:text-white">
+                  {errorMessage}
+                </div>
+                <button
+                  onClick={() => {
+                    setErrorMessage("");
+                  }}
+                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  OK
+                </button>
+              </div>
+            )
+            : (
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
           <div className="p-4 md:p-5">

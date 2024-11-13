@@ -26,14 +26,28 @@ const NewContactModal = ({ closeModal }) => {
       },
     };
 
-    contactCreate({ org_id, newContact }).then((res) => {
+    contactCreate({ org_id, newContact })
+    .then((res) => {
       if (res.status === 201) {
         setSuccessMessage(`The contact ${phoneNumber} has been created`);
-        setErrorMessage("");  // Clear any previous error messages
+        setErrorMessage("");
+      } else if (res.status === 400) {
+        setErrorMessage("Contact already exists.");
+        setSuccessMessage("");
       } else {
         setErrorMessage("Failed to create contact. Please try again.");
+        setSuccessMessage("");
       }
+    })
+    .catch((error) => {
+      if (error.response && error.response.status === 400) {
+        setErrorMessage("Contact already exists.");
+      } else {
+        setErrorMessage(`An unexpected error occurred: ${error.message}`);
+      }
+      setSuccessMessage("");
     });
+  
   };
   const goToDataDispatch = () => {
     closeModal();
@@ -89,7 +103,26 @@ const NewContactModal = ({ closeModal }) => {
                 </button>
               </div>
             </div>
-          ) : (
+          ) :
+          errorMessage ? (
+            <div className="p-4 text-center">
+              <div className="mb-4 text-2xl font-semibold text-red-500">
+                Oops!
+              </div>
+              <div className="mb-4 text-gray-900 dark:text-white">
+                {errorMessage}
+              </div>
+              <button
+                onClick={() => {
+                  setErrorMessage("");
+                }}
+                className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                OK
+              </button>
+            </div>
+          )
+          : (
             <>
               <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
