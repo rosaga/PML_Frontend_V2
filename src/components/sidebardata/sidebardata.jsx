@@ -30,9 +30,9 @@ const SidebarData = () => {
     setIsClient(true);
     if (typeof window !== "undefined") {
       setActiveLink(window.location.pathname);
-      if (typeof window !== "undefined" && !localStorage.getItem("sideTourActive")) {
+      if (typeof window !== "undefined" && !localStorage.getItem("hasTakenDataTour")) {
         setOpenTourModal(true);
-        localStorage.setItem("sideTourActive", "true");
+        localStorage.setItem("hasTakenDataTour", "true");
       }
     }
   }, []);
