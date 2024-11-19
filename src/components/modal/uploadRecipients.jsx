@@ -63,7 +63,7 @@ const UploadRecipientsModal = ({ closeModal }) => {
   
     const res = contactsUploadBatch(formValues)
     .then((res) => {
-      if (res.status === 201) {
+      if (res.status === 200) {
         toast.success("CONTACTS UPLOAD SUCCESS");
         setSuccessMessage("Contacts Upload Successful");
       } else {

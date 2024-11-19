@@ -74,8 +74,9 @@ const SendDataRewardModal = ({ closeModal }) => {
         setErrorMessage(`Failed to send reward: ${error.message}`);
       }
       setSuccessMessage("");
+      return res;
+
     }
-    return res;
   };
 
   useEffect(() => {
