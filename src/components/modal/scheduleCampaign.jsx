@@ -74,25 +74,29 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const schedule_time = new Date(`${startDate}T${startTime}:00.000Z`);
+    schedule_time.setHours(schedule_time.getHours() - 3);
     const formData = {
       org_id: org_id,
       name: campaignName,
       group_id: parseInt(selectedGroup),
-      startDate: startDate,
-      endDate: endDate,
-      startTime: startTime,
-      endTime: endTime,
-      frequency: frequency,
+      // startDate: startDate,
+      // endDate: endDate,
+      // startTime: startTime,
+      // endTime: endTime,
+      // frequency: frequency,
       bundle: selectedBundle,
       description: description,
       // content: message,
       content_message: message,
       sender_id: parseInt(selectedSenderName),
+      slogan: "5",
+      schedule:schedule_time
     };
     const res = await CreateCampaign(formData)
     .then((res) => {
       if (res.status === 202) {
-        setSuccessMessage(`Data has been dispatched successfully under campaign`);
+        setSuccessMessage(`Data has been scheduled for dispatch`);
         setErrorMessage("");
         
       } else {
@@ -178,12 +182,12 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                 >
                   + Schedule Campaign
                 </button> */}
-                <button
+                {/* <button
                   type="button"
                   className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                 >
                   + New Campaign
-                </button>
+                </button> */}
               </div><div className="p-4 md:p-5">
                   <form className="space-y-2" onSubmit={handleSubmit}>
                     <div className="mb-4">
@@ -255,7 +259,7 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                       </div>
                     </div>
 
-                    <div className="mb-4">
+                    {/* <div className="mb-4">
                       <label
                         htmlFor="endDate"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -280,10 +284,10 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                           onChange={(e) => setEndTime(e.target.value)}
                         />
                       </div>
-                    </div>
+                    </div> */}
 
 
-                    <div className="mb-4">
+                    {/* <div className="mb-4">
                       <label
                         htmlFor="frequency"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -303,7 +307,7 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                         <option value="monthly">Monthly</option>
                         <option value="yearly">Yearly</option>
                       </select>
-                    </div>
+                    </div> */}
 
                     <div className="mb-4">
                       <label
