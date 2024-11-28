@@ -151,7 +151,7 @@ const CampaignsTable = () => {
                 buttonText="Schedule Campaign"
                 icon={AddIcon}
                 className="bg-orange-400 text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-                // onClick={openScheduleCampaignModal}
+                onClick={openScheduleCampaignModal}
               />
               <PeakButton
                 buttonText="Create Campaign"
