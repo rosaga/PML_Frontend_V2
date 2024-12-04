@@ -11,6 +11,8 @@ export async function CreateCampaign(formValues) {
         sender_id: formValues.sender_id,
         content_message: formValues.content_message,
         description: formValues.description,
+        slogan: formValues.slogan,
+        scheduled: formValues.schedule?formValues.schedule:null,
     }
     
     const createCampaignUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/campaign`;

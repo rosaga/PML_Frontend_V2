@@ -42,7 +42,7 @@ export async function GetAllSenderId(org_id,page,pageSize) {
   if (page || pageSize) {
     senderIDUrl = `${apiUrl.GET_All_SENDERIDs}?orderby=created_at DESC&size=${pageSize}&page=${page}`;
   }else{
-    senderIDUrl = `${apiUrl.GET_All_SENDERIDs}?orderby=created_at DESC`;
+    senderIDUrl = `${apiUrl.GET_All_SENDERIDs}?orderby=created_at DESC&size=1000&page=1`;
   }
 
   try {

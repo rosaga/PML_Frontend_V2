@@ -30,6 +30,7 @@ const SendBatchRewardsModal = ({ closeModal }) => {
       contacts: contactsFile,
       bundle: selectedBundle,
       message : message,
+      slogan : "5",
     };
 
     const res = batchReward({org_id,newReward}).then((res) => {

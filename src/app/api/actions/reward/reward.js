@@ -157,6 +157,8 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       formData.append("contacts", selectedFile);
       formData.append("message", formValues.newReward.message);
       formData.append("bundle", formValues.newReward.bundle);
+      formData.append("slogan", formValues.newReward.slogan);
+
   
       return axios.post(sendRewardUrl, formData, {
         headers: {

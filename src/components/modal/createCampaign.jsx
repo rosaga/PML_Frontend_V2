@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
-import { GetGroups } from "@/app/api/actions/group/group";
+import { GetGroups, GetAllGroups } from "@/app/api/actions/group/group";
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
 import { format, parseISO } from "date-fns";
 import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
@@ -54,7 +54,7 @@ const CreateCampaignModal = ({ closeModal }) => {
     if (balanceData) {
       setBundles(balanceData.data.data);
     }
-    const groupData = await GetGroups(org_id);
+    const groupData = await GetAllGroups(org_id);
     if (groupData) {
       setGroups(groupData.data.data);
     }
@@ -78,6 +78,7 @@ const CreateCampaignModal = ({ closeModal }) => {
       // content: message,
       content_message: message,
       sender_id: parseInt(selectedSenderName),
+      slogan: "5",
     };
     const res = await CreateCampaign(formData)
     .then((res) => {
