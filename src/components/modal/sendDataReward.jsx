@@ -55,8 +55,12 @@ const SendDataRewardModal = ({ closeModal }) => {
       bundle_amount: selectedBundle,
       msisdn : selectedContact,
       sender_id: parseInt(selectedSenderName) ,
-      message: message
+      message: message,
+      postpay: true
     };
+
+    console.log("New Reward Payload:", newReward);
+
 
     try {
       const res = await sendReward({ org_id, newReward });
@@ -74,7 +78,7 @@ const SendDataRewardModal = ({ closeModal }) => {
         setErrorMessage(`Failed to send reward: ${error.message}`);
       }
       setSuccessMessage("");
-      return res;
+      // return res;
 
     }
   };
