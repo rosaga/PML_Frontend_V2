@@ -31,7 +31,11 @@ const SendBatchRewardsModal = ({ closeModal }) => {
       bundle: selectedBundle,
       message : message,
       slogan : "5",
+      postpay: true
     };
+
+    console.log("New Reward Payload:", newReward);
+
 
     const res = batchReward({org_id,newReward}).then((res) => {
       if (res.status === 200) {
@@ -196,7 +200,7 @@ const SendBatchRewardsModal = ({ closeModal }) => {
                   placeholder="Enter Message to Customer"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  required
+                  //required
                 />
               </div>
               {errorMessage && (

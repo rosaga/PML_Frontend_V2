@@ -102,9 +102,9 @@ const Dashboard = () => {
   const fetchDashboardSummary = async () => {
     const summary = await GetDashboardSummary(org_id);
     if ('recipientsReached' in summary) {
-      setRecipientsReached(summary.recipientsReached);
-      setConsumedData(summary.consumedData);
-      setActiveCampaigns(summary.activeCampaigns);
+      setRecipientsReached(summary.recipientsReached.toString());
+      setConsumedData(summary.consumedData.toString());
+      setActiveCampaigns(summary.activeCampaigns.toString());
     }
   };
   const fetchDataBundle = async () => {
