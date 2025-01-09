@@ -8,38 +8,31 @@ export async function GetDashboardSummary(org_id) {
   let consumedDataUrl = `${apiUrl.GET_CONTACTS}/${org_id}/consumedata?eq__rewards.status=SUCCESS`;
   let activeCampaignsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?eq__groups.status=ACTIVE`;
 
-  try {
     const config = await authHeaders();
-
-    const requests = [
-      axios.get(recipientsReachedUrl, config),
-      axios.get(consumedDataUrl, config),
-      axios.get(activeCampaignsUrl, config),
-    ];
-
-    const [recipientsReachedRes, consumedDataRes, activeCampaignsRes] = await Promise.all(requests);
- 
-    const dashboardSummary = {
-      recipientsReached: recipientsReachedRes.data.customer_reach || 0,
-      consumedData: consumedDataRes.data.total_bundle || 0,
-      activeCampaigns: activeCampaignsRes.data.data[0].count || 0,
-    };
-
-    return dashboardSummary;
-  } catch (error) {
-    if (error.response) {
-      return {
-        errors: {
-          _error: 'The dashboard summary could not be returned.',
-        },
-      };
+    let recipientsReached = 0, consumedData = 0, activeCampaigns = 0;
+    try {
+      const recipientsReachedRes = await axios.get(recipientsReachedUrl, config);
+      recipientsReached = recipientsReachedRes.data.customer_reach || 0;
+    } catch (error) {
+      console.error('Failed to fetch recipients reached:', error.message);
     }
-    return {
-      errors: {
-        _error: 'Network error. Please try again.111',
-      },
-    };
-  }
+    
+    try {
+      const consumedDataRes = await axios.get(consumedDataUrl, config);
+      consumedData = consumedDataRes.data.total_bundle || 0;
+    } catch (error) {
+      console.error('Failed to fetch consumed data:', error.message);
+    }
+    
+    try {
+      const activeCampaignsRes = await axios.get(activeCampaignsUrl, config);
+      activeCampaigns = activeCampaignsRes.data.data[0]?.count || 0;
+    } catch (error) {
+      console.error('Failed to fetch active campaigns:', error.message);
+    }
+    
+    return { recipientsReached, consumedData, activeCampaigns };
+
 }
 
 
