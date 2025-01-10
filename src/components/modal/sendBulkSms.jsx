@@ -121,7 +121,7 @@ const SendBulkModal = ({ closeModal }) => {
           console.log("AN ERROR HAS OCCURED");
         } else {
           setAppservices(res.data);
-          setSelectedSenderId(res.data[0]?.service_id || "");
+          setSelectedSenderId(res.data[0]?.id || "");
         }
       })
       .catch((err) => {
