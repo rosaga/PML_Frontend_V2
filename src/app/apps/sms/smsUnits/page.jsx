@@ -40,12 +40,15 @@ const Recharges = () => {
 
   const handleApprove = async (id) => {
     const approvalUrl = `${apiUrl.APPROVE_SMS_UNITS}/${id}`;
+
     try {
-      const response = await axios.put(approvalUrl, {}, {
+      const response = await axios.put(approvalUrl, null,  {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
+
+      console.log("GETS HERE!!!")
   
       if (response.status === 202) {
         toast.success("APPROVE SUCCESS!!!");
@@ -84,6 +87,7 @@ const Recharges = () => {
     { field: "package", headerName: "Package", flex: 1 },
     { field: "units", headerName: "Units", flex: 1 },
     { field: "expireson", headerName: "Expiry", flex: 1 },
+    { field: "createdby", headerName: "Created By", flex: 1 },
     {
       field: "status_code",
       headerName: "Status",
