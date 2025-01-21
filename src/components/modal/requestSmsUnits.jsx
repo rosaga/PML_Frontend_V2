@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { requestSmsUnits } from "@/app/api/actions/reward/reward";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 import { ToastContainer, toast } from 'react-toastify';
+import { messageBalanceAction } from "@/app/api/actions/messages/messagesAction";
 
 const RequestSmsUnitsModal = ({ closeModal }) => {
   let org_id = null;
@@ -11,6 +12,28 @@ const RequestSmsUnitsModal = ({ closeModal }) => {
 
   const [successMessage, setSuccessMessage] = useState("");
   const [bundles, setBundles] = useState([]);
+  const [totalBalance, setTotalBalance] = useState(0);
+
+  const getSmsBalance = () => {
+      if (org_id) {
+        messageBalanceAction({ org_id })
+          .then((res) => {
+            if (res.errors) {
+              console.log("AN ERROR HAS OCCURED");
+            } else {
+              console.log("Balance is", res)
+              setTotalBalance(res.data.balance);
+              
+              setLoading(false);
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      } else {
+        console.log("org_id is null or undefined. Skipping API call.");
+      }
+    };
 
 
   const initialState = {
@@ -49,15 +72,19 @@ const RequestSmsUnitsModal = ({ closeModal }) => {
     return res;
   };
 
-  useEffect(() => {
-    async function fetchBalance() {
-      const balanceData = await GetBalance(org_id);
-      if (balanceData) {
-        setBundles(balanceData.data.data);
-      }
-    }
-    fetchBalance();
-  }, []);
+  // useEffect(() => {
+  //   async function fetchBalance() {
+  //     const balanceData = await GetBalance(org_id);
+  //     if (balanceData) {
+  //       setBundles(balanceData.data.data);
+  //     }
+  //   }
+  //   fetchBalance();
+  // }, []);
+
+   useEffect(() => {
+      getSmsBalance();
+    }, []);
 
   return (
     <>
@@ -72,8 +99,13 @@ const RequestSmsUnitsModal = ({ closeModal }) => {
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
           <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Request SMS Units
+              REQUEST UNITS
             </h3>
+          </div>
+          <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Current Balance: {totalBalance}
+            </h4>
           </div>
           <div className="p-4 md:p-5 space-y-4">
             {successMessage ? (
@@ -103,7 +135,7 @@ const RequestSmsUnitsModal = ({ closeModal }) => {
                       htmlFor="numberOfUnits"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Number of Units
+                      Enter No of Units
                     </label>
                     <input
                     type="number"
