@@ -75,6 +75,38 @@ export async function messageCountsAction(formValues) {
 }
 }
 
+
+export async function messageBalanceAction(formValues) {
+  const messageBalanceUrl = `${apiUrl.MESSAGE_COUNTS}/application/${formValues.org_id}/balance`;
+  try{
+  const config = await authHeaders();
+
+  return axios
+    .get(messageBalanceUrl, config)
+    .then((res) => {
+      return res; // Always return the response
+    })
+    .catch((error) => {
+      if (error.response) {
+        console.log("Error response data:", error.response.data);
+        return error.response;
+      }
+      return {
+        errors: {
+          _error: "Network error. Please try again.",
+        },
+      };
+    });
+} catch (error) {
+  console.error("Error:", error);
+  return {
+    errors: {
+      _error: "An error occurred. Please try again.",
+    },
+  };
+}
+}
+
   export async function broadcastMessages(formValues) {
     const broadcastUrl = `${apiUrl.BROADCAST_MESSAGE}/${formValues.selectedSenderId}/broadcast/send`;
     try{
