@@ -4,7 +4,7 @@ import RecipientsTable from "../../../../components/rewards-tables/recipients";
 import AllChatBots from "../../../../components/flowbuilder/allChatbots";
 import GroupsTable from "../../../../components/rewards-tables/groups";
 import RewardsTable from "../../../../components/rewards-tables/rewards";
-import ChannelTable from "../../../../components/flowbuilder/ChannelTable";
+import ChannelTable from "../../../../components/flowbuilder/channelTable";
 import CampaignsTable from "../../../../components/rewards-tables/campaigns";
 import VouchersTable from "../../../../components/rewards-tables/vouchers";
 import {  useSearchParams } from 'next/navigation';
