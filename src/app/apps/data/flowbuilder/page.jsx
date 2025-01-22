@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import RecipientsTable from "../../../../components/rewards-tables/recipients";
-import AllChatBots from "../../../../components/flowbuilder/allChatbots";
+import AllFlows from "../../../../components/flowbuilder/allFlowsTable";
 import GroupsTable from "../../../../components/rewards-tables/groups";
 import RewardsTable from "../../../../components/rewards-tables/rewards";
 import ChannelTable from "../../../../components/flowbuilder/channelTable";
@@ -106,7 +106,7 @@ const Flowbuilder = () => {
                   </div> */}
 
                   {/* <Suspense fallback={<div>Loading Recipients...</div>}> */}
-                    {active === "flows" && <AllChatBots />}
+                    {active === "flows" && <AllFlows />}
                     {/* {active === "channels" && <GroupsTable />} */}
                   {/* </Suspense> */}
                 </>
