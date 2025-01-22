@@ -11,7 +11,7 @@ import ReceiptIcon from "@mui/icons-material/Receipt";
 import CodeIcon from "@mui/icons-material/Code";
 import DialpadIcon from "@mui/icons-material/Dialpad";
 
-const allChatbots = () => {
+const AllChatbots = () => {
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
     page: 0,
@@ -121,4 +121,4 @@ const allChatbots = () => {
   );
 };
 
-export default allChatbots;
+export default AllChatbots;
