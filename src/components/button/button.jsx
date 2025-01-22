@@ -8,7 +8,7 @@ function PeakButton({ buttonText, icon: Icon, className, onClick }) {
             className={`flex items-center space-x-1 ${className}`}
             onClick={onClick}
         >
-            {Icon && <Icon style={{ width: '20px', height: '20px' }} />}
+            {Icon && <Icon style={{ width: '20px', height: '40px' }} />}
             <p>{buttonText}</p>
         </button>
     );
