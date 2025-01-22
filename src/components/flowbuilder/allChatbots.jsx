@@ -1,11 +1,9 @@
 "use client";
 import React, { useState } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import IosShareIcon from "@mui/icons-material/IosShare";
 import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../button/button";
 import PeakSearch from "../search/search";
-import Tooltip from "@mui/material/Tooltip";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import CodeIcon from "@mui/icons-material/Code";
@@ -27,13 +25,17 @@ const AllChatbots = () => {
 
   const columns = [
     {
-      field: "icon",
-      headerName: "",
-      width: 70,
-      sortable: false,
-      renderCell: (params) => params.value,
+      field: "flow",
+      headerName: "Flow",
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {params.row.icon}
+          <span style={{ marginLeft: 8 }}>{params.row.flow}</span>
+        </div>
+      ),
     },
-    { field: "flow", headerName: "Flow", flex: 1, minWidth: 150 },
     {
       field: "status",
       headerName: "Status",
@@ -83,12 +85,6 @@ const AllChatbots = () => {
             onSearch={handleSearch}
             onClearSearch={handleClearSearch}
           />
-          {/* <PeakButton
-            buttonText="Upload CSV File"
-            icon={IosShareIcon}
-            className="bg-[#E88A17] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-            onClick={() => console.log("Upload CSV Modal Opened")}
-          /> */}
           <PeakButton
             buttonText="Create New Flow"
             icon={AddIcon}
@@ -100,7 +96,7 @@ const AllChatbots = () => {
 
       <div className="mt-4">
         <div style={{ width: "100%" }}>
-        <DataGrid
+          <DataGrid
             rows={rows}
             columns={columns}
             paginationModel={paginationModel}
