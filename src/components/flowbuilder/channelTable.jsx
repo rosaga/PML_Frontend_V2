@@ -11,14 +11,23 @@ import CodeIcon from "@mui/icons-material/Code";
 import DialpadIcon from "@mui/icons-material/Dialpad";
 import PeakButton from "../button/button";
 import AddIcon from "@mui/icons-material/Add";
+import CreateShortCodeModal from "../modal/createShortCodeModal";
 
 
 const ChannelTable = () => {
   const [openCard, setOpenCard] = useState(null);
   const [selectedFlows, setSelectedFlows] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const toggleCard = (cardId) => {
     setOpenCard(openCard === cardId ? null : cardId);
+  };
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+ 
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
   const handleFlowChange = (channelId, flow) => {
@@ -45,7 +54,7 @@ const ChannelTable = () => {
       id: 1,
       type: "WhatsApp",
       value: "+254 765 321 890",
-      keyword: "Pineworth",
+      // keyword: "null",
       shortcode: "2124",
       ussd: "*645*4#",
       flows: ["Kuza Talanta", "Jenga Misuli"],
@@ -84,6 +93,8 @@ const ChannelTable = () => {
   ];
 
   return (
+    <>
+    {isModalOpen && <CreateShortCodeModal closeModal={closeModal} />}
     <div>
       <div className="flex flex-col md:flex-row items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Channels</p>
@@ -92,7 +103,7 @@ const ChannelTable = () => {
             buttonText="Request ShortCode"
             icon={AddIcon}
             className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-            onClick={() => console.log("New Chatbot Modal Opened")}
+            onClick={openModal} 
           />
         </div>
       </div>
@@ -112,29 +123,38 @@ const ChannelTable = () => {
           >
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               {channel.type == "WhatsApp" ? (
-                <WhatsAppIcon style={{ color: "#9c27b0" }} />
+                <WhatsAppIcon style={{ color: "Green" }} />
               ) : channel.type == "ShortCode" ? (
-                <SmsIcon style={{ color: "#25D366" }} />
+                <SmsIcon style={{ color: "#9c27b0" }} />
               ) : channel.type == "KeyWord" ? (
                 <CodeIcon style={{ color: "#090A29" }} />
               ) : (
                 <DialpadIcon style={{ color: "#090A29" }} />
               )}
               <div>
+              {channel.type && (
                 <p style={{ margin: 0, fontWeight: "bold", color: "#333" }}>{channel.type}</p>
+              )}
+
+                {channel.value && (
                 <p style={{ margin: "4px 0", color: "#555" }}>{channel.value}</p>
+                )}
+
+                {channel.keyword && (
                 <p style={{ margin: "4px 0", color: "#777" }}>
                   Keyword: {channel.keyword} 
                 </p>
-                <p style={{ margin: "4px 0", color: "#777" }}>
-                 ({timeAgo(channel.created)})
-                </p>
-                
+                )}
                 {channel.shortcode && (
                   <p style={{ margin: "4px 0", color: "#9c27b0" }}>Short Code: {channel.shortcode}</p>
                 )}
                 {channel.ussd && (
                   <p style={{ margin: "4px 0", color: "#3f51b5" }}>USSD Code: {channel.ussd}</p>
+                )}
+                {channel.created && (
+                <p style={{ margin: "4px 0", color: "#777" }}>
+                 ({timeAgo(channel.created)})
+                </p>
                 )}
               </div>
             </div>
@@ -169,21 +189,25 @@ const ChannelTable = () => {
               <p style={{ color: "red" }}>
                 (Once the flow is selected, the users will see that flow, when they dial the code.)
               </p>
+              </div>
+              <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
               <Button
                 variant="contained"
                 color="primary"
-                style={{ marginTop: "16px" }}
+                style={{ marginTop: "16px", backgroundColor: "#F58426" }}
                 onClick={() =>
                   alert(`Flow "${selectedFlows[channel.id]}" attached to ${channel.value}`)
                 }
               >
                 Attach Flow
               </Button>
-            </div>
+              </div>
+              
           </Collapse>
         </div>
       ))}
     </div>
+    </>
   );
 };
 
