@@ -86,6 +86,8 @@ const SidebarData = () => {
     { href: "/apps/data/users", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
     { href: "/apps/data/account", src: "/images/Account.svg", alt: "Account", label: "Account", className: "account" },
     { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
+    { href: "/apps/data/rewards", src: "/images/rewards.svg", alt: "Rewards", label: "Rewards", className: "rewards" },
+
     {
       href: "/apps/data/settings",
       src: "/images/Settings.svg",
@@ -101,7 +103,7 @@ const SidebarData = () => {
     },
   ];
 
-   hasRole(token,'SuperAdmin') && links[6].subLinks.push({ href: "/apps/data/manageSenderId",  label: "Manage Sender Ids", className: "notification-threshold" });
+   hasRole(token,'SuperAdmin') && links[7].subLinks.push({ href: "/apps/data/manageSenderId",  label: "Manage Sender Ids", className: "notification-threshold" });
 
   const tourSteps = [
     {
