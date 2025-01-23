@@ -18,8 +18,8 @@ const UserRewards = () => {
   // Shared data from localStorage
   const [titleText, setTitleText] = useState("Welcome to the Rewards Program");
   const [headerText, setHeaderText] = useState("Happy Birthday");
-  const [headerColor, setHeaderColor] = useState("#90c73e");
-  const [bottomColor, setBottomColor] = useState("#1a365d");
+  const [headerColor, setHeaderColor] = useState("#c30010");
+  const [bottomColor, setBottomColor] = useState("#000000");
   const [logoImage, setLogoImage] = useState<string | null>(null);
 
   // Load shared data on mount
