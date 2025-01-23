@@ -16,7 +16,7 @@ const UserRewards = () => {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
   // Shared data from localStorage
-  const [titleText, setTitleText] = useState("Celebrate your birthday with ABSA");
+  const [titleText, setTitleText] = useState("Celebrate your birthday with ABSA!");
   const [headerText, setHeaderText] = useState("Happy Birthday");
   const [headerColor, setHeaderColor] = useState("#c30010");
   const [bottomColor, setBottomColor] = useState("#000000");
