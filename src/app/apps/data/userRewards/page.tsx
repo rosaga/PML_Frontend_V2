@@ -7,7 +7,7 @@ import Confetti from "react-confetti";
 import { useSearchParams } from "next/navigation";
 
 const UserRewards = () => {
-    const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
@@ -16,14 +16,21 @@ const UserRewards = () => {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
   // Shared data from localStorage
-  const [titleText, setTitleText] = useState("Welcome to the Rewards Program");
+  const [titleText, setTitleText] = useState("Celebrate your birthday with ABSA");
   const [headerText, setHeaderText] = useState("Happy Birthday");
   const [headerColor, setHeaderColor] = useState("#c30010");
   const [bottomColor, setBottomColor] = useState("#000000");
   const [logoImage, setLogoImage] = useState<string | null>(null);
 
-  // Load shared data on mount
+  // Default org_id
+  const defaultOrgId = "734f4299-106c-4ced-92b8-ac0bbb501a32";
+  const [orgId, setOrgId] = useState(defaultOrgId);
+
+  // Load org_id and shared data on mount
   useEffect(() => {
+    const savedOrgId = localStorage.getItem("selectedAccountId");
+    setOrgId(savedOrgId || defaultOrgId);
+
     const savedTitleText = localStorage.getItem("titleText");
     const savedHeaderText = localStorage.getItem("headerText");
     const savedHeaderColor = localStorage.getItem("headerColor");
@@ -84,7 +91,7 @@ const UserRewards = () => {
 
     try {
       const response = await sendReward({
-        org_id: "USER_REWARD_ACCOUNT_ID",
+        org_id: orgId, // Use orgId (from localStorage or default)
         newReward: rewardPayload,
       });
 
@@ -127,8 +134,13 @@ const UserRewards = () => {
         <CardContent className="p-0">
           <div className="relative">
             <div className="rounded-t-3xl overflow-hidden">
-              <div className="flex flex-col items-center pt-8 pb-4" style={{ backgroundColor: headerColor }}>
-                <h1 className="text-white text-2xl font-semibold">{headerText}</h1>
+              <div
+                className="flex flex-col items-center pt-8 pb-4"
+                style={{ backgroundColor: headerColor }}
+              >
+                <h1 className="text-white text-2xl font-semibold">
+                  {headerText}
+                </h1>
                 <div className="relative w-24 h-24 rounded-full bg-[#1a365d] border-4 border-white shadow-lg flex items-center justify-center mt-4">
                   {logoImage ? (
                     <img
@@ -141,20 +153,23 @@ const UserRewards = () => {
                   )}
                 </div>
               </div>
-              <div className="text-center px-6 py-8 rounded-b-3xl" style={{ backgroundColor: bottomColor }}>
+              <div
+                className="text-center px-6 py-8 rounded-b-3xl"
+                style={{ backgroundColor: bottomColor }}
+              >
                 {!success ? (
                   <>
                     <h2 className="text-white text-lg mb-4">
                       Claim your Special 1GB Free Data Gift
                     </h2>
                     {!showForm ? (
-                     <button
-                     onClick={handleRedeemClick}
-                     style={{ backgroundColor: headerColor }} // Use headerColor
-                     className="text-white py-3 px-6 rounded-xl text-lg font-semibold hover:opacity-90 transition-colors"
-                   >
-                     Redeem Data
-                   </button>
+                      <button
+                        onClick={handleRedeemClick}
+                        style={{ backgroundColor: headerColor }} // Use headerColor
+                        className="text-white py-3 px-6 rounded-xl text-lg font-semibold hover:opacity-90 transition-colors"
+                      >
+                        Redeem Data
+                      </button>
                     ) : (
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <input
@@ -171,12 +186,12 @@ const UserRewards = () => {
                           onChange={(e) => setNumber(e.target.value)}
                           className="w-full text-black placeholder-black/90 py-3 px-6 rounded-xl text-lg"
                         />
-                       <button
-                        type="submit"
-                        style={{ backgroundColor: headerColor }} // Use headerColor
-                        className="w-full text-white py-3 px-6 rounded-xl text-lg font-semibold hover:opacity-90 transition-colors"
+                        <button
+                          type="submit"
+                          style={{ backgroundColor: headerColor }} // Use headerColor
+                          className="w-full text-white py-3 px-6 rounded-xl text-lg font-semibold hover:opacity-90 transition-colors"
                         >
-                        Submit
+                          Submit
                         </button>
                       </form>
                     )}
@@ -185,7 +200,8 @@ const UserRewards = () => {
                   <div>
                     <h2 className="text-white text-lg mb-4">Congratulations!</h2>
                     <p className="text-white mb-8">
-                      Thank you for being our loyal customer. Enjoy your free 1GB data reward!
+                      Thank you for being our loyal customer. Enjoy your free 1GB
+                      data reward!
                     </p>
                   </div>
                 )}
