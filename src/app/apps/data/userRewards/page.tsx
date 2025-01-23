@@ -16,10 +16,10 @@ const UserRewards = () => {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
   // Shared data from localStorage
-  const [titleText, setTitleText] = useState("Celebrate your birthday with ABSA!");
-  const [headerText, setHeaderText] = useState("Happy Birthday");
-  const [headerColor, setHeaderColor] = useState("#c30010");
-  const [bottomColor, setBottomColor] = useState("#000000");
+  const [titleText, setTitleText] = useState("Celebrate valentines day with BuuPass!");
+  const [headerText, setHeaderText] = useState("Happy Valentines");
+  const [headerColor, setHeaderColor] = useState("#eb344f");
+  const [bottomColor, setBottomColor] = useState("#eb8934");
   const [logoImage, setLogoImage] = useState<string | null>(null);
 
   // Default org_id
