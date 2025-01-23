@@ -235,7 +235,7 @@ const Rewards = () => {
                 {!success ? (
                   <>
                     <h2 className="text-white text-lg mb-4">
-                      Claim your Special 1GB Free Data Gift
+                      Claim your Special 1GB Free Data
                     </h2>
                     {!showForm ? (
                       <button
