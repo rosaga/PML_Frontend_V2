@@ -137,7 +137,7 @@ const UserRewards = () => {
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    <div className="text-white text-xl font-bold">KCB</div>
+                    <div className="text-white text-xl font-bold">ABSA</div>
                   )}
                 </div>
               </div>
