@@ -50,7 +50,7 @@ const CampaignDetails = (campaignId,closeDetails) => {
     { field: "phone_number", headerName: "Phone Number", flex: 1, minWidth: 150 },
     {
       field: "status",
-      headerName: "Status ID",
+      headerName: "Status ID", 
       flex: 1,
       minWidth: 150,
       renderCell: (params) => {
