@@ -86,7 +86,7 @@ const SidebarData = () => {
     { href: "/apps/data/users", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
     { href: "/apps/data/account", src: "/images/Account.svg", alt: "Account", label: "Account", className: "account" },
     { href: "/apps/data/flowbuilder", src: "/images/flowbuillder.svg", alt: "Flow Builder", label: "Flow Builder", className: "Flow Builder" },
-    { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
+    // { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
     {
       href: "/apps/data/settings",
       src: "/images/Settings.svg",
@@ -102,7 +102,7 @@ const SidebarData = () => {
     },
   ];
 
-   hasRole(token,'SuperAdmin') && links[7].subLinks.push({ href: "/apps/data/manageSenderId",  label: "Manage Sender Ids", className: "notification-threshold" });
+   hasRole(token,'SuperAdmin') && links[6].subLinks.push({ href: "/apps/data/manageSenderId",  label: "Manage Sender Ids", className: "notification-threshold" });
 
   const tourSteps = [
     {
@@ -125,10 +125,10 @@ const SidebarData = () => {
       target: ".account",
       content: "This is the account section. Click to view and manage account details",
     },
-    {
-      target: ".reports",
-      content: "This is the reports section. Click to view and manage reports",
-    },
+    // {
+    //   target: ".reports",
+    //   content: "This is the reports section. Click to view and manage reports",
+    // },
     {
       target: ".settings",
       content: "Send Customizable Rewards Messages by adding your Sender ID. Also set your Notification Threshold",
