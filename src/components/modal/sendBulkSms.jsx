@@ -121,7 +121,7 @@ const SendBulkModal = ({ closeModal }) => {
           console.log("AN ERROR HAS OCCURED");
         } else {
           setAppservices(res.data);
-          setSelectedSenderId(res.data[0]?.id || "");
+          // setSelectedSenderId(res.data[0]?.id || "");
         }
       })
       .catch((err) => {
@@ -284,8 +284,8 @@ const SendBulkModal = ({ closeModal }) => {
                     <option value="">Select sender id</option>
                     {appservices.map((appservice) => (
                       <option
-                        key={appservice.service_id}
-                        value={appservice.service_id}
+                        key={appservice.id}
+                        value={appservice.id}
                       >
                         {appservice.sendername}
                       </option>
