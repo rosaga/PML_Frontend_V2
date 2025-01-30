@@ -47,10 +47,8 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
 
 // Get authentication token
 async function getAuthToken() {
-  const username = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
-  const password = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-
-  console.log("Sending Auth Request with Payload:", { Username: username, Password: password });
+  const username = "edwinaringo32@gmail.com";
+  const password = "Ferrari812Superfast";
 
   try {
     const response = await axios.post(
