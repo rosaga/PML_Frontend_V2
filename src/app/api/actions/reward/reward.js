@@ -42,31 +42,45 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       };
     }
   }
-
-  const ADMIN_USERNAME = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
-  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
   
 
 
 // Get authentication token
 async function getAuthToken() {
+  const username = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
+  const password = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+  console.log("Sending Auth Request with Payload:", { Username: username, Password: password });
+
   try {
-    const response = await axios.post(`${apiUrl.SIGN_IN}`, {
-      Username: ADMIN_USERNAME,
-      Password: ADMIN_PASSWORD,
-    });
+    const response = await axios.post(
+      `${apiUrl.SIGN_IN}`,
+      new URLSearchParams({ Username: username, Password: password }).toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    console.log("Auth Response Data:", response.data);
 
     if (response.status === 200 && response.data.access_token) {
-      localStorage.setItem("access_token", response.data.access_token); // Save token
+      localStorage.setItem("access_token", response.data.access_token);
       return response.data.access_token;
     } else {
       throw new Error("Authentication failed: No token received");
     }
   } catch (error) {
-    console.error("Error fetching auth token:", error);
+    if (error.response) {
+      console.error("Error Response:", error.response.data);
+    } else {
+      console.error("Error Fetching Token:", error.message);
+    }
     throw new Error("Failed to authenticate admin");
   }
 }
+
 
 export async function sendReward(formValues) {
   let accessToken = localStorage.getItem("access_token");
