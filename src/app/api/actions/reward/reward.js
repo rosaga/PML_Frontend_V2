@@ -43,13 +43,16 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
     }
   }
 
+  const ADMIN_USERNAME = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+  
 
 // Get authentication token
 async function getAuthToken() {
   try {
     const response = await axios.post(`${apiUrl.SIGN_IN}`, {
-      username: process.env.ADMIN_USERNAME,
-      password: process.env.ADMIN_PASSWORD,
+      username: ADMIN_USERNAME,
+      password: ADMIN_PASSWORD,
     });
 
     if (response.status === 200 && response.data.access_token) {
