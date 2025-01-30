@@ -47,12 +47,13 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
   const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
   
 
+
 // Get authentication token
 async function getAuthToken() {
   try {
     const response = await axios.post(`${apiUrl.SIGN_IN}`, {
-      username: ADMIN_USERNAME,
-      password: ADMIN_PASSWORD,
+      Username: ADMIN_USERNAME,
+      Password: ADMIN_PASSWORD,
     });
 
     if (response.status === 200 && response.data.access_token) {
@@ -88,6 +89,8 @@ export async function sendReward(formValues) {
       .then((res) => {
         if (res.data && res.status === 200) {
           console.log("THE RESPONSE IS !!!!!!", res);
+          console.log("Admin Username:", process.env.NEXT_PUBLIC_ADMIN_USERNAME);
+          console.log("Admin Password:", process.env.NEXT_PUBLIC_ADMIN_PASSWORD);
         }
         return res;
       });
