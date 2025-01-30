@@ -15,9 +15,9 @@ const UserRewards = () => {
   const [showConfetti, setShowConfetti] = useState(true);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
-  // Shared data from localStorage
-  const [titleText, setTitleText] = useState("Celebrate valentines day with BuuPass!");
-  const [headerText, setHeaderText] = useState("Happy Valentines");
+  // Default/initial states
+  const [titleText, setTitleText] = useState("Celebrate with BuuPass!");
+  const [headerText, setHeaderText] = useState("Happy Event");
   const [headerColor, setHeaderColor] = useState("#eb344f");
   const [bottomColor, setBottomColor] = useState("#eb8934");
   const [logoImage, setLogoImage] = useState<string | null>(null);
@@ -26,41 +26,39 @@ const UserRewards = () => {
   const defaultOrgId = "734f4299-106c-4ced-92b8-ac0bbb501a32";
   const [orgId, setOrgId] = useState(defaultOrgId);
 
-  // Load org_id and shared data on mount
+  // 1. Parse query params on mount
   useEffect(() => {
-    const savedOrgId = localStorage.getItem("selectedAccountId");
-    setOrgId(savedOrgId || defaultOrgId);
+    // If the URL has ?titleText=..., override local state
+    const qOrgId = searchParams.get("orgId");
+    const qTitleText = searchParams.get("titleText");
+    const qHeaderText = searchParams.get("headerText");
+    const qHeaderColor = searchParams.get("headerColor");
+    const qBottomColor = searchParams.get("bottomColor");
+    const qLogoImage = searchParams.get("logoImage");
 
-    const savedTitleText = localStorage.getItem("titleText");
-    const savedHeaderText = localStorage.getItem("headerText");
-    const savedHeaderColor = localStorage.getItem("headerColor");
-    const savedBottomColor = localStorage.getItem("bottomColor");
-    const savedLogoImage = localStorage.getItem("logoImage");
+    if (qOrgId) setOrgId(qOrgId);
+    if (qTitleText) setTitleText(qTitleText);
+    if (qHeaderText) setHeaderText(qHeaderText);
+    if (qHeaderColor) setHeaderColor(qHeaderColor);
+    if (qBottomColor) setBottomColor(qBottomColor);
+    if (qLogoImage) setLogoImage(qLogoImage);
+  }, [searchParams]);
 
-    if (savedTitleText) setTitleText(savedTitleText);
-    if (savedHeaderText) setHeaderText(savedHeaderText);
-    if (savedHeaderColor) setHeaderColor(savedHeaderColor);
-    if (savedBottomColor) setBottomColor(savedBottomColor);
-    if (savedLogoImage) setLogoImage(savedLogoImage);
-  }, []);
-
-  // Track window size for Confetti
+  // 2. Track window size for Confetti
   useEffect(() => {
     if (typeof window !== "undefined") {
       const updateSize = () => {
         setWindowSize({ width: window.innerWidth, height: window.innerHeight });
       };
-
       updateSize();
       window.addEventListener("resize", updateSize);
-
       return () => {
         window.removeEventListener("resize", updateSize);
       };
     }
   }, []);
 
-  // Stop confetti after a few seconds
+  // 3. Stop confetti after a few seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowConfetti(false);
@@ -68,13 +66,13 @@ const UserRewards = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // 4. Handlers
   const handleRedeemClick = () => {
     setShowForm(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!number) {
       alert("Please enter a valid mobile number.");
       return;
@@ -91,7 +89,7 @@ const UserRewards = () => {
 
     try {
       const response = await sendReward({
-        org_id: orgId, // Use orgId (from localStorage or default)
+        org_id: orgId, // Use orgId from query
         newReward: rewardPayload,
       });
 
@@ -149,7 +147,7 @@ const UserRewards = () => {
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    <div className="text-white text-xl font-bold">BuuPass</div>
+                    <div className="text-white text-xl font-bold">Fallback</div>
                   )}
                 </div>
               </div>
@@ -165,7 +163,7 @@ const UserRewards = () => {
                     {!showForm ? (
                       <button
                         onClick={handleRedeemClick}
-                        style={{ backgroundColor: headerColor }} // Use headerColor
+                        style={{ backgroundColor: headerColor }}
                         className="text-white py-3 px-6 rounded-xl text-lg font-semibold hover:opacity-90 transition-colors"
                       >
                         Redeem Data
@@ -188,7 +186,7 @@ const UserRewards = () => {
                         />
                         <button
                           type="submit"
-                          style={{ backgroundColor: headerColor }} // Use headerColor
+                          style={{ backgroundColor: headerColor }}
                           className="w-full text-white py-3 px-6 rounded-xl text-lg font-semibold hover:opacity-90 transition-colors"
                         >
                           Submit
@@ -198,7 +196,9 @@ const UserRewards = () => {
                   </>
                 ) : (
                   <div>
-                    <h2 className="text-white text-lg mb-4">Congratulations!</h2>
+                    <h2 className="text-white text-lg mb-4">
+                      Congratulations!
+                    </h2>
                     <p className="text-white mb-8">
                       Thank you for being our loyal customer. Enjoy your free 1GB
                       data reward!

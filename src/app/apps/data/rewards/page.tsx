@@ -10,15 +10,19 @@ const Rewards = () => {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
+
+  // Customizable fields
   const [headerText, setHeaderText] = useState("Happy Birthday");
   const [headerColor, setHeaderColor] = useState("#90c73e");
   const [bottomColor, setBottomColor] = useState("#1a365d");
   const [titleText, setTitleText] = useState("Welcome to the Rewards Program");
+  const [logoImage, setLogoImage] = useState<string | null>(null);
+
   const [success, setSuccess] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
-  const [logoImage, setLogoImage] = useState<string | null>(null); // Logo image
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const { v4: uuidv4 } = require("uuid");
+
 
   // Load persisted values from localStorage on component mount
   useEffect(() => {
@@ -41,10 +45,8 @@ const Rewards = () => {
       const updateSize = () => {
         setWindowSize({ width: window.innerWidth, height: window.innerHeight });
       };
-
       updateSize();
       window.addEventListener("resize", updateSize);
-
       return () => {
         window.removeEventListener("resize", updateSize);
       };
@@ -65,7 +67,6 @@ const Rewards = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!number) {
       alert("Please enter a valid mobile number.");
       return;
@@ -110,27 +111,24 @@ const Rewards = () => {
     }
   };
 
-  // Update title text and save it to localStorage
+  // Editing/saving text & colors to localStorage
   const updateTitleText = () => {
     const newText = prompt("Edit Title Text:", titleText) || titleText;
     setTitleText(newText);
     localStorage.setItem("titleText", newText);
   };
 
-  // Update header text and save it to localStorage
   const updateHeaderText = () => {
     const newText = prompt("Edit Header Text:", headerText) || headerText;
     setHeaderText(newText);
     localStorage.setItem("headerText", newText);
   };
 
-  // Update header color and save it to localStorage
   const updateHeaderColor = (newColor: string) => {
     setHeaderColor(newColor);
     localStorage.setItem("headerColor", newColor);
   };
 
-  // Update bottom color and save it to localStorage
   const updateBottomColor = (newColor: string) => {
     setBottomColor(newColor);
     localStorage.setItem("bottomColor", newColor);
@@ -148,6 +146,38 @@ const Rewards = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // ---- NEW: Build the shareable link with query parameters
+  const buildShareLink = () => {
+    const baseUrl = `${window.location.origin}/apps/data/userRewards`;
+    const orgId = localStorage.getItem("selectedAccountId") || "";
+
+    // Build query params from current state
+    const params = new URLSearchParams({
+      orgId,
+      titleText,
+      headerText,
+      headerColor,
+      bottomColor,
+      // Omit the logo from the URL so we don't explode the length
+    });
+
+    return `${baseUrl}?${params.toString()}`;
+  };
+
+
+  // ---- NEW: Copy link to clipboard
+  const handleCopyLink = () => {
+    const shareLink = buildShareLink();
+    navigator.clipboard.writeText(shareLink).then(
+      () => {
+        alert("Link copied to clipboard!");
+      },
+      (err) => {
+        console.error("Failed to copy link:", err);
+      }
+    );
   };
 
   return (
@@ -273,6 +303,16 @@ const Rewards = () => {
                     <div className="mt-6 text-gray-300 text-sm">
                       <span className="mr-4">Terms & Conditions</span>
                       <span>How to Use</span>
+                    </div>
+
+                    {/* NEW: Copy Link Button */}
+                    <div className="mt-4">
+                      <button
+                        onClick={handleCopyLink}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md"
+                      >
+                        Copy Customization Link
+                      </button>
                     </div>
                   </>
                 ) : (

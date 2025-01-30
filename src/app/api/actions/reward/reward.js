@@ -43,39 +43,82 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
     }
   }
 
-  export async function sendReward(formValues) {
-    
-    const sendRewardUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/reward`;
 
-    try {
-    const config = await authHeaders();
-  
+// Get authentication token
+async function getAuthToken() {
+  try {
+    const response = await axios.post(`${apiUrl.SIGN_IN}`, {
+      username: process.env.ADMIN_USERNAME,
+      password: process.env.ADMIN_PASSWORD,
+    });
+
+    if (response.status === 200 && response.data.access_token) {
+      localStorage.setItem("access_token", response.data.access_token); // Save token
+      return response.data.access_token;
+    } else {
+      throw new Error("Authentication failed: No token received");
+    }
+  } catch (error) {
+    console.error("Error fetching auth token:", error);
+    throw new Error("Failed to authenticate admin");
+  }
+}
+
+export async function sendReward(formValues) {
+  let accessToken = localStorage.getItem("access_token");
+
+  // If token doesn't exist, fetch a new one
+  if (!accessToken) {
+    accessToken = await getAuthToken();
+  }
+
+  const sendRewardUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/reward`;
+
+  try {
     return axios
-      .post(sendRewardUrl, formValues.newReward, config)
+      .post(sendRewardUrl, formValues.newReward, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
       .then((res) => {
-      
         if (res.data && res.status === 200) {
-
-            console.log("THE RESPONSE IS !!!!!!!",res)
-          
+          console.log("THE RESPONSE IS !!!!!!", res);
         }
         return res;
-      })
-    } catch (error) {
-      if (error.response) {
-        return {
-          errors: {
-            _error: 'The contacts could not be returned.',
-          },
-        };
-      }
+      });
+  } catch (error) {
+    // Handle token expiration
+    if (error.response && error.response.status === 401) {
+      console.log("Token expired, refreshing...");
+
+      accessToken = await getAuthToken();
+      localStorage.setItem("access_token", accessToken);
+
+      // Retry request with new token
+      return axios.post(sendRewardUrl, formValues.newReward, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    }
+
+    if (error.response) {
       return {
         errors: {
-          _error: 'Network error. Please try again.',
+          _error: "The contacts could not be returned.",
         },
       };
     }
+    return {
+      errors: {
+        _error: "Network error. Please try again.",
+      },
+    };
   }
+}
 
   export async function requestUnits(formValues) {
     
