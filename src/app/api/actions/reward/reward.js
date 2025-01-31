@@ -51,15 +51,15 @@ async function getAuthToken() {
   const password = "Ferrari812Superfast";
 
   try {
-    const formData = new URLSearchParams();
-    formData.append("Username", username); // Ensure capital "U"
-    formData.append("Password", password); // Ensure capital "P"
-
-    const response = await axios.post(`${apiUrl.SIGN_IN}`, formData, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
+    const response = await axios.post(
+      `${apiUrl.SIGN_IN}`,
+      new URLSearchParams({ Username: username, Password: password }).toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
 
     console.log("Auth Response Data:", response.data);
 
