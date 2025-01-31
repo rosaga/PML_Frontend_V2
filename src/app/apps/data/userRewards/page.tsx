@@ -90,7 +90,7 @@ const UserRewards = () => {
     try {
       const response = await sendReward({
         org_id: orgId, // Use orgId from query
-        newReward: rewardPayload,
+        newBrandReward: rewardPayload,
       });
 
       if (response && (response as AxiosResponse).status === 200) {
@@ -175,14 +175,14 @@ const UserRewards = () => {
                           placeholder="Enter Name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="w-full text-black placeholder-black/90 py-3 px-6 rounded-xl text-lg"
+                          className="w-full text-black placeholder-grey/90 py-3 px-6 rounded-xl text-lg"
                         />
                         <input
                           type="tel"
                           placeholder="Enter Mobile Number"
                           value={number}
                           onChange={(e) => setNumber(e.target.value)}
-                          className="w-full text-black placeholder-black/90 py-3 px-6 rounded-xl text-lg"
+                          className="w-full text-black placeholder-grey/90 py-3 px-6 rounded-xl text-lg"
                         />
                         <button
                           type="submit"

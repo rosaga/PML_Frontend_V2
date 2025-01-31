@@ -51,15 +51,15 @@ async function getAuthToken() {
   const password = "Ferrari812Superfast";
 
   try {
-    const response = await axios.post(
-      `${apiUrl.SIGN_IN}`,
-      new URLSearchParams({ Username: username, Password: password }).toString(),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
+    const formData = new URLSearchParams();
+    formData.append("Username", username); // Ensure capital "U"
+    formData.append("Password", password); // Ensure capital "P"
+
+    const response = await axios.post(`${apiUrl.SIGN_IN}`, formData, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
 
     console.log("Auth Response Data:", response.data);
 
@@ -79,7 +79,6 @@ async function getAuthToken() {
   }
 }
 
-
 export async function sendReward(formValues) {
   let accessToken = localStorage.getItem("access_token");
 
@@ -91,21 +90,17 @@ export async function sendReward(formValues) {
   const sendRewardUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/reward`;
 
   try {
-    return axios
-      .post(sendRewardUrl, formValues.newReward, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-      .then((res) => {
-        if (res.data && res.status === 200) {
-          console.log("THE RESPONSE IS !!!!!!", res);
-          console.log("Admin Username:", process.env.NEXT_PUBLIC_ADMIN_USERNAME);
-          console.log("Admin Password:", process.env.NEXT_PUBLIC_ADMIN_PASSWORD);
-        }
-        return res;
-      });
+    const response = await axios.post(sendRewardUrl, formValues.newReward, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (response.status === 200) {
+      console.log("THE RESPONSE IS !!!!!!", response);
+    }
+    return response;
   } catch (error) {
     // Handle token expiration
     if (error.response && error.response.status === 401) {
@@ -137,6 +132,9 @@ export async function sendReward(formValues) {
     };
   }
 }
+
+
+
 
   export async function requestUnits(formValues) {
     
