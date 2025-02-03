@@ -14,6 +14,8 @@ const UserRewards = () => {
   const [success, setSuccess] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const { v4: uuidv4 } = require('uuid');
+
 
   // Default/initial states
   const [titleText, setTitleText] = useState("Celebrate with BuuPass!");
@@ -23,12 +25,11 @@ const UserRewards = () => {
   const [logoImage, setLogoImage] = useState<string | null>(null);
 
   // Default org_id
-  const defaultOrgId = "734f4299-106c-4ced-92b8-ac0bbb501a32";
+  const defaultOrgId = "39d5582f-cc7b-45f0-8f4c-5cec79e5f3cd";
   const [orgId, setOrgId] = useState(defaultOrgId);
 
-  // 1. Parse query params on mount
+  // Parse query params on mount
   useEffect(() => {
-    // If the URL has ?titleText=..., override local state
     const qOrgId = searchParams.get("orgId");
     const qTitleText = searchParams.get("titleText");
     const qHeaderText = searchParams.get("headerText");
@@ -44,7 +45,7 @@ const UserRewards = () => {
     if (qLogoImage) setLogoImage(qLogoImage);
   }, [searchParams]);
 
-  // 2. Track window size for Confetti
+  // Track window size for Confetti
   useEffect(() => {
     if (typeof window !== "undefined") {
       const updateSize = () => {
@@ -58,7 +59,7 @@ const UserRewards = () => {
     }
   }, []);
 
-  // 3. Stop confetti after a few seconds
+  // Stop confetti after a few seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowConfetti(false);
@@ -66,7 +67,7 @@ const UserRewards = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // 4. Handlers
+  // Handler for Redeem Data click
   const handleRedeemClick = () => {
     setShowForm(true);
   };
@@ -79,7 +80,7 @@ const UserRewards = () => {
     }
 
     const rewardPayload = {
-      request_id: "user-request-" + Date.now(),
+      request_id: uuidv4(),
       bundle_amount: "20",
       msisdn: number,
       sender_id: 1,
@@ -89,8 +90,8 @@ const UserRewards = () => {
 
     try {
       const response = await sendReward({
-        org_id: orgId, // Use orgId from query
-        newBrandReward: rewardPayload,
+        org_id: orgId,
+        newReward: rewardPayload,
       });
 
       if (response && (response as AxiosResponse).status === 200) {
