@@ -11,11 +11,11 @@ const Rewards = () => {
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
 
-  // Customizable fields
-  const [headerText, setHeaderText] = useState("Happy Birthday");
-  const [headerColor, setHeaderColor] = useState("#90c73e");
-  const [bottomColor, setBottomColor] = useState("#1a365d");
-  const [titleText, setTitleText] = useState("Welcome to the Rewards Program");
+  // Customizable fields #001f3c #e97d34
+  const [headerText, setHeaderText] = useState("Input Header Text Here");
+  const [headerColor, setHeaderColor] = useState("#f58426");
+  const [bottomColor, setBottomColor] = useState("#001f3c");
+  const [titleText, setTitleText] = useState("Input main title here");
   const [logoImage, setLogoImage] = useState<string | null>(null);
 
   const [success, setSuccess] = useState(false);
@@ -231,7 +231,7 @@ const Rewards = () => {
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    <div className="text-white text-xl font-bold">KCB</div>
+                    <div className="text-white text-xl font-bold">Logo</div>
                   )}
                   {/* Logo Upload */}
                   <label className="absolute bottom-2 right-2 cursor-pointer">
@@ -300,10 +300,10 @@ const Rewards = () => {
                         </button>
                       </form>
                     )}
-                    <div className="mt-6 text-gray-300 text-sm">
+                    {/* <div className="mt-6 text-gray-300 text-sm">
                       <span className="mr-4">Terms & Conditions</span>
                       <span>How to Use</span>
-                    </div>
+                    </div> */}
 
                     {/* NEW: Copy Link Button */}
                     <div className="mt-4">
@@ -311,7 +311,7 @@ const Rewards = () => {
                         onClick={handleCopyLink}
                         className="bg-blue-600 text-white py-2 px-4 rounded-md"
                       >
-                        Copy Customization Link
+                        Copy Link
                       </button>
                     </div>
                   </>
