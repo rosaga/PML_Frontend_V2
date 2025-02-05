@@ -14,6 +14,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format,parseISO } from "date-fns";
 import { getToken } from "../../utils/auth";
 import { GetRewards } from "../../app/api/actions/reward/reward"
+import DownloadAllButton from "../button/DownloadAllButton";
 
 const RewardsTable = () => {
 
@@ -134,6 +135,25 @@ const RewardsTable = () => {
     }
   };
 
+  const fetchAllRewards = async () => {
+    try {
+      const res = await GetRewards(org_id, 1, total, searchParams);
+      if (!res.errors) {
+        return res.data.data.map((item) => ({
+          "Request ID": item.id,
+          "Date Created": item.created_at,
+          "Bundle Amount": item.bundle_amount,
+          "Phone Number": item.contact?.mobile_no || "",
+          Status: item.status,
+          "Status Description": item.status_desc,
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  };
+
   useEffect(() => {
       getRewards();
   }, [isModalOpen,isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, searchParams]);
@@ -186,7 +206,14 @@ const RewardsTable = () => {
                 border: "none",
               },
             }}
-            slots={{ toolbar: GridToolbar }}
+            slots={{
+              toolbar: () => (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px" }}>
+                  <GridToolbar />
+                  <DownloadAllButton fetchAllData={fetchAllRewards} filename="rewards_data.csv" />
+                </div>
+              ),
+            }}
           />
         </div>
       </div>
