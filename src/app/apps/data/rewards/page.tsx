@@ -244,7 +244,7 @@ const Rewards = () => {
       console.log("Response data:", response)
 
       // Construct the short URL using the backend route
-      const shortUrl = `${process.env.NEXT_PUBLIC_NEW_BASE}/api/v2/r/${slug}`;
+      const shortUrl = `https://rewards.peakmobile.co.ke/api/v2/r/${slug}`;
 
       console.log("Generated Short URL:", shortUrl);
       return shortUrl;
