@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@mui/material";
-import { sendReward } from "@/app/api/actions/reward/reward";
+import { sendBrandReward } from "@/app/api/actions/reward/reward";
 import axios, { AxiosResponse } from "axios";
 import Confetti from "react-confetti";
 import { useSearchParams } from "next/navigation";
@@ -16,15 +16,13 @@ const UserRewards = () => {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const { v4: uuidv4 } = require('uuid');
 
-
   // Default/initial states
-  const [titleText, setTitleText] = useState("Celebrate with BuuPass!");
-  const [headerText, setHeaderText] = useState("Happy Event");
-  const [headerColor, setHeaderColor] = useState("#eb344f");
-  const [bottomColor, setBottomColor] = useState("#eb8934");
+  const [titleText, setTitleText] = useState("Title Text!");
+  const [headerText, setHeaderText] = useState("Header Text");
+  const [headerColor, setHeaderColor] = useState("#f58426");
+  const [bottomColor, setBottomColor] = useState("#001f3c");
   const [logoImage, setLogoImage] = useState<string | null>(null);
-
-  // Default org_id
+  
   const defaultOrgId = "39d5582f-cc7b-45f0-8f4c-5cec79e5f3cd";
   const [orgId, setOrgId] = useState(defaultOrgId);
 
@@ -59,7 +57,6 @@ const UserRewards = () => {
     }
   }, []);
 
-  // Stop confetti after a few seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowConfetti(false);
@@ -67,7 +64,6 @@ const UserRewards = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handler for Redeem Data click
   const handleRedeemClick = () => {
     setShowForm(true);
   };
@@ -89,7 +85,7 @@ const UserRewards = () => {
     };
 
     try {
-      const response = await sendReward({
+      const response = await sendBrandReward({
         org_id: orgId,
         newReward: rewardPayload,
       });
@@ -119,20 +115,29 @@ const UserRewards = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
+    <div
+      className="relative flex flex-col items-center justify-center min-h-screen p-4"
+      style={{
+        backgroundImage: "url('/images/rewards-bg.png')", 
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Overlay to improve readability */}
+
       {showConfetti && (
         <Confetti width={windowSize.width} height={windowSize.height} />
       )}
 
-      {/* Page Title */}
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-800">{titleText}</h1>
-      </div>
+      {/* Main Content */}
+      <div className="relative z-10 text-center">
+        <h1 className="text-4xl font-bold mb-6">{titleText}</h1>
 
-      <Card className="w-full max-w-md overflow-hidden rounded-3xl">
-        <CardContent className="p-0">
-          <div className="relative">
-            <div className="rounded-t-3xl overflow-hidden">
+        <Card className="w-full max-w-md overflow-hidden rounded-3xl shadow-xl bg-white">
+          <CardContent className="p-0">
+            <div className="relative">
+              {/* Header Section */}
               <div
                 className="flex flex-col items-center pt-8 pb-4"
                 style={{ backgroundColor: headerColor }}
@@ -148,10 +153,12 @@ const UserRewards = () => {
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    <div className="text-white text-xl font-bold">Fallback</div>
+                    <div className="text-white text-xl font-bold">Logo</div>
                   )}
                 </div>
               </div>
+
+              {/* Content Section */}
               <div
                 className="text-center px-6 py-8 rounded-b-3xl"
                 style={{ backgroundColor: bottomColor }}
@@ -176,14 +183,14 @@ const UserRewards = () => {
                           placeholder="Enter Name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="w-full text-black placeholder-grey/90 py-3 px-6 rounded-xl text-lg"
+                          className="w-full text-black placeholder-gray-500 py-3 px-6 rounded-xl text-lg"
                         />
                         <input
                           type="tel"
                           placeholder="Enter Mobile Number"
                           value={number}
                           onChange={(e) => setNumber(e.target.value)}
-                          className="w-full text-black placeholder-grey/90 py-3 px-6 rounded-xl text-lg"
+                          className="w-full text-black placeholder-gray-500 py-3 px-6 rounded-xl text-lg"
                         />
                         <button
                           type="submit"
@@ -208,9 +215,9 @@ const UserRewards = () => {
                 )}
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

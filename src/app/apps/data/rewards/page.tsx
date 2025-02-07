@@ -1,28 +1,29 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@mui/material";
-import { sendReward } from "@/app/api/actions/reward/reward";
-import axios, { AxiosResponse } from "axios";
+import { sendBrandReward } from "@/app/api/actions/reward/reward";
 import Confetti from "react-confetti";
 import { Edit2 } from "lucide-react";
+import { getToken } from "@/utils/auth";
+import axios from "axios";
 
 const Rewards = () => {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
 
-  // Customizable fields #001f3c #e97d34
+  // Customizable fields
   const [headerText, setHeaderText] = useState("Input Header Text Here");
   const [headerColor, setHeaderColor] = useState("#f58426");
   const [bottomColor, setBottomColor] = useState("#001f3c");
   const [titleText, setTitleText] = useState("Input main title here");
   const [logoImage, setLogoImage] = useState<string | null>(null);
+  const { v4: uuidv4 } = require('uuid');
+
 
   const [success, setSuccess] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  const { v4: uuidv4 } = require("uuid");
-
 
   // Load persisted values from localStorage on component mount
   useEffect(() => {
@@ -82,12 +83,12 @@ const Rewards = () => {
     };
 
     try {
-      const response = await sendReward({
+      const response = await sendBrandReward({
         org_id: localStorage.getItem("selectedAccountId"),
         newReward: rewardPayload,
       });
 
-      if (response && (response as AxiosResponse).status === 200) {
+      if (response && (response as any).status === 200) {
         setSuccess(true);
         setName("");
         setNumber("");
@@ -100,7 +101,9 @@ const Rewards = () => {
           alert("Insufficient units. Please top up to proceed.");
         } else {
           alert(
-            `Failed to send reward: ${error.response?.data?.message || error.message}`
+            `Failed to send reward: ${
+              error.response?.data?.message || error.message
+            }`
           );
         }
       } else if (error instanceof Error) {
@@ -148,37 +151,141 @@ const Rewards = () => {
     }
   };
 
-  // ---- NEW: Build the shareable link with query parameters
-  const buildShareLink = () => {
-    const baseUrl = `${window.location.origin}/apps/data/userRewards`;
-    const orgId = localStorage.getItem("selectedAccountId") || "";
+  // const buildShareLink = () => {
+  //   const baseUrl = `${window.location.origin}/apps/data/userRewards`;
+  //   const orgId = localStorage.getItem("selectedAccountId") || "";
+  //   // Ensure token is a string (default to an empty string if null)
+  //   const authToken = getToken() ?? "";
 
-    // Build query params from current state
-    const params = new URLSearchParams({
+  //   console.log("Auth Token:", authToken); 
+  
+  //   // Build query params from current state, including the auth token.
+  //   const params = new URLSearchParams({
+  //     orgId,
+  //     titleText,
+  //     headerText,
+  //     headerColor,
+  //     bottomColor,
+  //     token: authToken, 
+  //   });
+  
+  //   return `${baseUrl}?${params.toString()}`;
+  // };
+
+  // const buildShareLink = async () => {
+  //   const orgId = localStorage.getItem("selectedAccountId") || "";
+  //   const authToken = getToken() ?? ""; // Ensure token is retrieved
+
+  //   console.log("Org ID:", orgId)
+  //   console.log("Auth Token:", authToken); // Debugging  
+
+  //   const shareData = {
+  //     orgId,
+  //     titleText,
+  //     headerText,
+  //     headerColor,
+  //     bottomColor,
+  //     token: authToken,
+  //   };
+  
+  //   try {
+  //     const response = await axios.post(
+  //       `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization/${orgId}/sharelink`,
+  //       shareData,
+  //       { 
+  //         headers: { 
+  //           "Content-Type": "application/json",
+  //           "Authorization": `Bearer ${authToken}`, 
+  //         },
+  //       }
+  //     );
+  
+  //     const { slug } = response.data; // Extract slug
+  
+  //     // Construct the short URL
+  //     return `${window.location.origin}/r/${slug}`;
+  //   } catch (error) {
+  //     console.error("Error generating share link:", error);
+  //     alert("Error generating share link.");
+  //     return "";
+  //   }
+  // };
+
+  const buildShareLink = async () => {
+    const orgId = localStorage.getItem("selectedAccountId") || "";
+    const authToken = getToken() ?? ""; // Ensure token is retrieved
+
+    console.log("Org ID:", orgId);
+    console.log("Auth Token:", authToken); // Debugging  
+
+    const shareData = {
       orgId,
       titleText,
       headerText,
       headerColor,
       bottomColor,
-      // Omit the logo from the URL so we don't explode the length
-    });
+      token: authToken,
+    };
+  
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization/${orgId}/sharelink`,
+        shareData,
+        { 
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`, 
+          },
+        }
+      );
+  
+      const { slug } = response.data; // Extract slug
 
-    return `${baseUrl}?${params.toString()}`;
+      console.log("Response data:", response)
+
+      // Construct the short URL using the backend route
+      const shortUrl = `${process.env.NEXT_PUBLIC_NEW_BASE}/api/v2/r/${slug}`;
+
+      console.log("Generated Short URL:", shortUrl);
+      return shortUrl;
+    } catch (error) {
+      console.error("Error generating share link:", error);
+      alert("Error generating share link.");
+      return "";
+    }
+};
+
+  
+  
+
+  // Copy link to clipboard
+  // const handleCopyLink = () => {
+  //   const shareLink = buildShareLink();
+  //   navigator.clipboard.writeText(shareLink).then(
+  //     () => {
+  //       alert("Link copied to clipboard!");
+  //     },
+  //     (err) => {
+  //       console.error("Failed to copy link:", err);
+  //     }
+  //   );
+  // };
+
+  const handleCopyLink = async () => {
+    const shareLink = await buildShareLink(); // Generate the short URL
+  
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink).then(
+        () => {
+          alert("Short link copied to clipboard!");
+        },
+        (err) => {
+          console.error("Failed to copy link:", err);
+        }
+      );
+    }
   };
-
-
-  // ---- NEW: Copy link to clipboard
-  const handleCopyLink = () => {
-    const shareLink = buildShareLink();
-    navigator.clipboard.writeText(shareLink).then(
-      () => {
-        alert("Link copied to clipboard!");
-      },
-      (err) => {
-        console.error("Failed to copy link:", err);
-      }
-    );
-  };
+  
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
@@ -300,12 +407,7 @@ const Rewards = () => {
                         </button>
                       </form>
                     )}
-                    {/* <div className="mt-6 text-gray-300 text-sm">
-                      <span className="mr-4">Terms & Conditions</span>
-                      <span>How to Use</span>
-                    </div> */}
-
-                    {/* NEW: Copy Link Button */}
+                    {/* Copy Share Link Button */}
                     <div className="mt-4">
                       <button
                         onClick={handleCopyLink}

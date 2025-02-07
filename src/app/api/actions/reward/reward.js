@@ -79,12 +79,24 @@ async function getAuthToken() {
   }
 }
 
-export async function sendReward(formValues) {
-  let accessToken = localStorage.getItem("access_token");
+export async function sendBrandReward(formValues) {
+  let accessToken;
 
-  // If token doesn't exist, fetch a new one
+  // Attempt to retrieve the token from the URL query parameters
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+    accessToken = params.get("token");
+  }
+
+  // Fallback to using the token from localStorage via getToken()
   if (!accessToken) {
-    accessToken = await getAuthToken();
+    accessToken = getToken();
+  }
+
+  // If there's still no token, alert the user and exit
+  if (!accessToken) {
+    alert("No valid token found. Please log in.");
+    return;
   }
 
   const sendRewardUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/reward`;
@@ -102,22 +114,15 @@ export async function sendReward(formValues) {
     }
     return response;
   } catch (error) {
-    // Handle token expiration
+    // Handle token expiration (HTTP 401)
     if (error.response && error.response.status === 401) {
-      console.log("Token expired, refreshing...");
-
-      accessToken = await getAuthToken();
-      localStorage.setItem("access_token", accessToken);
-
-      // Retry request with new token
-      return axios.post(sendRewardUrl, formValues.newReward, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      console.log("Token expired. Please log in again.");
+      alert("Token expired. Please log in again.");
+      // Optionally, you might redirect the user to a sign-in page here.
+      return;
     }
 
+    // Handle other errors
     if (error.response) {
       return {
         errors: {
@@ -128,6 +133,40 @@ export async function sendReward(formValues) {
     return {
       errors: {
         _error: "Network error. Please try again.",
+      },
+    };
+  }
+}
+
+export async function sendReward(formValues) {
+    
+  const sendRewardUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/reward`;
+
+  try {
+  const config = await authHeaders();
+
+  return axios
+    .post(sendRewardUrl, formValues.newReward, config)
+    .then((res) => {
+    
+      if (res.data && res.status === 200) {
+
+          console.log("THE RESPONSE IS !!!!!!!",res)
+        
+      }
+      return res;
+    })
+  } catch (error) {
+    if (error.response) {
+      return {
+        errors: {
+          _error: 'The contacts could not be returned.',
+        },
+      };
+    }
+    return {
+      errors: {
+        _error: 'Network error. Please try again.',
       },
     };
   }
