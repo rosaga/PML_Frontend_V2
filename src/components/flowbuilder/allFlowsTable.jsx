@@ -8,12 +8,23 @@ import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import CodeIcon from "@mui/icons-material/Code";
 import DialpadIcon from "@mui/icons-material/Dialpad";
+import CreateNewFlowModal from "../modal/createNewFlowModal";
+
 
 const AllFlows = () => {
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
     page: 0,
   });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+ 
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
 
   const rows = [
     { id: 1, flow: "Kuza Talanta", status: "Active", lastEdited: "14/08/24", icon: <WhatsAppIcon style={{ color: "#25D366" }} /> },
@@ -76,6 +87,8 @@ const AllFlows = () => {
 
   return (
     <>
+  {isModalOpen && <CreateNewFlowModal closeModal={closeModal} />}
+
       <div className="flex flex-col md:flex-row items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Chatbots</p>
         <div className="md:ml-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
@@ -89,7 +102,7 @@ const AllFlows = () => {
             buttonText="Create New Flow"
             icon={AddIcon}
             className="bg-[#E88A17] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-            onClick={() => console.log("New Chatbot Modal Opened")}
+            onClick={() => openModal()} 
           />
         </div>
       </div>

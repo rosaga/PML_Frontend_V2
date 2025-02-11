@@ -13,7 +13,7 @@ import { getToken } from "@/utils/auth";
 import { set } from "date-fns";
 
 
-const SidebarData = () => {
+const SidebarFlowBot = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -80,29 +80,30 @@ const SidebarData = () => {
   };
 
   const links = [
-    { href: "/apps/data/dashboard", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard", className: "dashboard" },
-    { href: "/apps/data/data-rewards", src: "/images/vector.svg", alt: "Data Rewards", label: "Data Rewards", className: "data-rewards" },
-    { href: "/apps/data/data-units", src: "/images/dataunits.svg", alt: "Data Units", label: "Data Units", className: "data-units" },
-    { href: "/apps/data/users", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
-    { href: "/apps/data/account", src: "/images/Account.svg", alt: "Account", label: "Account", className: "account" },
-    // { href: "/apps/data/flowbuilder", src: "/images/flowbuillder.svg", alt: "Flow Builder", label: "Flow Builder", className: "Flow Builder" },
-    { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
-    {
-      href: "/apps/data/settings",
-      src: "/images/Settings.svg",
-      alt: "Settings",
-      label: "Settings",
-      className: "settings",
-      subLinks: [
-        { href: "/apps/data/senderId", label: "Sender ID", className: "sender-id" },
-        { href: "/apps/data/threshold", label: "Notification Threshold", className: "notification-threshold" },
+    { href: "#", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard", className: "dashboard" },
+    { href: "#", src: "/images/vector.svg", alt: "Data Rewards & Campaigns", label: "Data Rewards", className: "data-rewards" },
+    { href: "#", src: "/images/dataunits.svg", alt: "Data Units", label: "Data Units", className: "data-units" },
+    { href: "#", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
+    { href: "#", src: "/images/Account.svg", alt: "Account", label: "Account", className: "account" },
+    { href: "#", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
+    { href: "/apps/flowbot/flowbuilder", src: "/images/flowbuillder.svg", alt: "Flow Builder", label: "Flow Builder", className: "Flow Builder" },
+    
+    // {
+    //   href: "#",
+    //   src: "/images/Settings.svg",
+    //   alt: "Settings",
+    //   label: "Settings",
+    //   className: "settings",
+    //   subLinks: [
+    //     { href: "#", label: "Sender ID", className: "sender-id" },
+    //     { href: "#", label: "Notification Threshold", className: "notification-threshold" },
 
-        //{ href: "/apps/data/manageSenderId", label: "Manage Sender Ids", className: "notification-threshold" },
-      ]
-    },
+    //     //{ href: "/apps/data/manageSenderId", label: "Manage Sender Ids", className: "notification-threshold" },
+    //   ]
+    // },
   ];
 
-   hasRole(token,'SuperAdmin') && links[6].subLinks.push({ href: "/apps/data/manageSenderId",  label: "Manage Sender Ids", className: "notification-threshold" });
+  //  hasRole(token,'SuperAdmin') && links[7].subLinks.push({ href: "/apps/data/manageSenderId",  label: "Manage Sender Ids", className: "notification-threshold" });
 
   const tourSteps = [
     {
@@ -307,4 +308,4 @@ const SidebarData = () => {
   );
 };
 
-export default SidebarData;
+export default SidebarFlowBot;

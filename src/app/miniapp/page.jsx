@@ -36,6 +36,8 @@ const MiniApp = () => {
       router.push('/apps/data/dashboard');
     } else if (option === 'sms') {
       router.push('/apps/sms/dashboard');
+    }else if (option === 'flowbot') {
+      router.push('/apps/flowbot/dashboard');
     }
   };
 
@@ -113,6 +115,7 @@ const MiniApp = () => {
 
                 {/* WhatsApp Flowbot Card */}
                 <Card
+                  onClick={() => handleOptionSelect('flowbot')}
                   className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
                   sx={{
                     borderRadius: 4,
