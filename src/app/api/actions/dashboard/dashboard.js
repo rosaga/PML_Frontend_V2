@@ -1,40 +1,39 @@
-import axios from 'axios';
+import axios from "axios";
 import apiUrl from "../../utils/apiUtils/apiUrl";
-import { authHeaders } from '../../../api/utils/headers/headers';
+import { authHeaders } from "../../../api/utils/headers/headers";
 
+export async function GetDashboardSummary(org_id, dateQuery = "") {
+  const recipientsReachedUrl = `${apiUrl.GET_CONTACTS}/${org_id}/receipientsreached?eq__rewards.status=SUCCESS${dateQuery}`;
+  const consumedDataUrl = `${apiUrl.GET_CONTACTS}/${org_id}/consumedata?eq__rewards.status=SUCCESS${dateQuery}`;
+  const activeCampaignsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?eq__groups.status=ACTIVE${dateQuery}`;
 
-export async function GetDashboardSummary(org_id) {
-  let recipientsReachedUrl = `${apiUrl.GET_CONTACTS}/${org_id}/receipientsreached?eq__rewards.status=SUCCESS`;
-  let consumedDataUrl = `${apiUrl.GET_CONTACTS}/${org_id}/consumedata?eq__rewards.status=SUCCESS`;
-  let activeCampaignsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?eq__groups.status=ACTIVE`;
+  const config = await authHeaders();
+  let recipientsReached = 0,
+    consumedData = 0,
+    activeCampaigns = 0;
+  try {
+    const recipientsReachedRes = await axios.get(recipientsReachedUrl, config);
+    recipientsReached = recipientsReachedRes.data.customer_reach || 0;
+  } catch (error) {
+    console.error("Failed to fetch recipients reached:", error.message);
+  }
 
-    const config = await authHeaders();
-    let recipientsReached = 0, consumedData = 0, activeCampaigns = 0;
-    try {
-      const recipientsReachedRes = await axios.get(recipientsReachedUrl, config);
-      recipientsReached = recipientsReachedRes.data.customer_reach || 0;
-    } catch (error) {
-      console.error('Failed to fetch recipients reached:', error.message);
-    }
-    
-    try {
-      const consumedDataRes = await axios.get(consumedDataUrl, config);
-      consumedData = consumedDataRes.data.total_bundle || 0;
-    } catch (error) {
-      console.error('Failed to fetch consumed data:', error.message);
-    }
-    
-    try {
-      const activeCampaignsRes = await axios.get(activeCampaignsUrl, config);
-      activeCampaigns = activeCampaignsRes.data.data[0]?.count || 0;
-    } catch (error) {
-      console.error('Failed to fetch active campaigns:', error.message);
-    }
-    
-    return { recipientsReached, consumedData, activeCampaigns };
+  try {
+    const consumedDataRes = await axios.get(consumedDataUrl, config);
+    consumedData = consumedDataRes.data.total_bundle || 0;
+  } catch (error) {
+    console.error("Failed to fetch consumed data:", error.message);
+  }
 
+  try {
+    const activeCampaignsRes = await axios.get(activeCampaignsUrl, config);
+    activeCampaigns = activeCampaignsRes.data.data[0]?.count || 0;
+  } catch (error) {
+    console.error("Failed to fetch active campaigns:", error.message);
+  }
+
+  return { recipientsReached, consumedData, activeCampaigns };
 }
-
 
 export async function GetDataBalance(org_id) {
   let unitsBoughtUrl = `${apiUrl.GET_CONTACTS}/${org_id}/rechargegroup?eq__status=APPROVED`;
@@ -59,7 +58,6 @@ export async function GetDataBalance(org_id) {
       const bundleModule =  unitBalanceItem.module;
       const id = unitBalanceItem.id;
 
-      // Filter the corresponding items in unitsBought array
       const unitsBoughtItem = unitsBoughtData.find(unitsBoughtItem => unitsBoughtItem.package === bundleModule);
 
       const unitsBought = unitsBoughtItem ? parseInt(unitsBoughtItem.total) : 0;
@@ -90,5 +88,3 @@ export async function GetDataBalance(org_id) {
     };
   }
 }
-
- 
