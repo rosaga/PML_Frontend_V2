@@ -144,12 +144,10 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       };
     }
   }
-
   export async function batchReward(formValues) {
     const sendRewardUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/batchreward`;
     try {
       const selectedFile = formValues.newReward.contacts;
-  
       const authHeaderObject = await authHeaders();
       const headers = authHeaderObject.headers;
   
@@ -158,8 +156,7 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       formData.append("message", formValues.newReward.message);
       formData.append("bundle", formValues.newReward.bundle);
       formData.append("slogan", formValues.newReward.slogan);
-      formData.append("postpay", formValues.newReward.postpay);
-
+      formData.append("sender_id", formValues.newReward.sender_id.toString());
   
       return axios.post(sendRewardUrl, formData, {
         headers: {
@@ -186,7 +183,7 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       };
     }
   }
-
+  
 
 
   export async function GetBalance(org_id) {
