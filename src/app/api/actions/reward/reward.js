@@ -159,7 +159,7 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       formData.append("bundle", formValues.newReward.bundle);
       formData.append("slogan", formValues.newReward.slogan);
       formData.append("postpay", formValues.newReward.postpay);
-
+      formData.append("sender_id", formValues.newReward.sender_id.toString());
   
       return axios.post(sendRewardUrl, formData, {
         headers: {
