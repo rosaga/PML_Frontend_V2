@@ -12,7 +12,7 @@ export default {
     resetPassword: `${process.env.NEXT_PUBLIC_BASE_URL}/public/passwordreset`,
     confirmPasswordReset: `${process.env.NEXT_PUBLIC_BASE_URL}/public/reset/otp`,
     getNotifiations: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
-    SMS_URL: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v2`,
+    SMS_URL: `${process.env.NEXT_PUBLIC_ZOHARI_URL}api/v2`,
     peakSMSAPP: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1/application`,
     peakSMS: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1`,
 
