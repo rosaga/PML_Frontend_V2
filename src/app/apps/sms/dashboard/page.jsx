@@ -6,7 +6,7 @@ import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
 import RecentCampaigns from "@/components/rewards-tables/recentCampaigns";
 import { getToken } from "@/utils/auth";
 import GroupDashboard from "@/components/rewards-tables/groupDashboard";
-import { messagesAction, messageCountsAction } from "../../../api/actions/messages/messagesAction";
+import { messagesAction, messageCountsAction, messageBalanceAction } from "../../../api/actions/messages/messagesAction";
 import { set } from "date-fns";
 import { useRouter } from "next/navigation";
 import { format,parseISO } from "date-fns";
@@ -24,7 +24,7 @@ const Dashboard = () => {
   const [totalMessages, setTotalMessages] = useState('');
   const [totalSuccess, setTotalSuccess] = useState('');
   const [totalPending, setTotalPending] = useState('');
-  const [totalFailed, setTotalFailed] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
 
   const page = 1;
   const limit = 5;
@@ -86,6 +86,29 @@ const Dashboard = () => {
     router.push("/apps/data/notification");
   };
 
+  
+
+  const getSmsBalance = () => {
+    if (org_id) {
+      messageBalanceAction({ org_id })
+        .then((res) => {
+          if (res.errors) {
+            console.log("AN ERROR HAS OCCURED");
+          } else {
+            console.log("Balance is", res)
+            setTotalBalance(res.data.balance);
+            
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      console.log("org_id is null or undefined. Skipping API call.");
+    }
+  };
+
   const getMessageCounts = () => {
     if (org_id) {
       messageCountsAction({ org_id })
@@ -145,6 +168,7 @@ const Dashboard = () => {
   useEffect(() => {
     getMessages();
     getMessageCounts();
+    getSmsBalance();
   }, []);
 
 
@@ -227,7 +251,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Total Failed</div>
+                    <div className="text-gray-500">SMS Balance</div>
                     <div>
                       <span>
                         <Image
@@ -244,7 +268,7 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">0</div>
+                  <div className="text-2xl font-bold">{totalBalance ? totalBalance : 0}</div>
                 </div>
               </div>
             </div>

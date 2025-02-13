@@ -113,6 +113,7 @@ const MiniApp = () => {
 
                 {/* WhatsApp Flowbot Card */}
                 <Card
+                onClick={() =>'#'}
                   className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
                   sx={{
                     borderRadius: 4,

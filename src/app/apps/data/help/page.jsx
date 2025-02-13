@@ -38,6 +38,26 @@ const Help = () => {
                     <FaHeadphones className="mr-2 text-black h-5 w-5" />
                     <p className="text-black"> +254 759 422 480</p>
                   </Button>
+                  <br></br>
+
+                  <p className="text-lg text-black-400 mt-2 mb-2">
+                      Download our {" "}
+                      <a
+                        href="../../pdf/bulk-data-manual.pdf"
+                        target="_blank"
+                        className="text-[#E88A17] underline"
+                      >
+                        Bulk data User Manual
+                      </a>
+                      {" "}and our{" "}
+                      <a
+                        href="../../pdf/bulk-sms-manual.pdf"
+                        target="_blank"
+                        className="text-[#E88A17] underline"
+                      >
+                        Bulk SMS User Manual
+                      </a>
+                  </p>
                 </div>
               </div>
               <div className="flex-1 mr-8 mt-4">
