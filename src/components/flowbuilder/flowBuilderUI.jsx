@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useCallback } from "react";
 import ReactFlow, {
   MiniMap,
@@ -6,6 +7,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   addEdge,
+  Handle
 } from "reactflow";
 import Flag from '@mui/icons-material/Flag';
 import TextField from '@mui/material/TextField';
@@ -14,7 +16,12 @@ import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
-import AddIcon from '@mui/icons-material/Add'; // Import AddIcon
+import AddIcon from '@mui/icons-material/Add';
+import { Menu, ChevronLeft, Play } from 'lucide-react';
+import VariablesPanel from './variablePanel';
+import ButtonNode from './ButtonNode';
+import NumberNode from './NumberNode';
+import TextNode from './TextNode';
 
 import "reactflow/dist/style.css";
 
@@ -27,6 +34,12 @@ const initialNodes = [
     style: { width: 150, height: 50, background: "#f0f0f0", padding: "10px", borderRadius: "8px", fontWeight: "bold", textAlign: "center" }
   }
 ];
+
+const nodeTypes = {
+  buttonNode: ButtonNode,
+  numberNode: NumberNode,
+  textNode: TextNode,
+};
 
 const initialEdges = [];
 
@@ -48,20 +61,34 @@ export default function FlowBuilderUI() {
   const [tempTextInputConfig, setTempTextInputConfig] = useState({});
   const [textConfigPanelVisibleNodeId, setTextConfigPanelVisibleNodeId] = useState(null);
   const [tempButtonConfig, setTempButtonConfig] = useState({ buttons: [{ label: 'Button 1' }, { label: 'Button 2' }] });
+  
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
 
   const addNode = () => {
+    const newNodeId = `node-${nodeIdCounter}`;
     const newNode = {
-      id: `node-${nodeIdCounter}`,
+      id: newNodeId,
       type: "default",
-      data: { title: "Click to edit title", prompt: "Click to edit question", inputType: null, numberInputOptions: {}, textInputOptions: {}, buttonOptions: [{ label: 'Button 1' }, { label: 'Button 2' }] },
+      data: { 
+        id: newNodeId, 
+        title: "Click to edit title", 
+        prompt: "Click to edit question/prompt", 
+        inputType: null, 
+        numberInputOptions: {}, 
+        textInputOptions: {}, 
+        buttonOptions: [{ label: 'Button 1' }, { label: 'Button 2' }] 
+      },
       position: { x: 200 + nodeIdCounter * 100, y: 100 + nodeIdCounter * 100 },
       style: { width: 250, minHeight: 100, background: "#ffffff", padding: "10px", borderRadius: "8px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", fontSize: "14px", fontWeight: "500" }
     };
-
+  
     setNodes((nds) => [...nds, newNode]);
     setNodeIdCounter((prev) => prev + 1);
+  };
+  const handleVariableAdd = (newVariable) => {
+    // Handle the new variable in your main component if needed
+    console.log('New variable added:', newVariable);
   };
 
   const updateNodeData = (id, key, value) => {
@@ -74,27 +101,72 @@ export default function FlowBuilderUI() {
 
   const addUserInputToNode = (inputType) => {
     if (!selectedNode || selectedNode === "start") return;
-
+  
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === selectedNode) {
           let updatedData = { ...node.data, inputType };
+          let updatedNode = { ...node };
+  
           if (inputType === "Buttons") {
-            updatedData.buttonOptions = [{ label: 'Button 1' }, { label: 'Button 2' }];
+            updatedNode.type = "buttonNode";
+            updatedData = {
+              ...updatedData,
+              buttonOptions: [{ label: 'Button 1' }, { label: 'Button 2' }],
+              handleButtonConfigChange,
+              addButtonItem,
+              saveButtonConfig,
+              updateNodeData,
+              id: node.id
+            };
             setTempButtonConfig({ buttons: [{ label: 'Button 1' }, { label: 'Button 2' }] });
-          } else {
-            updatedData.buttonOptions = [];
-            setTempButtonConfig({ buttons: [] });
+          } else if (inputType === "Number Input") {
+            const nodeId = node.id;
+            updatedNode.type = "numberNode";
+            updatedData = {
+              ...updatedData,
+              handleNumberConfigChange,
+              saveNumberConfig,
+              cancelNumberConfig,
+              openNumberConfigPanel,
+              updateNodeData,
+              tempNumberConfig,
+              configPanelVisibleNodeId,
+              selectedNode,  
+              variableOptions,
+              id: nodeId,
+              numberInputOptions: updatedData.numberInputOptions || {}
+            };
+          }else if (inputType === "Text Input") {
+            const nodeId = node.id;
+            updatedNode.type = "textNode";
+            updatedData = {
+              ...updatedData,
+              handleTextConfigChange,
+              saveTextConfig,
+              cancelTextConfig,
+              openTextConfigPanel,
+              updateNodeData,
+              tempTextInputConfig,
+              textConfigPanelVisibleNodeId,
+              variableOptions,
+              id: nodeId,
+              textInputOptions: updatedData.textInputOptions || {}
+            };
           }
-          if (inputType !== "Number Input") {
-            updatedData.numberInputOptions = {};
-            setConfigPanelVisibleNodeId(null);
+          else {
+            updatedNode.type = "default";
+            if (inputType !== "Number Input") {
+              updatedData.numberInputOptions = {};
+              setConfigPanelVisibleNodeId(null);
+            }
+            if (inputType !== "Text Input") {
+              updatedData.textInputOptions = {};
+              setTextConfigPanelVisibleNodeId(null);
+            }
           }
-          if (inputType !== "Text Input") {
-            updatedData.textInputOptions = {};
-            setTextConfigPanelVisibleNodeId(null);
-          }
-          return { ...node, data: updatedData };
+  
+          return { ...updatedNode, data: updatedData };
         }
         return node;
       })
@@ -128,12 +200,16 @@ export default function FlowBuilderUI() {
   };
 
   const openNumberConfigPanel = (nodeId) => {
-    setConfigPanelVisibleNodeId(nodeId);
-    setTempNumberConfig(nodes.find(node => node.id === nodeId)?.data.numberInputOptions || {});
+    const currentNode = nodes.find(node => node.id === nodeId);
+    if (currentNode) {
+      setSelectedNode(nodeId);
+      setConfigPanelVisibleNodeId(nodeId);
+      setTempNumberConfig(currentNode.data.numberInputOptions || {});
+    }
   };
 
 
-  // Text Input Config Panel Handlers
+
   const handleTextConfigChange = (key, value) => {
     setTempTextInputConfig(prevConfig => ({
       ...prevConfig,
@@ -319,27 +395,70 @@ export default function FlowBuilderUI() {
 
   // Button Input Config Panel Handlers
   const handleButtonConfigChange = (index, key, value) => {
+    // Update temp state
     setTempButtonConfig(prevConfig => {
       const updatedButtons = [...prevConfig.buttons];
       updatedButtons[index][key] = value;
       return { buttons: updatedButtons };
     });
+  
+    // Immediately update node data
+    setNodes(nds =>
+      nds.map(node => {
+        if (node.id === selectedNode) {
+          const updatedButtonOptions = [...node.data.buttonOptions];
+          updatedButtonOptions[index][key] = value;
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              buttonOptions: updatedButtonOptions
+            }
+          };
+        }
+        return node;
+      })
+    );
   };
 
   const addButtonItem = () => {
+    const newButton = { label: `Button ${tempButtonConfig.buttons.length + 1}` };
+    
+    // Update temp state
     setTempButtonConfig(prevConfig => ({
-      buttons: [...prevConfig.buttons, { label: `Button ${prevConfig.buttons.length + 1}` }]
+      buttons: [...prevConfig.buttons, newButton]
     }));
+  
+    // Update node data
+    setNodes(nds =>
+      nds.map(node => {
+        if (node.id === selectedNode) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              buttonOptions: [...node.data.buttonOptions, newButton]
+            }
+          };
+        }
+        return node;
+      })
+    );
   };
 
   const saveButtonConfig = () => {
     if (selectedNode) {
       setNodes(nds =>
         nds.map(node =>
-          node.id === selectedNode ? { ...node, data: { ...node.data, buttonOptions: tempButtonConfig.buttons } } : node
+          node.id === selectedNode ? {
+            ...node,
+            data: {
+              ...node.data,
+              buttonOptions: tempButtonConfig.buttons
+            }
+          } : node
         )
       );
-      // No need to close config panel for Buttons as it's inline
     }
   };
 
@@ -351,33 +470,92 @@ export default function FlowBuilderUI() {
 
 
   return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
-      <div className="flex flex-col md:flex-row items-center justify-between p-4 bg-[#090A29] text-white">
-        <p className="font-medium text-lg">Flow Builder</p>
+    <div className="h-screen flex flex-col">
+    {/* Top Navigation Bar */}
+    <div className="h-16 border-b flex items-center justify-between px-4 bg-white">
+      {/* <div className="flex items-center space-x-4">
+        <Menu className="h-6 w-6 text-gray-600 cursor-pointer" /> */}
+        <h1 className="text-xl font-semibold">Kaza Dada</h1>
+      {/* </div> */}
+      <div className="flex items-center space-x-4">
+        <button className="px-4 py-2 bg-orange-400 text-white rounded-lg flex items-center space-x-2">
+          <Play className="h-4 w-4" />
+          <span>Test</span>
+        </button>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+          Publish
+        </button>
+        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">
+          Save as Draft
+        </button>
+      </div>
+    </div>
+
+    <div className="flex flex-1 overflow-hidden">
+      {/* Left Sidebar */}
+      <div className="w-64 border-r bg-white">
+        <div className="p-4">
+          <div className="space-y-4">
+            <h2 className="font-medium text-gray-900">Prompt</h2>
+            <button 
+              onClick={addNode}
+              className="w-full p-3 text-left bg-[#090A29] text-white rounded-lg flex items-center"
+            >
+              <Flag className="mr-2" /> Text
+            </button>
+            
+            <h2 className="font-medium text-gray-900 pt-4">Input</h2>
+            <div className="space-y-2">
+              <button 
+                onClick={() => addUserInputToNode("Text Input")}
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+              >
+                <span>T</span>
+                <span>Text</span>
+              </button>
+              <button 
+                onClick={() => addUserInputToNode("Buttons")}
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+              >
+                <span>···</span>
+                <span>Buttons</span>
+              </button>
+              <button 
+                onClick={() => addUserInputToNode("Number Input")}
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+              >
+                <span>#</span>
+                <span>Number</span>
+              </button>
+              <button 
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+              >
+                <span>@</span>
+                <span>Email</span>
+              </button>
+            </div>
+
+            <h2 className="font-medium text-gray-900 pt-4">Logic</h2>
+            <div className="space-y-2">
+              <button className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
+                Template
+              </button>
+              <button className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
+                Redirect
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div style={{ display: "flex", flex: 1 }}>
-        <aside style={{ width: "250px", padding: "16px", background: "#f9f9f9", borderRight: "1px solid #ddd" }}>
-          <h3 className=" flex items-center justify-center" style={{ fontWeight: "bold" }}>Prompt</h3>
-          <button onClick={addNode} className="w-full bg-[#090A29] text-white p-2 rounded-md mb-2 flex items-center justify-center" ><Flag size={16} className="mr-2" /> Text</button>
-
-          <h4 className=" flex items-center justify-center" style={{ fontWeight: "bold", marginTop: "16px", align: "center" }}>Users Input</h4>
-          <button onClick={() => addUserInputToNode("Text Input")} className="w-full border border-orange-500 text-orange-500 p-2 rounded-md mb-2 flex items-center justify-center" style={{ borderColor: "#F58426", color: "#F58426" }}> <span className="mr-2" >✏️</span> Text</button>
-          <button onClick={() => addUserInputToNode("Buttons")} className="w-full border border-orange-500 text-orange-500 p-2 rounded-md mb-2 flex items-center justify-center" style={{ borderColor: "#F58426", color: "#F58426" }}> <span className="mr-2">🔘</span> Buttons</button>
-          <button onClick={() => addUserInputToNode("Number Input")} className="w-full border border-orange-500 text-orange-500 p-2 rounded-md mb-2 flex items-center justify-center" style={{ borderColor: "#F58426", color: "#F58426" }}> <span className="mr-2" >#️⃣</span> Number</button>
-          <button className="w-full border border-orange-500 text-orange-500 p-2 rounded-md mb-2 flex items-center justify-center" style={{ borderColor: "#F58426", color: "#F58426" }}> <span className="mr-2">✉️</span> Email</button>
-
-          <h4 className=" flex items-center justify-center" style={{ fontWeight: "bold", marginTop: "16px" }}>Logic</h4>
-          <button className="w-full bg-orange-500 text-white p-2 rounded-md mb-2 flex items-center justify-center" style={{ backgroundColor: "#F58426" }}> <span className="mr-2">🔄</span> Template</button>
-          <button className="w-full bg-orange-500 text-white p-2 rounded-md mb-2 flex items-center justify-center" style={{ backgroundColor: "#F58426" }}> <span className="mr-2">🔀</span> Redirect</button>
-        </aside>
-
-        <div style={{ flex: 1, height: "100vh", padding: "16px" }}>
+      <div className="flex-1 h-full">
           <ReactFlow
             nodes={nodes.map((node) => {
-              if (node.id === "start") {
-                return node;
-              }
+              if (node.id === "start") return node;
+              if (node.type === "buttonNode") return node;
+              if (node.type === "numberNode") return node;
+              if (node.type === "textNode") return node;
+              
               return {
                 ...node,
                 data: {
@@ -395,135 +573,7 @@ export default function FlowBuilderUI() {
                         defaultValue={node.data.prompt}
                         onBlur={(e) => updateNodeData(node.id, "prompt", e.target.value)}
                         style={{ border: "none", outline: "none", fontSize: "14px", background: "transparent" }}
-                      />
-
-                      {/* Corrected Conditional Rendering Block */}
-                      {node.data.inputType === "Number Input" ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                          <div
-                            onClick={() => openNumberConfigPanel(node.id)}
-                            style={{
-                              background: '#f0f0f0',
-                              padding: '8px',
-                              borderRadius: '4px',
-                              textAlign: 'center',
-                              fontSize: '14px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Enter Number
-                          </div>
-                          {configPanelVisibleNodeId === node.id && (
-                            <div style={{ marginTop: '10px', borderTop: '1px solid #ddd', paddingTop: '10px' }}>
-                              {/* Number Input Config Panel */}
-                              <FormControl fullWidth margin="dense" size="small">
-                                <TextField
-                                  label="Minimum"
-                                  type="number"
-                                  value={tempNumberConfig.minimum !== undefined ? tempNumberConfig.minimum : ''}
-                                  onChange={(e) => handleNumberConfigChange('minimum', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
-                                />
-                              </FormControl>
-                              <FormControl fullWidth margin="dense" size="small">
-                                <TextField
-                                  label="Maximum"
-                                  type="number"
-                                  value={tempNumberConfig.maximum !== undefined ? tempNumberConfig.maximum : ''}
-                                  onChange={(e) => handleNumberConfigChange('maximum', e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
-                                />
-                              </FormControl>
-                              <FormControl fullWidth margin="dense" size="small">
-                                <InputLabel id="variable-label">Save to Variable</InputLabel>
-                                <Select
-                                  labelId="variable-label"
-                                  value={tempNumberConfig.variableName || ''}
-                                  label="Save to Variable"
-                                  onChange={(e) => handleNumberConfigChange('variableName', e.target.value)}
-                                >
-                                  <MenuItem value=""><em>None</em></MenuItem>
-                                  {variableOptions.map((option) => (
-                                    <MenuItem key={option} value={option}>{option}</MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                                <Button onClick={cancelNumberConfig} size="small" style={{ marginRight: '10px' }}>Cancel</Button>
-                                <Button variant="contained" color="primary" onClick={saveNumberConfig} size="small">Save</Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : node.data.inputType === "Text Input" ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                          <div
-                            onClick={() => openTextConfigPanel(node.id)}
-                            style={{
-                              background: '#f0f0f0',
-                              padding: '8px',
-                              borderRadius: '4px',
-                              textAlign: 'center',
-                              fontSize: '14px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {tempTextInputConfig.placeholder || "Enter text"}
-                          </div>
-                          {textConfigPanelVisibleNodeId === node.id && (
-                            <div style={{ marginTop: '10px', borderTop: '1px solid #ddd', paddingTop: '10px' }}>
-                              {/* Text Input Config Panel */}
-                              <FormControl fullWidth margin="dense" size="small">
-                                <TextField
-                                  label="Placeholder"
-                                  value={tempTextInputConfig.placeholder || ''}
-                                  onChange={(e) => handleTextConfigChange('placeholder', e.target.value)}
-                                  onBlur={() => saveTextConfig()}
-                                />
-                              </FormControl>
-                              <FormControl fullWidth margin="dense" size="small">
-                                <InputLabel id="variable-label-text">Save to Variable</InputLabel>
-                                <Select
-                                  labelId="variable-label-text"
-                                  value={tempTextInputConfig.variableName || ''}
-                                  label="Save to Variable"
-                                  onChange={(e) => handleTextConfigChange('variableName', e.target.value)}
-                                >
-                                  <MenuItem value=""><em>None</em></MenuItem>
-                                  {variableOptions.map((option) => (
-                                    <MenuItem key={option} value={option}>{option}</MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                                <Button onClick={cancelTextConfig} size="small" style={{ marginRight: '10px' }}>Cancel</Button>
-                                <Button variant="contained" color="primary" onClick={saveTextConfig} size="small">Save</Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : node.data.inputType === "Buttons" ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                          {/* Buttons Input Section */}
-                          {tempButtonConfig.buttons.map((button, index) => (
-                            <TextField
-                              key={index}
-                              label={`Button ${index + 1} Text`}
-                              value={button.label}
-                              onChange={(e) => handleButtonConfigChange(index, 'label', e.target.value)}
-                              margin="dense"
-                              size="small"
-                            />
-                          ))}
-                          <Button
-                            startIcon={<AddIcon />}
-                            onClick={addButtonItem}
-                            size="small"
-                          >
-                            Add Button
-                          </Button>
-                          <Button variant="contained" color="primary" onClick={saveButtonConfig} size="small">Save Buttons</Button>
-                        </div>
-                      ) :  null
-                      }
+                      /> 
                     </div>
                   )
                 }
@@ -533,9 +583,10 @@ export default function FlowBuilderUI() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            nodeTypes={nodeTypes}
             onNodeClick={(_, node) => {
               setSelectedNode(node.id);
-              if (node.data.inputType !== "Number Input" && node.data.inputType !== "Text Input" && node.data.inputType !== "Buttons") { // Extend condition to Buttons
+              if (node.type !== "numberNode" && node.type !== "textNode") {
                 setConfigPanelVisibleNodeId(null);
                 setTextConfigPanelVisibleNodeId(null);
               }
@@ -548,6 +599,7 @@ export default function FlowBuilderUI() {
           </ReactFlow>
         </div>
       </div>
+      <VariablesPanel onVariableAdd={handleVariableAdd} />
     </div>
   );
 }
