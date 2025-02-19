@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import AllFlows from "../../../../components/flowbuilder/allFlowsTable";
 import FlowBuilderUI from "../../../../components/flowbuilder/flowBuilderUI";
+import AllResponses from "../../../../components/flowbuilder/allResponses";
+
 
 import ChannelTable from "../../../../components/flowbuilder/channelTable";
 
@@ -16,7 +18,9 @@ const Flowbuilder = () => {
   useEffect(() => {
     if (tab === 'flowbot') {
       setActive('flowbot'); 
-    } 
+    } else if (tab === 'responses') {
+      setActive('responses');
+    }
   }, [tab]);
 
   return (
@@ -84,6 +88,11 @@ const Flowbuilder = () => {
               {active === "flowbot" && (
                 <>
                     {active === "flowbot" && <FlowBuilderUI />}
+                </>
+              )}
+              {active === "responses" && (
+                <>
+                    {active === "responses" && <AllResponses />}
                 </>
               )}
             </div>
