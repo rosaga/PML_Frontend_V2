@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../button/button";
 import PeakSearch from "../search/search";
@@ -9,6 +8,7 @@ import ReceiptIcon from "@mui/icons-material/Receipt";
 import CodeIcon from "@mui/icons-material/Code";
 import DialpadIcon from "@mui/icons-material/Dialpad";
 import CreateNewFlowModal from "../modal/createNewFlowModal";
+import { useRouter } from "next/navigation";
 
 
 const AllFlows = () => {
@@ -20,11 +20,11 @@ const AllFlows = () => {
   const openModal = () => {
     setIsModalOpen(true);
   };
+  const router = useRouter();
  
   const closeModal = () => {
     setIsModalOpen(false);
   };
-
 
   const rows = [
     { id: 1, flow: "Kuza Talanta", status: "Active", lastEdited: "14/08/24", icon: <WhatsAppIcon style={{ color: "#25D366" }} /> },
@@ -34,43 +34,12 @@ const AllFlows = () => {
     { id: 5, flow: "Make Payments Campaign", status: "Active", lastEdited: "14/08/24", icon: <DialpadIcon style={{ color: "#090A29" }} /> },
   ];
 
-  const columns = [
-    {
-      field: "flow",
-      headerName: "Flow",
-      flex: 1,
-      minWidth: 200,
-      renderCell: (params) => (
-        <div style={{ display: "flex", alignItems: "center" }}>
-          {params.row.icon}
-          <span style={{ marginLeft: 8 }}>{params.row.flow}</span>
-        </div>
-      ),
-    },
-    {
-      field: "status",
-      headerName: "Status",
-      flex: 1,
-      minWidth: 100,
-      renderCell: (params) => {
-        const getColor = (status) => {
-          switch (status) {
-            case "Active":
-              return "green";
-            case "Draft":
-              return "gray";
-            default:
-              return "black";
-          }
-        };
+  const handleRowClick = (row) => {
+    
+    router.push("/apps/flowbot/flowbuilder?tab=responses");
 
-        return (
-          <span style={{ color: getColor(params.value) }}>{params.value}</span>
-        );
-      },
-    },
-    { field: "lastEdited", headerName: "Last Edited", flex: 1, minWidth: 150 },
-  ];
+
+  };
 
   const filterOptions = [
     { value: "ilike__flow", label: "Flow" },
@@ -87,7 +56,7 @@ const AllFlows = () => {
 
   return (
     <>
-  {isModalOpen && <CreateNewFlowModal closeModal={closeModal} />}
+      {isModalOpen && <CreateNewFlowModal closeModal={closeModal} />}
 
       <div className="flex flex-col md:flex-row items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Chatbots</p>
@@ -108,23 +77,43 @@ const AllFlows = () => {
       </div>
 
       <div className="mt-4">
-        <div style={{ width: "100%" }}>
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            sx={{
-              "& .MuiDataGrid-columnHeader": {
-                backgroundColor: "#F1F2F3",
-              },
-              "&.MuiDataGrid-root": {
-                border: "none",
-              },
-            }}
-            slots={{ toolbar: GridToolbar }}
-          />
-        </div>
+        <table className="min-w-full bg-white">
+          <thead className="bg-[#F1F2F3]">
+            <tr>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Flow</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Last Edited</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {rows.map((row) => (
+              <tr 
+                key={row.id}
+                onClick={() => handleRowClick(row)}
+                className="hover:bg-gray-50 cursor-pointer"
+              >
+                <td className="px-6 py-4">
+                  <div className="flex items-center">
+                    {row.icon}
+                    <span className="ml-2 text-sm text-gray-700">{row.flow}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span 
+                    className={`text-sm ${
+                      row.status === 'Active' ? 'text-green-600' :
+                      row.status === 'Draft' ? 'text-gray-600' :
+                      'text-black'
+                    }`}
+                  >
+                    {row.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700">{row.lastEdited}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );
