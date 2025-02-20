@@ -86,11 +86,13 @@ export async function sendBrandReward(formValues) {
   if (typeof window !== "undefined") {
     const params = new URLSearchParams(window.location.search);
     accessToken = params.get("token");
+    console.log("Token from URL in sendBrandReward:", accessToken);
   }
 
   // Fallback to using the token from localStorage via getToken()
   if (!accessToken) {
     accessToken = getToken();
+    console.log("Token from localStorage in sendBrandReward:", accessToken);
   }
 
   // If there's still no token, alert the user and exit
@@ -114,21 +116,15 @@ export async function sendBrandReward(formValues) {
     }
     return response;
   } catch (error) {
-    // Handle token expiration (HTTP 401)
-    if (error.response && error.response.status === 401) {
-      console.log("Token expired. Please log in again.");
-      alert("Token expired. Please log in again.");
-      // Optionally, you might redirect the user to a sign-in page here.
-      return;
-    }
-
-    // Handle other errors
-    if (error.response) {
-      return {
-        errors: {
-          _error: "The contacts could not be returned.",
-        },
-      };
+    if (axios.isAxiosError(error)) {
+      if (error.response && error.response.status === 401) {
+        console.log("Token expired. Please log in again.");
+        alert("Token expired. Please log in again.");
+        return;
+      }
+      alert(
+        `Failed to send reward: ${error.response?.data?.message || error.message}`
+      );
     }
     return {
       errors: {
@@ -137,6 +133,7 @@ export async function sendBrandReward(formValues) {
     };
   }
 }
+
 
 export async function sendReward(formValues) {
     
