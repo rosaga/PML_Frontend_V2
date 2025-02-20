@@ -211,49 +211,28 @@ const Rewards = () => {
   //   }
   // };
 
-  const buildShareLink = async () => {
+  const buildShareLink = () => {
     const orgId = localStorage.getItem("selectedAccountId") || "";
     const authToken = getToken() ?? ""; // Ensure token is retrieved
-
-    console.log("Org ID:", orgId);
-    console.log("Auth Token:", authToken); // Debugging  
-
-    const shareData = {
+    // Get the base URL for your front end. For example:
+    const baseFrontendURL = process.env.NEXT_PUBLIC_NEW_BASE; 
+  
+    // Build query parameters from the current state
+    const params = new URLSearchParams({
       orgId,
       titleText,
       headerText,
       headerColor,
       bottomColor,
       token: authToken,
-    };
+    });
   
-    try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization/${orgId}/sharelink`,
-        shareData,
-        { 
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`, 
-          },
-        }
-      );
+    // Construct and return the full URL
+    const fullUrl = `${baseFrontendURL}/apps/data/userRewards?${params.toString()}`;
+    console.log("Generated Full URL:", fullUrl);
+    return fullUrl;
+  };
   
-      const { slug } = response.data; // Extract slug
-
-      console.log("Response data:", response)
-
-      // Construct the short URL using the backend route
-      const shortUrl = `https://rewards.peakmobile.co.ke/api/v2/r/${slug}`;
-
-      console.log("Generated Short URL:", shortUrl);
-      return shortUrl;
-    } catch (error) {
-      console.error("Error generating share link:", error);
-      alert("Error generating share link.");
-      return "";
-    }
-};
 
   
   
@@ -277,7 +256,7 @@ const Rewards = () => {
     if (shareLink) {
       navigator.clipboard.writeText(shareLink).then(
         () => {
-          alert("Short link copied to clipboard!");
+          alert("Link copied to clipboard!");
         },
         (err) => {
           console.error("Failed to copy link:", err);
