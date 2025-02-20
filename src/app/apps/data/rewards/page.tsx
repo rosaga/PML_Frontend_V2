@@ -228,7 +228,7 @@ const Rewards = () => {
     });
   
     // Construct and return the full URL
-    const fullUrl = `${baseFrontendURL}/apps/data/userRewards?${params.toString()}`;
+    const fullUrl = `https://rewards.peakmobile.co.ke/apps/data/userRewards?${params.toString()}`;
     console.log("Generated Full URL:", fullUrl);
     return fullUrl;
   };
