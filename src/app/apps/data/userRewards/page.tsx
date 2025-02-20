@@ -1,10 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@mui/material";
-import { sendBrandReward } from "@/app/api/actions/reward/reward";
+import { sendBrandReward, sendReward } from "@/app/api/actions/reward/reward";
 import axios, { AxiosResponse } from "axios";
 import Confetti from "react-confetti";
 import { useSearchParams } from "next/navigation";
+import { getToken } from "@/utils/auth";
+
 
 const UserRewards = () => {
   const searchParams = useSearchParams();
@@ -17,7 +19,7 @@ const UserRewards = () => {
   const { v4: uuidv4 } = require('uuid');
 
   // Default/initial states
-  const [titleText, setTitleText] = useState("Title Text!");
+  const [titleText, setTitleText] = useState("Title Text");
   const [headerText, setHeaderText] = useState("Header Text");
   const [headerColor, setHeaderColor] = useState("#f58426");
   const [bottomColor, setBottomColor] = useState("#001f3c");
@@ -64,6 +66,24 @@ const UserRewards = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const token = searchParams.get("token"); // Get token from URL
+    console.log("Extracted token from URL:", token);
+    
+    if (token) {
+      // Set the token as the default for all axios requests
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Save the token in localStorage so your getToken() helper can retrieve it
+      localStorage.setItem("authToken", token);
+      console.log("Token stored in localStorage and set in axios defaults.");
+    } else {
+      console.log("No token found in URL. Will try to retrieve from localStorage.");
+    }
+  }, [searchParams]);
+  
+
+  
+
   const handleRedeemClick = () => {
     setShowForm(true);
   };
@@ -80,7 +100,7 @@ const UserRewards = () => {
       bundle_amount: "20",
       msisdn: number,
       sender_id: 1,
-      message: "Enjoy your free 1GB data from PEAKMOBILE!",
+      message: "Enjoy your free 20 MB data from PEAKMOBILE!",
       postpay: true,
     };
 
@@ -116,14 +136,14 @@ const UserRewards = () => {
 
   return (
     <div
-      className="relative flex flex-col items-center justify-center min-h-screen p-4"
-      style={{
-        backgroundImage: "url('/images/rewards-bg.png')", 
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
+        className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4"
+        style={{
+          backgroundImage: "url('/images/rewards-bg.png')", 
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
       {/* Overlay to improve readability */}
 
       {showConfetti && (
@@ -131,8 +151,7 @@ const UserRewards = () => {
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 text-center">
-        <h1 className="text-4xl font-bold mb-6">{titleText}</h1>
+        <h1 className="mb-8 justify-center text-4xl font-bold mb-6">{titleText}</h1>
 
         <Card className="w-full max-w-md overflow-hidden rounded-3xl shadow-xl bg-white">
           <CardContent className="p-0">
@@ -166,7 +185,7 @@ const UserRewards = () => {
                 {!success ? (
                   <>
                     <h2 className="text-white text-lg mb-4">
-                      Claim your Special 1GB Free Data Gift
+                      Claim your Special 20 MB Free Data Gift
                     </h2>
                     {!showForm ? (
                       <button
@@ -208,7 +227,7 @@ const UserRewards = () => {
                       Congratulations!
                     </h2>
                     <p className="text-white mb-8">
-                      Thank you for being our loyal customer. Enjoy your free 1GB
+                      Thank you for being our loyal customer. Enjoy your free 20 MB
                       data reward!
                     </p>
                   </div>
@@ -218,7 +237,6 @@ const UserRewards = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 };
 
