@@ -36,6 +36,8 @@ const MiniApp = () => {
       router.push('/apps/data/dashboard');
     } else if (option === 'sms') {
       router.push('/apps/sms/dashboard');
+    } else if (option === 'airtime') {
+      router.push('/apps/airtime/dashboard');
     }
   };
 
@@ -130,6 +132,28 @@ const MiniApp = () => {
                   <img src="/images/WHATASAPP ICON.png" alt="Flowbot Icon" className="w-15 h-15 mb-2" />
                   <Typography variant="h6" component="p" className="font-bold">
                     WhatsApp Flowbot (Coming Soon)
+                  </Typography>
+                </Card>
+
+                {/* Airtime Rewards Card */}
+                <Card
+                  onClick={() => handleOptionSelect('airtime')}
+                  className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
+                  sx={{
+                    borderRadius: 4,
+                    padding: 1,
+                    boxShadow: 1,
+                    minWidth: 150,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                  }}
+                >
+                  <img src="images/DATA EDITED.png" alt="Data Icon" className="w-40 h-40 mb-2" />
+                  <Typography variant="h6" component="p" className="font-bold">
+                    Airtime Rewards
                   </Typography>
                 </Card>
               </div>
