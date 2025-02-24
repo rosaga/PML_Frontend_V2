@@ -48,7 +48,7 @@ const VariablesPanel = ({ onVariableAdd }) => {
         onClick={() => setShowVariablesPanel(!showVariablesPanel)}
         className="bg-[#F58426] text-white px-4 py-3 rounded-l-lg relative z-10"
       >
-        <span className="whitespace-nowrap text-base font-medium">Variables</span>
+        <span className=" px-8 py-2 whitespace-nowrap text-base font-medium">Variables</span>
       </button>
 
       {/* Variables Panel */}

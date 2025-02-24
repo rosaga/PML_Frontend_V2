@@ -22,6 +22,10 @@ import VariablesPanel from './variablePanel';
 import ButtonNode from './ButtonNode';
 import NumberNode from './NumberNode';
 import TextNode from './TextNode';
+import createTemplateFlow from './templateHandler'
+import DefaultNode from './defaultNode';
+
+
 
 import "reactflow/dist/style.css";
 
@@ -39,6 +43,7 @@ const nodeTypes = {
   buttonNode: ButtonNode,
   numberNode: NumberNode,
   textNode: TextNode,
+  default: DefaultNode,
 };
 
 const initialEdges = [];
@@ -75,12 +80,13 @@ export default function FlowBuilderUI() {
         title: "Click to edit title", 
         prompt: "Click to edit question/prompt", 
         inputType: null, 
+        updateNodeData, // Add this line
         numberInputOptions: {}, 
         textInputOptions: {}, 
         buttonOptions: [{ label: 'Button 1' }, { label: 'Button 2' }] 
       },
       position: { x: 200 + nodeIdCounter * 100, y: 100 + nodeIdCounter * 100 },
-      style: { width: 250, minHeight: 100, background: "#ffffff", padding: "10px", borderRadius: "8px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", fontSize: "14px", fontWeight: "500" }
+      className: "min-w-[250px]" // Use className instead of style for consistency
     };
   
     setNodes((nds) => [...nds, newNode]);
@@ -97,6 +103,66 @@ export default function FlowBuilderUI() {
         node.id === id ? { ...node, data: { ...node.data, [key]: value } } : node
       )
     );
+  };
+  const applyTemplate = () => {
+    const { nodes: templateNodes, edges: templateEdges } = createTemplateFlow();
+    
+    // Update nodes with necessary handler functions
+    const nodesWithHandlers = templateNodes.map(node => {
+      let updatedNode = { ...node };
+      
+      if (node.type === "numberNode") {
+        updatedNode.data = {
+          ...node.data,
+          handleNumberConfigChange,
+          saveNumberConfig,
+          cancelNumberConfig,
+          openNumberConfigPanel,
+          updateNodeData,
+          tempNumberConfig,
+          configPanelVisibleNodeId,
+          selectedNode,
+          variableOptions
+        };
+      }
+      else if (node.type === "textNode") {
+        updatedNode.data = {
+          ...node.data,
+          handleTextConfigChange,
+          saveTextConfig,
+          cancelTextConfig,
+          openTextConfigPanel,
+          updateNodeData,
+          tempTextInputConfig,
+          textConfigPanelVisibleNodeId,
+          variableOptions
+        };
+      }
+      else if (node.type === "buttonNode") {
+        updatedNode.data = {
+          ...node.data,
+          handleButtonConfigChange,
+          addButtonItem,
+          saveButtonConfig,
+          updateNodeData
+        };
+      }
+      else {
+        updatedNode.data = {
+          ...node.data,
+          updateNodeData
+        };
+      }
+      
+      return updatedNode;
+    });
+  
+    // Set the nodes and edges
+    setNodes(nodesWithHandlers);
+    setEdges(templateEdges);
+    
+    // Reset the node counter to ensure new nodes get unique IDs
+    setNodeIdCounter(templateNodes.length + 1);
   };
 
   const addUserInputToNode = (inputType) => {
@@ -369,7 +435,7 @@ export default function FlowBuilderUI() {
                         <Button variant="contained" color="primary" onClick={saveButtonConfig} size="small">Save Buttons</Button>
                       </div>
                     )}
-                    {/* Removed redundant inputType label rendering - handled by "Enter Number", "Enter text", or Buttons section */}
+                    
                   </div>
                 )
               }
@@ -478,15 +544,15 @@ export default function FlowBuilderUI() {
         <h1 className="text-xl font-semibold">Kaza Dada</h1>
       {/* </div> */}
       <div className="flex items-center space-x-4">
-        <button className="px-4 py-2 bg-orange-400 text-white rounded-lg flex items-center space-x-2">
-          <Play className="h-4 w-4" />
-          <span>Test</span>
+        <button className="px-12 py-2 bg-[#F58426] text-white rounded-lg flex items-center space-x-2">
+          Save as Draft
         </button>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+        <button className="px-12 py-2 bg-[#090A29] text-white rounded-lg">
           Publish
         </button>
-        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">
-          Save as Draft
+        <button className="px-12 py-2 border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2">
+          <Play className="h-4 w-4" />
+        <span>Test</span>
         </button>
       </div>
     </div>
@@ -537,7 +603,9 @@ export default function FlowBuilderUI() {
 
             <h2 className="font-medium text-gray-900 pt-4">Logic</h2>
             <div className="space-y-2">
-              <button className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
+              <button 
+              onClick={applyTemplate}
+              className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
                 Template
               </button>
               <button className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
@@ -549,54 +617,26 @@ export default function FlowBuilderUI() {
       </div>
 
       <div className="flex-1 h-full">
-          <ReactFlow
-            nodes={nodes.map((node) => {
-              if (node.id === "start") return node;
-              if (node.type === "buttonNode") return node;
-              if (node.type === "numberNode") return node;
-              if (node.type === "textNode") return node;
-              
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  label: (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px" }}>
-                      <input
-                        type="text"
-                        defaultValue={node.data.title}
-                        onBlur={(e) => updateNodeData(node.id, "title", e.target.value)}
-                        style={{ fontWeight: "bold", border: "none", outline: "none", fontSize: "14px", background: "transparent" }}
-                      />
-                      <input
-                        type="text"
-                        defaultValue={node.data.prompt}
-                        onBlur={(e) => updateNodeData(node.id, "prompt", e.target.value)}
-                        style={{ border: "none", outline: "none", fontSize: "14px", background: "transparent" }}
-                      /> 
-                    </div>
-                  )
-                }
-              };
-            })}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            onNodeClick={(_, node) => {
-              setSelectedNode(node.id);
-              if (node.type !== "numberNode" && node.type !== "textNode") {
-                setConfigPanelVisibleNodeId(null);
-                setTextConfigPanelVisibleNodeId(null);
-              }
-            }}
-            style={{ height: "100%" }}
-          >
-            <MiniMap />
-            <Controls />
-            <Background variant="dots" gap={12} size={1} />
-          </ReactFlow>
+      <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          onNodeClick={(_, node) => {
+            setSelectedNode(node.id);
+            if (node.type !== "numberNode" && node.type !== "textNode") {
+              setConfigPanelVisibleNodeId(null);
+              setTextConfigPanelVisibleNodeId(null);
+            }
+          }}
+          style={{ height: "100%" }}
+        >
+          <MiniMap />
+          <Controls />
+          <Background variant="dots" gap={12} size={1} />
+        </ReactFlow>
         </div>
       </div>
       <VariablesPanel onVariableAdd={handleVariableAdd} />
