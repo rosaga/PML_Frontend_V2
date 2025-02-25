@@ -2,15 +2,16 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
-import { batchReward } from "@/app/api/actions/reward/reward";
-import { GetBalance } from "@/app/api/actions/reward/reward";
+import { batchReward, GetBalance } from "@/app/api/actions/reward/reward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
-
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
+import { saveAs } from "file-saver";
 
 const SendBatchRewardsModal = ({ closeModal }) => {
   let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
   }
 
   const [bundles, setBundles] = useState([]);
@@ -22,65 +23,32 @@ const SendBatchRewardsModal = ({ closeModal }) => {
   const [selectedSenderName, setSelectedSenderName] = useState("");
   const [senderName, setSenderName] = useState([]);
 
-
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!contactsFile) {
-      console.log('Please select a file and a group');
-      return;
-    }
-
-    const newReward = {
-      contacts: contactsFile,
-      bundle: selectedBundle,
-      message : message,
-      sender_id: parseInt(selectedSenderName),
-      slogan : "5",
-      postpay: true
-    };
-
-    console.log("New Reward Payload:", newReward);
-
-
-    const res = batchReward({org_id,newReward}).then((res) => {
-      if (res.status === 200) {
-        setSuccessMessage(`The data has been sent`);
-        setErrorMessage(""); 
-      } else {
-        setErrorMessage("Failed to send data. Please try again.");
-      }
-    });
-
-    return res;
-  };
+  const [submitting, setSubmitting] = useState(false);
 
   function handleDownloadTemplate() {
     const templateData = [
       {
         mobile: "0711223344",
         firstName: "John",
-        lastName: "Doe" 
+        lastName: "Doe",
       },
       {
         mobile: "0722334455",
         firstName: "Jane",
-        lastName: "Smith"
+        lastName: "Smith",
       },
     ];
 
     const csvData = convertToCsv(templateData);
-
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
     saveAs(blob, "contact_template.csv");
   }
+
   function convertToCsv(data) {
     const csvRows = [];
     const headers = Object.keys(data[0]);
 
     csvRows.push(headers.join(","));
-
     for (const row of data) {
       const values = headers.map((header) => row[header]);
       csvRows.push(values.join(","));
@@ -88,15 +56,49 @@ const SendBatchRewardsModal = ({ closeModal }) => {
     return csvRows.join("\n");
   }
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    if (!contactsFile) {
+      console.log("Please select a file and a group");
+      setSubmitting(false);
+      return;
+    }
+
+    const newReward = {
+      contacts: contactsFile,
+      bundle: selectedBundle,
+      message: message,
+      sender_id: parseInt(selectedSenderName),
+      slogan: "5",
+      postpay: true,
+    };
+
+    try {
+      const res = await batchReward({ org_id, newReward });
+      if (res.status === 200) {
+        setSuccessMessage(`The data has been sent`);
+        setErrorMessage("");
+      } else {
+        setErrorMessage("Failed to send data. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Failed to send data. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   useEffect(() => {
-  const handleClickOutside = (event) => {
+    const handleClickOutside = (event) => {
       if (event.target.id === "authentication-modal") {
         closeModal();
       }
     };
 
     window.addEventListener("click", handleClickOutside);
-
     return () => {
       window.removeEventListener("click", handleClickOutside);
     };
@@ -109,9 +111,9 @@ const SendBatchRewardsModal = ({ closeModal }) => {
         setBundles(balanceData.data.data);
       }
       const senderIdData = await GetActiveSenderId(org_id);
-        if (senderIdData) {
-          setSenderName(senderIdData.data);
-    }
+      if (senderIdData) {
+        setSenderName(senderIdData.data);
+      }
     }
     fetchBalance();
   }, []);
@@ -130,15 +132,15 @@ const SendBatchRewardsModal = ({ closeModal }) => {
               Send Batch Rewards
             </h3>
             <button
-                  type="button"
-                  className="bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                  onClick={handleDownloadTemplate}
-                >
-                  Download CSV Template
-                </button>
+              type="button"
+              className="bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+              onClick={handleDownloadTemplate}
+            >
+              Download CSV Template
+            </button>
           </div>
           <div className="p-4 md:p-5">
-          {successMessage ? (
+            {successMessage ? (
               <div className="p-4 text-center">
                 <div className="mb-4 text-2xl font-semibold text-green-500">
                   Success!
@@ -156,109 +158,122 @@ const SendBatchRewardsModal = ({ closeModal }) => {
                   OK
                 </button>
               </div>
-            ) :(
-            <form className="space-y-2" onSubmit={handleSubmit}>
-              <div>
-                <label
-                  htmlFor="bundle"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Bundle Amount
-                </label>
-                <select
-                  name="bundle"
-                  id="bundle"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  value={selectedBundle}
-                  onChange={(e) => setSelectedBundle(e.target.value)}
-                  required
-                >
-                  <option value="">Select Bundle</option>
-                  {bundles.map((bundle) => (
-                    <option key={bundle.package} value={bundle.package}>
-                      {bundle.module}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor="contacts"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Choose File
-                </label>
-                <input
-                  type="file"
-                  name="contacts"
-                  id="contacts"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  onChange={(e) => setContactsFile(e.target.files[0])}
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                      <label
-                        htmlFor="bundle"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Sender Name
-                      </label>
-                      <select
-                        name="bundle"
-                        id="bundle"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedSenderName}
-                        onChange={(e) => setSelectedSenderName(e.target.value)}
-                      >
-                        <option value="">Select SenderName</option>
-                        {/* <option value="1">PeakSMS</option> */}
-                        {senderName?.map((senderid) => (
-                          <option key={senderid.service_id} value={senderid.service_id}>
-                            {senderid.sendername}
-                          </option>
-                        ))}
-                      </select>
+            ) : submitting ? (
+              <Box className="flex justify-center items-center h-40">
+                <CircularProgress style={{ color: "#F58426" }} />
+              </Box>
+            ) : (
+              <form className="space-y-2" onSubmit={handleSubmit}>
+                <div>
+                  <label
+                    htmlFor="bundle"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Bundle Amount
+                  </label>
+                  <select
+                    name="bundle"
+                    id="bundle"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                               dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    value={selectedBundle}
+                    onChange={(e) => setSelectedBundle(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Bundle</option>
+                    {bundles.map((bundle) => (
+                      <option key={bundle.package} value={bundle.package}>
+                        {bundle.module}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                {
-                      selectedSenderName ? 
-                      <div className="mb-4">
-                      <label
-                        htmlFor="content"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Message to Customers
-                      </label>
-                      <textarea
-                        name="content"
-                        id="content"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Enter Message"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)} />
-                    </div> : null
-
-                    }
-                  {errorMessage && (
-                    <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
-                  )}
-                  <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                      onClick={closeModal}
+                <div>
+                  <label
+                    htmlFor="contacts"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Choose File
+                  </label>
+                  <input
+                    type="file"
+                    name="contacts"
+                    id="contacts"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                               dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    onChange={(e) => setContactsFile(e.target.files[0])}
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="bundle"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Select Sender Name
+                  </label>
+                  <select
+                    name="bundle"
+                    id="bundle"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                               dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    value={selectedSenderName}
+                    onChange={(e) => setSelectedSenderName(e.target.value)}
+                  >
+                    <option value="">Select SenderName</option>
+                    {senderName?.map((senderid) => (
+                      <option key={senderid.service_id} value={senderid.service_id}>
+                        {senderid.sendername}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedSenderName ? (
+                  <div className="mb-4">
+                    <label
+                      htmlFor="content"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                      onClick={handleSubmit}
-                    >
-                      Submit
-                    </button>
+                      Message to Customers
+                    </label>
+                    <textarea
+                      name="content"
+                      id="content"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                                 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                                 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="Enter Message"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                    />
                   </div>
-            </form>
+                ) : null}
+                {errorMessage && (
+                  <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                )}
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none
+                               focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center
+                               dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    onClick={closeModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none
+                               focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center
+                               dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>

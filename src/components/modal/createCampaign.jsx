@@ -8,6 +8,8 @@ import { format, parseISO } from "date-fns";
 import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 
 const CreateCampaignModal = ({ closeModal }) => {
   let token = getToken();
@@ -22,9 +24,12 @@ const CreateCampaignModal = ({ closeModal }) => {
   const [message, setMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+
   let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
   }
 
   useEffect(() => {
@@ -41,13 +46,9 @@ const CreateCampaignModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
-
-
   useEffect(() => {
     fetchBalanceandGroups();
-
   }, []);
-
 
   async function fetchBalanceandGroups() {
     const balanceData = await GetBalance(org_id);
@@ -61,14 +62,13 @@ const CreateCampaignModal = ({ closeModal }) => {
     const senderIdData = await GetActiveSenderId(org_id);
     if (senderIdData) {
       setSenderName(senderIdData.data);
-      
-
     }
   }
 
-
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitting(true);
+
     const formData = {
       org_id: org_id,
       name: campaignName,
@@ -81,37 +81,37 @@ const CreateCampaignModal = ({ closeModal }) => {
       slogan: "5",
     };
     const res = await CreateCampaign(formData)
-    .then((res) => {
-      if (res.status === 202) {
-        setSuccessMessage(`Data has been dispatched successfully under campaign`);
-        setErrorMessage("");
-
-      } else {
-        setErrorMessage("Failed to create Campaign. Please try again.");
-        setCampaignName("");
-        setSelectedGroup("");
-        setSelectedBundle("");
-        setMessage("");
-      }
-    })
-    .catch((error) => {
-      console.log("Error:", error);
-        setErrorMessage("Failed to create Campaign. Please try again.");
-      if (error.response && error.response.status === 400) {
+      .then((res) => {
+        if (res.status === 202) {
+          setSuccessMessage(`Data has been dispatched successfully under campaign`);
+          setErrorMessage("");
+        } else {
+          setErrorMessage("Failed to create Campaign. Please try again.");
+          setCampaignName("");
+          setSelectedGroup("");
+          setSelectedBundle("");
+          setMessage("");
+        }
+      })
+      .catch((error) => {
         console.log("Error:", error);
-        setErrorMessage("Sorry, you have insufficient units");
-        setCampaignName("");
-        setSelectedGroup("");
-        setSelectedBundle("");
-        setMessage("");
-      } else {
-        setErrorMessage(`Failed to send reward: ${error.message}`);
-      }
-      
-    });
+        setErrorMessage("Failed to create Campaign. Please try again.");
+        if (error.response && error.response.status === 400) {
+          console.log("Error:", error);
+          setErrorMessage("Sorry, you have insufficient units");
+          setCampaignName("");
+          setSelectedGroup("");
+          setSelectedBundle("");
+          setMessage("");
+        } else {
+          setErrorMessage(`Failed to send reward: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
 
-  return res;
-
+    return res;
   };
 
   return (
@@ -123,7 +123,7 @@ const CreateCampaignModal = ({ closeModal }) => {
     >
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-        {successMessage ? (
+          {successMessage ? (
             <div className="p-4 text-center">
               <div className="mb-4 text-2xl font-semibold text-green-500">
                 Success!
@@ -141,8 +141,7 @@ const CreateCampaignModal = ({ closeModal }) => {
                 OK
               </button>
             </div>
-          ) :
-          errorMessage ? (
+          ) : errorMessage ? (
             <div className="p-4 text-center">
               <div className="mb-4 text-2xl font-semibold text-red-500">
                 Oops!
@@ -159,9 +158,13 @@ const CreateCampaignModal = ({ closeModal }) => {
                 OK
               </button>
             </div>
-          )
-          : (
-          <><div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+          ) : submitting ? (
+            <Box className="flex justify-center items-center h-60">
+              <CircularProgress style={{ color: "#F58426" }} />
+            </Box>
+          ) : (
+            <>
+              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Create Campaign
                 </h3>
@@ -177,116 +180,116 @@ const CreateCampaignModal = ({ closeModal }) => {
                 >
                   + New Campaign
                 </button>
-              </div><div className="p-4 md:p-5">
-                  <form className="space-y-2" onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                      <label
-                        htmlFor="name"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Campaign Name
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Campaign Name"
-                        value={campaignName}
-                        onChange={(e) => setCampaignName(e.target.value)}
-                        required />
-                    </div>
-                    <div className="mb-4">
-                      <label
-                        htmlFor="description"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Campaign Description
-                      </label>
-                      <input
-                        type="text"
-                        name="description"
-                        id="description"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Enter Description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)} />
-                    </div>
+              </div>
+              <div className="p-4 md:p-5">
+                <form className="space-y-2" onSubmit={handleSubmit}>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="name"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Campaign Name
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      id="name"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="Campaign Name"
+                      value={campaignName}
+                      onChange={(e) => setCampaignName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="description"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Campaign Description
+                    </label>
+                    <input
+                      type="text"
+                      name="description"
+                      id="description"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="Enter Description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </div>
 
-                    <div className="mb-4">
-                      <label
-                        htmlFor="group"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Group
-                      </label>
-                      <select
-                        name="group"
-                        id="group"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedGroup}
-                        onChange={(e) => setSelectedGroup(e.target.value)}
-                        required
-                      >
-                        <option value="">Select Group</option>
-                        {groups.map((group) => (
-                          <option key={group.id} value={group.id}>
-                            {group.name} ({group.contact_count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="group"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Group
+                    </label>
+                    <select
+                      name="group"
+                      id="group"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={selectedGroup}
+                      onChange={(e) => setSelectedGroup(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Group</option>
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name} ({group.contact_count})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div className="mb-4">
-                      <label
-                        htmlFor="bundle"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Bundle
-                      </label>
-                      <select
-                        name="bundle"
-                        id="bundle"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedBundle}
-                        onChange={(e) => setSelectedBundle(e.target.value)}
-                        
-                      >
-                        <option value="">Select Bundle</option>
-                        {bundles.map((bundle) => (
-                          <option key={bundle.module} value={bundle.module}>
-                            {bundle.module} MB
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="mb-4">
-                      <label
-                        htmlFor="bundle"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Sender Name
-                      </label>
-                      <select
-                        name="bundle"
-                        id="bundle"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedSenderName}
-                        onChange={(e) => setSelectedSenderName(e.target.value)}
-                      >
-                        <option value="">Select SenderName</option>
-                        {/* <option value="1">PeakSMS</option> */}
-                        {senderName?.map((senderid) => (
-                          <option key={senderid.service_id} value={senderid.service_id}>
-                            {senderid.sendername}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Bundle
+                    </label>
+                    <select
+                      name="bundle"
+                      id="bundle"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={selectedBundle}
+                      onChange={(e) => setSelectedBundle(e.target.value)}
+                    >
+                      <option value="">Select Bundle</option>
+                      {bundles.map((bundle) => (
+                        <option key={bundle.module} value={bundle.module}>
+                          {bundle.module} MB
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Sender Name
+                    </label>
+                    <select
+                      name="bundle"
+                      id="bundle"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={selectedSenderName}
+                      onChange={(e) => setSelectedSenderName(e.target.value)}
+                    >
+                      <option value="">Select SenderName</option>
+                      {senderName?.map((senderid) => (
+                        <option key={senderid.service_id} value={senderid.service_id}>
+                          {senderid.sendername}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    {
-                      selectedSenderName ? 
-                      <div className="mb-4">
+                  {selectedSenderName ? (
+                    <div className="mb-4">
                       <label
                         htmlFor="content"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -299,31 +302,31 @@ const CreateCampaignModal = ({ closeModal }) => {
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="Enter Message"
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)} />
-                    </div> : null
-
-                    }
-
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                        onClick={closeModal}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                      >
-                        Submit
-                      </button>
+                        onChange={(e) => setMessage(e.target.value)}
+                      />
                     </div>
-                  </form>
-                </div>
-                </>
+                  ) : null}
+
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                      onClick={closeModal}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </>
           )}
-        </div> 
+        </div>
       </div>
     </div>
   );
