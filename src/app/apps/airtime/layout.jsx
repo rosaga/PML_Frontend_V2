@@ -1,7 +1,7 @@
 // src/app/api/apps/[appId]/layout.js
 import { Inter } from "next/font/google";
 import "../../../app/globals.css";
-import SidebarData from "@/components/sidebardata/sidebardata";
+import SidebarAirtime from "@/components/sidebarairtime/sidebarairtime";
 import Navbar from "@/components/navbar/navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
@@ -20,7 +20,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <SessionProviderWrapper>
           <div>
-            <SidebarData />
+            <SidebarAirtime />
             <Navbar />
             {children}
           </div>
