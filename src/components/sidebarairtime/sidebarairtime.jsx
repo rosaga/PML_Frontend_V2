@@ -93,7 +93,7 @@ const SidebarAirtime = () => {
       label: "Settings",
       className: "settings",
       subLinks: [
-        { href: "/apps/airtime/senderId", label: "Sender ID", className: "sender-id" },
+        { href: "/apps/airtime/manageSenderId", label: "Sender ID", className: "sender-id" },
 
         //{ href: "/apps/data/manageSenderId", label: "Manage Sender Ids", className: "notification-threshold" },
       ]

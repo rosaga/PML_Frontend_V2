@@ -66,9 +66,7 @@ const Dashboard = () => {
   });
 
   const columns: GridColDef[] = [
-    { field: "data_bundle", headerName: "Data Bundle", flex: 1, minWidth: 150 },
-    { field: "units_bought", headerName: "Units Bought", flex: 1, minWidth: 150 },
-    { field: "unit_balance", headerName: "Unit Balance", flex: 1, minWidth: 150 },
+    { field: "airtime_balance", headerName: "Airtime Balance", flex: 1, minWidth: 150 },
     { field: "progress", headerName: "Progress", flex: 2, renderCell: renderProgress, minWidth: 200 },
   ];
 
@@ -95,7 +93,6 @@ const Dashboard = () => {
     { field: "owner", headerName: "Owner", flex: 1 },
     { field: "contact_counts", headerName: "Contact Counts", flex: 1 },
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
-    { field: "data_bundle_type", headerName: "Data Bundle Type", flex: 1 },
   ];
 
 
@@ -147,7 +144,7 @@ const Dashboard = () => {
   };
 
   const handleNotifications = () => {
-    router.push("/apps/data/notification");
+    router.push("/apps/airtime/notification");
   };
 
   const generateYearOptions = () => {
@@ -232,7 +229,7 @@ const Dashboard = () => {
               <div className="p-8">
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
                 <div className="flex items-center justify-between">
-                  <p className="m-1 text-md">Data Rewards Summary</p>
+                  <p className="m-1 text-md">Airtime Rewards Summary</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
@@ -261,7 +258,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Consumed Data</div>
+                    <div className="text-gray-500">Consumed Airtime</div>
                     <div>
                       <span>
                         <Image
@@ -307,7 +304,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Failed Campaigns</div>
+                    <div className="text-gray-500">Airtime Balance</div>
                     <div>
                       <span>
                         <Image
@@ -329,14 +326,14 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/*Data Balance start*/}
+            {/*Airtime Balance start*/}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
               <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
-                <p className="mt-2 font-medium text-lg">Data Balance</p>
+                <p className="mt-2 font-medium text-lg">Airtime Balance</p>
                 <div className="mt-4">
                   <div style={{ height: 350, width: "100%" }}>
                     <DataGrid
-                      rows={rows}
+                      // rows={rows}
                       columns={columns}
                       paginationModel={paginationModel}
                       onPaginationModelChange={setPaginationModel}
