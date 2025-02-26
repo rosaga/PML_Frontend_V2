@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { contactsUploadBatch } from "../../../src/app/api/actions/contact/contact";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Papa from "papaparse";
 import { saveAs } from "file-saver";
 
 const UploadRecipientsModal = ({ closeModal }) => {
@@ -53,151 +52,130 @@ const UploadRecipientsModal = ({ closeModal }) => {
     return csvRows.join("\n");
   }
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-
-    if (!file) return;
-
-    // Ensure file is a CSV
-    if (!file.name.endsWith(".csv")) {
-      toast.error("Only CSV files are allowed.");
-      setErrorMessage("Only CSV files are allowed.");
-      return;
-    }
-
-    setCsvFile(file);
-    setShowValidationErrors(false);
-    setDuplicates([]);
-    setInvalidPhoneNumbers([]);
-    setErrorMessage("");
-
-    validateCsvFile(file);
-  };
-
   const validateCsvFile = (file) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const { data, meta } = results;
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        const text = event.target.result;
+        const lines = text.split('\n');
+        const headers = lines[0].split(',');
         
-        const headers = meta.fields;
-        if (!headers.includes("mobile") || !headers.includes("firstName") || !headers.includes("lastName")) {
-          toast.error("CSV file is missing required headers: 'mobile', 'firstName', 'lastName'.");
-          setErrorMessage("CSV file is missing required headers.");
+        const mobileIndex = headers.findIndex(header => 
+          header.trim().toLowerCase() === 'mobile' || 
+          header.trim().toLowerCase() === 'phone' ||
+          header.trim().toLowerCase() === 'phonenumber'
+        );
+        
+        if (mobileIndex === -1) {
+          reject("CSV file must have a 'mobile' column");
           return;
         }
-
-        const duplicatePhones = [];
+        
+        const duplicatePhones = new Set();
         const uniquePhones = new Set();
         const invalidPhones = [];
         
-        data.forEach((row, index) => {
-          const { mobile, firstName, lastName } = row;
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
           
-          if (!mobile || !firstName || !lastName) {
-            toast.error(`Row ${index + 1}: Missing required fields.`);
-            return;
-          }
+          const values = lines[i].split(',');
+          const phoneNumber = values[mobileIndex].trim();
           
-          const digitsOnly = mobile.replace(/\D/g, '');
+          const digitsOnly = phoneNumber.replace(/\D/g, '');
           if (digitsOnly.length < 9) {
-            invalidPhones.push({ line: index + 1, phone: mobile });
+            invalidPhones.push({ line: i + 1, phone: phoneNumber });
+            continue;
           }
           
-          if (uniquePhones.has(mobile)) {
-            if (!duplicatePhones.includes(mobile)) {
-              duplicatePhones.push(mobile);
-            }
+          if (uniquePhones.has(phoneNumber)) {
+            duplicatePhones.add(phoneNumber);
           } else {
-            uniquePhones.add(mobile);
+            uniquePhones.add(phoneNumber);
           }
-        });
-        
-        if (invalidPhones.length > 0 || duplicatePhones.length > 0) {
-          setInvalidPhoneNumbers(invalidPhones);
-          setDuplicates(duplicatePhones);
-          setShowValidationErrors(true);
         }
-      },
-      error: (error) => {
-        toast.error("Error parsing CSV file: " + error.message);
-        setErrorMessage("Error parsing CSV file: " + error.message);
-      }
+        
+        if (invalidPhones.length > 0 || duplicatePhones.size > 0) {
+          setInvalidPhoneNumbers(invalidPhones);
+          setDuplicates(Array.from(duplicatePhones));
+          setShowValidationErrors(true);
+          reject({
+            invalidPhones,
+            duplicates: Array.from(duplicatePhones)
+          });
+        } else {
+          resolve(file);
+        }
+      };
+      
+      reader.onerror = () => {
+        reject("Error reading the CSV file");
+      };
+      
+      reader.readAsText(file);
     });
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      setErrorMessage("Please select a CSV file");
+      setCsvFile(null);
+      return;
+    }
+    
+    setCsvFile(file);
+    setErrorMessage("");
+    setShowValidationErrors(false);
+    setDuplicates([]);
+    setInvalidPhoneNumbers([]);
   };
 
   const handleUploadContacts = (e) => {
     e.preventDefault();
-
+  
     if (!csvFile) {
-      toast.error("Please select a CSV file.");
+      setErrorMessage('Please select a file');
       return;
     }
-
-    if (invalidPhoneNumbers.length > 0 || duplicates.length > 0) {
-      toast.error("Please fix the validation issues before uploading.");
-      return;
-    }
-
+    
     setLoading(true);
-
-    Papa.parse(csvFile, {
-      complete: async (result) => {
-        const csvData = result.data;
-        const headers = csvData[0];
-
-        if (!headers.includes("mobile") || !headers.includes("firstName") || !headers.includes("lastName")) {
-          toast.error("CSV file is missing required headers: 'mobile', 'firstName', 'lastName'.");
-          setErrorMessage("CSV file is missing required headers.");
-          setLoading(false);
-          return;
-        }
-
-        const contacts = csvData.slice(1)
-          .filter(row => row.length >= 3 && row[0]?.trim())
-          .map((row) => ({
-            mobile: row[0]?.trim(),
-            firstName: row[1]?.trim() || "",
-            lastName: row[2]?.trim() || "",
-          }));
-
-        if (contacts.length === 0) {
-          toast.error("No valid contacts found in the CSV.");
-          setErrorMessage("No valid contacts found in the CSV.");
-          setLoading(false);
-          return;
-        }
-
+    
+validateCsvFile(csvFile)
+      .then(validatedFile => {
         const formValues = {
           org_id: org_id,
-          contacts,
+
+          contacts: csvFile,
         };
-
-        try {
-          const res = await contactsUploadBatch(formValues);
-          if (res.status === 201) {
-            toast.success("Contacts Upload Successful");
-            setSuccessMessage("Contacts Upload Successful");
-          } else {
-            toast.error("Contacts Upload Failed");
-            setErrorMessage("Contacts Upload Failed.");
-          }
-        } catch (error) {
-          if (error.response && error.response.status === 400) {
-            toast.error("Invalid CSV file format.");
-            setErrorMessage("Invalid CSV file format.");
-          } else {
-            toast.error("Contacts Upload Failed");
-            setErrorMessage("Contacts Upload Failed.");
-          }
+      
+        return contactsUploadBatch(formValues);
+      })
+      .then((res) => {
+        if (res.status === 201) {
+          toast.success("CONTACTS UPLOAD SUCCESS");
+          setSuccessMessage("Contacts Upload Successful");
+          setErrorMessage("");
+          setShowValidationErrors(false);
+        } else {
+          toast.error("CONTACTS UPLOAD FAILED");
+          setErrorMessage("Contacts upload failed. Please try again.");
         }
-
-        setLoading(false);
-      },
-      header: true,
-      skipEmptyLines: true,
-    });
+      })
+      .catch((error) => {
+        if (error.invalidPhones || error.duplicates) {
+          return;
+        }
+        
+        if (error.response && error.response.status === 400) {
+          setErrorMessage("Wrong file type selected. Please use CSV format.");
+        } else {
+          console.log("Error:", error);
+          setErrorMessage("Contacts upload failed. Please try again.");
+        }
+      });
   };
 
   useEffect(() => {
@@ -255,29 +233,39 @@ const UploadRecipientsModal = ({ closeModal }) => {
             ) : (
               <div className="relative p-4 w-full max-w-2xl max-h-full">
                 <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+                  <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Upload Recipients
+                    </h3>
+                    <button
+                      type="button"
+                      className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                      onClick={handleDownloadTemplate}           
+                    >
+                      Download CSV Template
+                    </button>
+                  </div>
                   <div className="p-4 md:p-5">
                     <form className="space-y-2" action="#">
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="text-xl font-semibold text-gray-900 dark:text-white">Upload CSV File</label>
-                        <button
-                          type="button"
-                          className="bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                          onClick={handleDownloadTemplate}
+                      <div>
+                        <label
+                          htmlFor="csvFile"
+                          className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                         >
-                          Download CSV Template
-                        </button>
+                          Upload CSV File
+                        </label>
+                        <input
+                          type="file"
+                          name="csvFile"
+                          id="csvFile"
+                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                          onChange={handleFileChange}
+                          accept=".csv"
+                          required
+                        />
                       </div>
-                      <input
-                        type="file"
-                        name="csvFile"
-                        id="csvFile"
-                        accept=".csv"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        onChange={handleFileChange}
-                        required
-                      />
                       
-                      {/* validation errors */}
+                      {/* the validation errors */}
                       {showValidationErrors && (
                         <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <h4 className="text-red-600 font-medium mb-2">We found some issues with your file!</h4>
@@ -322,9 +310,9 @@ const UploadRecipientsModal = ({ closeModal }) => {
                           type="button" 
                           className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-orange-600 dark:hover:bg-orange-700 dark:focus:ring-orange-800" 
                           onClick={handleUploadContacts} 
-                          disabled={loading || showValidationErrors}
+                          // disabled={loading || showValidationErrors}
                         >
-                          {loading ? "Uploading..." : "Submit"}
+                          Submit
                         </button>
                       </div>
                     </form>
