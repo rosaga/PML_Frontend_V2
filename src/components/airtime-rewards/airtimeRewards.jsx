@@ -13,7 +13,7 @@ import SendAirtimeBatchRewardsModal from "../modal/sendBatchAirtimeRewards"
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format,parseISO } from "date-fns";
 import { getToken } from "../../utils/auth";
-import { GetRewards } from "../../app/api/actions/reward/reward"
+import { GetAirtimeRewards } from "../../app/api/actions/airtimeReward/airtimeReward"
 import DownloadAllButton from "../button/DownloadAllButton";
 
 const AirtimeRewardsTable = () => {
@@ -70,7 +70,7 @@ const AirtimeRewardsTable = () => {
       }
     },
    },
-    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1, minWidth: 150 },
+    { field: "airtime_amount", headerName: "Airtime Amount", flex: 1, minWidth: 150 },
     {
       field: 'mobile_no',
       headerName: 'Phone Number',
@@ -117,7 +117,7 @@ const AirtimeRewardsTable = () => {
 
   const getRewards = async () => {
     try {
-      const res = await GetRewards(org_id, paginationModel.page + 1, paginationModel.pageSize, searchParams);
+      const res = await GetAirtimeRewards(org_id, paginationModel.page + 1, paginationModel.pageSize, searchParams);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -137,12 +137,12 @@ const AirtimeRewardsTable = () => {
 
   const fetchAllRewards = async () => {
     try {
-      const res = await GetRewards(org_id, 1, total, searchParams);
+      const res = await GetAirtimeRewards(org_id, 1, total, searchParams);
       if (!res.errors) {
         return res.data.data.map((item) => ({
           "Request ID": item.id,
           "Date Created": item.created_at,
-          "Bundle Amount": item.bundle_amount,
+          "Airtime Amount": item.airtime_amount,
           "Phone Number": item.contact?.mobile_no || "",
           Status: item.status,
           "Status Description": item.status_desc,

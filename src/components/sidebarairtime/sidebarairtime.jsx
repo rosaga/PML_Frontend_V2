@@ -82,7 +82,7 @@ const SidebarAirtime = () => {
   const links = [
     { href: "/apps/airtime/dashboard", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard", className: "dashboard" },
     { href: "/apps/airtime/airtime-rewards", src: "/images/vector.svg", alt: "Airtime Rewards", label: "Airtime Rewards", className: "airtime-rewards" },
-    { href: "/apps/airtime/airtime-balance", src: "/images/dataunits.svg", alt: "Airtime Balance", label: "Airtime Balance", className: "airtime-balance" },
+    // { href: "/apps/airtime/airtime-balance", src: "/images/dataunits.svg", alt: "Airtime Balance", label: "Airtime Balance", className: "airtime-balance" },
     { href: "/apps/airtime/contacts", src: "/images/users.svg", alt: "Contacts", label: "Contacts", className: "contacts" },
     // { href: "/apps/data/flowbuilder", src: "/images/flowbuillder.svg", alt: "Flow Builder", label: "Flow Builder", className: "Flow Builder" },
     // { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
@@ -100,7 +100,7 @@ const SidebarAirtime = () => {
     },
   ];
 
-   hasRole(token,'SuperAdmin') && links[4].subLinks.push({ href: "/apps/data/manageSenderId" });
+   hasRole(token,'SuperAdmin') && links[3].subLinks.push({ href: "/apps/data/manageSenderId" });
 
   const tourSteps = [
     {

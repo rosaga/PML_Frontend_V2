@@ -1,27 +1,36 @@
 "use client";
-import SidebarAirtime from "@/components/sidebarairtime/sidebarairtime";
 import React, { useEffect, useState } from "react";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import Image from "next/image";
-import Button from "@mui/material/Button";
-import IosShareIcon from "@mui/icons-material/IosShare";
-import LinearProgress from "@mui/material/LinearProgress";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import DeleteIcon from "@mui/icons-material/DeleteOutline";
-import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
-import RecentCampaigns from "@/components/rewards-tables/recentCampaigns";
-import { getToken } from "@/utils/auth";
-import GroupDashboard from "@/components/rewards-tables/groupDashboard";
-import { GetDashboardSummary, GetDataBalance } from "@/app/api/actions/dashboard/dashboard";
+import { format, parseISO } from "date-fns";
 import { useRouter } from "next/navigation";
-
-interface RowData {
+import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
+import GroupDashboard from "@/components/rewards-tables/groupDashboard";
+import DownloadAllButton from "@/components/button/DownloadAllButton";
+import { GetAirtimeRewards } from "@/app/api/actions/airtimeReward/airtimeReward";
+  
+interface AirtimeReward {
   id: number;
-  data_bundle: string;
-  units_bought: number;
-  unit_balance: number;
-  progress: number;
+  created_at: string;
+  airtime_amount: string;
+  status: string;
+  status_desc?: string;
+  contact?: {
+    mobile_no: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+interface RewardsAPIResponse {
+  data?: {
+    data: AirtimeReward[];
+    count: number;
+  };
+  errors?: {
+    _error: string;
+  };
+  status?: number;
 }
 
 const Dashboard = () => {
@@ -33,131 +42,181 @@ const Dashboard = () => {
 
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
-  const [rows, setRows] = useState([]);
-  const [recipientsReached, setRecipientsReached] = useState("");
-  const [consumedData, setConsumedData] = useState("");
-  const [activeCampaigns, setActiveCampaigns] = useState("");
 
-  const calculateProgress = (unitsBought: number, unitBalance: number): number => {
-    return ((unitsBought - unitBalance) / unitsBought) * 100;
-  };
-
-  const renderProgress = (params: any) => {
-    const progress = calculateProgress(params.row.units_bought, params.row.unit_balance);
-    return (
-      <Box display="flex" alignItems="center">
-        <Box width="100%" mr={1}>
-          <LinearProgress variant="determinate" value={progress} />
-        </Box>
-        <Box minWidth={35}>
-          <Typography variant="body2" color="textSecondary">{`${Math.round(progress)}%`}</Typography>
-        </Box>
-        {progress > 70 && (
-          <Typography variant="body2" color="error" style={{ marginLeft: 8 }}>
-            depleting
-          </Typography>
-        )}
-      </Box>
-    );
-  };
+  const [rows, setRows] = useState<AirtimeReward[]>([]);
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
     page: 0,
   });
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const [recipientsReached, setRecipientsReached] = useState(0);
+  const [consumedAirtime, setConsumedAirtime] = useState(0);
+
+  const [recipients, setRecipients] = useState<any[]>([]);
 
   const columns: GridColDef[] = [
-    { field: "airtime_balance", headerName: "Airtime Balance", flex: 1, minWidth: 150 },
-    { field: "progress", headerName: "Progress", flex: 2, renderCell: renderProgress, minWidth: 200 },
+    {
+      field: "id",
+      headerName: "Request ID",
+      flex: 1,
+      minWidth: 100,
+    },
+    {
+      field: "created_at",
+      headerName: "Date Created",
+      flex: 1,
+      minWidth: 150,
+      valueFormatter: (params) => {
+        try {
+          const date = parseISO(params);
+          return format(date, "yyyy-MM-dd HH:mm");
+        } catch (error) {
+          return "Invalid Date";
+        }
+      },
+    },
+    {
+      field: "airtime_amount",
+      headerName: "Airtime Amount",
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: "mobile_no",
+      headerName: "Phone Number",
+      flex: 1,
+      minWidth: 200,
+    },
+    {
+      field: "status",
+      headerName: "Status ID",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => {
+        const getColor = (status: string) => {
+          switch (status) {
+            case "SUCCESS":
+              return "green";
+            case "FAILED":
+              return "red";
+            default:
+              return "black";
+          }
+        };
+        return <span style={{ color: getColor(params.value) }}>{params.value}</span>;
+      },
+    },
+    {
+      field: "status_desc",
+      headerName: "Status Description",
+      flex: 1,
+      minWidth: 200,
+    },
   ];
 
-  const columns1: GridColDef[] = [
-    { field: "date_of_onboarding", headerName: "Date of Onboarding", flex: 1 },
-    { field: "phone_number", headerName: "Phone Number", flex: 1 },
-    { field: "status", headerName: "Status", flex: 1 },
-    { field: "Action", headerName: "Action", flex: 0, renderCell: (params) => <DeleteIcon /> },
-  ];
+  const buildDateQuery = (): Record<string, string> => {
+    const searchParams: Record<string, string> = {};
+    if (!selectedYear) return searchParams;
 
-  const columns2: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
-    { field: "no_contact", headerName: "No of Contacts", flex: 1 },
-    { field: "description", headerName: "Description", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
-  ];
-
-  const columns3: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "campaign_name", headerName: "Campaign Name", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
-    { field: "owner", headerName: "Owner", flex: 1 },
-    { field: "contact_counts", headerName: "Contact Counts", flex: 1 },
-    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
-  ];
-
-
-  const buildDateQuery = (forTable: "rewards" | "recharges") => {
-    if (!selectedYear) return "";
-  
     let startDate = "";
     let endDate = "";
-  
     if (selectedYear && selectedMonth) {
       startDate = `${selectedYear}-${selectedMonth}-01`;
-      const lastDayOfMonth = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate();
-      endDate = `${selectedYear}-${selectedMonth}-${lastDayOfMonth}`;
+      const lastDay = new Date(+selectedYear, +selectedMonth, 0).getDate();
+      endDate = `${selectedYear}-${selectedMonth}-${lastDay}`;
     } else if (selectedYear) {
       startDate = `${selectedYear}-01-01`;
       endDate = `${selectedYear}-12-31`;
     }
-  
-    if (forTable === "recharges") {
-      return `&gte__recharges.created_at=${startDate}&lte__recharges.created_at=${endDate}`;
-    }
-    return `&gte__rewards.created_at=${startDate}&lte__rewards.created_at=${endDate}`;
-  };
-  
-
-  const fetchDashboardSummary = async () => {
-    const dateQuery = buildDateQuery("rewards");
-    const summary = await GetDashboardSummary(org_id, dateQuery);
-    if ("recipientsReached" in summary) {
-      setRecipientsReached(summary.recipientsReached.toString());
-      setConsumedData(summary.consumedData.toString());
-      setActiveCampaigns(summary.activeCampaigns.toString());
-    }
+    searchParams["gte__created_at"] = startDate;
+    searchParams["lte__created_at"] = endDate;
+    return searchParams;
   };
 
-  const fetchDataBundle = async () => {
-    const dateQuery = buildDateQuery("recharges");
-    const dataBalance = await GetDataBalance(org_id);
-    setRows(dataBalance);
+  const fetchRewards = async () => {
+    if (!org_id) {
+      console.error("No organization ID found.");
+      return;
+    }
+    try {
+      setLoading(true);
+      const pageNumber = paginationModel.page + 1;
+      const pageSize = paginationModel.pageSize;
+      const dateQuery = buildDateQuery();
+
+      const response: RewardsAPIResponse = await GetAirtimeRewards(org_id, pageNumber, pageSize, dateQuery);
+
+      if (response.errors) {
+        console.error("API error:", response.errors._error);
+        setRows([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
+      if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+        console.error("Unexpected API response:", response);
+        setRows([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
+      const rewardsArray = response.data.data;
+      setTotal(response.data.count || 0);
+
+      const finalRows = rewardsArray.map((item) => ({
+        ...item,
+        mobile_no: item.contact?.mobile_no || "",
+      }));
+      setRows(finalRows);
+
+      const successRewards = finalRows.filter((r) => r.status === "SUCCESS");
+      setRecipientsReached(successRewards.length);
+
+      const totalConsumed = successRewards.reduce((sum, reward) => {
+        return sum + Number(reward.airtime_amount);
+      }, 0);
+      setConsumedAirtime(totalConsumed);
+
+      const recs = successRewards
+        .filter((r) => r.contact && r.contact.mobile_no)
+        .map((r) => r.contact);
+      setRecipients(recs);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching rewards:", error);
+      setRows([]);
+      setTotal(0);
+      setRecipientsReached(0);
+      setConsumedAirtime(0);
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchDashboardSummary();
-    fetchDataBundle();
-  }, [selectedYear, selectedMonth]);
+    fetchRewards();
+  }, [selectedYear, selectedMonth, paginationModel.page, paginationModel.pageSize, org_id]);
 
   const handleHelp = () => {
     router.push("/apps/data/help");
   };
-
   const handleNotifications = () => {
     router.push("/apps/airtime/notification");
   };
 
-  const generateYearOptions = () => {
+  const generateYearOptions = (): { value: string; label: string }[] => {
     const options = [{ value: "", label: "All Years" }];
     const startYear = 2024;
     const currentYear = new Date().getFullYear();
     for (let year = startYear; year <= currentYear + 1; year++) {
-      options.push({ value: year.toString(), label: year.toString() });
+      options.push({ value: String(year), label: String(year) });
     }
     return options;
   };
 
-  const generateMonthOptions = () => {
+  const generateMonthOptions = (): { value: string; label: string }[] => {
     const options = [{ value: "", label: "All Months" }];
     const monthNames = [
       "January",
@@ -175,7 +234,7 @@ const Dashboard = () => {
     ];
     for (let i = 0; i < 12; i++) {
       const monthNumber = i + 1;
-      const monthValue = monthNumber < 10 ? `0${monthNumber}` : `${monthNumber}`;
+      const monthValue = monthNumber < 10 ? `0${monthNumber}` : String(monthNumber);
       options.push({ value: monthValue, label: monthNames[i] });
     }
     return options;
@@ -184,16 +243,37 @@ const Dashboard = () => {
   const yearOptions = generateYearOptions();
   const monthOptions = generateMonthOptions();
 
+  const fetchAllRewards = async () => {
+    try {
+      const dateQuery = buildDateQuery();
+      const response: RewardsAPIResponse = await GetAirtimeRewards(org_id!, 1, total, dateQuery);
+      if (!response || !response.data || !response.data.data) {
+        return [];
+      }
+      return response.data.data.map((item) => ({
+        "Request ID": item.id,
+        "Date Created": item.created_at,
+        "Airtime Amount": item.airtime_amount,
+        "Phone Number": item.contact?.mobile_no || "",
+        "Status ID": item.status,
+        "Status Description": item.status_desc || "",
+      }));
+    } catch (error) {
+      console.error("Failed to fetch rewards for export:", error);
+      return [];
+    }
+  };
+
   return (
     <div className="flex flex-col sm:flex-row">
       <div className="flex-1 p-4 sm:ml-64 h-screen">
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
-            <h1>Airtime Rewards</h1>
-            {/* filter section start*/}
+            <h1 className="text-xl font-semibold mb-4">Airtime Rewards</h1>
+
+            {/* Filter Section */}
             <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
               <div>
-               
                 <select
                   id="yearFilter"
                   value={selectedYear}
@@ -208,7 +288,6 @@ const Dashboard = () => {
                 </select>
               </div>
               <div>
-               
                 <select
                   id="monthFilter"
                   value={selectedMonth}
@@ -224,229 +303,162 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* summary start */}
-            <div className="border-[1.5px] rounded-3xl">
+            {/* Summary Tiles */}
+            <div className="border-[1.5px] rounded-3xl mb-6">
               <div className="p-8">
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
-                <div className="flex items-center justify-between">
-                  <p className="m-1 text-md">Airtime Rewards Summary</p>
-                </div>
+                <p className="m-1 text-md">Airtime Rewards Summary</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-8">
+                {/* Recipients Reached */}
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Recipients Reached</div>
-                    <div>
-                      <span>
-                        <Image
-                          style={{ color: "#F58426" }}
-                          className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
-                          src="/images/Icon-0.svg"
-                          blurDataURL="/bluriconloader.png"
-                          placeholder="blur"
-                          alt="Recipients reached"
-                          priority
-                        />
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {recipientsReached ? recipientsReached : 0}
+                  <span className="text-gray-500">Recipients Reached</span>
+                  <div className="flex justify-between items-center mt-4">
+                    <Image
+                      className="w-12 h-12 rounded-lg"
+                      width={60}
+                      height={60}
+                      src="/images/Icon-0.svg"
+                      alt="Recipients reached"
+                      priority
+                    />
+                    <div className="text-2xl font-bold">{recipientsReached}</div>
                   </div>
                 </div>
+
+                {/* Consumed Airtime */}
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Consumed Airtime</div>
-                    <div>
-                      <span>
-                        <Image
-                          style={{ color: "#F58426" }}
-                          className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
-                          src="/images/Icon-1.svg"
-                          blurDataURL="/bluriconloader.png"
-                          placeholder="blur"
-                          alt="Consumed Data"
-                          priority
-                        />
-                      </span>
-                    </div>
+                  <span className="text-gray-500">Consumed Airtime</span>
+                  <div className="flex justify-between items-center mt-4">
+                    <Image
+                      className="w-12 h-12 rounded-lg"
+                      width={60}
+                      height={60}
+                      src="/images/Icon-1.svg"
+                      alt="Consumed Airtime"
+                      priority
+                    />
+                    <div className="text-2xl font-bold">KES {consumedAirtime}</div>
                   </div>
-                  <div className="text-2xl font-bold">
-                    {consumedData ? consumedData : 0} MBS
-                  </div>
-                </div>
-                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Active Campaigns</div>
-                    <div>
-                      <span>
-                        <Image
-                          style={{ color: "#F58426" }}
-                          className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
-                          src="/images/Icon-1.svg"
-                          blurDataURL="/bluriconloader.png"
-                          placeholder="blur"
-                          alt="Active Campaigns"
-                          priority
-                        />
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {activeCampaigns ? activeCampaigns : 0}
-                  </div>
-                </div>
-                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Airtime Balance</div>
-                    <div>
-                      <span>
-                        <Image
-                          style={{ color: "#F58426" }}
-                          className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
-                          src="/images/Icon-3.svg"
-                          blurDataURL="/bluriconloader.png"
-                          placeholder="blur"
-                          alt="Failed Campaigns"
-                          priority
-                        />
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold">0</div>
                 </div>
               </div>
             </div>
 
-            {/*Airtime Balance start*/}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
+            {/* Airtime Rewards Table */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-8">
               <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
-                <p className="mt-2 font-medium text-lg">Airtime Balance</p>
-                <div className="mt-4">
-                  <div style={{ height: 350, width: "100%" }}>
-                    <DataGrid
-                      // rows={rows}
-                      columns={columns}
-                      paginationModel={paginationModel}
-                      onPaginationModelChange={setPaginationModel}
-                      sx={{
-                        "&.MuiDataGrid-root": {
-                          border: "none",
-                        },
-                      }}
-                    />
-                  </div>
+                <p className="mt-2 font-medium text-lg">Airtime Rewards</p>
+                <div className="mt-4" style={{ height: 450, width: "100%" }}>
+                  <DataGrid
+                    rows={rows}
+                    columns={columns}
+                    loading={loading}
+                    paginationMode="server"
+                    rowCount={total}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
+                    sx={{
+                      "& .MuiDataGrid-columnHeader": {
+                        backgroundColor: "#F1F2F3",
+                      },
+                      "&.MuiDataGrid-root": {
+                        border: "none",
+                      },
+                    }}
+                    slots={{
+                      toolbar: () => (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "8px",
+                          }}
+                        >
+                          <GridToolbar />
+                          <DownloadAllButton
+                            fetchAllData={fetchAllRewards}
+                            filename="rewards_data.csv"
+                          />
+                        </div>
+                      ),
+                    }}
+                  />
                 </div>
               </div>
+
+              {/* Side Buttons */}
               <div className="flex flex-col gap-4 col-span-1">
-                <div onClick={handleHelp} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-12 h-12 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/help.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Help"
-                      priority
-                    />
-                  </span>
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
+                <div
+                  onClick={handleHelp}
+                  className="rounded-3xl border-[1.5px] p-8 cursor-pointer"
+                >
+                  <Image
+                    className="w-12 h-12 ml-4 rounded-lg"
+                    width={60}
+                    height={60}
+                    src="/images/help.svg"
+                    alt="Help"
+                    priority
+                  />
+                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">
+                    Help
+                  </p>
                 </div>
-                <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-12 h-12 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/noti.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Notification"
-                      priority
-                    />
-                  </span>
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-wrap text-red-600">
+                <div
+                  onClick={handleNotifications}
+                  className="rounded-3xl border-[1.5px] p-8 cursor-pointer"
+                >
+                  <Image
+                    className="w-12 h-12 ml-4 rounded-lg"
+                    width={60}
+                    height={60}
+                    src="/images/noti.svg"
+                    alt="Notification"
+                    priority
+                  />
+                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-red-600">
                     Notification
                   </p>
                 </div>
               </div>
             </div>
 
-            {/*Additional*/}
+            {/* Additional Sections */}
             <div className="flex flex-col">
+              {/* Recent Recipients */}
               <div className="p-4 shadow-md rounded-lg">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Recipients</p>
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/Expand.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Expand"
-                      priority
-                    />
-                  </span>
+                  <Image
+                    className="w-8 h-8 ml-4 rounded-lg"
+                    width={60}
+                    height={60}
+                    src="/images/Expand.svg"
+                    alt="Expand"
+                    priority
+                  />
                 </div>
                 <div className="mt-4">
-                  <RecipientDashboard />
+                  <RecipientDashboard/>
                 </div>
               </div>
+
+              {/* Recent Groups */}
               <div className="p-4 shadow-md rounded-lg mt-4">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Groups</p>
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/Expand.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Expand"
-                      priority
-                    />
-                  </span>
+                  <Image
+                    className="w-8 h-8 ml-4 rounded-lg"
+                    width={60}
+                    height={60}
+                    src="/images/Expand.svg"
+                    alt="Expand"
+                    priority
+                  />
                 </div>
                 <div className="mt-4">
                   <GroupDashboard />
-                </div>
-              </div>
-              <div className="p-4 shadow-md rounded-lg mt-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <p className="mt-4 font-medium text-lg">Recent Campaigns</p>
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/Expand.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Expand"
-                      priority
-                    />
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <RecentCampaigns />
                 </div>
               </div>
             </div>

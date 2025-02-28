@@ -1,15 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { fetchContacts } from "@/app/api/actions/contact/contact";
-import { GetBalance } from "@/app/api/actions/reward/reward";
-import { sendReward } from "@/app/api/actions/reward/reward";
+import { GetAirtimeBalance } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";
+import { sendAirtimeReward } from "@/app/api/actions/airtimeReward/airtimeReward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 
 const SendAirtimeRewardModal = ({ closeModal }) => {
-
   let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
   }
 
   const [selectedContact, setSelectedContact] = useState("");
@@ -19,13 +18,13 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
   const [selectedSenderName, setSelectedSenderName] = useState("");
   const [message, setMessage] = useState("");
 
-  const { v4: uuidv4 } = require('uuid');
-  const [searchQuery, setSearchQuery] = useState('');
+  const { v4: uuidv4 } = require("uuid");
+  const [searchQuery, setSearchQuery] = useState("");
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const [bundles, setBundles] = useState([]);
-  const [selectedBundle, setSelectedBundle] = useState('');
+  const [selectedBundle, setSelectedBundle] = useState("");
 
   useEffect(() => {
     if (searchQuery.length > 0) {
@@ -52,20 +51,19 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
 
     const newReward = {
       request_id: uuidv4(),
-      bundle_amount: selectedBundle,
-      msisdn : selectedContact,
-      sender_id: parseInt(selectedSenderName) ,
+      airtime_amount: selectedBundle, 
+      msisdn: selectedContact,
+      sender_id: parseInt(selectedSenderName),
       message: message,
-      postpay: true
+      postpay: true,
     };
 
-    console.log("New Reward Payload:", newReward);
-
+    console.log("New Airtime Reward Payload:", newReward);
 
     try {
-      const res = await sendReward({ org_id, newReward });
+      const res = await sendAirtimeReward({ org_id, newReward });
       if (res.status === 200) {
-        setSuccessMessage("You have dispatched data successfully!");
+        setSuccessMessage("You have dispatched airtime successfully!");
         setErrorMessage("");
       } else {
         setErrorMessage("An error occurred. Please try again.");
@@ -75,11 +73,9 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
       if (error.response && error.response.status === 400) {
         setErrorMessage("Insufficient units. Please top up to proceed");
       } else {
-        setErrorMessage(`Failed to send reward: ${error.message}`);
+        setErrorMessage(`Failed to send airtime reward: ${error.message}`);
       }
       setSuccessMessage("");
-      // return res;
-
     }
   };
 
@@ -99,17 +95,17 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
 
   useEffect(() => {
     async function fetchBalance() {
-      const balanceData = await GetBalance(org_id);
+      const balanceData = await GetAirtimeBalance(org_id);
       if (balanceData) {
         setBundles(balanceData.data.data);
       }
       const senderIdData = await GetActiveSenderId(org_id);
-        if (senderIdData) {
-          setSenderName(senderIdData.data);
-    }
+      if (senderIdData) {
+        setSenderName(senderIdData.data);
+      }
     }
     fetchBalance();
-  }, []);
+  }, [org_id]);
 
   return (
     <div
@@ -122,7 +118,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
           <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Send Airtime Rewards
+              Send Airtime Reward
             </h3>
           </div>
           <div className="p-4 md:p-5">
@@ -146,23 +142,22 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
               </div>
             ) : errorMessage ? (
               <div className="p-4 text-center">
-              <div className="mb-4 text-2xl font-semibold text-red-500">
-                Oops!
+                <div className="mb-4 text-2xl font-semibold text-red-500">
+                  Oops!
+                </div>
+                <div className="mb-4 text-gray-900 dark:text-white">
+                  {errorMessage}
+                </div>
+                <button
+                  onClick={() => {
+                    setErrorMessage("");
+                  }}
+                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  OK
+                </button>
               </div>
-              <div className="mb-4 text-gray-900 dark:text-white">
-                {errorMessage}
-              </div>
-              <button
-                onClick={() => {
-                  setErrorMessage("");
-                }}
-                className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-              >
-                OK
-              </button>
-            </div>
-          )
-          : (
+            ) : (
               <>
                 <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
                   <div>
@@ -198,8 +193,8 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                     )}
                   </div>
                   <div>
-                  <label
-                      htmlFor="mobile"
+                    <label
+                      htmlFor="airtime"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Airtime Amount
@@ -207,36 +202,35 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                     <input
                       type="number"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                      placeholder="Select airtime amount"
+                      placeholder="Enter airtime amount"
+                      value={selectedBundle}
+                      onChange={(e) => setSelectedBundle(e.target.value)}
                     />
                   </div>
                   <div className="mb-4">
-                      <label
-                        htmlFor="bundle"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Sender Name
-                      </label>
-                      <select
-                        name="bundle"
-                        id="bundle"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedSenderName}
-                        onChange={(e) => setSelectedSenderName(e.target.value)}
-                      >
-                        <option value="">Select SenderName</option>
-                        {/* <option value="1">PeakSMS</option> */}
-                        {senderName?.map((senderid) => (
-                          <option key={senderid.service_id} value={senderid.service_id}>
-                            {senderid.sendername}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {
-                      selectedSenderName ? 
-                      <div className="mb-4">
+                    <label
+                      htmlFor="sender"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Sender Name
+                    </label>
+                    <select
+                      name="sender"
+                      id="sender"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={selectedSenderName}
+                      onChange={(e) => setSelectedSenderName(e.target.value)}
+                    >
+                      <option value="">Select Sender Name</option>
+                      {senderName?.map((senderid) => (
+                        <option key={senderid.service_id} value={senderid.service_id}>
+                          {senderid.sendername}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {selectedSenderName && (
+                    <div className="mb-4">
                       <label
                         htmlFor="content"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -249,10 +243,10 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="Enter Message"
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)} />
-                    </div> : null
-
-                    }
+                        onChange={(e) => setMessage(e.target.value)}
+                      />
+                    </div>
+                  )}
                   {errorMessage && (
                     <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
                   )}
