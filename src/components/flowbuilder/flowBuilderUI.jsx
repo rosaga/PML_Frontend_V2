@@ -19,9 +19,9 @@ import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
 import { Menu, ChevronLeft, Play } from 'lucide-react';
 import VariablesPanel from './variablePanel';
-import ButtonNode from './ButtonNode';
-import NumberNode from './NumberNode';
-import TextNode from './TextNode';
+import ButtonNode from './buttonNode';
+import NumberNode from './numberNode';
+import TextNode from './textNode';
 import createTemplateFlow from './templateHandler'
 import DefaultNode from './defaultNode';
 
