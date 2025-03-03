@@ -15,6 +15,7 @@ import { getToken } from "@/utils/auth";
 import GroupDashboard from "@/components/rewards-tables/groupDashboard";
 import { GetDashboardSummary, GetDataBalance } from "@/app/api/actions/dashboard/dashboard";
 import { useRouter } from "next/navigation";
+import CircularProgress from "@mui/material/CircularProgress";
 
 interface RowData {
   id: number;
@@ -37,6 +38,7 @@ const Dashboard = () => {
   const [recipientsReached, setRecipientsReached] = useState("");
   const [consumedData, setConsumedData] = useState("");
   const [activeCampaigns, setActiveCampaigns] = useState("");
+  const [loadingDataBalance, setLoadingDataBalance] = useState(true);
 
   const calculateProgress = (unitsBought: number, unitBalance: number): number => {
     return ((unitsBought - unitBalance) / unitsBought) * 100;
@@ -60,6 +62,7 @@ const Dashboard = () => {
       </Box>
     );
   };
+
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
     page: 0,
@@ -69,57 +72,39 @@ const Dashboard = () => {
     { field: "data_bundle", headerName: "Data Bundle", flex: 1, minWidth: 150 },
     { field: "units_bought", headerName: "Units Bought", flex: 1, minWidth: 150 },
     { field: "unit_balance", headerName: "Unit Balance", flex: 1, minWidth: 150 },
-    { field: "progress", headerName: "Progress", flex: 2, renderCell: renderProgress, minWidth: 200 },
+    {
+      field: "progress",
+      headerName: "Progress",
+      flex: 2,
+      renderCell: renderProgress,
+      minWidth: 200,
+    },
   ];
-
-  const columns1: GridColDef[] = [
-    { field: "date_of_onboarding", headerName: "Date of Onboarding", flex: 1 },
-    { field: "phone_number", headerName: "Phone Number", flex: 1 },
-    { field: "status", headerName: "Status", flex: 1 },
-    { field: "Action", headerName: "Action", flex: 0, renderCell: (params) => <DeleteIcon /> },
-  ];
-
-  const columns2: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
-    { field: "no_contact", headerName: "No of Contacts", flex: 1 },
-    { field: "description", headerName: "Description", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
-  ];
-
-  const columns3: GridColDef[] = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "campaign_name", headerName: "Campaign Name", flex: 1 },
-    { field: "date_created", headerName: "Date Created", flex: 1 },
-    { field: "group_name", headerName: "Group Name", flex: 1 },
-    { field: "owner", headerName: "Owner", flex: 1 },
-    { field: "contact_counts", headerName: "Contact Counts", flex: 1 },
-    { field: "bundle_amount", headerName: "Bundle Amount", flex: 1 },
-    { field: "data_bundle_type", headerName: "Data Bundle Type", flex: 1 },
-  ];
-
 
   const buildDateQuery = (forTable: "rewards" | "recharges") => {
     if (!selectedYear) return "";
-  
+
     let startDate = "";
     let endDate = "";
-  
+
     if (selectedYear && selectedMonth) {
       startDate = `${selectedYear}-${selectedMonth}-01`;
-      const lastDayOfMonth = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate();
+      const lastDayOfMonth = new Date(
+        parseInt(selectedYear),
+        parseInt(selectedMonth),
+        0
+      ).getDate();
       endDate = `${selectedYear}-${selectedMonth}-${lastDayOfMonth}`;
     } else if (selectedYear) {
       startDate = `${selectedYear}-01-01`;
       endDate = `${selectedYear}-12-31`;
     }
-  
+
     if (forTable === "recharges") {
       return `&gte__recharges.created_at=${startDate}&lte__recharges.created_at=${endDate}`;
     }
     return `&gte__rewards.created_at=${startDate}&lte__rewards.created_at=${endDate}`;
   };
-  
 
   const fetchDashboardSummary = async () => {
     const dateQuery = buildDateQuery("rewards");
@@ -132,9 +117,16 @@ const Dashboard = () => {
   };
 
   const fetchDataBundle = async () => {
-    const dateQuery = buildDateQuery("recharges");
-    const dataBalance = await GetDataBalance(org_id);
-    setRows(dataBalance);
+    setLoadingDataBalance(true);
+    try {
+      const dateQuery = buildDateQuery("recharges");
+      const dataBalance = await GetDataBalance(org_id);
+      setRows(dataBalance);
+    } catch (error) {
+      console.error("Error fetching data bundle:", error);
+    } finally {
+      setLoadingDataBalance(false);
+    }
   };
 
   useEffect(() => {
@@ -192,10 +184,9 @@ const Dashboard = () => {
       <div className="flex-1 p-4 sm:ml-64 h-screen">
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
-            {/* filter section start*/}
+            {/* filter section start */}
             <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
               <div>
-               
                 <select
                   id="yearFilter"
                   value={selectedYear}
@@ -210,7 +201,6 @@ const Dashboard = () => {
                 </select>
               </div>
               <div>
-               
                 <select
                   id="monthFilter"
                   value={selectedMonth}
@@ -328,12 +318,16 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/*Data Balance start*/}
+            {/* Data Balance start */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
               <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
                 <p className="mt-2 font-medium text-lg">Data Balance</p>
-                <div className="mt-4">
-                  <div style={{ height: 350, width: "100%" }}>
+                <div className="mt-4" style={{ height: 350, width: "100%" }}>
+                  {loadingDataBalance ? (
+                    <Box className="flex justify-center items-center h-full">
+                      <CircularProgress style={{ color: "#E88A17" }} />
+                    </Box>
+                  ) : (
                     <DataGrid
                       rows={rows}
                       columns={columns}
@@ -345,7 +339,7 @@ const Dashboard = () => {
                         },
                       }}
                     />
-                  </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-4 col-span-1">
@@ -365,7 +359,10 @@ const Dashboard = () => {
                   </span>
                   <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
                 </div>
-                <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
+                <div
+                  onClick={handleNotifications}
+                  className="rounded-3xl border-[1.5px] p-8 cursor-pointer"
+                >
                   <span>
                     <Image
                       style={{ color: "#F58426" }}
@@ -386,7 +383,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/*Additional*/}
+            {/* Additional */}
             <div className="flex flex-col">
               <div className="p-4 shadow-md rounded-lg">
                 <div className="flex items-center justify-between">

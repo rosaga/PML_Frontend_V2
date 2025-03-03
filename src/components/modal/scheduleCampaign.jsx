@@ -8,6 +8,8 @@ import { format, parseISO } from "date-fns";
 import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 
 const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
   let token = getToken();
@@ -32,6 +34,8 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
     org_id = localStorage.getItem('selectedAccountId');
   }
 
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (event.target.id === "authentication-modal") {
@@ -46,13 +50,9 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
     };
   }, [closeScheduleCampaignModal]);
 
-
-
   useEffect(() => {
     fetchBalanceandGroups();
-
   }, []);
-
 
   async function fetchBalanceandGroups() {
     const balanceData = await GetBalance(org_id);
@@ -66,14 +66,13 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
     const senderIdData = await GetActiveSenderId(org_id);
     if (senderIdData) {
       setSenderName(senderIdData.data);
-      
-
     }
   }
 
-
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitting(true); 
+
     const schedule_time = new Date(`${startDate}T${startTime}:00.000Z`);
     schedule_time.setHours(schedule_time.getHours() - 3);
     const formData = {
@@ -91,38 +90,38 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
       content_message: message,
       sender_id: parseInt(selectedSenderName),
       slogan: "5",
-      schedule:schedule_time
+      schedule: schedule_time,
     };
     const res = await CreateCampaign(formData)
-    .then((res) => {
-      if (res.status === 202) {
-        setSuccessMessage(`Data has been scheduled for dispatch`);
-        setErrorMessage("");
-        
-      } else {
-        setErrorMessage("Failed to create Campaign. Please try again.");
-        setCampaignName("");
-        setSelectedGroup("");
-        setSelectedBundle("");
-        setMessage("");
-      }
-    })
-    .catch((error) => {
-      if (error.response && error.response.status === 400) {
-        console.log("Error:", error);
-        setErrorMessage("Sorry, you have insufficient units");
-        setCampaignName("");
-        setSelectedGroup("");
-        setSelectedBundle("");
-        setMessage("");
-      } else {
-        setErrorMessage(`Failed to send reward: ${error.message}`);
-      }
-      
-    });
+      .then((res) => {
+        if (res.status === 202) {
+          setSuccessMessage(`Data has been scheduled for dispatch`);
+          setErrorMessage("");
+        } else {
+          setErrorMessage("Failed to create Campaign. Please try again.");
+          setCampaignName("");
+          setSelectedGroup("");
+          setSelectedBundle("");
+          setMessage("");
+        }
+      })
+      .catch((error) => {
+        if (error.response && error.response.status === 400) {
+          console.log("Error:", error);
+          setErrorMessage("Sorry, you have insufficient units");
+          setCampaignName("");
+          setSelectedGroup("");
+          setSelectedBundle("");
+          setMessage("");
+        } else {
+          setErrorMessage(`Failed to send reward: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
 
-  return res;
-
+    return res;
   };
 
   return (
@@ -134,7 +133,7 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
     >
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-        {successMessage ? (
+          {successMessage ? (
             <div className="p-4 text-center">
               <div className="mb-4 text-2xl font-semibold text-green-500">
                 Success!
@@ -152,8 +151,7 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                 OK
               </button>
             </div>
-          ) :
-          errorMessage ? (
+          ) : errorMessage ? (
             <div className="p-4 text-center">
               <div className="mb-4 text-2xl font-semibold text-red-500">
                 Oops!
@@ -170,9 +168,13 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                 OK
               </button>
             </div>
-          )
-          : (
-          <><div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+          ) : submitting ? (
+            <Box className="flex justify-center items-center h-60">
+              <CircularProgress style={{ color: "#F58426" }} />
+            </Box>
+          ) : (
+            <>
+              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Schedule Campaign
                 </h3>
@@ -188,194 +190,194 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                 >
                   + New Campaign
                 </button> */}
-              </div><div className="p-4 md:p-5">
-                  <form className="space-y-2" onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                      <label
-                        htmlFor="name"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Campaign Name
-                      </label>
+              </div>
+              <div className="p-4 md:p-5">
+                <form className="space-y-2" onSubmit={handleSubmit}>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="name"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Campaign Name
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      id="name"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="Campaign Name"
+                      value={campaignName}
+                      onChange={(e) => setCampaignName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label
+                      htmlFor="group"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Group
+                    </label>
+                    <select
+                      name="group"
+                      id="group"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={selectedGroup}
+                      onChange={(e) => setSelectedGroup(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Group</option>
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name} ({group.contact_count})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mb-4">
+                    <label
+                      htmlFor="startDate"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Start Date
+                    </label>
+                    <div className="flex space-x-4">
                       <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Campaign Name"
-                        value={campaignName}
-                        onChange={(e) => setCampaignName(e.target.value)}
-                        required />
-                    </div>
-
-                    <div className="mb-4">
-                      <label
-                        htmlFor="group"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Group
-                      </label>
-                      <select
-                        name="group"
-                        id="group"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedGroup}
-                        onChange={(e) => setSelectedGroup(e.target.value)}
-                        required
-                      >
-                        <option value="">Select Group</option>
-                        {groups.map((group) => (
-                          <option key={group.id} value={group.id}>
-                            {group.name} ({group.contact_count})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="mb-4">
-                      <label
-                        htmlFor="startDate"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Start Date
-                      </label>
-                      <div className="flex space-x-4">
-                        <input
-                          type="date"
-                          name="startDate"
-                          id="startDate"
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                        />
-                        <input
-                          type="time"
-                          name="startTime"
-                          id="startTime"
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                          value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* <div className="mb-4">
-                      <label
-                        htmlFor="endDate"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select End Date
-                      </label>
-                      <div className="flex space-x-4">
-                        <input
-                          type="date"
-                          name="endDate"
-                          id="endDate"
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                        />
-                        <input
-                          type="time"
-                          name="endTime"
-                          id="endTime"
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                          value={endTime}
-                          onChange={(e) => setEndTime(e.target.value)}
-                        />
-                      </div>
-                    </div> */}
-
-
-                    {/* <div className="mb-4">
-                      <label
-                        htmlFor="frequency"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Frequency
-                      </label>
-                      <select
-                        name="frequency"
-                        id="frequency"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={frequency}
-                        onChange={(e) => setFrequency(e.target.value)}
-                      >
-                        <option value="does_not_repeat">Does not repeat</option>
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="yearly">Yearly</option>
-                      </select>
-                    </div> */}
-
-                    <div className="mb-4">
-                      <label
-                        htmlFor="description"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Campaign Description
-                      </label>
+                        type="date"
+                        name="startDate"
+                        id="startDate"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
                       <input
-                        type="text"
-                        name="description"
-                        id="description"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Enter Description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)} />
+                        type="time"
+                        name="startTime"
+                        id="startTime"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                      />
                     </div>
+                  </div>
 
-                    <div className="mb-4">
-                      <label
-                        htmlFor="bundle"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Bundle
-                      </label>
-                      <select
-                        name="bundle"
-                        id="bundle"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedBundle}
-                        onChange={(e) => setSelectedBundle(e.target.value)}
-                        
-                      >
-                        <option value="">Select Bundle</option>
-                        {bundles.map((bundle) => (
-                          <option key={bundle.module} value={bundle.module}>
-                            {bundle.module} MB
-                          </option>
-                        ))}
-                      </select>
+                  {/* <div className="mb-4">
+                    <label
+                      htmlFor="endDate"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select End Date
+                    </label>
+                    <div className="flex space-x-4">
+                      <input
+                        type="date"
+                        name="endDate"
+                        id="endDate"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                      <input
+                        type="time"
+                        name="endTime"
+                        id="endTime"
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 w-full dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                      />
                     </div>
-                    <div className="mb-4">
-                      <label
-                        htmlFor="bundle"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Select Sender Name
-                      </label>
-                      <select
-                        name="bundle"
-                        id="bundle"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        value={selectedSenderName}
-                        onChange={(e) => setSelectedSenderName(e.target.value)}
-                      >
-                        <option value="">Select SenderName</option>
-                        {/* <option value="1">PeakSMS</option> */}
-                        {senderName?.map((senderid) => (
-                          <option key={senderid.service_id} value={senderid.service_id}>
-                            {senderid.sendername}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  </div> */}
 
-                    {
-                      selectedSenderName ? 
-                      <div className="mb-4">
+                  {/* <div className="mb-4">
+                    <label
+                      htmlFor="frequency"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Frequency
+                    </label>
+                    <select
+                      name="frequency"
+                      id="frequency"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={frequency}
+                      onChange={(e) => setFrequency(e.target.value)}
+                    >
+                      <option value=\"does_not_repeat\">Does not repeat</option>
+                      <option value=\"daily\">Daily</option>
+                      <option value=\"weekly\">Weekly</option>
+                      <option value=\"monthly\">Monthly</option>
+                      <option value=\"yearly\">Yearly</option>
+                    </select>
+                  </div> */}
+
+                  <div className="mb-4">
+                    <label
+                      htmlFor="description"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Campaign Description
+                    </label>
+                    <input
+                      type="text"
+                      name="description"
+                      id="description"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="Enter Description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Bundle
+                    </label>
+                    <select
+                      name="bundle"
+                      id="bundle"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={selectedBundle}
+                      onChange={(e) => setSelectedBundle(e.target.value)}
+                    >
+                      <option value="">Select Bundle</option>
+                      {bundles.map((bundle) => (
+                        <option key={bundle.module} value={bundle.module}>
+                          {bundle.module} MB
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="bundle"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Sender Name
+                    </label>
+                    <select
+                      name="bundle"
+                      id="bundle"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      value={selectedSenderName}
+                      onChange={(e) => setSelectedSenderName(e.target.value)}
+                    >
+                      <option value="">Select SenderName</option>
+                      {/* <option value=\"1\">PeakSMS</option> */}
+                      {senderName?.map((senderid) => (
+                        <option key={senderid.service_id} value={senderid.service_id}>
+                          {senderid.sendername}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedSenderName ? (
+                    <div className="mb-4">
                       <label
                         htmlFor="content"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -388,31 +390,31 @@ const ScheduleCampaignModal = ({ closeScheduleCampaignModal }) => {
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="Enter Message"
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)} />
-                    </div> : null
-
-                    }
-
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                        onClick={closeScheduleCampaignModal}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                      >
-                        Submit
-                      </button>
+                        onChange={(e) => setMessage(e.target.value)}
+                      />
                     </div>
-                  </form>
-                </div>
-                </>
+                  ) : null}
+
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                      onClick={closeScheduleCampaignModal}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </>
           )}
-        </div> 
+        </div>
       </div>
     </div>
   );
