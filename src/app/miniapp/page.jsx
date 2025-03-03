@@ -44,7 +44,7 @@ const MiniApp = () => {
           router.push('/apps/data/dashboard');
           break;
         case 'airtime':
-          // router.push('/apps/airtime/dashboard');
+          router.push('/apps/airtime/dashboard');
           break;
         case 'sms':
           router.push('/apps/sms/dashboard');
@@ -99,16 +99,16 @@ const MiniApp = () => {
 
         {/* Airtime Rewards */}
         <Card
-          // onClick={() => handleOptionSelect('airtime')}
-          // className={`cursor-pointer transition-shadow duration-200 ${
-          //   selectedOption && selectedOption !== 'airtime' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
-          // }`}
+          onClick={() => handleOptionSelect('airtime')}
+          className={`cursor-pointer transition-shadow duration-200 ${
+            selectedOption && selectedOption !== 'airtime' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
+          }`}
           sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
         >
           <CardContent>
             {selectedOption === 'airtime' ? (
               <Box className="flex justify-center items-center h-32">
-                {/* <CircularProgress size={40} sx={{ color: '#FF9800' }} /> */}
+                <CircularProgress size={40} sx={{ color: '#FF9800' }} />
               </Box>
             ) : (
               <Box className="flex flex-col items-center justify-center">
