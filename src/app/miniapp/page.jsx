@@ -1,19 +1,22 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { GetSenderId } from "../api/actions/senderId/senderId";
 import '../../app/globals.css';
 
 const MiniApp = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
   const router = useRouter();
+
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
   }
 
   const getSenderIds = async (org_id) => {
+    if (!org_id) return;
     try {
       const res = await GetSenderId(org_id);
       if (res.errors) {
@@ -32,132 +35,146 @@ const MiniApp = () => {
   }, []);
 
   const handleOptionSelect = (option) => {
-    if (option === 'data') {
-      router.push('/apps/data/dashboard');
-    } else if (option === 'sms') {
-      router.push('/apps/sms/dashboard');
-    } else if (option === 'airtime') {
-      router.push('/apps/airtime/dashboard');
-    }
+    if (selectedOption) return;
+    setSelectedOption(option);
+
+    setTimeout(() => {
+      switch (option) {
+        case 'data':
+          router.push('/apps/data/dashboard');
+          break;
+        case 'airtime':
+          router.push('/apps/airtime/dashboard');
+          break;
+        case 'sms':
+          router.push('/apps/sms/dashboard');
+          break;
+        case 'whatsapp':
+          // router.push('/apps/whatsapp/dashboard');
+          break;
+        default:
+          break;
+      }
+    }, 1000);
   };
 
   return (
-    <div
-      className="flex h-screen w-full sm:flex-row"
-      style={{
-        backgroundImage: "url('/images/signin_background.jpeg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'relative',
-      }}
-    >
-      <div className="hidden sm:block sm:w-2/5 h-full"></div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
+      {/* Page Title */}
+      <img src="images/peaklogo.svg" alt="Company Logo" className="w-60 h-60 mb-4" />
 
-      <div className="flex justify-center items-center h-full w-full">
+      <Typography variant="h5" className="font-semi-bold mb-6">
+        Please Select a Product
+      </Typography>
+
+      {/* Grid of 4 product options */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-w-3xl w-full">
+        
+        {/* Data Rewards */}
         <Card
-          sx={{
-            borderRadius: 'lg',
-            boxShadow: 'md',
-            width: '100%',
-            maxWidth: '600px',
-            padding: 2,
-          }}
+          onClick={() => handleOptionSelect('data')}
+          className={`cursor-pointer transition-shadow duration-200 ${
+            selectedOption && selectedOption !== 'data' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
+          }`}
+          sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
         >
           <CardContent>
-            <div className="flex flex-col">
-              <p className="text-2xl font-bold mb-6 mt-4 text-center">
-                Please Select A Product
-              </p>
+            {selectedOption === 'data' ? (
+              <Box className="flex justify-center items-center h-32">
+                <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+              </Box>
+            ) : (
+              <Box className="flex flex-col items-center justify-center">
+                <img src="images/data.svg" alt="Data Icon" className="w-10 h-10 mb-2" />
+                <Typography variant="h6" className="font-semi-bold mt-2">
+                  Data Rewards
+                </Typography>
+                <Typography variant="body2" style={{ color: '#4B465C' }}>
+                  Use Mobile Data to Attract, Engage and Retain Customers
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Bulk Data Card */}
-                <Card
-                  onClick={() => handleOptionSelect('data')}
-                  className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                  sx={{
-                    borderRadius: 4,
-                    padding: 1,
-                    boxShadow: 1,
-                    minWidth: 150,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                  }}
-                >
-                  <img src="images/DATA EDITED.png" alt="Data Icon" className="w-40 h-40 mb-2" />
-                  <Typography variant="h6" component="p" className="font-bold">
-                    Bulk Data
-                  </Typography>
-                </Card>
+        {/* Airtime Rewards */}
+        <Card
+          onClick={() => handleOptionSelect('airtime')}
+          className={`cursor-pointer transition-shadow duration-200 ${
+            selectedOption && selectedOption !== 'airtime' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
+          }`}
+          sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
+        >
+          <CardContent>
+            {selectedOption === 'airtime' ? (
+              <Box className="flex justify-center items-center h-32">
+                <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+              </Box>
+            ) : (
+              <Box className="flex flex-col items-center justify-center">
+                <img src="images/airtime.svg" alt="Airtime Icon" className="w-10 h-10 mb-2" />
+                <Typography variant="h6" className="font-semi-bold mt-2">
+                  Airtime Rewards
+                </Typography>
+                <Typography variant="body2" style={{ color: '#4B465C' }}>
+                  Reward your customers with Free Airtime
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
 
-                {/* SMS Connect Card */}
-                <Card
-                  onClick={() => handleOptionSelect('sms')}
-                  className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                  sx={{
-                    borderRadius: 4,
-                    padding: 1,
-                    boxShadow: 1,
-                    minWidth: 150,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                  }}
-                >
-                  <img src="/images/BULK DATA SQUARE ICON.png" alt="SMS Icon" className="w-40 h-40 mb-2" />
-                  <Typography variant="h6" component="p" className="font-bold">
-                    SMS Connect
-                  </Typography>
-                </Card>
+        {/* Bulk SMS */}
+        <Card
+          onClick={() => handleOptionSelect('sms')}
+          className={`cursor-pointer transition-shadow duration-200 ${
+            selectedOption && selectedOption !== 'sms' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
+          }`}
+          sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
+        >
+          <CardContent>
+            {selectedOption === 'sms' ? (
+              <Box className="flex justify-center items-center h-32">
+                <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+              </Box>
+            ) : (
+              <Box className="flex flex-col items-center justify-center">
+                <img src="images/message.svg" alt="SMS Icon" className="w-10 h-10 mb-2" />
+                <Typography variant="h6" className="font-semi-bold mt-2">
+                  Bulk SMS
+                </Typography>
+                <Typography variant="body2" style={{ color: '#4B465C' }}>
+                  Run SMS marketing campaigns with ease
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
 
-                {/* WhatsApp Flowbot Card */}
-                <Card
-                onClick={() =>'#'}
-                  className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                  sx={{
-                    borderRadius: 4,
-                    padding: 1,
-                    boxShadow: 1,
-                    minWidth: 150,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                  }}
-                >
-                  <img src="/images/WHATASAPP ICON.png" alt="Flowbot Icon" className="w-15 h-15 mb-2" />
-                  <Typography variant="h6" component="p" className="font-bold">
-                    WhatsApp Flowbot (Coming Soon)
-                  </Typography>
-                </Card>
-
-                {/* Airtime Rewards Card */}
-                <Card
-                  onClick={() => handleOptionSelect('airtime')}
-                  className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                  sx={{
-                    borderRadius: 4,
-                    padding: 1,
-                    boxShadow: 1,
-                    minWidth: 150,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                  }}
-                >
-                  <img src="images/DATA EDITED.png" alt="Data Icon" className="w-40 h-40 mb-2" />
-                  <Typography variant="h6" component="p" className="font-bold">
-                    Airtime Rewards
-                  </Typography>
-                </Card>
-              </div>
-            </div>
+        {/* WhatsApp Bots */}
+        <Card
+          // onClick={() => handleOptionSelect('whatsapp')}
+          // className={`cursor-pointer transition-shadow duration-200 ${
+          //   selectedOption && selectedOption !== 'whatsapp' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
+          // }`}
+          sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
+        >
+          <CardContent>
+            {selectedOption === 'whatsapp' ? (
+              <Box className="flex justify-center items-center h-32">
+                <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+              </Box>
+            ) : (
+              <Box className="flex flex-col items-center justify-center">
+                <img src="images/sms.svg" alt="WhatsApp Icon" className="w-10 h-10 mb-2" />
+                <Typography variant="h6" className="font-semi-bold mt-2">
+                  WhatsApp Bots
+                </Typography>
+                <Typography variant="body2" style={{ color: '#4B465C' }}>
+                  Create WhatsApp conversations to support & engage your customers
+                </Typography>
+              </Box>
+            )}
           </CardContent>
         </Card>
       </div>

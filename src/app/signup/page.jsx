@@ -252,7 +252,7 @@ const SignUp = () => {
                     </span>
                   </p>
 
-                  <div className="flex justify-center items-center mt-4 relative">
+                  {/* <div className="flex justify-center items-center mt-4 relative">
                     <span className="line w-1/3 border-t border-gray-300"></span>
                     <span className="mx-2">Or</span>
                     <span className="line w-1/3 border-t border-gray-300"></span>
@@ -266,7 +266,7 @@ const SignUp = () => {
                         console.log("Google button clicked");
                       }}
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </CardContent>
