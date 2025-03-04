@@ -59,9 +59,11 @@ const MiniApp = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
+    <>
+    <img src="images/peaklogo.svg" alt="Company Logo" className="w-60 h-60 mb-4" />
+    <div className="flex flex-col items-center justify-center max-h-screen bg-white p-4">
       {/* Page Title */}
-      <img src="images/peaklogo.svg" alt="Company Logo" className="w-60 h-60 mb-4" />
+
 
       <Typography variant="h5" className="font-semi-bold mb-6">
         Please Select a Product
@@ -69,13 +71,11 @@ const MiniApp = () => {
 
       {/* Grid of 4 product options */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-w-3xl w-full">
-        
+
         {/* Data Rewards */}
         <Card
           onClick={() => handleOptionSelect('data')}
-          className={`cursor-pointer transition-shadow duration-200 ${
-            selectedOption && selectedOption !== 'data' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
-          }`}
+          className={`cursor-pointer transition-shadow duration-200 ${selectedOption && selectedOption !== 'data' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'}`}
           sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
         >
           <CardContent>
@@ -100,9 +100,7 @@ const MiniApp = () => {
         {/* Airtime Rewards */}
         <Card
           onClick={() => handleOptionSelect('airtime')}
-          className={`cursor-pointer transition-shadow duration-200 ${
-            selectedOption && selectedOption !== 'airtime' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
-          }`}
+          className={`cursor-pointer transition-shadow duration-200 ${selectedOption && selectedOption !== 'airtime' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'}`}
           sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
         >
           <CardContent>
@@ -127,9 +125,7 @@ const MiniApp = () => {
         {/* Bulk SMS */}
         <Card
           onClick={() => handleOptionSelect('sms')}
-          className={`cursor-pointer transition-shadow duration-200 ${
-            selectedOption && selectedOption !== 'sms' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'
-          }`}
+          className={`cursor-pointer transition-shadow duration-200 ${selectedOption && selectedOption !== 'sms' ? 'opacity-50 pointer-events-none' : 'hover:shadow-md'}`}
           sx={{ borderRadius: 1, textAlign: 'center', padding: 2, background: '#4B465C0A' }}
         >
           <CardContent>
@@ -178,7 +174,7 @@ const MiniApp = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div></>
   );
 };
 
