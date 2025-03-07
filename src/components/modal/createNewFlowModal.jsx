@@ -3,11 +3,16 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const CreateNewFlowModal = ({ closeModal }) => {
-  const [flowName, setFlowName] = useState("");
-  const [selectedChannels, setSelectedChannels] = useState([]);
-  const [senderID, setSenderID] = useState("");
+  const [name, setName] = useState("");
+  const [channel_id, setChannel_id] = useState("");
+  const [type, setType] = useState("WhatsApp");
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
+
+  let organization_id = null;
+  if (typeof window !== 'undefined') {
+    organization_id = localStorage.getItem('selectedAccountId');
+  }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -22,16 +27,40 @@ const CreateNewFlowModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
-  const handleChannelChange = (event) => {
-    const { value, checked } = event.target;
-    setSelectedChannels((prev) =>
-      checked ? [...prev, value] : prev.filter((channel) => channel !== value)
-    );
+  const handleTypeChange = (event) => {
+    setType(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    router.push("/apps/flowbot/flowbuilder?tab=flowbot"); // Redirects to FlowChannels page
+    
+    try {
+      const flowData = {
+        name,
+        organization_id,
+        type,
+        channel_id: channel_id || undefined
+      };
+      
+      console.log('payload', flowData);
+      const response = await fetch('https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(flowData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create flow');
+      }
+      
+      // If successful, redirect to the flow builder page
+      router.push("/apps/flowbot/flowbuilder?tab=flowbot"); 
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
   };
 
   return (
@@ -66,45 +95,54 @@ const CreateNewFlowModal = ({ closeModal }) => {
                   name="flow_name"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                   placeholder="e.g Marketing Survey"
-                  value={flowName}
-                  onChange={(e) => setFlowName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   required
                 />
               </div>
+              
               <div className="mb-4">
                 <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Select Channel of Choice
+                  Select Flow Type
                 </label>
                 <div className="flex space-x-4">
-                  {["WhatsApp", "USSD", "Shortcode"].map((channel) => (
-                    <label key={channel} className="flex items-center space-x-2">
+                  {["WhatsApp", "SMS", "Shortcode"].map((typeOption) => (
+                    <label key={typeOption} className="flex items-center space-x-2">
                       <input
-                        type="checkbox"
-                        value={channel}
-                        checked={selectedChannels.includes(channel)}
-                        onChange={handleChannelChange}
+                        type="radio"
+                        name="flow_type"
+                        value={typeOption}
+                        checked={type === typeOption}
+                        onChange={handleTypeChange}
+                        className="w-4 h-4 text-orange-400 focus:ring-orange-400"
                       />
-                      <span className="text-gray-900 dark:text-white">{channel}</span>
+                      <span className="text-gray-900 dark:text-white">{typeOption}</span>
                     </label>
                   ))}
                 </div>
               </div>
+              
               <div className="mb-4">
-                <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Select Sender ID (Optional)
+                <label 
+                  htmlFor="channel_id" 
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  Select Channel (Optional)
                 </label>
                 <select
-                  id="sender_id"
-                  name="sender_id"
+                  id="channel_id"
+                  name="channel_id"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                  value={senderID}
-                  onChange={(e) => setSenderID(e.target.value)}
+                  value={channel_id}
+                  onChange={(e) => setChannel_id(e.target.value)}
                 >
-                  <option value="">WhatsApp</option>
-                  <option value="">WhatsApp</option>
-                  <option value="">WhatsApp</option>
+                  <option value="">Select a channel</option>
+                  <option value="1">WhatsApp</option>
+                  <option value="2">WhatsApp Business</option>
+                  <option value="3">SMS</option>
                 </select>
               </div>
+              
               <div className="flex space-x-2">
                 <button
                   type="button"
