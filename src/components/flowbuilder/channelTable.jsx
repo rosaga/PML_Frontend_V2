@@ -11,7 +11,7 @@ import CodeIcon from "@mui/icons-material/Code";
 import DialpadIcon from "@mui/icons-material/Dialpad";
 import PeakButton from "../button/button";
 import AddIcon from "@mui/icons-material/Add";
-import CreateShortCodeModal from "../modal/createShortCodeModal";
+import CreateChannelModal from "../modal/createShortCodeModal";
 
 
 const ChannelTable = () => {
@@ -94,7 +94,7 @@ const ChannelTable = () => {
 
   return (
     <>
-    {isModalOpen && <CreateShortCodeModal closeModal={closeModal} />}
+    {isModalOpen && <CreateChannelModal closeModal={closeModal} />}
     <div>
       <div className="flex flex-col md:flex-row items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Channels</p>
