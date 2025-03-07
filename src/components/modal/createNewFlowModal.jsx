@@ -42,7 +42,6 @@ const CreateNewFlowModal = ({ closeModal }) => {
         channel_id: channel_id || undefined
       };
       
-      console.log('payload', flowData);
       const response = await fetch('https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows', {
         method: 'POST',
         headers: {
