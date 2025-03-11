@@ -76,7 +76,7 @@ const AllFlows = () => {
         organization_id = localStorage.getItem('selectedAccountId');
       }
 
-      const apiUrl = `https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows?organization_id=${organization_id}`;
+      const apiUrl = `https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows?eq__organization_id=${organization_id}`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',

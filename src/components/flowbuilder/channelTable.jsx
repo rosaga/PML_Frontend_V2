@@ -43,7 +43,7 @@ const ChannelTable = () => {
       setLoading(true);
       const token = getToken();
       const response = await axios.get(
-        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/channels?organization_id=${organization_id}`,
+        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/channels?eq__organization_id=${organization_id}`,
         {
           headers: {
             'accept': 'application/json',
@@ -65,7 +65,7 @@ const ChannelTable = () => {
   const fetchFlows = async () => {
     try {
       const response = await fetch(
-        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows?organization_id=${organization_id}`,
+        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows?eq__organization_id=${organization_id}`,
         {
           method: 'GET',
           headers: {
