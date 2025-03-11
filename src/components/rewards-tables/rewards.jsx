@@ -85,7 +85,6 @@ const RewardsTable = () => {
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1, minWidth: 150 },
     {
       field: "mobile_no",
-      // Custom header with toggle icon next to the "Phone Number" label
       renderHeader: () => (
         <div style={{ display: "flex", alignItems: "center" }}>
           <span style={{ marginRight: 4 }}>Phone Number</span>
