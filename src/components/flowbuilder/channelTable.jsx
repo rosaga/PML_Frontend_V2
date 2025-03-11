@@ -37,7 +37,7 @@ const ChannelTable = () => {
     fetchFlows();
   }, []);
 
-  // Fetch channels from backend
+
   const fetchChannels = async () => {
     try {
       setLoading(true);
