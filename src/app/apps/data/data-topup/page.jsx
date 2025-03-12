@@ -542,7 +542,7 @@ const DataUnitsTopupPage = () => {
           
           <div className="mb-8">
             <label className="block text-gray-600 mb-2">
-              What's your primary use case
+              What is your primary use case?
             </label>
             <textarea
               value={useCase}
