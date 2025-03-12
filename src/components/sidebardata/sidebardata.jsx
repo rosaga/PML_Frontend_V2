@@ -235,7 +235,7 @@ const SidebarData = () => {
               </li>
             ))}
           </ul>
-          <ul className="font-medium mt-40">
+          {/* <ul className="font-medium mt-40">
             <li>
               <a
                 onClick={handleLogoutClick}
@@ -255,15 +255,15 @@ const SidebarData = () => {
                 <span className="flex-1 ms-3 whitespace-nowrap">Logout</span>
               </a>
             </li>
-          </ul>
+          </ul> */}
         </div>
       </aside>
-      {modalOpen && (
+      {/* {modalOpen && (
         <ConfirmSignOutModal
           onClose={handleCloseModal}
           onConfirm={handleConfirmLogout}
         />
-      )}
+      )} */}
         <Modal
             open={openTourModal}
             onClose={() => setOpenTourModal(false)}

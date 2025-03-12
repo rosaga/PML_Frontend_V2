@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { fetchContacts } from "@/app/api/actions/contact/contact";
-import { GetAirtimeBalance } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";
+// import { GetAirtimeBalance } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";
 import { sendAirtimeReward } from "@/app/api/actions/airtimeReward/airtimeReward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 
@@ -93,19 +93,19 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
-  useEffect(() => {
-    async function fetchBalance() {
-      const balanceData = await GetAirtimeBalance(org_id);
-      if (balanceData) {
-        setBundles(balanceData.data.data);
-      }
-      const senderIdData = await GetActiveSenderId(org_id);
-      if (senderIdData) {
-        setSenderName(senderIdData.data);
-      }
-    }
-    fetchBalance();
-  }, [org_id]);
+  // useEffect(() => {
+  //   async function fetchBalance() {
+  //     const balanceData = await GetAirtimeBalance(org_id);
+  //     if (balanceData) {
+  //       setBundles(balanceData.data.data);
+  //     }
+  //     const senderIdData = await GetActiveSenderId(org_id);
+  //     if (senderIdData) {
+  //       setSenderName(senderIdData.data);
+  //     }
+  //   }
+  //   fetchBalance();
+  // }, [org_id]);
 
   return (
     <div
