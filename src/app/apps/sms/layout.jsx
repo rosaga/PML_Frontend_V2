@@ -2,7 +2,7 @@
 import { Inter } from "next/font/google";
 import "../../../app/globals.css";
 import SidebarSms from "@/components/sidebarsms/sidebarsms";
-import Navbar from "@/components/navbar/navbar";
+import SmsNavbar from "@/components/sms-navbar/smsnavbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,7 +21,7 @@ export default function RootLayout({
         <SessionProviderWrapper>
           <div>
             <SidebarSms />
-            <Navbar />
+            <SmsNavbar />
             {children}
           </div>
         </SessionProviderWrapper>
