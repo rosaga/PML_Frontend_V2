@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-// Remove the old reward API imports and import airtimeRewards instead:
 import { requestUnits } from "@/app/api/actions/reward/reward";
 
 const RequestAirtimeModal = ({ closeModal }) => {
