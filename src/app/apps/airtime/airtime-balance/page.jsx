@@ -203,10 +203,9 @@ const AirtimeBalance = () => {
                 {loading ? (
                   <p>Loading...</p>
                 ) : (
-                  balances.map((balance, index) => (
-                    <div key={index} className="border-[1.5px] shadow-sm rounded-lg p-6 flex-shrink-0 w-60 m-2">
+                    <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex-shrink-0 w-60 m-2">
                       <div className="flex justify-between items-center mb-4">
-                        <div className="text-gray-500">{balance.module} MBs</div>
+                        <div className="text-gray-500">Balance</div>
                         <div>
                           <span>
                             <Image
@@ -214,7 +213,7 @@ const AirtimeBalance = () => {
                               className="w-12 h-12 rounded-lg"
                               width={60}
                               height={60}
-                              src={`/images/Icon-${index % 4}.svg`}
+                              src={`/images/airtime.svg`}
                               blurDataURL="/bluriconloader.png"
                               placeholder="blur"
                               alt="Icon"
@@ -223,9 +222,9 @@ const AirtimeBalance = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="text-2xl font-bold">{balance.units} Units</div>
+                      {/* static balance */}
+                      <div className="text-2xl font-bold">5000 KES</div>
                     </div>
-                  ))
                 )}
               </div>
             </div>

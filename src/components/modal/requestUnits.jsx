@@ -22,19 +22,20 @@ const RequestUnitsModal = ({ closeModal }) => {
       bundleAmount,
       numberOfUnits
     } : null;
-
+  
     const allRequests = currentRequest ? [...requests, currentRequest] : requests;
-
+  
     const results = await Promise.all(allRequests.map(async (request) => {
       const newRequest = {
         package: request.bundleAmount,
         units: parseInt(request.numberOfUnits),
+        service: "DATA",
       };
-
+  
       const res = await requestUnits({ org_id, newRequest });
-      return res.status === 201;
+      return res.status === 201 || res.status === 200;
     }));
-
+  
     if (results.every(result => result)) {
       setSuccessMessage(`Your Data Units Request is under Review`);
       setErrorMessage("");
@@ -42,6 +43,7 @@ const RequestUnitsModal = ({ closeModal }) => {
       setErrorMessage("Failed to send data. Please try again.");
     }
   };
+  
 
   const handleAddRequest = () => {
     if (bundleAmount === "") {

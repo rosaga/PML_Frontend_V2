@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
+// Remove the old reward API imports and import airtimeRewards instead:
 import { requestUnits } from "@/app/api/actions/reward/reward";
-import { GetBalance } from "@/app/api/actions/reward/reward";
 
 const RequestAirtimeModal = ({ closeModal }) => {
   let org_id = null;
@@ -8,93 +8,33 @@ const RequestAirtimeModal = ({ closeModal }) => {
     org_id = localStorage.getItem('selectedAccountId');
   }
 
-  const [bundleAmount, setBundleAmount] = useState("");
   const [airtimeAmount, setAirtimeAmount] = useState("");
-  const [requests, setRequests] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [bundles, setBundles] = useState([]);
-  const [bundleAmountError, setBundleAmountError] = useState(false);
   const [numberOfUnitsError, setNumberOfUnitsError] = useState(false);
 
   const handleRequest = async () => {
-    const currentRequest = bundleAmount && numberOfUnits ? {
-      bundleAmount,
-      numberOfUnits
-    } : null;
-
-    const allRequests = currentRequest ? [...requests, currentRequest] : requests;
-
-    const results = await Promise.all(allRequests.map(async (request) => {
-      const newRequest = {
-        package: request.bundleAmount,
-        units: parseInt(request.numberOfUnits),
-      };
-
-      const res = await requestUnits({ org_id, newRequest });
-      return res.status === 201;
-    }));
-
-    if (results.every(result => result)) {
-      setSuccessMessage(`Your Data Units Request is under Review`);
-      setErrorMessage("");
-    } else {
-      setErrorMessage("Failed to send data. Please try again.");
-    }
-  };
-
-  const handleAddRequest = () => {
-    if (bundleAmount === "") {
-      setBundleAmountError(true);
-      return;
-    }
-    if (numberOfUnits === "") {
+    if (!airtimeAmount) {
       setNumberOfUnitsError(true);
       return;
     }
-
     const newRequest = {
-      bundleAmount,
-      numberOfUnits
+      units: parseInt(airtimeAmount),
+      service: "AIRTIME",
     };
-
-    setRequests([...requests, newRequest]);
-    setBundleAmount("");
-    setNumberOfUnits("");
-    setBundleAmountError(false);
-    setNumberOfUnitsError(false);
+  
+    const res = await requestUnits({ org_id, newRequest });
+    if (res.status === 201 || res.status === 200) {
+      setSuccessMessage("Your Airtime Request is under Review");
+      setErrorMessage("");
+    } else {
+      setErrorMessage("Failed to send airtime. Please try again.");
+    }
   };
-
-  const handleRemoveRequest = (index) => {
-    const newRequests = [...requests];
-    newRequests.splice(index, 1);
-    setRequests(newRequests);
-  };
-
-  const calculateTotalCost = () => {
-    const currentRequestCost = bundleAmount && numberOfUnits ? 
-      parseFloat(bundleAmount) * parseFloat(numberOfUnits) * 0.22 : 0;
-
-    const totalCost = requests.reduce((total, request) => {
-      const bundleAmount = parseFloat(request.bundleAmount);
-      const numberOfUnits = parseFloat(request.numberOfUnits);
-      if (!isNaN(bundleAmount) && !isNaN(numberOfUnits)) {
-        return total + (bundleAmount * numberOfUnits * 0.22);
-      }
-      return total;
-    }, 0);
-
-    return (totalCost + currentRequestCost).toFixed(2);
-  };
+  
 
   useEffect(() => {
-    async function fetchBalance() {
-      const balanceData = await GetBalance(org_id);
-      if (balanceData) {
-        setBundles(balanceData.data.data);
-      }
-    }
-    fetchBalance();
+   // for fetch balance
   }, []);
 
   return (
@@ -110,23 +50,6 @@ const RequestAirtimeModal = ({ closeModal }) => {
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
               Request for Airtime
             </h3>
-            {/* <div className="flex space-x-4">
-              <div className="px-2 py-2 bg-gray-400 text-gray-900 rounded-md border border-gray-400">
-                Total Cost: Ksh. {calculateTotalCost()}
-              </div>
-              {!successMessage ? (
-                <button
-                onClick={handleAddRequest}
-                className="flex items-center px-4 py-2 text-sm font-medium text-white  rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 dark:focus:ring-orange-800"
-                style={{ backgroundColor: "#F58426" }}
-              >
-                + New
-              </button>
-                ):(
-                  ''
-                )}
-              
-            </div> */}
           </div>
           <div className="p-4 md:p-5 space-y-4">
             {successMessage ? (
@@ -148,60 +71,47 @@ const RequestAirtimeModal = ({ closeModal }) => {
                 </button>
               </div>
             ) : (
-              <>
-                {/* {requests.map((request, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-green-100 rounded">
-                    <span>
-                      {request.numberOfUnits} units of {request.bundleAmount}MB
-                    </span>
-                    <button
-                      onClick={() => handleRemoveRequest(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      X
-                    </button>
-                  </div>
-                ))} */}
-                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                  <div>
-                    <label
-                      htmlFor="bundleAmount"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
-                      Airtime Amount
-                    </label>
-                    <input
-                      type="number"
-                      id="airtimeAmount"
-                      className={`bg-gray-50 border ${numberOfUnitsError ? 'border-red-500' : 'border-gray-300'} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white`}
-                      placeholder="200"
-                      value={airtimeAmount}
-                      onChange={(e) => { setAirtimeAmount(e.target.value); setNumberOfUnitsError(false); }}
-                      required
-                    />
-                  </div>
-                 
-                  {errorMessage && (
-                    <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
-                  )}
-                  <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRequest}
-                      className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-orange-500 dark:hover:bg-orange-600 dark:focus:ring-orange-800"
-                    >
-                      Request
-                    </button>
-                  </div>
-                </form>
-              </>
+              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                <div>
+                  <label
+                    htmlFor="airtimeAmount"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Airtime Amount
+                  </label>
+                  <input
+                    type="number"
+                    id="airtimeAmount"
+                    className={`bg-gray-50 border ${numberOfUnitsError ? 'border-red-500' : 'border-gray-300'} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white`}
+                    placeholder="100"
+                    value={airtimeAmount}
+                    onChange={(e) => {
+                      setAirtimeAmount(e.target.value);
+                      setNumberOfUnitsError(false);
+                    }}
+                    required
+                  />
+                </div>
+                {errorMessage && (
+                  <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                )}
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRequest}
+                    className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-orange-500 dark:hover:bg-orange-600 dark:focus:ring-orange-800"
+                  >
+                    Request
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>
