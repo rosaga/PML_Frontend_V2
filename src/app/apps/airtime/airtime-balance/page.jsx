@@ -9,7 +9,7 @@ import PeakButton from "../../../../components/button/button";
 import PeakSearch from "../../../../components/search/search";
 import RequestAirtimeUnitsModal from "../../../../components/modal/requestAirtime";
 import * as XLSX from 'xlsx';
-import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
+import { GetRecharges } from "@/app/api/actions/reward/reward";
 import { format,parseISO } from "date-fns";
 import { getToken } from "@/utils/auth";
 import { hasRole } from "../../../../utils/decodeToken"
@@ -28,7 +28,7 @@ const AirtimeBalance = () => {
   }
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [balances, setBalances] = useState([]);
+  // const [balances, setBalances] = useState([]);
   const [recharges, setRecharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
@@ -160,12 +160,12 @@ const AirtimeBalance = () => {
 
   
 
-  async function fetchBalance() {
-    const balanceData = await GetBalance(org_id);
-    if (balanceData) {
-      setBalances(balanceData.data.data);
-    }
-  }
+  // async function fetchBalance() {
+  //   const balanceData = await GetBalance(org_id);
+  //   if (balanceData) {
+  //     setBalances(balanceData.data.data);
+  //   }
+  // }
   const getRecharges = async () => {
     try {
       const res = await GetRecharges(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
@@ -198,7 +198,7 @@ const AirtimeBalance = () => {
               <p className="m-1 font-semibold text-lg">Airtime Balance</p>
             </div>
 
-            <div className="p-2">
+            {/* <div className="p-2">
               <div className="flex flex-wrap justify-left">
                 {loading ? (
                   <p>Loading...</p>
@@ -227,7 +227,7 @@ const AirtimeBalance = () => {
                     </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
             <div className="flex flex-col">
               <div className="p-4">

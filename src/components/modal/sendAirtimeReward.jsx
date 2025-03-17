@@ -94,6 +94,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
     };
   }, [closeModal]);
 
+
   useEffect(() => {
     async function fetchBalance() {
       const balanceData = await GetBalance(org_id);
@@ -107,6 +108,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
     }
     fetchBalance();
   }, [org_id]);
+
 
   return (
     <div
