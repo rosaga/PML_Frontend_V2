@@ -16,6 +16,7 @@ import { hasRole } from "../../../../utils/decodeToken"
 import apiUrl from "../../../api/utils/apiUtils/apiUrl"
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import { GetBalance } from "@/app/api/actions/reward/reward";
 
 
 const AirtimeBalance = () => {
@@ -28,7 +29,7 @@ const AirtimeBalance = () => {
   }
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // const [balances, setBalances] = useState([]);
+  const [balances, setBalances] = useState([]);
   const [recharges, setRecharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
@@ -160,12 +161,12 @@ const AirtimeBalance = () => {
 
   
 
-  // async function fetchBalance() {
-  //   const balanceData = await GetBalance(org_id);
-  //   if (balanceData) {
-  //     setBalances(balanceData.data.data);
-  //   }
-  // }
+  async function fetchBalance() {
+    const balanceData = await GetBalance(org_id);
+    if (balanceData) {
+      setBalances(balanceData.data.data);
+    }
+  }
   const getRecharges = async () => {
     try {
       const res = await GetRecharges(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
@@ -198,7 +199,7 @@ const AirtimeBalance = () => {
               <p className="m-1 font-semibold text-lg">Airtime Balance</p>
             </div>
 
-            {/* <div className="p-2">
+            <div className="p-2">
               <div className="flex flex-wrap justify-left">
                 {loading ? (
                   <p>Loading...</p>
@@ -227,7 +228,7 @@ const AirtimeBalance = () => {
                     </div>
                 )}
               </div>
-            </div> */}
+            </div>
 
             <div className="flex flex-col">
               <div className="p-4">
