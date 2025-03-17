@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { fetchContacts } from "@/app/api/actions/contact/contact";
-import { GetAirtimeBalance } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";
 import { sendAirtimeReward } from "@/app/api/actions/airtimeReward/airtimeReward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
+import { GetBalance } from "@/app/api/actions/reward/reward";
+
 
 const SendAirtimeRewardModal = ({ closeModal }) => {
   let org_id = null;
@@ -70,7 +71,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
         setSuccessMessage("");
       }
     } catch (error) {
-      if (error.response && error.response.status === 400) {
+      if (error.response && error.response.status === 402) {
         setErrorMessage("Insufficient units. Please top up to proceed");
       } else {
         setErrorMessage(`Failed to send airtime reward: ${error.message}`);
@@ -95,7 +96,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
 
   useEffect(() => {
     async function fetchBalance() {
-      const balanceData = await GetAirtimeBalance(org_id);
+      const balanceData = await GetBalance(org_id);
       if (balanceData) {
         setBundles(balanceData.data.data);
       }
@@ -209,14 +210,14 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                   </div>
                   <div className="mb-4">
                     <label
-                      htmlFor="sender"
+                      htmlFor="bundle"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Select Sender Name
                     </label>
                     <select
-                      name="sender"
-                      id="sender"
+                      name="bundle"
+                      id="bundle"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                       value={selectedSenderName}
                       onChange={(e) => setSelectedSenderName(e.target.value)}
