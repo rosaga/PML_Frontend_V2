@@ -145,7 +145,7 @@ const Otp = () => {
                   <button
                     disabled={timeLeft > 0 || isResending}
                     onClick={handleResend}
-                    className={`text-xs font-md ${
+                    className={`text-m font-md ${
                       timeLeft > 0 || isResending ? "text-gray-400" : "text-[#E88A17]"
                     }`}
                   >

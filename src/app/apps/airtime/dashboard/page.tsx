@@ -8,6 +8,9 @@ import RecipientDashboard from "@/components/rewards-tables/recipientDashboard";
 import GroupDashboard from "@/components/rewards-tables/groupDashboard";
 import DownloadAllButton from "@/components/button/DownloadAllButton";
 import { GetAirtimeRewards } from "@/app/api/actions/airtimeReward/airtimeReward";
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
   
 interface AirtimeReward {
   id: number;
@@ -42,6 +45,7 @@ const Dashboard = () => {
 
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [hidePhone, setHidePhone] = useState(true);
 
   const [rows, setRows] = useState<AirtimeReward[]>([]);
   const [paginationModel, setPaginationModel] = useState({
@@ -55,6 +59,14 @@ const Dashboard = () => {
   const [consumedAirtime, setConsumedAirtime] = useState(0);
 
   const [recipients, setRecipients] = useState<any[]>([]);
+
+    // mask phone number function
+    const maskPhone = (phone: string) => {
+      if (phone && phone.length > 5) {
+        return phone.slice(0, 2) + "*".repeat(phone.length - 5) + phone.slice(-3);
+      }
+      return phone;
+    };
 
   const columns: GridColDef[] = [
     {
@@ -85,9 +97,24 @@ const Dashboard = () => {
     },
     {
       field: "mobile_no",
-      headerName: "Phone Number",
+      renderHeader: () => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ marginRight: 4 }}>Phone Number</span>
+          <IconButton
+            size="small"
+            onClick={() => setHidePhone(!hidePhone)}
+            title={hidePhone ? "Show Phone Number" : "Hide Phone Number"}
+          >
+            {hidePhone ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
+          </IconButton>
+        </div>
+      ),
       flex: 1,
       minWidth: 200,
+      renderCell: (params) => {
+        const phone = params.value || "";
+        return hidePhone ? maskPhone(phone) : phone;
+      },
     },
     {
       field: "status",
