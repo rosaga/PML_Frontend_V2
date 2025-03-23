@@ -20,14 +20,21 @@ const DataUnitsTopupPage = () => {
 
   useEffect(() => {
     let calculatedCost = 0;
-    
+  
     cart.forEach(item => {
       const mbValue = parseInt(item.bundleSize);
       calculatedCost += ratePerMB * mbValue * item.units;
     });
-    
+  
+    const currentMB = parseInt(bundleSize);
+    if (!isNaN(currentMB) && units > 0) {
+      calculatedCost += ratePerMB * currentMB * units;
+    }
+  
     setTotalCost(calculatedCost);
-  }, [cart]);
+  }, [cart, bundleSize, units]);
+  
+
 
   const addBundle = () => {
     const newItem = {
@@ -224,15 +231,16 @@ const DataUnitsTopupPage = () => {
             <h2 className="text-xl font-semibold text-gray-600 mb-2">
               TRIAL PACKAGE
             </h2>
+            <div className="text-sm text-gray-600 mb-8 text-center">
+              Run your first test reward for Free
+            </div>
             <p className="text-gray-500 mb-4">Rate per MB: 0.00</p>
 
             <div className="text-4xl font-bold text-orange-400 mb-6">
               Free
             </div>
 
-            <div className="text-sm text-gray-600 mb-2">
-              Run your first test reward for Free
-            </div>
+           
             <div className="text-sm text-gray-600 mb-2">
               10 Free units of 20MB
             </div>
@@ -255,6 +263,9 @@ const DataUnitsTopupPage = () => {
             <h2 className="text-xl font-semibold text-gray-600 mb-2">
               STARTER PACKAGE
             </h2>
+            <div className="text-sm text-gray-600 mb-8 text-center">
+              For small businesses just getting started with Rewards
+            </div>
             <p className="text-gray-500 mb-4">Rate per MB: 0.20</p>
 
             <div className="flex items-baseline mb-6">
@@ -262,23 +273,16 @@ const DataUnitsTopupPage = () => {
               <span className="text-4xl font-bold text-orange-400">10,000</span>
             </div>
 
-            <div className="text-sm text-gray-600 mb-2">
+
+            <div className="text-sm text-gray-600 mb-2 text-center">
               Disburse Data via Self Service Platform or API
             </div>
             <div className="text-sm text-gray-600 mb-2">500 Free SMS</div>
-            <div className="text-sm text-gray-600 mb-8">
-              For small businesses just getting started with Rewards
-            </div>
+       
 
             <button className="bg-[#F58426] hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded w-full cursor-pointer"
                 onClick={() => {
-                  // Add a default bundle to cart
-                  const defaultItem = {
-                    id: Date.now(),
-                    bundleSize: "50MB",
-                    units: 2,
-                  };
-                  setCart([defaultItem]);
+
                   setCurrentStep(2);
                 }}>
               Top up Now
@@ -300,6 +304,11 @@ const DataUnitsTopupPage = () => {
             <h2 className="text-xl font-semibold text-gray-600 mb-2">
               GROWTH PACKAGE
             </h2>
+            <div className="mb-8 w-full text-center">
+            <p className="text-sm text-gray-600">
+              For growing businesses looking to increase customer loyalty
+            </p>
+          </div>
             <p className="text-gray-500 mb-4">Rate per MB: Custom</p>
 
             <div className="flex items-baseline mb-6">
@@ -310,21 +319,15 @@ const DataUnitsTopupPage = () => {
             </div>
 
             <div className="w-full mb-2">
-              <div className="flex items-start mb-2">
-                <div className="text-sm text-gray-600">
+              <div className="flex mb-2">
+                <div className="text-sm text-gray-600 text-center">
                   Disburse Data via Self Service Platform or API
                 </div>
               </div>
 
-              <div className="flex items-start mb-2">
-                <div className="text-sm text-gray-600">2000 Free SMS</div>
-              </div>
+              <div className="text-sm text-gray-600 text-center">2000 Free SMS</div>
 
-              <div className="flex items-start mb-8">
-                <div className="text-sm text-gray-600">
-                  For growing businesses looking to increase customer loyalty
-                </div>
-              </div>
+
             </div>
 
             <button className="bg-[#F58426] hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded w-full cursor-pointer"
@@ -336,7 +339,6 @@ const DataUnitsTopupPage = () => {
       )}
 
       {currentStep === 2 && !showGrowthForm && (
-        // Customize Order Section - Updated with cart functionality
         <div className="border rounded-lg p-8 mb-12 mx-auto max-w-3xl">
           {/* Header with Cost and Add Bundle at the same level */}
           <div className="flex justify-between items-center mb-6">
@@ -371,8 +373,7 @@ const DataUnitsTopupPage = () => {
                   <span>{item.units} units of {item.bundleSize}</span>
                   <button 
                     onClick={() => removeBundle(item.id)}
-                    className="text-red-500 font-bold text-xl"
-                  >
+                    className="text-red-500 font-bold text-xl">
                     X
                   </button>
                 </div>
@@ -382,6 +383,7 @@ const DataUnitsTopupPage = () => {
 
           <hr className="my-6" />
 
+          {/* Bundle Amount Field */}
           <div className="mb-6">
             <label className="block text-gray-600 mb-2">
               Bundle Amount
@@ -390,26 +392,28 @@ const DataUnitsTopupPage = () => {
               <select
                 value={bundleSize}
                 onChange={(e) => setBundleSize(e.target.value)}
-                className="block appearance-none w-full bg-white border border-gray-300 rounded py-3 px-4 pr-8 leading-tight focus:outline-none focus:border-orange-400"
-              >
+                className="block appearance-none w-full bg-white border border-gray-300 rounded py-3 px-4 pr-8 leading-tight focus:outline-none focus:border-orange-400">
                 <option>20MB</option>
                 <option>50MB</option>
                 <option>100MB</option>
                 <option>200MB</option>
                 <option>500MB</option>
+                <option>1000MB</option>
+                <option>5000MB</option>
+                <option>10000MB</option>
+
+
+
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg
-                  className="fill-current h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                >
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                   <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                 </svg>
               </div>
             </div>
           </div>
 
+          {/* Number of Units Field */}
           <div className="mb-6">
             <label className="block text-gray-600 mb-2">
               Number of Units
@@ -423,23 +427,23 @@ const DataUnitsTopupPage = () => {
             />
           </div>
 
+          {/* Navigation Buttons */}
           <div className="flex justify-between mt-8">
             <button
               onClick={() => setCurrentStep(1)}
-              className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded w-48"
-            >
+              className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded w-48">
               Back
             </button>
             <button
               onClick={() => setCurrentStep(3)}
               className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded w-48"
-              disabled={cart.length === 0}
-            >
+              disabled={totalCost < 10000 || totalCost > 250000}>
               Proceed
             </button>
           </div>
         </div>
       )}
+
 
       {/* Review & Pay section that matches the image */}
       {currentStep === 3 && !showGrowthForm && (
