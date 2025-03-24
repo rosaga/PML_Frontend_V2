@@ -202,14 +202,22 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                     >
                       Airtime Amount
                     </label>
-                    <input
-                      type="number"
+                    <select
+                      id="airtime"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                      placeholder="Enter airtime amount"
                       value={selectedBundle}
                       onChange={(e) => setSelectedBundle(e.target.value)}
-                    />
+                    >
+                      <option value="">Select airtime amount</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="250">250</option>
+                      <option value="500">500</option>
+                      <option value="1000">1000</option>
+                    </select>
                   </div>
+
                   <div className="mb-4">
                     <label
                       htmlFor="bundle"
