@@ -45,8 +45,8 @@ const DataUnitsTopupPage = () => {
     
     setCart([...cart, newItem]);
     
-    setBundleSize("20MB");
-    setUnits(1);
+    setBundleSize("");
+    setUnits(0);
   };
   
   const removeBundle = (id) => {
