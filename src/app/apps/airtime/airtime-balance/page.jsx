@@ -9,15 +9,16 @@ import PeakButton from "../../../../components/button/button";
 import PeakSearch from "../../../../components/search/search";
 import RequestAirtimeUnitsModal from "../../../../components/modal/requestAirtime";
 import * as XLSX from 'xlsx';
-import { GetRecharges } from "@/app/api/actions/reward/reward";
-import { format,parseISO } from "date-fns";
+import { GetAirtimeRecharges } from "@/app/api/actions/airtimeReward/airtimeReward";
+import { format, parseISO } from "date-fns";
 import { getToken } from "@/utils/auth";
 import { hasRole } from "../../../../utils/decodeToken"
 import apiUrl from "../../../api/utils/apiUtils/apiUrl"
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 import { GetBalance } from "@/app/api/actions/reward/reward";
-
+// New import for airtime balance
+import { GetAirtimeBalance } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";
 
 const AirtimeBalance = () => {
 
@@ -39,6 +40,9 @@ const AirtimeBalance = () => {
 
   const [columns, setColumns] = useState([]);
 
+  // New state for dynamic airtime balance
+  const [airtimeBalance, setAirtimeBalance] = useState(0);
+
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -53,7 +57,7 @@ const AirtimeBalance = () => {
 
   const filterOptions = [
     { value: "ilike__created_by", label: "Created By" },
-    { value: "eq__package", label: "Package" },
+    { value: "eq__units", label: "Units" },
     { value: "eq__status", label: "Status" },
   ];
 
@@ -88,8 +92,6 @@ const AirtimeBalance = () => {
     }
   };
 
- 
-
   useEffect(() => {
     const baseColumns = [
       { field: "id", headerName: "Transaction Reference", flex: 1, minWidth: 150 },
@@ -108,7 +110,7 @@ const AirtimeBalance = () => {
           }
         },
       },
-      { field: "package", headerName: "Airtime Amount", flex: 1, minWidth: 150 },
+      { field: "units", headerName: "Airtime Amount", flex: 1, minWidth: 150 },
       {
         field: "status",
         headerName: "Status",
@@ -142,7 +144,7 @@ const AirtimeBalance = () => {
         renderCell: (params) => {
           if (params.row.status === 'PENDING') {
             return <button className="bg-green-400 text-white border-1 text-sm rounded-[2px] px-2 shadow-sm outline-none" onClick={() => handleApprove(params.row.id)}>Approve</button>;
-          }else{
+          } else {
             return <button className="bg-gray-100 text-gray-600 text-sm rounded-[2px] px-2 shadow-sm outline-none" >Approved</button>;
           }
           return null;
@@ -156,10 +158,7 @@ const AirtimeBalance = () => {
   const refreshPage = () => {
     setIsModalOpen(false);
     setLoadingData(true);
-
   }
-
-  
 
   async function fetchBalance() {
     const balanceData = await GetBalance(org_id);
@@ -169,7 +168,7 @@ const AirtimeBalance = () => {
   }
   const getRecharges = async () => {
     try {
-      const res = await GetRecharges(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
+      const res = await GetAirtimeRecharges(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -186,8 +185,23 @@ const AirtimeBalance = () => {
 
   useEffect(() => {
       getRecharges();
-      fetchBalance()
+      fetchBalance();
   }, [isModalOpen, org_id, isApproved, paginationModel.page, paginationModel.pageSize, searchParams]);
+
+  // New useEffect to fetch the dynamic airtime balance using GetAirtimeBalance
+  useEffect(() => {
+    const fetchAirtimeBalanceData = async () => {
+      if (!org_id) return;
+      try {
+        const balance = await GetAirtimeBalance(org_id);
+        setAirtimeBalance(balance);
+      } catch (error) {
+        console.error("Error fetching airtime balance:", error);
+        setAirtimeBalance(0);
+      }
+    };
+    fetchAirtimeBalanceData();
+  }, [org_id]);
 
   return (
     <>
@@ -223,8 +237,8 @@ const AirtimeBalance = () => {
                           </span>
                         </div>
                       </div>
-                      {/* static balance */}
-                      <div className="text-2xl font-bold">5000 KES</div>
+                      {/* Updated balance: dynamic airtime balance fetched from the API */}
+                      <div className="text-2xl font-bold">KES {airtimeBalance}</div>
                     </div>
                 )}
               </div>
