@@ -11,7 +11,10 @@ import { GetAirtimeRewards } from "@/app/api/actions/airtimeReward/airtimeReward
 import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-  
+import { GetAirtimeConsumed, GetAirtimeBalance, GetAirtimeReached } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";  
+import { GetDataBalance } from "@/app/api/actions/dashboard/dashboard";
+
+
 interface AirtimeReward {
   id: number;
   created_at: string;
@@ -56,17 +59,19 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
 
   const [recipientsReached, setRecipientsReached] = useState(0);
-  const [consumedAirtime, setConsumedAirtime] = useState(0);
+  const [consumedAirtime, setConsumedAirtime] = useState("");
+  const [airtimeBalance, setAirtimeBalance] = useState("");
 
-  const [recipients, setRecipients] = useState<any[]>([]);
+  // const [recipients, setRecipients] = useState<any[]>([]);
 
-    // mask phone number function
-    const maskPhone = (phone: string) => {
-      if (phone && phone.length > 5) {
-        return phone.slice(0, 2) + "*".repeat(phone.length - 5) + phone.slice(-3);
-      }
-      return phone;
-    };
+
+  // mask phone number function
+  const maskPhone = (phone: string) => {
+    if (phone && phone.length > 5) {
+      return phone.slice(0, 2) + "*".repeat(phone.length - 5) + phone.slice(-3);
+    }
+    return phone;
+  };
 
   const columns: GridColDef[] = [
     {
@@ -172,9 +177,7 @@ const Dashboard = () => {
       const pageNumber = paginationModel.page + 1;
       const pageSize = paginationModel.pageSize;
       const dateQuery = buildDateQuery();
-
       const response: RewardsAPIResponse = await GetAirtimeRewards(org_id, pageNumber, pageSize, dateQuery);
-
       if (response.errors) {
         console.error("API error:", response.errors._error);
         setRows([]);
@@ -191,33 +194,36 @@ const Dashboard = () => {
       }
       const rewardsArray = response.data.data;
       setTotal(response.data.count || 0);
-
       const finalRows = rewardsArray.map((item) => ({
         ...item,
         mobile_no: item.contact?.mobile_no || "",
       }));
       setRows(finalRows);
-
       const successRewards = finalRows.filter((r) => r.status === "SUCCESS");
       setRecipientsReached(successRewards.length);
+      
+      
+      const dateQueryString = Object.entries(dateQuery)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('&');
+      
+      const consumed = await GetAirtimeConsumed(org_id);
+      setConsumedAirtime(consumed || "0");
 
-      const totalConsumed = successRewards.reduce((sum, reward) => {
-        return sum + Number(reward.airtime_amount);
-      }, 0);
-      setConsumedAirtime(totalConsumed);
-
-      const recs = successRewards
-        .filter((r) => r.contact && r.contact.mobile_no)
-        .map((r) => r.contact);
-      setRecipients(recs);
-
+      const recipients = await GetAirtimeReached(org_id);
+      setRecipientsReached(recipients || "0");
+      
+      // const recs = successRewards
+      //   .filter((r) => r.contact && r.contact.mobile_no)
+      //   .map((r) => r.contact);
+      // setRecipients(recs);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching rewards:", error);
       setRows([]);
       setTotal(0);
       setRecipientsReached(0);
-      setConsumedAirtime(0);
+      setConsumedAirtime("");
       setLoading(false);
     }
   };
@@ -225,6 +231,20 @@ const Dashboard = () => {
   useEffect(() => {
     fetchRewards();
   }, [selectedYear, selectedMonth, paginationModel.page, paginationModel.pageSize, org_id]);
+
+  useEffect(() => {
+    const fetchAirtimeBalance = async () => {
+      if (!org_id) return;
+      try {
+        const balance = await GetAirtimeBalance(org_id);
+        setAirtimeBalance(balance);
+      } catch (error) {
+        console.error("Error fetching airtime balance:", error);
+        setAirtimeBalance("");
+      }
+    };
+    fetchAirtimeBalance();
+  }, [org_id]);
 
   const handleHelp = () => {
     router.push("/apps/data/help");
@@ -336,7 +356,7 @@ const Dashboard = () => {
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
                 <p className="m-1 text-md">Airtime Rewards Summary</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-8">
                 {/* Recipients Reached */}
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <span className="text-gray-500">Recipients Reached</span>
@@ -368,6 +388,22 @@ const Dashboard = () => {
                     <div className="text-2xl font-bold">KES {consumedAirtime}</div>
                   </div>
                 </div>
+
+                {/* Airtime Balance */}
+                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
+                  <span className="text-gray-500">Airtime Balance</span>
+                  <div className="flex justify-between items-center mt-4">
+                    <Image
+                      className="w-12 h-12 rounded-lg"
+                      width={60}
+                      height={60}
+                      src="/images/Icon-1.svg"
+                      alt="Airtime Balance"
+                      priority
+                    />
+                    <div className="text-2xl font-bold">KES {airtimeBalance}</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -385,12 +421,8 @@ const Dashboard = () => {
                     paginationModel={paginationModel}
                     onPaginationModelChange={setPaginationModel}
                     sx={{
-                      "& .MuiDataGrid-columnHeader": {
-                        backgroundColor: "#F1F2F3",
-                      },
-                      "&.MuiDataGrid-root": {
-                        border: "none",
-                      },
+                      "& .MuiDataGrid-columnHeader": { backgroundColor: "#F1F2F3" },
+                      "&.MuiDataGrid-root": { border: "none" },
                     }}
                     slots={{
                       toolbar: () => (
@@ -403,10 +435,7 @@ const Dashboard = () => {
                           }}
                         >
                           <GridToolbar />
-                          <DownloadAllButton
-                            fetchAllData={fetchAllRewards}
-                            filename="rewards_data.csv"
-                          />
+                          <DownloadAllButton fetchAllData={fetchAllRewards} filename="rewards_data.csv" />
                         </div>
                       ),
                     }}
@@ -416,10 +445,7 @@ const Dashboard = () => {
 
               {/* Side Buttons */}
               <div className="flex flex-col gap-4 col-span-1">
-                <div
-                  onClick={handleHelp}
-                  className="rounded-3xl border-[1.5px] p-8 cursor-pointer"
-                >
+                <div onClick={handleHelp} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
                   <Image
                     className="w-12 h-12 ml-4 rounded-lg"
                     width={60}
@@ -428,14 +454,9 @@ const Dashboard = () => {
                     alt="Help"
                     priority
                   />
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">
-                    Help
-                  </p>
+                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
                 </div>
-                <div
-                  onClick={handleNotifications}
-                  className="rounded-3xl border-[1.5px] p-8 cursor-pointer"
-                >
+                <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
                   <Image
                     className="w-12 h-12 ml-4 rounded-lg"
                     width={60}
@@ -444,9 +465,7 @@ const Dashboard = () => {
                     alt="Notification"
                     priority
                   />
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-red-600">
-                    Notification
-                  </p>
+                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-red-600">Notification</p>
                 </div>
               </div>
             </div>

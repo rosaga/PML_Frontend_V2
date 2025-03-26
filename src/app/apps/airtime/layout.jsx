@@ -2,7 +2,7 @@
 import { Inter } from "next/font/google";
 import "../../../app/globals.css";
 import SidebarAirtime from "@/components/sidebarairtime/sidebarairtime";
-import Navbar from "@/components/navbar/navbar";
+import Navbar from "@/components/airtime-navbar/navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
 const inter = Inter({ subsets: ["latin"] });

@@ -114,4 +114,42 @@ export async function batchAirtimeReward({ org_id, newReward }) {
       };
     }
   }
+
+  export async function GetAirtimeRecharges(org_id, page, pageSize, searchParams = {}) {
+    const airtimeSearchParams = {
+        ...searchParams,
+        'eq__service': 'AIRTIME'
+    };
+
+    let rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=${page}&size=${pageSize}&orderby=created_at DESC`;
+
+    // Convert search params to URL string
+    const searchParamsString = new URLSearchParams(airtimeSearchParams).toString();
+    rechargeUrl += `&${searchParamsString}`;
+  
+    try {
+      const config = await authHeaders();
+  
+      const res = await axios.get(rechargeUrl, config);
+  
+      if (res.data && res.status === 200) {
+        console.log("Airtime Recharges Response:", res);
+      }
+  
+      return res;
+    } catch (error) {
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The airtime recharges could not be returned.',
+          },
+        };
+      }
+      return {
+        errors: {
+          _error: 'Network error. Please try again.',
+        },
+      };
+    }
+}
   

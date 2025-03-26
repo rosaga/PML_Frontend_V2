@@ -16,7 +16,7 @@ const AirtimeRewards = () => {
 
   useEffect(() => {
     if (tab === 'Rewards') {
-      setActive('airitime-dispatch'); 
+      setActive('airtime-dispatch'); 
       setChildActive('rewards');
     } else if (tab === 'Campaign') {
       setActive('airtime-dispatch');
@@ -78,7 +78,7 @@ const AirtimeRewards = () => {
               {active === "recipients" && (
                 <>
                   <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
-                    <div className="m-2 flex-1">
+                    {/* <div className="m-2 flex-1">
                       <span
                         onClick={() => setChildActive("recipients")}
                         className={`flex-1 flex justify-center text-center ${
@@ -101,12 +101,12 @@ const AirtimeRewards = () => {
                       >
                         Groups
                       </span>
-                    </div>
+                    </div>  */}
                   </div>
 
                   {/* <Suspense fallback={<div>Loading Recipients...</div>}> */}
                     {childActive === "recipients" && <RecipientsTable />}
-                    {childActive === "groups" && <GroupsTable />}
+                    {/* {childActive === "groups" && <GroupsTable />} */}
                   {/* </Suspense> */}
                 </>
               )}
