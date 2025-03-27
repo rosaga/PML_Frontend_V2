@@ -7,6 +7,8 @@ import { GetBalance } from "@/app/api/actions/reward/reward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 import { saveAs } from "file-saver";
 import { v4 as uuidv4 } from "uuid";
+import { sendSms } from "../../app/api/actions/messages/messagesAction";
+
 
 const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
   let org_id = null;
@@ -99,6 +101,23 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
         console.log("Sending reward payload:", JSON.stringify(rewardPayload, null, 2));
         const res = await sendAirtimeReward({ org_id, newReward: rewardPayload });
         console.log("Response for", contact.mobile, ":", res.data);
+
+        if (res.status === 200 && rewardPayload.sender_id) {
+          const smsPayload = {
+            destination: rewardPayload.msisdn,
+            content: message,
+            requestid: rewardPayload.request_id,
+            scheduled: new Date().toISOString(),
+            channel: "SENDERNAME",
+            organization_id: org_id,
+          };
+
+          const smsRes = await sendSms({
+            selectedSenderId: rewardPayload.sender_id,
+            newSms: smsPayload,
+          });
+          console.log("SMS Response for", contact.mobile, ":", smsRes.data);
+        }
       }
 
       setSuccessMessage("The batch airtime rewards have been sent successfully.");
