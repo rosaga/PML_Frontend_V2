@@ -178,21 +178,28 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
               </div>
             ) : (
               <form className="space-y-2" onSubmit={handleSubmit}>
-                <div>
-                  <label
-                    htmlFor="mobile"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Airtime Amount
-                  </label>
-                  <input
-                    type="number"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="Select airtime amount"
-                    value={selectedBundle}
-                    onChange={(e) => setSelectedBundle(e.target.value)}
-                  />
-                </div>
+ <div>
+                    <label
+                      htmlFor="airtime"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Airtime Amount
+                    </label>
+                    <select
+                      id="airtime"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                      value={selectedBundle}
+                      onChange={(e) => setSelectedBundle(e.target.value)}
+                    >
+                      <option value="">Select airtime amount</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="250">250</option>
+                      <option value="500">500</option>
+                      <option value="1000">1000</option>
+                    </select>
+                  </div>
                 <div>
                   <label
                     htmlFor="contacts"
