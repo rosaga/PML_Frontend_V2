@@ -4,6 +4,8 @@ import { fetchContacts } from "@/app/api/actions/contact/contact";
 import { sendAirtimeReward } from "@/app/api/actions/airtimeReward/airtimeReward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 import { GetBalance } from "@/app/api/actions/reward/reward";
+import { sendSms } from "../../app/api/actions/messages/messagesAction";
+
 
 
 const SendAirtimeRewardModal = ({ closeModal }) => {
@@ -49,7 +51,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-
+  
     const newReward = {
       request_id: uuidv4(),
       airtime_amount: selectedBundle, 
@@ -58,14 +60,31 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
       message: message,
       postpay: true,
     };
-
+  
     console.log("New Airtime Reward Payload:", newReward);
-
+  
     try {
-      const res = await sendAirtimeReward({ org_id, newReward });
-      if (res.status === 200) {
+      const airtimeRes = await sendAirtimeReward({ org_id, newReward });
+      if (airtimeRes.status === 200) {
         setSuccessMessage("You have dispatched airtime successfully!");
         setErrorMessage("");
+  
+        if (newReward.sender_id) {
+          const newSmsPayload = {
+            destination: selectedContact,
+            content: message,
+            requestid: newReward.request_id,
+            scheduled: new Date().toISOString(),
+            channel: "SENDERNAME",
+            organization_id: org_id,
+          };
+  
+          const smsRes = await sendSms({
+            selectedSenderId: newReward.sender_id,
+            newSms: newSmsPayload,
+          });
+          console.log("SMS API response:", smsRes);
+        }
       } else {
         setErrorMessage("An error occurred. Please try again.");
         setSuccessMessage("");
@@ -79,7 +98,8 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
       setSuccessMessage("");
     }
   };
-
+  
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (event.target.id === "authentication-modal") {
