@@ -15,6 +15,9 @@ import { format,parseISO } from "date-fns";
 import { getToken } from "../../utils/auth";
 import { GetRewards } from "../../app/api/actions/reward/reward"
 import DownloadAllButton from "../button/DownloadAllButton";
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 const RewardsTable = () => {
 
@@ -29,6 +32,7 @@ const RewardsTable = () => {
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [searchParams, setSearchParams] = useState({});
+    const [hidePhone, setHidePhone] = useState(true);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -58,6 +62,14 @@ const RewardsTable = () => {
     setSearchParams({});
   };
 
+    // mask phone number function
+    const maskPhone = (phone) => {
+      if (phone && phone.length > 5) {
+        return phone.slice(0, 2) + "*".repeat(phone.length - 5) + phone.slice(-3);
+      }
+      return phone;
+    };
+
   const columns= [
     { field: "id", headerName: "Request ID", flex: 1, minWidth: 100 },
     { field: "created_at", headerName: "Date Created", flex: 1, minWidth: 150, 
@@ -72,10 +84,25 @@ const RewardsTable = () => {
    },
     { field: "bundle_amount", headerName: "Bundle Amount", flex: 1, minWidth: 150 },
     {
-      field: 'mobile_no',
-      headerName: 'Phone Number',
+      field: "mobile_no",
+      renderHeader: () => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ marginRight: 4 }}>Phone Number</span>
+          <IconButton
+            size="small"
+            onClick={() => setHidePhone(!hidePhone)}
+            title={hidePhone ? "Show Phone Number" : "Hide Phone Number"}
+          >
+            {hidePhone ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
+          </IconButton>
+        </div>
+      ),
       flex: 1,
       minWidth: 200,
+      renderCell: (params) => {
+        const phone = params.value || "";
+        return hidePhone ? maskPhone(phone) : phone;
+      },
     },
     {
       field: "status",

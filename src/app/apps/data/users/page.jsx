@@ -5,18 +5,19 @@ import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import IosShareIcon from "@mui/icons-material/IosShare";
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../../../../components/button/button";
-import PeakSearch from "../../../../components/search/search"
-import InviteUserModal from "../../../../components/modal/inviteUser"
+import PeakSearch from "../../../../components/search/search";
+import InviteUserModal from "../../../../components/modal/inviteUser";
 import apiUrl from "../../../api/utils/apiUtils/apiUrl";
 import { getToken } from "@/utils/auth";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const Users = () => {
   let org_id = null;
   let token = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
     token = getToken();
   }
 
@@ -52,7 +53,6 @@ const Users = () => {
   }, [isModalOpen, searchParams]);
 
   const fetchUsers = async () => {
-
     let usersUrl = `${apiUrl.USERS}/${org_id}/users?page=1&size=20&orderby=id DESC`;
 
     if (searchParams) {
@@ -61,18 +61,19 @@ const Users = () => {
     }
 
     try {
-      const usersResponse = await axios.get(usersUrl, {headers: {
-        Accept: 'application/json',
-        'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        }
+      const usersResponse = await axios.get(usersUrl, {
+        headers: {
+          Accept: "application/json",
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
       const users = usersResponse.data.data.map((user) => ({
-        id: user.id, 
+        id: user.id,
         first_name: user.firstName,
         last_name: user.lastName,
         email: user.email,
-        verified: user.emailVerified
+        verified: user.emailVerified,
       }));
 
       setRows(users);
@@ -98,7 +99,12 @@ const Users = () => {
             <div className="flex items-center justify-between">
               <p className="mt-4 font-medium text-lg">Users</p>
               <div className="ml-auto flex space-x-4">
-              <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
+                <PeakSearch
+                  filterOptions={filterOptions}
+                  selectedFilter=""
+                  onSearch={handleSearch}
+                  onClearSearch={handleClearSearch}
+                />
                 <PeakButton
                   buttonText="Invite User"
                   icon={AddIcon}
@@ -110,9 +116,10 @@ const Users = () => {
 
             <div className="mt-4">
               <div style={{ height: 350, width: "100%" }}>
-
                 {loading ? (
-                  <p>Loading...</p>
+                  <Box className="flex justify-center items-center h-full">
+                    <CircularProgress style={{ color: "#E88A17" }} />
+                  </Box>
                 ) : (
                   <DataGrid
                     rows={rows}
@@ -128,7 +135,6 @@ const Users = () => {
                     slots={{ toolbar: GridToolbar }}
                   />
                 )}
-
               </div>
             </div>
           </div>

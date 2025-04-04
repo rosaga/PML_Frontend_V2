@@ -43,6 +43,7 @@ const RequestUnitsModal = ({ closeModal }) => {
       setErrorMessage("Failed to send data. Please try again.");
     }
   };
+  
 
   const handleAddRequest = () => {
     if (bundleAmount === "") {

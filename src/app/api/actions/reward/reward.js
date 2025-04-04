@@ -78,23 +78,23 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
   }
 
   export async function requestUnits(formValues) {
-    
-    const requestUnitsUrl = `${apiUrl.GET_BALANCE}/recharge/data/${formValues.org_id}`;
-
-    try {
-    const config = await authHeaders();
+    const payload = {
+      ...formValues.newRequest,
+      service: formValues.newRequest.service,
+    };
   
-    return axios
-      .post(requestUnitsUrl, formValues.newRequest, config)
-      .then((res) => {
-      
-        if (res.data && res.status === 200) {
-
-            console.log("THE RESPONSE IS !!!!!!!",res)
-          
-        }
-        return res;
-      })
+    const requestUnitsUrl = `${apiUrl.GET_BALANCE}/recharge/data/${formValues.org_id}`;
+  
+    try {
+      const config = await authHeaders();
+      return axios
+        .post(requestUnitsUrl, payload, config)
+        .then((res) => {
+          if (res.data && res.status === 200) {
+            console.log("THE RESPONSE IS !!!!!!!", res);
+          }
+          return res;
+        });
     } catch (error) {
       if (error.response) {
         return {
@@ -110,6 +110,7 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       };
     }
   }
+  
 
   export async function requestSmsUnits(formValues) {
     
