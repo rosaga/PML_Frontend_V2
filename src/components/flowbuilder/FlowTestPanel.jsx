@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -320,7 +319,7 @@ const FlowTestPanel = ({ flowId, onClose }) => {
         </div>
         {isFlowEnded && (
           <div className="mt-2 text-xs text-center text-gray-500">
-            This flow has ended. Click "Reset" to start over.
+            This flow has ended. Click &quot;Reset&quot; to start over.
           </div>
         )}
       </form>
