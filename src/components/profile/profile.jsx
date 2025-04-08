@@ -24,6 +24,19 @@ const Profile = () => {
   };
 
   useEffect(() => {
+    function handleClickOutside(event) {
+      if (isDropdownOpen && !event.target.closest('.profile-container')) {
+        setIsDropdownOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  useEffect(() => {
     const token = getToken();
     const info = getUserInfo(token);
     if (info) {
@@ -52,7 +65,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="relative">
+    <div className="relative profile-container">
       {/* Profile button with dropdown icon */}
       <button
         className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -71,7 +84,7 @@ const Profile = () => {
 
       {/* Dropdown Menu */}
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg dark:bg-gray-800">
+      <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg dark:bg-gray-800 z-50">
           <div className="px-4 py-3 text-sm text-gray-900 dark:text-white">
             <p className="font-medium">Welcome</p>
             <p className="truncate">{userInfo.email || "email@domain.com"}</p>

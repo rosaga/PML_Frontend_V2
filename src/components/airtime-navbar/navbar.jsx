@@ -57,7 +57,7 @@ const Navbar = () => {
 
         </div>
         {/* Profile Section */}
-        <div>
+        <div className="relative z-40">
           <Profile />
         </div>
       </div>
