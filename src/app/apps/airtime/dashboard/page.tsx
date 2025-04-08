@@ -253,42 +253,6 @@ const Dashboard = () => {
     router.push("/apps/airtime/notification");
   };
 
-  const generateYearOptions = (): { value: string; label: string }[] => {
-    const options = [{ value: "", label: "All Years" }];
-    const startYear = 2024;
-    const currentYear = new Date().getFullYear();
-    for (let year = startYear; year <= currentYear + 1; year++) {
-      options.push({ value: String(year), label: String(year) });
-    }
-    return options;
-  };
-
-  const generateMonthOptions = (): { value: string; label: string }[] => {
-    const options = [{ value: "", label: "All Months" }];
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    for (let i = 0; i < 12; i++) {
-      const monthNumber = i + 1;
-      const monthValue = monthNumber < 10 ? `0${monthNumber}` : String(monthNumber);
-      options.push({ value: monthValue, label: monthNames[i] });
-    }
-    return options;
-  };
-
-  const yearOptions = generateYearOptions();
-  const monthOptions = generateMonthOptions();
 
   const fetchAllRewards = async () => {
     try {
@@ -317,38 +281,6 @@ const Dashboard = () => {
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
             <h1 className="text-xl font-semibold mb-4">Airtime Rewards</h1>
-
-            {/* Filter Section */}
-            <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
-              <div>
-                <select
-                  id="yearFilter"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="p-2 border rounded"
-                >
-                  {yearOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <select
-                  id="monthFilter"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="p-2 border rounded"
-                >
-                  {monthOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
             {/* Summary Tiles */}
             <div className="border-[1.5px] rounded-3xl mb-6">
