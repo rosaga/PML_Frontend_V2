@@ -79,11 +79,11 @@ const Dashboard = () => {
   ];
 
   const handleHelp = () => {
-    router.push("/apps/data/help");
+    router.push("/apps/sms/help");
   };
 
   const handleNotifications = () => {
-    router.push("/apps/data/notification");
+    router.push("/apps/sms/notification");
   };
 
   

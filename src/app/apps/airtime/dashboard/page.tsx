@@ -247,7 +247,7 @@ const Dashboard = () => {
   }, [org_id]);
 
   const handleHelp = () => {
-    router.push("/apps/data/help");
+    router.push("/apps/airtime/help");
   };
   const handleNotifications = () => {
     router.push("/apps/airtime/notification");
