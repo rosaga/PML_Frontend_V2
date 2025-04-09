@@ -59,6 +59,18 @@ const AllFlows = () => {
   }, [totalCount, paginationModel.pageSize]);
 
   useEffect(() => {
+    // Clear any URL parameters when loading the AllFlows page
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      
+      // Check if we have any parameters to clean up
+      if (url.searchParams.has('flowName') || url.searchParams.has('id') || url.searchParams.has('tab')) {
+        // Keep only necessary parameters for this page (if any)
+        // In this case, we're clearing all parameters
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+    
     fetchFlows();
   }, [paginationModel]);
 
@@ -173,10 +185,19 @@ const AllFlows = () => {
     router.push(`/apps/flowbot/flowbuilder?id=${flow.id}&tab=flowbot`);
   };
 
-  // Navigate to flow responses page
+  // Navigate to flow responses page with flow name
   const handleViewSessions = (e, flow) => {
     e.stopPropagation(); 
-    router.push(`/apps/flowbot/flowbuilder?id=${flow.id}&tab=responses`);
+    // Encode the flow name to handle special characters
+    const encodedFlowName = encodeURIComponent(flow.name);
+    router.push(`/apps/flowbot/flowbuilder?id=${flow.id}&tab=responses&flowName=${encodedFlowName}`);
+  };
+  
+  // Handle row click to navigate to responses
+  const handleRowClick = (flow) => {
+    // Encode the flow name to handle special characters
+    const encodedFlowName = encodeURIComponent(flow.name);
+    router.push(`/apps/flowbot/flowbuilder?id=${flow.id}&tab=responses&flowName=${encodedFlowName}`);
   };
 
   const filterOptions = [
@@ -246,6 +267,7 @@ const AllFlows = () => {
                   <tr 
                     key={flow.id}
                     className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleRowClick(flow)}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center">

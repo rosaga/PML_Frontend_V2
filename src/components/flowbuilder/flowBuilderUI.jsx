@@ -826,11 +826,32 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
   
   const localEdges = [];
   
-  // Map backend IDs to local IDs for reference
+  // Step 1: Create a map of backend IDs to their nodes for easy lookup
+  const backendNodesMap = {};
+  backendNodes.forEach(node => {
+    backendNodesMap[node.id] = node;
+  });
+  
+  // Step 2: Identify button option nodes and create a mapping for them
+  const buttonOptionNodes = backendNodes.filter(node => node.extra_data?.isButtonOption);
+  const buttonOptionMap = {}; // Maps option node to its parent and button index
+  
+  buttonOptionNodes.forEach(optionNode => {
+    const parentNode = backendNodes[optionNode.parent_index];
+    if (parentNode) {
+      buttonOptionMap[optionNode.id] = {
+        parentId: parentNode.id,
+        buttonIndex: optionNode.extra_data.buttonIndex
+      };
+    }
+  });
+
+  // Step 3: Create a map to convert backend IDs to local IDs
   const backendIdToLocalId = {};
   
-  // First pass: Create all local nodes (except button option nodes)
+  // Step 4: Create all local nodes (excluding button option nodes)
   backendNodes.forEach((backendNode, index) => {
+    // Skip button option nodes - they're not represented as actual nodes in ReactFlow
     if (backendNode.extra_data?.isButtonOption) return;
     
     const localId = `node-${Object.keys(backendIdToLocalId).length + 1}`;
@@ -944,62 +965,70 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
     localNodes.push(localNode);
   });
   
-  // Second pass: Create edges based on parent relationships
-  backendNodes.forEach((backendNode, nodeIndex) => {
+  // Step 5: Create the connections (edges)
+  
+  // First, connect any nodes that should connect to the start node
+  let hasStartConnection = false;
+  
+      // For each node, determine its proper connections
+  backendNodes.forEach((backendNode) => {
+    // Skip button option nodes - they're handled in a special way
+    if (backendNode.extra_data?.isButtonOption) return;
+    
     const targetId = backendIdToLocalId[backendNode.id];
     if (!targetId) return;
     
-    if (backendNode.extra_data?.isButtonOption) {
-      return;
-    }
-    
-    // First node in the list should connect to the start node
-    if (nodeIndex === 0) {
+    // If this node has no parent or parent_index is 0, connect it to start
+    if (backendNode.parent_index === 0 && !hasStartConnection) {
       localEdges.push({
         id: `edge-start-${targetId}`,
         source: "start",
         target: targetId
       });
-    } 
-    else if (backendNode.parent_index !== null && backendNode.parent_index !== undefined) {
-      // Find the parent node
-      const parentNode = backendNodes[backendNode.parent_index];
+      hasStartConnection = true;
+    }
+    // Otherwise find its actual parent and connect appropriately
+    else if (backendNode.parent_index !== null && backendNode.parent_index !== undefined && backendNode.parent_index > 0) {
+      const parentBackendNode = backendNodes[backendNode.parent_index];
       
-      if (parentNode) {
-        const parentId = backendIdToLocalId[parentNode.id];
+      if (!parentBackendNode) return;
+      
+      // Check if parent is a button option node
+      if (parentBackendNode.extra_data?.isButtonOption) {
+        // Find the actual route node this option belongs to
+        const optionParentIndex = parentBackendNode.parent_index;
+        const routeNode = backendNodes[optionParentIndex];
+        
+        if (routeNode) {
+          const routeNodeId = backendIdToLocalId[routeNode.id];
+          const buttonIndex = parentBackendNode.extra_data.buttonIndex;
+          
+          if (routeNodeId) {
+            // Create connection from the route node's specific button to this node
+            localEdges.push({
+              id: `edge-${routeNodeId}-btn${buttonIndex}-${targetId}`,
+              source: routeNodeId,
+              target: targetId,
+              sourceHandle: `button-${buttonIndex}`
+            });
+          }
+        }
+      }
+      // If parent is a regular node (not a button option)
+      else {
+        const parentId = backendIdToLocalId[parentBackendNode.id];
         
         if (parentId) {
-          // If parent is a button option node (part of a route node)
-          if (parentNode.extra_data?.isButtonOption) {
-            // Get the actual button parent
-            const buttonParentIndex = parentNode.parent_index;
-            const buttonParent = backendNodes[buttonParentIndex];
-            
-            if (buttonParent) {
-              const buttonParentId = backendIdToLocalId[buttonParent.id];
-              const buttonIndex = parentNode.extra_data.buttonIndex;
-              
-              if (buttonParentId) {
-                localEdges.push({
-                  id: `edge-${buttonParentId}-${targetId}-btn-${buttonIndex}`,
-                  source: buttonParentId,
-                  target: targetId,
-                  sourceHandle: `button-${buttonIndex}`
-                });
-              }
-            }
-          } 
-          // If parent is a LIST node
-          else if (parentNode.node_type === "LIST") {
-            // Connect the list's output handle to this node
+          // For LIST nodes, connect to the special list-output handle
+          if (parentBackendNode.node_type === "LIST") {
             localEdges.push({
-              id: `edge-${parentId}-${targetId}-list`,
+              id: `edge-${parentId}-list-${targetId}`,
               source: parentId,
               target: targetId,
               sourceHandle: 'list-output'
             });
           }
-          // Regular connection
+          // For regular node connections
           else {
             localEdges.push({
               id: `edge-${parentId}-${targetId}`,
@@ -1012,6 +1041,16 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
     }
   });
   
+  // Connect any remaining nodes to start if needed
+  if (!hasStartConnection && localNodes.length > 1) {
+    localEdges.push({
+      id: `edge-start-${localNodes[1].id}`,
+      source: "start",
+      target: localNodes[1].id
+    });
+  }
+  
+  console.log("Converted to local format:", { localNodes, localEdges });
   return { localNodes, localEdges };
 };
 

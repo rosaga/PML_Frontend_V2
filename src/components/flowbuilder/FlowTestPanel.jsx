@@ -39,6 +39,7 @@ const FlowTestPanel = ({ flowId, onClose }) => {
           { 
             sender: 'bot', 
             text: response.text,
+            rawOptions: response.rawOptions,
             isEnd: response.isEnd
           }
         ]);
@@ -103,10 +104,13 @@ const FlowTestPanel = ({ flowId, onClose }) => {
     
     // Try to extract options if the message contains numbered items
     const options = [];
+    const rawOptions = [];
     const lines = text.split('\n');
     
+    let mainMessage = text;
+    
     if (lines.length > 1) {
-      const mainMessage = lines[0];
+      mainMessage = lines[0];
       const optionLines = lines.slice(1);
       
       // Check for options in format "1. Option text"
@@ -115,18 +119,22 @@ const FlowTestPanel = ({ flowId, onClose }) => {
       optionLines.forEach(line => {
         const match = line.match(optionRegex);
         if (match) {
-          options.push(match[2].trim());
+          const optionNumber = match[1];
+          const optionText = match[2].trim();
+          options.push(optionText);
+          rawOptions.push({
+            number: optionNumber,
+            text: optionText,
+            rawText: line.trim()
+          });
         }
       });
-      
-      if (options.length > 0) {
-        text = mainMessage;
-      }
     }
     
     return { 
-      text, 
+      text: mainMessage, 
       options: options.length > 0 ? options : null,
+      rawOptions: rawOptions.length > 0 ? rawOptions : null,
       isEnd 
     };
   };
@@ -152,7 +160,7 @@ const FlowTestPanel = ({ flowId, onClose }) => {
           { 
             sender: 'bot', 
             text: response.text,
-            options: response.options,
+            rawOptions: response.rawOptions,
             isEnd: response.isEnd
           }
         ]);
@@ -176,14 +184,14 @@ const FlowTestPanel = ({ flowId, onClose }) => {
   const handleOptionClick = async (option) => {
     if (isFlowEnded) return;
     
-    // Add user selection to chat
-    const userMessage = { sender: 'user', text: option };
+    // Add user selection to chat - use the option number
+    const userMessage = { sender: 'user', text: option.number };
     setMessages(prev => [...prev, userMessage]);
     
     setIsLoading(true);
     
     try {
-      const response = await sendMessage(option);
+      const response = await sendMessage(option.number);
       
       if (response) {
         setMessages(prev => [
@@ -191,7 +199,7 @@ const FlowTestPanel = ({ flowId, onClose }) => {
           { 
             sender: 'bot', 
             text: response.text,
-            options: response.options,
+            rawOptions: response.rawOptions,
             isEnd: response.isEnd
           }
         ]);
@@ -257,15 +265,15 @@ const FlowTestPanel = ({ flowId, onClose }) => {
                 <p>{message.text}</p>
                 
                 {/* Show options if available */}
-                {message.sender === 'bot' && message.options && message.options.length > 0 && !message.isEnd && (
+                {message.sender === 'bot' && message.rawOptions && message.rawOptions.length > 0 && !message.isEnd && (
                   <div className="mt-2 space-y-2">
-                    {message.options.map((option, optIndex) => (
+                    {message.rawOptions.map((option, optIndex) => (
                       <button
                         key={optIndex}
                         onClick={() => handleOptionClick(option)}
                         className="block w-full text-left px-3 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded text-sm"
                       >
-                        {option}
+                        {`${option.number}. ${option.text}`}
                       </button>
                     ))}
                   </div>
