@@ -52,12 +52,12 @@ const Navbar = () => {
               <rect x="3" y="6" width="18" height="12" rx="2" />
               <path d="M3 10h18M12 14h6" />
             </svg> */}
-            <span className="text-sm font-medium">Airtime Service</span>
+            <span className="text-sm font-medium">Airtime Rewards</span>
           </div>
 
         </div>
         {/* Profile Section */}
-        <div>
+        <div className="relative z-40">
           <Profile />
         </div>
       </div>
