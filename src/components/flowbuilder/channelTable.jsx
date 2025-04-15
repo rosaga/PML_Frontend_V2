@@ -107,23 +107,23 @@ const ChannelTable = () => {
   const attachFlow = async (channelId, flowId) => {
     try {
       const token = getToken();
-      const response = await axios.patch(
-        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/channels/${channelId}`,
+      const response = await axios.put(
+        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/channels`,
         {
-          flow_id: flowId
+          flow_id: flowId,
+          id: channelId,
         },
         {
           headers: {
             'accept': 'application/json',
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            // 'Authorization': `Bearer ${token}`
           }
         }
       );
-
-      if (response.status === 200) {
+      if (response.status === 202) {
         alert("Flow attached successfully!");
-        fetchChannels(); // Refresh channels to show the updated flow
+        fetchChannels(); 
       }
     } catch (error) {
       console.error("Error attaching flow:", error);
@@ -147,13 +147,11 @@ const ChannelTable = () => {
     }
   };
 
-  // Format date to time ago
   const timeAgo = (dateString) => {
     try {
       const created = new Date(dateString);
       const now = new Date();
       
-      // If date is invalid, return original string
       if (isNaN(created.getTime())) {
         return "Unknown date";
       }
