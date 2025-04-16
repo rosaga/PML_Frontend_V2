@@ -3,18 +3,19 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetThreshold } from "@/app/api/actions/threshold/threshold";
 import NewThreshold from "../../../../components/modal/newThreshold";
-import EditIcon from '@mui/icons-material/Edit';
+import EditIcon from "@mui/icons-material/Edit";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const Threshold = () => {
   let org_id = null;
   let token = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
     token = getToken();
   }
 
@@ -30,7 +31,7 @@ const Threshold = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setEditThreshold(null); 
+    setEditThreshold(null);
   };
 
   const getthresholds = async () => {
@@ -59,18 +60,14 @@ const Threshold = () => {
       headerName: "Status",
       flex: 1,
       minWidth: 150,
-      renderCell: (params) => (
-        <span style={{ color: "green" }}>ACTIVE</span>
-      ),
+      renderCell: (params) => <span style={{ color: "green" }}>ACTIVE</span>,
     },
     {
       field: "Action",
       headerName: "Action",
       flex: 0,
       minWidth: 150,
-      renderCell: (params) => (
-        <EditIcon onClick={() => openModal(params.row)} /> 
-      ),
+      renderCell: (params) => <EditIcon onClick={() => openModal(params.row)} />,
     },
   ];
 
@@ -86,7 +83,7 @@ const Threshold = () => {
                   buttonText="Set Notification Threshold"
                   icon={AddIcon}
                   className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
-                  onClick={() => openModal()} // Open modal with no data
+                  onClick={() => openModal()}
                 />
               </div>
             </div>
@@ -94,7 +91,9 @@ const Threshold = () => {
             <div className="mt-4">
               <div style={{ width: "100%" }}>
                 {loading ? (
-                  <p>Loading...</p>
+                  <Box className="flex justify-center items-center h-full">
+                    <CircularProgress style={{ color: "#E88A17" }} />
+                  </Box>
                 ) : (
                   <DataGrid
                     rows={rows}
@@ -115,12 +114,7 @@ const Threshold = () => {
           </div>
         </div>
       </div>
-      {isModalOpen && (
-        <NewThreshold
-          closeModal={closeModal}
-          threshold={editThreshold} 
-        />
-      )}
+      {isModalOpen && <NewThreshold closeModal={closeModal} threshold={editThreshold} />}
     </div>
   );
 };

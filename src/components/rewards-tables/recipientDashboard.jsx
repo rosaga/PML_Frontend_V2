@@ -4,6 +4,9 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format, parseISO } from "date-fns";
 import { useSession } from 'next-auth/react';
 import { GetContacts } from "../../app/api/actions/contact/contact";
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 const RecipientDashboard = () => {
   let org_id = null;
@@ -13,11 +16,20 @@ const RecipientDashboard = () => {
 
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hidePhone, setHidePhone] = useState(true);
+
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 4,
     page: 0,
   });
   const [total, setTotal] = useState(0);
+
+  const maskPhone = (phone) => {
+    if (phone && phone.length > 5) {
+      return phone.slice(0, 2) + "*".repeat(phone.length - 5) + phone.slice(-3);
+    }
+    return phone;
+  };
 
   const getContacts = async () => {
     try {
@@ -38,8 +50,27 @@ const RecipientDashboard = () => {
   }, [paginationModel.page, paginationModel.pageSize, org_id]);
   const columns = [
     { field: "id", headerName: "ID", flex: 1},
-    { field: "mobile_no", headerName: "Phone Number", flex: 1, minWidth: 150 },
-    { field: "created_by", headerName: "Created By", flex: 1, minWidth: 150 },
+    {
+      field: "mobile_no",
+      renderHeader: () => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ marginRight: 4 }}>Phone Number</span>
+          <IconButton
+            size="small"
+            onClick={() => setHidePhone(!hidePhone)}
+            title={hidePhone ? "Show Phone Number" : "Hide Phone Number"}
+          >
+            {hidePhone ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
+          </IconButton>
+        </div>
+      ),
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params) => {
+        const phone = params.value || "";
+        return hidePhone ? maskPhone(phone) : phone;
+      },
+    },    { field: "created_by", headerName: "Created By", flex: 1, minWidth: 150 },
     { field: "created_at", headerName: "Created At", flex: 1, minWidth:150,
     valueFormatter: (params) => {
           try {

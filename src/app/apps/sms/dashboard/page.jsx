@@ -79,11 +79,11 @@ const Dashboard = () => {
   ];
 
   const handleHelp = () => {
-    router.push("/apps/data/help");
+    router.push("/apps/sms/help");
   };
 
   const handleNotifications = () => {
-    router.push("/apps/data/notification");
+    router.push("/apps/sms/notification");
   };
 
   
@@ -280,12 +280,13 @@ const Dashboard = () => {
                     <DataGrid
                       rows={messages}
                       columns={columns}
-                      pageSize={5} // Limits to 5 rows per page
-                      rowsPerPageOptions={[5]} // Restricts available page size options
+                      pageSize={5}
+                      rowsPerPageOptions={[5]}
                       paginationModel={paginationModel}
                       onPaginationModelChange={setPaginationModel}
-                      pagination // Enable pagination
-                      paginationMode="client" // Make sure pagination is handled on the client-side
+                      pagination
+                      paginationMode="client"
+                      getRowId={(row) => row.message_id || row.destination || Math.random().toString()} // Add this line
                       sx={{
                         "&.MuiDataGrid-root": {
                           border: "none",

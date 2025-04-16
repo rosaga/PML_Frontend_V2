@@ -62,7 +62,12 @@ const GenerateVoucherModal = ({ closeModal }) => {
         setErrorMessage("Failed to create Vouchers. Please try again.");
       }
     } catch (error) {
-      setErrorMessage("Failed to create Vouchers. Please try again.");
+      if (error.response && error.response.status === 400) {
+        setErrorMessage("Insufficient units. Please top up to proceed");
+      }else {
+        setErrorMessage(`Failed to create Vouchers. Please try again. ${error.message}`);
+      }
+      setSuccessMessage("");
     }
   };
 
@@ -109,7 +114,25 @@ const GenerateVoucherModal = ({ closeModal }) => {
                   OK
                 </button>
               </div>
-            ) : (
+              ) : errorMessage ? (
+                <div className="p-4 text-center">
+                <div className="mb-4 text-2xl font-semibold text-red-500">
+                  Oops!
+                </div>
+                <div className="mb-4 text-gray-900 dark:text-white">
+                  {errorMessage}
+                </div>
+                <button
+                  onClick={() => {
+                    setErrorMessage("");
+                  }}
+                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  OK
+                </button>
+              </div>
+            )
+            : (
               <form className="space-y-2" onSubmit={handleSubmit}>
                 <div>
                   <label

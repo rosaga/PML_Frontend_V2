@@ -3,17 +3,18 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel, GridToolbar } from "@mui/x-data-grid";
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetAccounts } from "@/app/api/actions/accounts/accounts";
-import NewAccountModal from "../../../../components/modal/newAccountModal"
+import NewAccountModal from "../../../../components/modal/newAccountModal";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const Accounts = () => {
   let org_id = null;
   let token = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
     token = getToken();
   }
 
@@ -33,7 +34,7 @@ const Accounts = () => {
     try {
       const res = await GetAccounts();
       if (res.errors) {
-        setLoading
+        setLoading;
         console.log("AN ERROR HAS OCCURRED");
       } else {
         setLoading(false);
@@ -45,7 +46,7 @@ const Accounts = () => {
   };
 
   useEffect(() => {
-      getAccounts();
+    getAccounts();
   }, [isModalOpen]);
 
   const columns = [
@@ -56,9 +57,7 @@ const Accounts = () => {
       headerName: "Status",
       flex: 1,
       renderCell: (params) => {
-        return (
-          <span style={{ color: "green" }}>ACTIVE</span>
-        );
+        return <span style={{ color: "green" }}>ACTIVE</span>;
       },
     },
   ];
@@ -77,15 +76,15 @@ const Accounts = () => {
                   className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
                   onClick={openModal}
                 />
-
               </div>
             </div>
 
             <div className="mt-4">
               <div style={{ width: "100%" }}>
-
                 {loading ? (
-                  <p>Loading...</p>
+                  <Box className="flex justify-center items-center min-h-[300px]">
+                    <CircularProgress style={{ color: "#E88A17" }} />
+                  </Box>
                 ) : (
                   <DataGrid
                     rows={rows}
@@ -101,7 +100,6 @@ const Accounts = () => {
                     slots={{ toolbar: GridToolbar }}
                   />
                 )}
-
               </div>
             </div>
           </div>

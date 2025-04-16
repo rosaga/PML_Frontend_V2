@@ -12,7 +12,7 @@ export default {
     resetPassword: `${process.env.NEXT_PUBLIC_BASE_URL}/public/passwordreset`,
     confirmPasswordReset: `${process.env.NEXT_PUBLIC_BASE_URL}/public/reset/otp`,
     getNotifiations: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
-    SMS_URL: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v2`,
+    SMS_URL: `${process.env.NEXT_PUBLIC_ZOHARI_URL}api/v2`,
     peakSMSAPP: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1/application`,
     peakSMS: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1`,
 
@@ -22,4 +22,6 @@ export default {
     MESSAGE_COUNTS: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1`,
     BROADCAST_MESSAGE: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
     APPROVE_SMS_UNITS: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v2/admin/recharge/approve`,
+    GET_AIRTIME: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
+    REQUEST_OTP: `${process.env.NEXT_PUBLIC_BASE_URL}/public/request/otp`,
 };
