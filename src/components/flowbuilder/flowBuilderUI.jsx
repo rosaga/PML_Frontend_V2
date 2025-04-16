@@ -1103,7 +1103,7 @@ useEffect(() => {
         <div className="w-64 border-r bg-white">
           <div className="p-4">
             <div className="space-y-4">
-              <h2 className="font-medium text-gray-900">Prompt</h2>
+              <h2 className="font-medium text-gray-900">Bots Input</h2>
               <button 
                 onClick={addNode}
                 className="w-full p-3 text-left bg-[#090A29] text-white rounded-lg flex items-center"
@@ -1111,7 +1111,7 @@ useEffect(() => {
                 <Flag className="mr-2" /> Text
               </button>
               
-              <h2 className="font-medium text-gray-900 pt-4">Input</h2>
+              <h2 className="font-medium text-gray-900 pt-4">Users Output</h2>
               <div className="space-y-2">
                 <button 
                   onClick={() => addUserInputToNode("Text Input")}
@@ -1127,7 +1127,7 @@ useEffect(() => {
                   disabled={!selectedNode || selectedNode === "start"}
                 >
                   <span>···</span>
-                  <span>Buttons</span>
+                  <span>Multiple Options</span>
                 </button>
                 <button 
                   onClick={() => addUserInputToNode("Number Input")}

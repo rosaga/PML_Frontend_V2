@@ -141,7 +141,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Recipients Reached</div>
+                    <div className="text-gray-500">Number of Bots</div>
                     <div>
                       <span>
                         <Image
@@ -162,7 +162,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Consumed Data</div>
+                    <div className="text-gray-500">Number of Responses</div>
                     <div>
                       <span>
                         <Image
@@ -179,11 +179,11 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{consumedData ? consumedData : 0} MBS</div>
+                  <div className="text-2xl font-bold">{consumedData ? consumedData : 0} </div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Active Campaigns</div>
+                    <div className="text-gray-500">Contacts Reached</div>
                     <div>
                       <span>
                         <Image
@@ -204,7 +204,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Failed Campaigns</div>
+                    <div className="text-gray-500">Number of Active Channels</div>
                     <div>
                       <span>
                         <Image
@@ -227,7 +227,7 @@ const Dashboard = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
                 <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
-                  <p className="mt-2 font-medium text-lg">Data Balance</p>
+                  <p className="mt-2 font-medium text-lg">Flow Balance</p>
                   <div className="mt-4">
                     <div style={{ height: 350, width: "100%" }}>
                       <DataGrid
@@ -282,7 +282,7 @@ const Dashboard = () => {
             <div className="flex flex-col">
               <div className="p-4 shadow-md rounded-lg">
                 <div className="flex items-center justify-between">
-                  <p className="mt-4 font-medium text-lg">Recent Recipients</p>
+                  <p className="mt-4 font-medium text-lg">Recent Contacts</p>
                   <span>
                     <Image
                       style={{ color: "#F58426" }}
@@ -301,7 +301,7 @@ const Dashboard = () => {
                   <RecipientDashboard />
                 </div>
               </div>
-              <div className="p-4 shadow-md rounded-lg mt-4">
+              {/* <div className="p-4 shadow-md rounded-lg mt-4">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Groups</p>
                   <span>
@@ -321,10 +321,10 @@ const Dashboard = () => {
                 <div className="mt-4">
                   <GroupDashboard />
                 </div>
-              </div>
+              </div> */}
               <div className="p-4 shadow-md rounded-lg mt-4 mb-4">
                 <div className="flex items-center justify-between">
-                  <p className="mt-4 font-medium text-lg">Recent Campaigns</p>
+                  <p className="mt-4 font-medium text-lg">Recent Responses</p>
                   <span>
                     <Image
                       style={{ color: "#F58426" }}
