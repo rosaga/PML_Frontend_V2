@@ -237,7 +237,7 @@ const SidebarFlowBot = () => {
               </li>
             ))}
           </ul>
-          <ul className="font-medium mt-40">
+          {/* <ul className="font-medium mt-40">
             <li>
               <a
                 onClick={handleLogoutClick}
@@ -257,7 +257,7 @@ const SidebarFlowBot = () => {
                 <span className="flex-1 ms-3 whitespace-nowrap">Logout</span>
               </a>
             </li>
-          </ul>
+          </ul> */}
         </div>
       </aside>
       {modalOpen && (
