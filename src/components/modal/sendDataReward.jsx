@@ -4,10 +4,12 @@ import { fetchContacts } from "@/app/api/actions/contact/contact";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 import { sendReward } from "@/app/api/actions/reward/reward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
-import CircularProgress from "@mui/material/CircularProgress"; 
+import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 
+
 const SendDataRewardModal = ({ closeModal }) => {
+
   let org_id = null;
   if (typeof window !== "undefined") {
     org_id = localStorage.getItem("selectedAccountId");
@@ -24,29 +26,61 @@ const SendDataRewardModal = ({ closeModal }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [bundles, setBundles] = useState([]);
   const [selectedBundle, setSelectedBundle] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
+  const [contactSelected, setContactSelected] = useState(false);
 
   const { v4: uuidv4 } = require("uuid");
 
   useEffect(() => {
-    if (searchQuery.length > 0) {
-      const fetchAndSetContacts = async () => {
-        const contacts = await fetchContacts(searchQuery, org_id);
-        setFilteredContacts(contacts);
-        setShowDropdown(true);
-      };
-      fetchAndSetContacts();
-    } else {
+    if (searchQuery.trim().length === 0) {
       setFilteredContacts([]);
       setShowDropdown(false);
+      return;
     }
-  }, [searchQuery, org_id]);
+
+    if (contactSelected && searchQuery.trim().length > 0) {
+      setShowDropdown(false);
+      return;
+    }
+
+    const fetchAndFilterContacts = async () => {
+      try {
+        const contacts = await fetchContacts("", org_id);
+        const query = searchQuery.toLowerCase();
+
+        const filtered = contacts.filter((contact) => {
+          const byNumber = contact.mobile_no?.includes(query);
+          const first = contact.metadata?.FIRSTNAME?.toLowerCase() || "";
+          const last = contact.metadata?.LASTNAME?.toLowerCase() || "";
+          const byName = `${first} ${last}`.includes(query);
+          return byNumber || byName;
+        });
+
+        setFilteredContacts(filtered);
+        setShowDropdown(filtered.length > 0);
+        setContactSelected(false);
+      } catch (err) {
+        console.error("Failed to fetch contacts", err);
+        setFilteredContacts([]);
+        setShowDropdown(false);
+      }
+    };
+
+    fetchAndFilterContacts();
+  }, [searchQuery, org_id, contactSelected]);
 
   const handleSelect = (contact) => {
     setSelectedContact(contact.mobile_no);
-    setSearchQuery(contact.mobile_no);
+    const displayName = `${contact.metadata?.FIRSTNAME || ""} ${contact.metadata?.LASTNAME || ""}`.trim() || contact.mobile_no;
+    setSearchQuery(displayName);
     setShowDropdown(false);
+    setContactSelected(true);
+  };
+
+  const handleInputFocus = () => {
+    if (contactSelected) {
+      setContactSelected(false);
+    }
   };
 
   const handleSend = async (e) => {
@@ -90,13 +124,11 @@ const SendDataRewardModal = ({ closeModal }) => {
       }
     };
     window.addEventListener("click", handleClickOutside);
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-    };
+    return () => window.removeEventListener("click", handleClickOutside);
   }, [closeModal]);
 
   useEffect(() => {
-    async function fetchBalance() {
+    const initialise = async () => {
       const balanceData = await GetBalance(org_id);
       if (balanceData) {
         setBundles(balanceData.data.data);
@@ -105,9 +137,9 @@ const SendDataRewardModal = ({ closeModal }) => {
       if (senderIdData) {
         setSenderName(senderIdData.data);
       }
-    }
-    fetchBalance();
-  }, []);
+    };
+    initialise();
+  }, [org_id]);
 
   return (
     <div
@@ -151,9 +183,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                   {errorMessage}
                 </div>
                 <button
-                  onClick={() => {
-                    setErrorMessage("");
-                  }}
+                  onClick={() => setErrorMessage("")}
                   className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
                   OK
@@ -165,22 +195,24 @@ const SendDataRewardModal = ({ closeModal }) => {
               </Box>
             ) : (
               <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
-                <div>
+                <div className="relative">
                   <label
                     htmlFor="mobile"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
-                    Select Mobile Number
+                    Search Contact
                   </label>
                   <input
+                    id="mobile"
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="Search for a contact"
+                    onFocus={handleInputFocus}
+                    className={`bg-gray-50 border ${contactSelected ? 'border-green-500' : 'border-gray-300'} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5`}
+                    placeholder="Select a Contact"
                   />
                   {showDropdown && (
-                    <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1">
+                    <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-56 overflow-y-auto shadow-lg">
                       {filteredContacts.length > 0 ? (
                         filteredContacts.map((contact) => (
                           <div
@@ -188,7 +220,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                             className="p-2 cursor-pointer hover:bg-gray-200"
                             onClick={() => handleSelect(contact)}
                           >
-                            {contact.metadata.FIRSTNAME} {contact.metadata.LASTNAME} (
+                            {contact.metadata?.FIRSTNAME || ""} {contact.metadata?.LASTNAME || ""} (
                             {contact.mobile_no})
                           </div>
                         ))
@@ -198,6 +230,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                     </div>
                   )}
                 </div>
+
                 <div>
                   <label
                     htmlFor="bundle"
@@ -206,7 +239,6 @@ const SendDataRewardModal = ({ closeModal }) => {
                     Bundle Amount
                   </label>
                   <select
-                    name="bundle"
                     id="bundle"
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                     onChange={(e) => setSelectedBundle(e.target.value)}
@@ -220,21 +252,21 @@ const SendDataRewardModal = ({ closeModal }) => {
                     ))}
                   </select>
                 </div>
+
                 <div className="mb-4">
                   <label
-                    htmlFor="bundle"
+                    htmlFor="senderName"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
                     Select Sender Name
                   </label>
                   <select
-                    name="bundle"
-                    id="bundle"
+                    id="senderName"
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                     value={selectedSenderName}
                     onChange={(e) => setSelectedSenderName(e.target.value)}
                   >
-                    <option value="">Select SenderName</option>
+                    <option value="">Select Sender Name</option>
                     {senderName?.map((senderid) => (
                       <option key={senderid.service_id} value={senderid.service_id}>
                         {senderid.sendername}
@@ -243,16 +275,15 @@ const SendDataRewardModal = ({ closeModal }) => {
                   </select>
                 </div>
 
-                {selectedSenderName ? (
+                {selectedSenderName && (
                   <div className="mb-4">
                     <label
                       htmlFor="content"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Message to Customers
+                      Message to Customer (optional)
                     </label>
                     <textarea
-                      name="content"
                       id="content"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                       placeholder="Enter Message"
@@ -260,7 +291,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                       onChange={(e) => setMessage(e.target.value)}
                     />
                   </div>
-                ) : null}
+                )}
 
                 {errorMessage && (
                   <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
@@ -277,6 +308,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                     type="button"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                     onClick={handleSend}
+                    disabled={!selectedContact || !selectedBundle}
                   >
                     Submit
                   </button>
