@@ -222,10 +222,15 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
 
   export async function GetRecharges(org_id,page,pageSize, searchParams) {
     
+    const dataSearchParams = {
+      ...searchParams,
+      'eq__service': 'DATA'
+    };
+
     let rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=${page}&size=${pageSize}&orderby=created_at DESC`;
 
-    if (searchParams) {
-      const searchParamsString = new URLSearchParams(searchParams).toString();
+    if (dataSearchParams) {
+      const searchParamsString = new URLSearchParams(dataSearchParams).toString();
       rechargeUrl += `&${searchParamsString}`;
     }
   
