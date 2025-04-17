@@ -3,13 +3,20 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
 
-const CreateShortCodeModal = ({ closeModal }) => {
-  const [shortCodeName, setShortCodeName] = useState("");
-  const [selectType, setSelectType] = useState("");
+const CreateChannelModal = ({ closeModal }) => {
+  const [channelName, setChannelName] = useState("");
+  const [channelType, setChannelType] = useState("");
+  const [shortcode, setShortcode] = useState("");
   const [businessCertificate, setBusinessCertificate] = useState(null);
   const [authorizationLetter, setAuthorizationLetter] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Save organization ID from localStorage
+  let organization_id = null;
+  if (typeof window !== 'undefined') {
+    organization_id = localStorage.getItem('selectedAccountId');
+  }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,35 +38,76 @@ const CreateShortCodeModal = ({ closeModal }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const formData = new FormData();
-    formData.append("short_code_name", shortCodeName);
-    formData.append("select_type", selectType);
-    formData.append("business_certificate", businessCertificate);
-    formData.append("authorization_letter", authorizationLetter);
+    // Prepare payload based on selected channel type
+    const payload = {
+      type: channelType,
+      shortcode: shortcode,
+      organization_id: organization_id,
+      // name: channelName
+    };
 
     try {
       const token = getToken();
       const response = await axios.post(
-        "/api/short-code", // Adjust this endpoint as needed
-        formData,
+        "https://flowbot-1048592730476.europe-west4.run.app/api/v2/channels",
+        payload,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
         }
       );
 
-      if (response.status === 201) {
-        setSuccessMessage("Short code created successfully.");
+      if (response.status === 201 || response.status === 200) {
+        setSuccessMessage("Channel created successfully.");
         setErrorMessage("");
-        closeModal();
+        setTimeout(() => {
+          closeModal();
+        }, 2000);
       }
     } catch (error) {
       console.error("Error:", error);
-      setErrorMessage("Failed to create short code. Please try again.");
+      const errorMsg = error.response?.data?.message || "Failed to create channel. Please try again.";
+      setErrorMessage(errorMsg);
     }
   };
+
+  // Get appropriate label and placeholder based on channel type
+  const getInputDetails = () => {
+    switch (channelType) {
+      case "SHORTCODE":
+      case "USSD":
+        return {
+          label: "Shortcode",
+          placeholder: "Enter Shortcode (e.g., 23434)",
+          required: true
+        };
+      case "WHATSAPP":
+        return {
+          label: "Phone Number",
+          placeholder: "Enter WhatsApp Phone Number (e.g., +254712345678)",
+          required: true
+        };
+      case "SMS":
+        return {
+          label: "SMS ID",
+          placeholder: "Enter SMS ID",
+          required: true
+        };
+      default:
+        return {
+          label: "Channel ID",
+          placeholder: "Enter Channel ID",
+          required: false
+        };
+    }
+  };
+
+  // Show input field if channel type is selected
+  const showInputField = channelType !== "";
+  const inputDetails = getInputDetails();
 
   return (
     <div
@@ -80,7 +128,7 @@ const CreateShortCodeModal = ({ closeModal }) => {
               </div>
               <button
                 onClick={closeModal}
-                className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
               >
                 OK
               </button>
@@ -94,49 +142,72 @@ const CreateShortCodeModal = ({ closeModal }) => {
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center">
-                Create Short Code
+                Create Channel
               </h3>
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label
-                    htmlFor="select_type"
+                    htmlFor="channel_name"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
-                    Select Type
+                    Channel Name
+                  </label>
+                  <input
+                    type="text"
+                    id="channel_name"
+                    name="channel_name"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                    placeholder="Enter Channel Name"
+                    value={channelName}
+                    onChange={(e) => setChannelName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="channel_type"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Select Channel Type
                   </label>
                   <select
-                    id="select_type"
-                    name="select_type"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    value={selectType}
-                    onChange={(e) => setSelectType(e.target.value)}
+                    id="channel_type"
+                    name="channel_type"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                    value={channelType}
+                    onChange={(e) => setChannelType(e.target.value)}
                     required
                   >
                     <option value="" disabled>
                       Choose a type
                     </option>
-                    <option value="Type 1">Type 1</option>
-                    <option value="Type 2">Type 2</option>
+                    <option value="WHATSAPP">WhatsApp</option>
+                    <option value="SHORTCODE">Shortcode</option>
+                    <option value="USSD">USSD</option>
                   </select>
                 </div>
-                <div className="mb-4">
-                  <label
-                    htmlFor="short_code_name"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Short Code Name
-                  </label>
-                  <input
-                    type="text"
-                    id="short_code_name"
-                    name="short_code_name"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="Enter Short Code Name"
-                    value={shortCodeName}
-                    onChange={(e) => setShortCodeName(e.target.value)}
-                    required
-                  />
-                </div>
+                
+                {showInputField && (
+                  <div className="mb-4">
+                    <label
+                      htmlFor="shortcode"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      {inputDetails.label}
+                    </label>
+                    <input
+                      type="text"
+                      id="shortcode"
+                      name="shortcode"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                      placeholder={inputDetails.placeholder}
+                      value={shortcode}
+                      onChange={(e) => setShortcode(e.target.value)}
+                      required={inputDetails.required}
+                    />
+                  </div>
+                )}
+                
                 <div className="mb-4">
                   <label
                     htmlFor="business_certificate"
@@ -148,11 +219,8 @@ const CreateShortCodeModal = ({ closeModal }) => {
                     type="file"
                     id="business_certificate"
                     name="business_certificate"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    onChange={(e) =>
-                      handleFileChange(e, setBusinessCertificate)
-                    }
-                    required
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                    onChange={(e) => handleFileChange(e, setBusinessCertificate)}
                   />
                 </div>
                 <div className="mb-4">
@@ -166,24 +234,22 @@ const CreateShortCodeModal = ({ closeModal }) => {
                     type="file"
                     id="authorization_letter"
                     name="authorization_letter"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    onChange={(e) =>
-                      handleFileChange(e, setAuthorizationLetter)
-                    }
-                    required
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                    onChange={(e) => handleFileChange(e, setAuthorizationLetter)}
                   />
                 </div>
+                
                 <div className="flex space-x-2">
                   <button
                     type="button"
-                    className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                    className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5"
                     onClick={closeModal}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-orange-600 dark:hover:bg-orange-700 dark:focus:ring-orange-800"
+                    className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5"
                   >
                     Submit
                   </button>
@@ -200,4 +266,4 @@ const CreateShortCodeModal = ({ closeModal }) => {
   );
 };
 
-export default CreateShortCodeModal;
+export default CreateChannelModal;
