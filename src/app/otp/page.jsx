@@ -13,7 +13,7 @@ const Otp = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState("");
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(120);
   const [isResending, setIsResending] = useState(false);
 
   let email = null;
@@ -37,7 +37,7 @@ const Otp = () => {
       email,
       otp,
     };
-
+  
     try {
       const res = await axios.post(apiUrl.VERIFY_EMAIL, verifyPayload);
       if (res.status === 200) {
@@ -50,7 +50,20 @@ const Otp = () => {
       }
     } catch (error) {
       setIsLoading(false);
-      toast.error("Error verifying OTP");
+      
+      if (error.response && error.response.data && error.response.data.error) {
+        const errorMessage = error.response.data.error;
+        
+        if (errorMessage === "OTP has expired") {
+          toast.error("Your OTP has expired. Please request a new one.");
+        } else if (errorMessage === "failed to verify user") {
+          toast.error("Invalid OTP. Please check and try again.");
+        } else {
+          toast.error(errorMessage);
+        }
+      } else {
+        toast.error("Error verifying OTP. Please try again.");
+      }
     }
   };
 
@@ -59,8 +72,8 @@ const Otp = () => {
     try {
       const res = await axios.post(apiUrl.REQUEST_OTP, { email });
       if (res.status === 200) {
-        toast.success("New OTP sent, valid for 60 seconds.");
-        setTimeLeft(60);
+        toast.success("New OTP sent, valid for 2 minutes.");
+        setTimeLeft(120);
       } else {
         toast.error("Failed to resend OTP");
       }

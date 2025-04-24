@@ -88,11 +88,21 @@ const SignUp = () => {
         router.push("/otp");
       } else {
         setIsLoading(false)
-        toast.error("SIGN UP FAILED, EMAIL ALREADY EXISTS")
+        toast.error("SIGN UP FAILED")
       }
     } catch (error) {
       setIsLoading(false)
-      toast.error("SIGN UP FAILED")
+      if (error.response && error.response.data && error.response.data.error) {
+        const errorMessage = error.response.data.error;
+        
+        if (errorMessage === "409 Conflict: User exists with same email") {
+          toast.error("User with this email already exists. Please use a different email");
+        } else {
+          toast.error(errorMessage);
+        }
+      } else {
+        toast.error("Sign Up Failed. Please try again.");
+      }
     }
   };
 
