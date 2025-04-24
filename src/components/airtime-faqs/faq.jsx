@@ -152,7 +152,7 @@ export default function AirtimeFaqs() {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-          Airtime is usually delivered instantly or within a few minutes, depending on the recipient's network.
+          Airtime is usually delivered instantly or within a few minutes, depending on the recipient&apos;s network.
           </Typography>
         </AccordionDetails>
       </Accordion>

@@ -76,8 +76,8 @@ export default function Faqs() {
           1. Log into your account.<br />
           2. Top up your account with Data Units.<br />
           3. Upload the list of contacts you want to reward.<br />
-          4. Choose the data bundle you'd like to disburse.<br />
-          The data will be sent directly to your contacts' mobile numbers in less than 2 seconds!
+          4. Choose the data bundle you would like to disburse.<br />
+          The data will be sent directly to your contacts&apos; mobile numbers in less than 2 seconds!
         </Typography>
         </AccordionDetails>
       </Accordion>
@@ -116,7 +116,7 @@ export default function Faqs() {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-          Bulk data on your account expires 90 days after purchase, while mobile data disbursed to a customer's number is valid for 30 days.
+          Bulk data on your account expires 90 days after purchase, while mobile data disbursed to a customer&apos;s number is valid for 30 days.
           </Typography>
         </AccordionDetails>
       </Accordion>
