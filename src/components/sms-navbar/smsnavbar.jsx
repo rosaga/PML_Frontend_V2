@@ -34,7 +34,7 @@ const SmsNavbar = () => {
               src="/images/or_noti.svg"
               alt="Notifications"
               priority
-              onClick={() => router.push("/apps/data/notification")}
+              onClick={() => router.push("/apps/sms/notification")}
             />
           </Tooltip>
         </div>
