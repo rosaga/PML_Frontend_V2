@@ -42,9 +42,8 @@ const ProvisionUnitsModal = ({ closeModal, orgUnitId, org_unit_name }) => {
     
         
         const res = await autoProvisionUnits({ 
-          org_id, 
+          org_id: orgUnitId || org_id, 
           newRequest, 
-          orgUnitId: orgUnitId || null 
         });
         
         return res.status === 201 || res.status === 200;
