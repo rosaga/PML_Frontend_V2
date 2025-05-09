@@ -117,7 +117,7 @@ const Dashboard = () => {
   };
 
   const handleNotifications = () => {
-    router.push("/apps/data/notification");
+    router.push("/apps/flowbot/notification");
   };
 
  useEffect(() => {
