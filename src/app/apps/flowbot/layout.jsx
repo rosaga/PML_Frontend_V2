@@ -2,7 +2,7 @@
 import { Inter } from "next/font/google";
 import "../../../app/globals.css";
 import SidebarFlowBot from "@/components/sidebarflowbot/sidebarflowbot";
-import Navbar from "@/components/navbar/navbar";
+import Navbar from "@/components/navbar/navbarFlowbot";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
