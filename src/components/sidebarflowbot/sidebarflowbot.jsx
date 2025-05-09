@@ -80,7 +80,7 @@ const SidebarFlowBot = () => {
   };
 
   const links = [
-    { href: "/apps/flowbot/dashboard", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard", className: "dashboard" },
+    // { href: "/apps/flowbot/dashboard", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard", className: "dashboard" },
     // { href: "#", src: "/images/vector.svg", alt: "Data Rewards & Campaigns", label: "Data Rewards", className: "data-rewards" },
     // { href: "#", src: "/images/dataunits.svg", alt: "Data Units", label: "Data Units", className: "data-units" }
     {  href: "/apps/flowbot/contacts", src: "/images/Account.svg", alt: "Contacts", label: "Contacts", className: "Contacts" },
