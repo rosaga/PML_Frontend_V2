@@ -182,7 +182,9 @@ const AllFlows = () => {
 
   const handleEditFlow = (e, flow) => {
     e.stopPropagation(); 
-    router.push(`/apps/flowbot/flowbuilder?id=${flow.id}&tab=flowbot`);
+    // Include the flow name in the URL for it to be displayed in the builder
+    const encodedFlowName = encodeURIComponent(flow.name);
+    router.push(`/apps/flowbot/flowbuilder?id=${flow.id}&tab=flowbot&flowName=${encodedFlowName}`);
   };
 
   // Navigate to flow responses page with flow name
