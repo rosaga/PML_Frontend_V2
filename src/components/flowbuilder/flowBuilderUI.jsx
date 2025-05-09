@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -10,14 +10,9 @@ import ReactFlow, {
   Handle
 } from "reactflow";
 import Flag from '@mui/icons-material/Flag';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import InputLabel from '@mui/material/InputLabel';
-import FormControl from '@mui/material/FormControl';
-import Button from '@mui/material/Button';
-import AddIcon from '@mui/icons-material/Add';
-import { Menu, ChevronLeft, Play } from 'lucide-react';
+import AddIcon from "@mui/icons-material/Add";
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VariablesPanel from './variablePanel';
 import ButtonNode from './buttonNode';
 import NumberNode from './numberNode';
@@ -26,7 +21,7 @@ import createTemplateFlow from './templateHandler';
 import DefaultNode from './defaultNode';
 import { ToastContainer, toast } from 'react-toastify';
 import FlowTestPanel from './FlowTestPanel';
-
+import { useRouter } from 'next/navigation';
 
 import "reactflow/dist/style.css";
 
@@ -57,7 +52,7 @@ const variableOptions = [
   "location"
 ];
 
-export default function FlowBuilderUI() {
+export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowName, onBack }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [nodeIdCounter, setNodeIdCounter] = useState(1);
@@ -73,16 +68,73 @@ export default function FlowBuilderUI() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // 'success', 'error', or null
   const [showTestPanel, setShowTestPanel] = useState(false);
+  const [flowName, setFlowName] = useState(propFlowName ? decodeURIComponent(propFlowName) : "");
+  const router = useRouter();
+  const [showVariablePanel, setShowVariablesPanel] = useState(false);
 
-  // Get flowId from URL
-  const getFlowId = () => {
-    const url = new URL(window.location.href);
-    return url.searchParams.get("id");
-  };
+  // Get flowId from props or URL
+  const getFlowId = useCallback(() => {
+    if (propFlowId) return propFlowId;
+    
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      return url.searchParams.get("id");
+    }
+    return null;
+  }, [propFlowId]);
   
   const flowId = getFlowId();
 
+  // Fetch flow details to get the name if not provided
+  useEffect(() => {
+    const fetchFlowDetails = async () => {
+      if (!flowId) return;
+      
+      // If flowName is already provided via props, no need to fetch
+      if (propFlowName) {
+        setFlowName(decodeURIComponent(propFlowName));
+        return;
+      }
+
+      try {
+        const apiUrl = `https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows/${flowId}`;
+        
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch flow details');
+        }
+
+        const data = await response.json();
+        if (data && data.name) {
+          setFlowName(data.name);
+        }
+      } catch (err) {
+        console.error('Error fetching flow details:', err);
+      }
+    };
+
+    fetchFlowDetails();
+  }, [flowId, propFlowName]);
+
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+
+
+  // Handle back button click
+  const handleBackClick = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      // Fallback if onBack prop is not provided
+      router.push('/apps/flowbot/flowbuilder');
+    }
+  };
+
 
   const addNode = () => {
     const newNodeId = `node-${nodeIdCounter}`;
@@ -649,6 +701,16 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     setTextConfigPanelVisibleNodeId(null);
     setTempTextInputConfig(nodes.find(node => node.id === selectedNode)?.data.textInputOptions || {});
   };
+  const toggleVariablePanel = () => {
+    setShowVariablesPanel(!showVariablePanel);
+    if (showTestPanel) {
+      setShowTestPanel(false);
+    }
+  };
+  const closeVariablePanel = () => {
+    setShowVariablesPanel(false);
+  };
+
 
   const openTextConfigPanel = (nodeId) => {
     setTextConfigPanelVisibleNodeId(nodeId);
@@ -1062,137 +1124,155 @@ useEffect(() => {
   }
 }, [flowId]);
 ;
-  return (
-    <div className="h-screen flex flex-col">
-      {/* Top Navigation Bar */}
-      <div className="h-16 border-b flex items-center justify-between px-4 bg-white">
-        <h1 className="text-xl font-semibold">Kaza Dada</h1>
-        <div className="flex items-center space-x-4">
-          {saveStatus === 'success' && (
-            <span className="text-green-600 mr-2">Successfully saved</span>
-          )}
-          {saveStatus === 'error' && (
-            <span className="text-red-600 mr-2">Error saving</span>
-          )}
-          <button 
-            className={`px-12 py-2 bg-[#F58426] text-white rounded-lg flex items-center space-x-2 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
-            onClick={saveEntireFlow}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : 'Save as Draft'}
-          </button>
-          <button 
-            className={`px-12 py-2 bg-[#090A29] text-white rounded-lg ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
-            onClick={publishFlow}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Publishing...' : 'Publish'}
-          </button>
-          <button 
-            className="px-12 py-2 border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2"
-            onClick={testFlow}
-          >
-            <Play className="h-4 w-4" />
-            <span>Test</span>
-          </button>
-        </div>
+return (
+  <div className="h-screen flex flex-col">
+    {/* Top Navigation Bar */}
+    <div className="h-16 border-b flex items-center justify-between px-4 bg-white">
+      <div className="flex items-center">
+        <button 
+          onClick={handleBackClick}
+          className="mr-4 text-gray-600 hover:text-gray-900"
+        >
+        </button>
+        <h1 className="text-xl font-semibold">{flowName || "Flow Builder"}</h1>
       </div>
+      <div className="flex items-center space-x-4">
+        {saveStatus === 'success' && (
+          <span className="text-green-600 mr-2">Successfully saved</span>
+        )}
+        {saveStatus === 'error' && (
+          <span className="text-red-600 mr-2">Error saving</span>
+        )}
+        <button 
+          className={`px-6 py-2 bg-[#F58426] text-white rounded-lg flex items-center space-x-2 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+          onClick={saveEntireFlow}
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save as Draft'}
+        </button>
+        <button 
+          className={`px-6 py-2 bg-[#090A29] text-white rounded-lg ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+          onClick={publishFlow}
+          disabled={isSaving}
+        >
+          {isSaving ? 'Publishing...' : 'Publish'}
+        </button>
+        <button 
+          className="px-6 py-2 border border-[#F58426] bg-[#F58426] text-white rounded-lg flex items-center space-x-1"
+          onClick={toggleVariablePanel}
+        >
+          <span>Variables</span>
+        </button>
+        {/* Variables Panel - Note this is positioned here before the Test button */}
+        <button 
+          className="px-6 py-2 border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2"
+          onClick={testFlow}
+        >
+          <PlayArrowIcon fontSize="small" />
+          <span>Test</span>
+        </button>
+      </div>
+    </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-64 border-r bg-white">
-          <div className="p-4">
-            <div className="space-y-4">
-              <h2 className="font-medium text-gray-900">Bots Input</h2>
+    <div className="flex flex-1 overflow-hidden">
+      {/* Left Sidebar */}
+      <div className="w-64 border-r bg-white">
+        <div className="p-4">
+          <div className="space-y-4">
+            <h2 className="font-medium text-gray-900">Bots Input</h2>
+            <button 
+              onClick={addNode} // You'll need to define this function from your original code
+              className="w-full p-3 text-left bg-[#090A29] text-white rounded-lg flex items-center"
+            >
+              <Flag fontSize="small" className="mr-2" /> Text
+            </button>
+            
+            <h2 className="font-medium text-gray-900 pt-4">Users Output</h2>
+            <div className="space-y-2">
               <button 
-                onClick={addNode}
-                className="w-full p-3 text-left bg-[#090A29] text-white rounded-lg flex items-center"
+                onClick={() => addUserInputToNode("Text Input")} 
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+                disabled={!selectedNode || selectedNode === "start"}
               >
-                <Flag className="mr-2" /> Text
+                <span>T</span>
+                <span>Text</span>
               </button>
-              
-              <h2 className="font-medium text-gray-900 pt-4">Users Output</h2>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => addUserInputToNode("Text Input")}
-                  className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
-                  disabled={!selectedNode || selectedNode === "start"}
-                >
-                  <span>T</span>
-                  <span>Text</span>
-                </button>
-                <button 
-                  onClick={() => addUserInputToNode("Buttons")}
-                  className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
-                  disabled={!selectedNode || selectedNode === "start"}
-                >
-                  <span>···</span>
-                  <span>Multiple Options</span>
-                </button>
-                <button 
-                  onClick={() => addUserInputToNode("Number Input")}
-                  className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
-                  disabled={!selectedNode || selectedNode === "start"}
-                >
-                  <span>#</span>
-                  <span>Number</span>
-                </button>
-                <button 
-                  className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
-                  disabled={!selectedNode || selectedNode === "start"}
-                >
-                  <span>@</span>
-                  <span>Email</span>
-                </button>
-              </div>
+              <button 
+                onClick={() => addUserInputToNode("Buttons")} 
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+                disabled={!selectedNode || selectedNode === "start"}
+              >
+                <span>···</span>
+                <span>Multiple Options</span>
+              </button>
+              <button 
+                onClick={() => addUserInputToNode("Number Input")} 
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+                disabled={!selectedNode || selectedNode === "start"}
+              >
+                <span>#</span>
+                <span>Number</span>
+              </button>
+              <button 
+                className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
+                disabled={!selectedNode || selectedNode === "start"}
+              >
+                <span>@</span>
+                <span>Email</span>
+              </button>
+            </div>
 
-              <h2 className="font-medium text-gray-900 pt-4">Logic</h2>
-              <div className="space-y-2">
-                <button 
-                  onClick={applyTemplate}
-                  className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
-                  Template
-                </button>
-                <button 
-                  className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
-                  Redirect
-                </button>
-              </div>
+            <h2 className="font-medium text-gray-900 pt-4">Logic</h2>
+            <div className="space-y-2">
+              <button 
+                onClick={applyTemplate} 
+                className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
+                Template
+              </button>
+              <button 
+                className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
+                Redirect
+              </button>
             </div>
           </div>
         </div>
-
-        <div className="flex-1 h-full">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            onNodeClick={(_, node) => {
-              setSelectedNode(node.id);
-              
-              if (node.type !== "numberNode" && node.type !== "textNode") {
-                setConfigPanelVisibleNodeId(null);
-                setTextConfigPanelVisibleNodeId(null);
-              }
-            }}
-            style={{ height: "100%" }}
-          >
-            <MiniMap />
-            <Controls />
-            <Background variant="dots" gap={12} size={1} />
-          </ReactFlow>
-        </div>
-
-        {/* Right Side Variables Panel */}
-        {showTestPanel ? (
-          <FlowTestPanel flowId={flowId} onClose={closeTestPanel} />
-        ) : (
-          <VariablesPanel onVariableAdd={handleVariableAdd} />
-        )}
       </div>
+
+      <div className="flex-1 h-full">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          onNodeClick={(_, node) => {
+            setSelectedNode(node.id);
+            
+            if (node.type !== "numberNode" && node.type !== "textNode") {
+              setConfigPanelVisibleNodeId(null);
+              setTextConfigPanelVisibleNodeId(null);
+            }
+          }}
+          style={{ height: "100%" }}
+        >
+          <MiniMap />
+          <Controls />
+          <Background variant="dots" gap={12} size={1} />
+        </ReactFlow>
+      </div>
+
+      {/* Right Side Test Panel when active */}
+      {showTestPanel && (
+        <FlowTestPanel flowId={flowId} onClose={closeTestPanel} />
+      )}
+      {showVariablePanel && (
+        <VariablesPanel 
+          onVariableAdd={handleVariableAdd} 
+          onClose={closeVariablePanel}
+        />
+      )}
     </div>
-  );
+  </div>
+);
 }
