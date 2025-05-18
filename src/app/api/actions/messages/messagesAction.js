@@ -41,7 +41,7 @@ export async function messagesAction(formValues) {
 
 export async function messageCountsAction(formValues) {
   // const messagesUrl = apiUrl.LIST_MESSAGES;
-  const messageCountsUrl = `${apiUrl.MESSAGE_COUNTS}/sms/count/${formValues.org_id}`;
+  const messageCountsUrl = `${apiUrl.MESSAGE_COUNTS}/sms/count/${formValues.org_id}?year=${formValues.selectedYear}&month=${formValues.selectedMonth}`;
   try{
   const config = await authHeaders();
 

@@ -26,6 +26,9 @@ const Dashboard = () => {
   const [totalPending, setTotalPending] = useState('');
   const [totalBalance, setTotalBalance] = useState(0);
 
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+
   const page = 1;
   const limit = 5;
 
@@ -86,6 +89,43 @@ const Dashboard = () => {
     router.push("/apps/sms/notification");
   };
 
+  const generateYearOptions = () => {
+    const options = [{ value: "", label: "All Years" }];
+    const startYear = 2024;
+    const currentYear = new Date().getFullYear();
+    for (let year = startYear; year <= currentYear + 1; year++) {
+      options.push({ value: year.toString(), label: year.toString() });
+    }
+    return options;
+  };
+
+  const generateMonthOptions = () => {
+    const options = [{ value: "", label: "All Months" }];
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    for (let i = 0; i < 12; i++) {
+      const monthNumber = i + 1;
+      const monthValue = monthNumber < 10 ? `0${monthNumber}` : `${monthNumber}`;
+      options.push({ value: monthValue, label: monthNames[i] });
+    }
+    return options;
+  };
+
+  const yearOptions = generateYearOptions();
+  const monthOptions = generateMonthOptions();
+
   
 
   const getSmsBalance = () => {
@@ -111,7 +151,7 @@ const Dashboard = () => {
 
   const getMessageCounts = () => {
     if (org_id) {
-      messageCountsAction({ org_id })
+      messageCountsAction({ org_id, selectedMonth, selectedYear })
         .then((res) => {
           if (res.errors) {
             console.log("AN ERROR HAS OCCURED");
@@ -127,7 +167,7 @@ const Dashboard = () => {
             res.data.StatusCounts.forEach((status) => {
               if (status.StatusDescription === "Recieved Pending Confirmation" || status.StatusDescription === "SUCCESS") {
                 successCount += status.MessageCount;
-              } else if (status.StatusDescription === "Accepted for processing") {
+              } else{
                 pendingCount += status.MessageCount;
               }
             });
@@ -169,7 +209,7 @@ const Dashboard = () => {
     getMessages();
     getMessageCounts();
     getSmsBalance();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
 
 
@@ -178,6 +218,36 @@ const Dashboard = () => {
       <div className="flex-1 p-4 sm:ml-64 h-screen">
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
+            <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
+              <div>
+                <select
+                  id="yearFilter"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="p-2 border rounded"
+                >
+                  {yearOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select
+                  id="monthFilter"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="p-2 border rounded"
+                >
+                  {monthOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="border-[1.5px] rounded-3xl">
               <div className="p-8">
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
@@ -230,7 +300,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Total Pending</div>
+                    <div className="text-gray-500">Total Failed</div>
                     <div>
                       <span>
                         <Image
