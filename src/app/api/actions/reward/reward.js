@@ -295,3 +295,36 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
     }
   }
 
+  export async function provisionSmsUnits(formValues) {
+    
+    const requestSmsUnits = `${apiUrl.SMS_URL}/admin/recharge`;
+
+    try {
+    const config = await authHeaders();
+  
+    return axios
+      .post(requestSmsUnits, formValues.newRequest, config)
+      .then((res) => {
+      
+        if (res.data && res.status === 200) {
+
+            console.log("THE RESPONSE IS !!!!!!!",res)
+          
+        }
+        return res;
+      })
+    } catch (error) {
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The contacts could not be returned.',
+          },
+        };
+      }
+      return {
+        errors: {
+          _error: 'Network error. Please try again.',
+        },
+      };
+    }
+  }

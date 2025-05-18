@@ -8,6 +8,7 @@ import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetRecharges } from "@/app/api/actions/senderId/senderId";
 import RequestSmsUnitsModal from "../../../../components/modal/requestSmsUnits"
+import ProvisionSmsUnitsModal from "../../../../components/modal/autoprovUnits"
 import { hasRole } from "../../../../utils/decodeToken"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Material-UI approve icon
 import IconButton from "@mui/material/IconButton";
@@ -26,6 +27,7 @@ const Recharges = () => {
   }
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen1, setIsModalOpen1] = useState(false);
   const [recharges, setRecharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
@@ -34,8 +36,13 @@ const Recharges = () => {
     setIsModalOpen(true);
   };
 
+    const openModal1 = () => {
+    setIsModalOpen1(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsModalOpen1(false);
   };
 
   const handleApprove = async (id) => {
@@ -80,7 +87,7 @@ const Recharges = () => {
 
   useEffect(() => {
       getRecharges();
-  }, [isModalOpen, isApproved, isModalOpen]);
+  }, [isModalOpen, isApproved, isModalOpen1]);
 
   const columns = [
     { field: "id", headerName: "ID", flex: 1 },
@@ -162,6 +169,12 @@ const Recharges = () => {
               
               <div className="ml-auto flex space-x-4">
                 <PeakButton
+                  buttonText="Provission"
+                  icon={AddIcon}
+                  className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
+                  onClick={openModal1}
+                />
+                <PeakButton
                   buttonText="Request Units"
                   icon={AddIcon}
                   className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
@@ -199,6 +212,7 @@ const Recharges = () => {
         </div>
       </div>
       {isModalOpen && <RequestSmsUnitsModal closeModal={closeModal} />}
+      {isModalOpen1 && <ProvisionSmsUnitsModal closeModal={closeModal} />}
     </div>
     </>
   );
