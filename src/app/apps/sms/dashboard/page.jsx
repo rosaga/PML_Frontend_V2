@@ -165,7 +165,7 @@ const Dashboard = () => {
   
             // Loop through the StatusCounts and calculate success/failed totals
             res.data.StatusCounts.forEach((status) => {
-              if (status.StatusDescription === "Recieved Pending Confirmation" || status.StatusDescription === "SUCCESS") {
+              if (status.StatusDescription === "Recieved Pending Confirmation" || status.StatusDescription === "SUCCESS" || status.StatusDescription === "DeliveredToTerminal") {
                 successCount += status.MessageCount;
               } else{
                 pendingCount += status.MessageCount;
