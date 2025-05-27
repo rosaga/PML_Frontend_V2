@@ -3,6 +3,7 @@ import { provisionSmsUnits } from "@/app/api/actions/reward/reward";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 import { ToastContainer, toast } from 'react-toastify';
 import { messageBalanceAction } from "@/app/api/actions/messages/messagesAction";
+import { GetAllOrgUnits } from "@/app/api/actions/senderId/senderId";
 
 const ProvisionSmsUnitsModal = ({ closeModal }) => {
   let org_id = null;
@@ -13,6 +14,10 @@ const ProvisionSmsUnitsModal = ({ closeModal }) => {
   const [successMessage, setSuccessMessage] = useState("");
   const [bundles, setBundles] = useState([]);
   const [totalBalance, setTotalBalance] = useState(0);
+  const [organizations, setOrganizations] = useState([]);
+  const [selectedOrgId, setSelectedOrgId] = useState("");
+  const [loading, setLoading] = useState(true);
+
 
   const getSmsBalance = () => {
       if (org_id) {
@@ -34,6 +39,25 @@ const ProvisionSmsUnitsModal = ({ closeModal }) => {
         console.log("org_id is null or undefined. Skipping API call.");
       }
     };
+
+    const getOrgUnits = async () => {
+        try {
+          const res = await GetAllOrgUnits(org_id);
+          if (res.errors) {
+            setLoading
+            console.log("AN ERROR HAS OCCURRED");
+          } else {
+            setLoading(false);
+            setOrganizations(res.data);
+          }
+        } catch (err) {
+          console.log(err);
+        }
+      };
+    
+      useEffect(() => {
+        getOrgUnits();
+      }, []);
 
 
   const initialState = {
@@ -58,12 +82,12 @@ const ProvisionSmsUnitsModal = ({ closeModal }) => {
     const newRequest = {
       package: state.package,
       units: parseInt(state.units),
-      application_id: org_id,
+      application_id: selectedOrgId || org_id,
     };
 
     const res = provisionSmsUnits({ newRequest }).then((res) => {
       if (res.status === 201) {
-        // closeModal()
+        closeModal()
         toast.success("UNITS PROVISIONING SUCCESS");
       } else {
         // closeModal()
@@ -122,6 +146,30 @@ const ProvisionSmsUnitsModal = ({ closeModal }) => {
               <>
 
                 <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                  <div>
+                    <label
+                      htmlFor="organization"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Select Organization
+                    </label>
+                    <select
+                      id="organization"
+                      name="organization"
+                      value={selectedOrgId}
+                      onChange={(e) => setSelectedOrgId(e.target.value)}
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      required
+                    >
+                      <option value="">-- Select Organization --</option>
+                      {organizations.map((org) => (
+                        <option key={org.id} value={org.id}>
+                          {org.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div>
                     <label
                       htmlFor="numberOfUnits"

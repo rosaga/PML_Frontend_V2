@@ -87,7 +87,7 @@ const Recharges = () => {
 
   useEffect(() => {
       getRecharges();
-  }, [isModalOpen, isApproved, isModalOpen1]);
+  }, [isModalOpen, isApproved, isModalOpen1, loading]);
 
   const columns = [
     { field: "id", headerName: "ID", flex: 1 },
