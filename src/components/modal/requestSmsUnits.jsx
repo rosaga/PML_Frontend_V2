@@ -61,7 +61,7 @@ const RequestSmsUnitsModal = ({ closeModal }) => {
 
     const res = requestSmsUnits({ org_id, newRequest }).then((res) => {
       if (res.status === 201) {
-        // closeModal()
+        closeModal()
         toast.success("REQUEST SENT SUCCESSFULLY!!!");
       } else {
         // closeModal()
