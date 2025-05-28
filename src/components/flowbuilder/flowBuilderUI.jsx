@@ -22,6 +22,11 @@ import DefaultNode from './defaultNode';
 import { ToastContainer, toast } from 'react-toastify';
 import FlowTestPanel from './FlowTestPanel';
 import { useRouter } from 'next/navigation';
+import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import Filter1Icon from '@mui/icons-material/Filter1';
+import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
+import OfflineShareIcon from '@mui/icons-material/OfflineShare';
 
 import "reactflow/dist/style.css";
 
@@ -1194,7 +1199,7 @@ return (
                 className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
                 disabled={!selectedNode || selectedNode === "start"}
               >
-                <span>T</span>
+                <SortByAlphaIcon/>
                 <span>Text</span>
               </button>
               <button 
@@ -1202,22 +1207,23 @@ return (
                 className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
                 disabled={!selectedNode || selectedNode === "start"}
               >
-                <span>···</span>
+                <DocumentScannerIcon/>
                 <span>Multiple Options</span>
+                
               </button>
               <button 
                 onClick={() => addUserInputToNode("Number Input")} 
                 className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
                 disabled={!selectedNode || selectedNode === "start"}
               >
-                <span>#</span>
+                <Filter1Icon/>
                 <span>Number</span>
               </button>
               <button 
                 className="w-full p-3 text-left border border-[#F58426] text-[#F58426] rounded-lg flex items-center space-x-2 hover:bg-gray-50"
                 disabled={!selectedNode || selectedNode === "start"}
               >
-                <span>@</span>
+                <MailOutlineIcon/>
                 <span>Email</span>
               </button>
             </div>
@@ -1227,11 +1233,13 @@ return (
               <button 
                 onClick={applyTemplate} 
                 className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
-                Template
+                <DocumentScannerIcon/>
+                <span>Template</span>
               </button>
               <button 
                 className="w-full p-3 text-left bg-[#F58426] text-white rounded-lg">
-                Redirect
+                <OfflineShareIcon/>
+                <span>Redirect</span>
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../../utils/auth";
+import { saveAs } from 'file-saver';
 
 const CreateChannelModal = ({ closeModal }) => {
   const [channelName, setChannelName] = useState("");
@@ -30,6 +31,11 @@ const CreateChannelModal = ({ closeModal }) => {
       window.removeEventListener("click", handleClickOutside);
     };
   }, [closeModal]);
+
+  const handleDownloadTemplate = (filename) => {
+    const fileUrl = `/pdf/${filename}`;
+    saveAs(fileUrl, filename);
+  };
 
   const handleFileChange = (event, setFile) => {
     setFile(event.target.files[0]);
@@ -118,6 +124,16 @@ const CreateChannelModal = ({ closeModal }) => {
     >
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+          <button
+            onClick={() => handleDownloadTemplate("Sender_ID_request_letter.docx")}
+            className="absolute top-4 right-4 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Download Template</span>
+          </button>
+
           {successMessage ? (
             <div className="p-4 text-center">
               <div className="mb-4 text-2xl font-semibold text-green-500">

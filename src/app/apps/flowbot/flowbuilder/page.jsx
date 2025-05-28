@@ -30,7 +30,6 @@ const Flowbuilder = () => {
 
   // Handle back button navigation for flowbot and responses tabs
   const handleBackToFlows = () => {
-    // Navigate back to the flows view by updating the URL
     router.push('/apps/flowbot/flowbuilder');
     setActive('flows');
   };

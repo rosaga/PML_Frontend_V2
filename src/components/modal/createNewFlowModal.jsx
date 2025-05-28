@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 const CreateNewFlowModal = ({ closeModal }) => {
   const [name, setName] = useState("");
-  const [channel_id, setChannel_id] = useState("");
+  const [description, setDescription] = useState("");
   const [type, setType] = useState("WhatsApp");
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
@@ -39,7 +39,7 @@ const CreateNewFlowModal = ({ closeModal }) => {
         name,
         organization_id,
         type,
-        channel_id: channel_id || undefined
+        description: description || undefined
       };
       
       const response = await fetch('https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows', {
@@ -123,23 +123,20 @@ const CreateNewFlowModal = ({ closeModal }) => {
               
               <div className="mb-4">
                 <label 
-                  htmlFor="channel_id" 
+                  htmlFor="description" 
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
-                  Select Channel (Optional)
+                  Description (Optional)
                 </label>
-                <select
-                  id="channel_id"
-                  name="channel_id"
+                <textarea
+                  id="description"
+                  name="description"
+                  rows="3"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                  value={channel_id}
-                  onChange={(e) => setChannel_id(e.target.value)}
-                >
-                  <option value="">Select a channel</option>
-                  <option value="1">WhatsApp</option>
-                  <option value="2">WhatsApp Business</option>
-                  <option value="3">SMS</option>
-                </select>
+                  placeholder="Describe what this flow is for..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </div>
               
               <div className="flex space-x-2">
