@@ -169,7 +169,7 @@ const Recharges = () => {
               
               <div className="ml-auto flex space-x-4">
                 <PeakButton
-                  buttonText="Provission"
+                  buttonText="Provision"
                   icon={AddIcon}
                   className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
                   onClick={openModal1}
