@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import RecipientsTable from "../../../../components/rewards-tables/recipients";
+import RecipientsTable from "../../../../components/flowbuilder/flowBuilderContacts";
 import GroupsTable from "../../../../components/rewards-tables/groups";
 
 const DataRewards = () => {
@@ -17,20 +17,6 @@ const DataRewards = () => {
 
              
                 <>
-                  {/* <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
-                    <div className="m-2 flex-1">
-                      <span
-                        onClick={() => setChildActive("recipients")}
-                        className={`flex-1 flex justify-center text-center ${
-                          childActive === "recipients"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                        }`}
-                      >
-                        Contacts
-                      </span>
-                    </div>
-                  </div> */}
 
                    
                     <RecipientsTable />
