@@ -41,6 +41,44 @@ export async function GetContacts(org_id, page, pageSize, searchParams) {
     };
   }
 }
+export async function GetFlowbuilderContacts(org_id, page, pageSize, searchParams) {
+  let contactsUrl = `https://flowbot-1048592730476.europe-west4.run.app/api/v2/contacts?eq__organization_id=${org_id}&orderby=created_at DESC`;
+
+  if (page) {
+    contactsUrl += `&page=${page}`;
+  }
+  if (pageSize) {
+    contactsUrl += `&size=${pageSize}`;
+  }
+  if (searchParams) {
+    const searchParamsString = new URLSearchParams(searchParams).toString();
+    contactsUrl += `&${searchParamsString}`;
+  }
+
+  try {
+    const config = await authHeaders();
+    const res = await axios.get(contactsUrl, config);
+
+    if (res.data && res.status === 200) {
+      console.log("THE RESPONSE IS !!!!!!!", res);
+    }
+
+    return res;
+  } catch (error) {
+    if (error.response) {
+      return {
+        errors: {
+          _error: 'The contacts could not be returned.',
+        },
+      };
+    }
+    return {
+      errors: {
+        _error: 'Network error. Please try again.',
+      },
+    };
+  }
+}
 
 
   export async function fetchContacts(query, org_id) {
