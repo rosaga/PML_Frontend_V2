@@ -893,39 +893,42 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
   
   const localEdges = [];
   
-  // Step 1: Create a map of backend IDs to their nodes for easy lookup
-  const backendNodesMap = {};
-  backendNodes.forEach(node => {
-    backendNodesMap[node.id] = node;
-  });
-  
-  // Step 2: Identify button option nodes and create a mapping for them
-  const buttonOptionNodes = backendNodes.filter(node => node.extra_data?.isButtonOption);
-  const buttonOptionMap = {}; // Maps option node to its parent and button index
-  
-  buttonOptionNodes.forEach(optionNode => {
-    const parentNode = backendNodes[optionNode.parent_index];
-    if (parentNode) {
-      buttonOptionMap[optionNode.id] = {
-        parentId: parentNode.id,
-        buttonIndex: optionNode.extra_data.buttonIndex
-      };
+  // Step 1: Sort backend nodes by their order/index to maintain proper hierarchy
+  const sortedBackendNodes = [...backendNodes].sort((a, b) => {
+    // If nodes have an explicit order field, use that
+    if (a.order !== undefined && b.order !== undefined) {
+      return a.order - b.order;
     }
+    return a.id - b.id;
   });
-
-  // Step 3: Create a map to convert backend IDs to local IDs
+  
+  // Step 2: Create a mapping from backend array index to backend node
+  const backendIndexToNode = {};
+  sortedBackendNodes.forEach((node, index) => {
+    backendIndexToNode[index] = node;
+  });
+  
+  // Step 3: Create a mapping from backend node ID to local node ID
   const backendIdToLocalId = {};
+  const backendIndexToLocalId = {}; // This will map array indices to local IDs
   
   // Step 4: Create all local nodes (excluding button option nodes)
-  backendNodes.forEach((backendNode, index) => {
+  let localNodeCounter = 1;
+  
+  sortedBackendNodes.forEach((backendNode, backendIndex) => {
     // Skip button option nodes - they're not represented as actual nodes in ReactFlow
     if (backendNode.extra_data?.isButtonOption) return;
     
-    const localId = `node-${Object.keys(backendIdToLocalId).length + 1}`;
+    const localId = `node-${localNodeCounter}`;
     backendIdToLocalId[backendNode.id] = localId;
+    backendIndexToLocalId[backendIndex] = localId; 
+    localNodeCounter++;
     
     // Determine position from extra_data
-    const position = backendNode.extra_data?.position || { x: 250 + (index + 1) * 100, y: 100 + (index + 1) * 100 };
+    const position = backendNode.extra_data?.position || { 
+      x: 250 + localNodeCounter * 150, 
+      y: 100 + localNodeCounter * 100 
+    };
     
     // Determine node type and configuration
     let nodeType = "default";
@@ -955,7 +958,6 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
       inputType = "Buttons";
       buttonNodeType = 'route';
       
-      // Extract button options from the extra_data
       if (backendNode.extra_data?.buttons) {
         buttonOptions = backendNode.extra_data.buttons.map(btn => ({
           label: btn.text || "Button"
@@ -968,13 +970,11 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
       inputType = "Buttons";
       buttonNodeType = 'list';
       
-      // Extract list items from the LIST array in extra_data
       if (backendNode.extra_data?.LIST) {
         buttonOptions = backendNode.extra_data.LIST.map(text => ({
           label: text
         }));
       } else {
-        // Fallback if no list items defined
         buttonOptions = [{ label: 'Item 1' }, { label: 'Item 2' }];
       }
     }
@@ -988,11 +988,11 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
         title: backendNode.name || "Click to edit title",
         prompt: backendNode.header_text_template?.text || "Click to edit question/prompt",
         inputType: inputType,
-        updateNodeData, // Add necessary functions
+        updateNodeData,
         numberInputOptions,
         textInputOptions,
         buttonOptions,
-        nodeType: buttonNodeType // This is for button nodes type (route/list)
+        nodeType: buttonNodeType
       },
       className: "min-w-[250px]"
     };
@@ -1032,75 +1032,70 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
     localNodes.push(localNode);
   });
   
-  // Step 5: Create the connections (edges)
-  
-  // First, connect any nodes that should connect to the start node
-  let hasStartConnection = false;
-  
-      // For each node, determine its proper connections
-  backendNodes.forEach((backendNode) => {
-    // Skip button option nodes - they're handled in a special way
+  // Step 5: Create the connections (edges) based on parent_index
+  sortedBackendNodes.forEach((backendNode, backendIndex) => {
+    // Skip button option nodes
     if (backendNode.extra_data?.isButtonOption) return;
     
-    const targetId = backendIdToLocalId[backendNode.id];
-    if (!targetId) return;
+    const currentLocalId = backendIndexToLocalId[backendIndex];
+    if (!currentLocalId) return;
     
-    // If this node has no parent or parent_index is 0, connect it to start
-    if (backendNode.parent_index === 0 && !hasStartConnection) {
+    // Special case: Only the very first node (array index 0) with parent_index 0 connects to start
+    if (backendIndex === 0 && backendNode.parent_index === 0) {
       localEdges.push({
-        id: `edge-start-${targetId}`,
+        id: `edge-start-${currentLocalId}`,
         source: "start",
-        target: targetId
+        target: currentLocalId
       });
-      hasStartConnection = true;
     }
-    // Otherwise find its actual parent and connect appropriately
-    else if (backendNode.parent_index !== null && backendNode.parent_index !== undefined && backendNode.parent_index > 0) {
-      const parentBackendNode = backendNodes[backendNode.parent_index];
+    // All other nodes use parent_index as array index to find their parent
+    else if (backendNode.parent_index !== null && backendNode.parent_index !== undefined) {
+      const parentBackendNode = sortedBackendNodes[backendNode.parent_index];
       
-      if (!parentBackendNode) return;
+      if (!parentBackendNode) {
+        return;
+      }
       
       // Check if parent is a button option node
       if (parentBackendNode.extra_data?.isButtonOption) {
         // Find the actual route node this option belongs to
-        const optionParentIndex = parentBackendNode.parent_index;
-        const routeNode = backendNodes[optionParentIndex];
+        const routeNodeIndex = parentBackendNode.parent_index;
+        const routeNode = sortedBackendNodes[routeNodeIndex];
         
         if (routeNode) {
-          const routeNodeId = backendIdToLocalId[routeNode.id];
+          const routeNodeLocalId = backendIndexToLocalId[routeNodeIndex];
           const buttonIndex = parentBackendNode.extra_data.buttonIndex;
           
-          if (routeNodeId) {
-            // Create connection from the route node's specific button to this node
+          if (routeNodeLocalId) {
             localEdges.push({
-              id: `edge-${routeNodeId}-btn${buttonIndex}-${targetId}`,
-              source: routeNodeId,
-              target: targetId,
+              id: `edge-${routeNodeLocalId}-btn${buttonIndex}-${currentLocalId}`,
+              source: routeNodeLocalId,
+              target: currentLocalId,
               sourceHandle: `button-${buttonIndex}`
             });
           }
         }
       }
-      // If parent is a regular node (not a button option)
+      // If parent is a regular node
       else {
-        const parentId = backendIdToLocalId[parentBackendNode.id];
+        const parentLocalId = backendIndexToLocalId[backendNode.parent_index];
         
-        if (parentId) {
+        if (parentLocalId) {
           // For LIST nodes, connect to the special list-output handle
           if (parentBackendNode.node_type === "LIST") {
             localEdges.push({
-              id: `edge-${parentId}-list-${targetId}`,
-              source: parentId,
-              target: targetId,
+              id: `edge-${parentLocalId}-list-${currentLocalId}`,
+              source: parentLocalId,
+              target: currentLocalId,
               sourceHandle: 'list-output'
             });
           }
           // For regular node connections
           else {
             localEdges.push({
-              id: `edge-${parentId}-${targetId}`,
-              source: parentId,
-              target: targetId
+              id: `edge-${parentLocalId}-${currentLocalId}`,
+              source: parentLocalId,
+              target: currentLocalId
             });
           }
         }
@@ -1108,16 +1103,6 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
     }
   });
   
-  // Connect any remaining nodes to start if needed
-  if (!hasStartConnection && localNodes.length > 1) {
-    localEdges.push({
-      id: `edge-start-${localNodes[1].id}`,
-      source: "start",
-      target: localNodes[1].id
-    });
-  }
-  
-  console.log("Converted to local format:", { localNodes, localEdges });
   return { localNodes, localEdges };
 };
 
@@ -1186,7 +1171,7 @@ return (
           <div className="space-y-4">
             <h2 className="font-medium text-gray-900">Bots Input</h2>
             <button 
-              onClick={addNode} // You'll need to define this function from your original code
+              onClick={addNode} 
               className="w-full p-3 text-left bg-[#090A29] text-white rounded-lg flex items-center"
             >
               <Flag fontSize="small" className="mr-2" /> Text
