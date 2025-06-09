@@ -103,6 +103,8 @@ const SidebarData = () => {
   ];
 
    hasRole(token,'SuperAdmin') && links[5].subLinks.push({ href: "/apps/data/manageSenderId",  label: "Manage Sender Ids", className: "notification-threshold" });
+   hasRole(token,'SuperAdmin') && links[5].subLinks.push({ href: "/apps/data/provisionUnits",  label: "Unit Provisioning", className: "notification-threshold" });
+
 
   const tourSteps = [
     {
