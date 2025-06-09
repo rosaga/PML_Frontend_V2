@@ -55,16 +55,24 @@ const SendBulkModal = ({ closeModal }) => {
   const [schedule, setSchedule] = useState(false);
   const [groups, setGroups] = useState([]);
   const [searchParams, setSearchParams] = useState({});
+  const [charCount, setCharCount] = useState(0);
+
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(100);
 
   const handleChange = (e) => {
     const value = e.target.value;
-    setState({
-      ...state,
-      [e.target.name]: value,
-    });
+    const name = e.target.name;
+  
+    setState((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  
+    if (name === "content") {
+      setCharCount(value.length);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -294,12 +302,12 @@ const SendBulkModal = ({ closeModal }) => {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="content"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Type your message here (Max 140 characters)
-                  </label>
+                <label htmlFor="content" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between">
+                  <span>Type your message here</span>
+                  <span className={`${charCount >= 140 ? "text-red-500" : "text-gray-500"}`}>
+                    {charCount}/160
+                  </span>
+                </label>
                   <textarea
                     name="content"
                     id="content"
@@ -307,7 +315,7 @@ const SendBulkModal = ({ closeModal }) => {
                     placeholder="Hello ^FIRSTNAME^ ^LASTNAME^ from the county of ^COUNTY^. Receive this sms to your mobile number - ^PHONENUMBER^."
                     onChange={handleChange}
                     value={state.content}
-                    maxLength="140"
+                    maxLength="160"
                     rows="4"
                     required
                   />
