@@ -33,7 +33,16 @@ const ButtonNode = ({ data, isConnectable }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow border-2 min-w-[300px]">
+    <div className="bg-white p-4 rounded-lg shadow border-2 min-w-[300px] relative">
+      {/* Input handle at the top */}
+      <Handle
+        type="target"
+        position="top"
+        isConnectable={isConnectable}
+        className="w-3 h-3 border-2 border-gray-400 bg-white rounded-full"
+        style={{ top: -6 }}
+      />
+      
       {/* Title field */}
       <div className="mb-2">
         <input
@@ -62,7 +71,7 @@ const ButtonNode = ({ data, isConnectable }) => {
           <FormLabel component="legend" style={{ fontSize: '12px', marginBottom: '8px' }}>
             <div className="flex items-center">
               <span>Node Type</span>
-              <Tooltip title="'Route' nodes allow buttons to connect to other nodes. 'List' nodes don't connect to any nodes.">
+              <Tooltip title="'Route' nodes allow buttons to connect to other nodes. 'List' nodes collect user selection and continue to next node.">
                 <InfoIcon fontSize="small" className="ml-1 text-gray-400" />
               </Tooltip>
             </div>
@@ -95,7 +104,7 @@ const ButtonNode = ({ data, isConnectable }) => {
               size="small"
               value={button.label}
               onChange={(e) => data.handleButtonConfigChange(index, 'label', e.target.value)}
-              label={`Button ${index + 1}`}
+              label={`${nodeType === 'route' ? 'Button' : 'Option'} ${index + 1}`}
               margin="dense"
             />
             
@@ -115,9 +124,13 @@ const ButtonNode = ({ data, isConnectable }) => {
                 type="source"
                 position="right"
                 id={`button-${index}`}
-                className="w-3 h-3 border-2 border-gray-400 bg-white rounded-full"
+                className="w-3 h-3 border-2 border-blue-400 bg-blue-100 rounded-full hover:bg-blue-200 transition-colors"
                 isConnectable={isConnectable}
-                style={{ right: -10 }}
+                style={{ 
+                  right: -12,
+                  top: '50%',
+                  transform: 'translateY(-50%)'
+                }}
               />
             )}
           </div>
@@ -133,27 +146,31 @@ const ButtonNode = ({ data, isConnectable }) => {
           size="small"
           startIcon={<AddIcon />}
         >
-          Add Button
+          Add {nodeType === 'route' ? 'Button' : 'Option'}
         </Button>
-       
       </div>
       
-      <Handle
-        type="target"
-        position="top"
-        isConnectable={isConnectable}
-        className="w-3 h-3 border-2 border-gray-400 bg-white rounded-full"
-      />
-      
-      {/* Output handle for list nodes */}
+      {/* Output handle for list nodes - made more visible and better positioned */}
       {nodeType === 'list' && (
         <Handle
           type="source"
           position="bottom"
           id="list-output"
-          className="w-3 h-3 border-2 border-gray-400 bg-white rounded-full"
+          className="w-4 h-4 border-2 border-green-500 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
           isConnectable={isConnectable}
+          style={{ 
+            bottom: -8,
+            left: '50%',
+            transform: 'translateX(-50%)'
+          }}
         />
+      )}
+      
+      {/* Visual indicator for list nodes */}
+      {nodeType === 'list' && (
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          ↓ Connect to next node
+        </div>
       )}
     </div>
   );

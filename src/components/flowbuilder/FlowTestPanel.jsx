@@ -61,7 +61,7 @@ const FlowTestPanel = ({ flowId, onClose }) => {
 
   const sendMessage = async (text) => {
     const formData = new FormData();
-    formData.append('phoneNumber', '+254702079491');
+    formData.append('phoneNumber', '+25470207787');
     formData.append('sessionId', sessionId);
     formData.append('text', text);
     formData.append('serviceCode', '206-692-7938');
