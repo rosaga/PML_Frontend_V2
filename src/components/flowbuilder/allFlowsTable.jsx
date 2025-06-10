@@ -122,7 +122,7 @@ const AllFlows = () => {
         organization_id = localStorage.getItem('selectedAccountId');
       }
 
-      const apiUrl = `https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows?eq__organization_id=${organization_id}&size=${paginationModel.pageSize}&page=${paginationModel.page + 1}&order=updated_at desc`;
+      const apiUrl = `https://flowbot-1048592730476.europe-west4.run.app/api/v2/flows?eq__organization_id=${organization_id}&size=${paginationModel.pageSize}&page=${paginationModel.page + 1}&orderby=updated_at desc`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',

@@ -50,7 +50,7 @@ const ContactSessionsModal = ({ closeModal, contact }) => {
     try {
       const offset = paginationModel.page * paginationModel.pageSize;
       const response = await fetch(
-        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/session?eq__contact_id=${contactId}&limit=${paginationModel.pageSize}&offset=${offset}`,
+        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/session?eq__contact_id=${contactId}&limit=${paginationModel.pageSize}&offset=${offset}&orderby=created_at desc`,
         {
           method: 'GET',
           headers: {

@@ -51,16 +51,16 @@ const CreateNewFlowModal = ({ closeModal }) => {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create flow');
+        throw new Error('Failed to create flow');
       }
       
-      // If successful, redirect to the flow builder page
-      router.push("/apps/flowbot/flowbuilder?tab=flowbot"); 
+      closeModal();
+      
     } catch (error) {
       setErrorMessage(error.message);
     }
   };
+
 
   return (
     <div
