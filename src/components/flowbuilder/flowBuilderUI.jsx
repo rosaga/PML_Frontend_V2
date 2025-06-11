@@ -29,6 +29,8 @@ import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
 import OfflineShareIcon from '@mui/icons-material/OfflineShare';
 
 import "reactflow/dist/style.css";
+import DeleteIcon from '@mui/icons-material/Delete';
+
 
 const initialNodes = [
   {
@@ -141,7 +143,7 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
   };
 
 
-  const addNode = () => {
+ const addNode = () => {
     const newNodeId = `node-${nodeIdCounter}`;
     const newNode = {
       id: newNodeId,
@@ -152,6 +154,7 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
         prompt: "Click to edit question/prompt", 
         inputType: null, 
         updateNodeData,
+        deleteNode, // Add this line
         numberInputOptions: {}, 
         textInputOptions: {}, 
         buttonOptions: [{ label: 'Button 1' }, { label: 'Button 2' }] 
@@ -454,7 +457,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     setShowTestPanel(false);
   };
 
-  const applyTemplate = () => {
+const applyTemplate = () => {
     const { nodes: templateNodes, edges: templateEdges } = createTemplateFlow();
     
     // Update nodes with necessary handler functions
@@ -469,6 +472,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           cancelNumberConfig,
           openNumberConfigPanel,
           updateNodeData,
+          deleteNode, // Add this line
           tempNumberConfig,
           configPanelVisibleNodeId,
           selectedNode,
@@ -483,6 +487,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           cancelTextConfig,
           openTextConfigPanel,
           updateNodeData,
+          deleteNode, // Add this line
           tempTextInputConfig,
           textConfigPanelVisibleNodeId,
           variableOptions
@@ -494,13 +499,15 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           handleButtonConfigChange,
           addButtonItem,
           saveButtonConfig,
-          updateNodeData
+          updateNodeData,
+          deleteNode // Add this line
         };
       }
       else {
         updatedNode.data = {
           ...node.data,
-          updateNodeData
+          updateNodeData,
+          deleteNode // Add this line
         };
       }
       
@@ -513,7 +520,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     setNodeIdCounter(templateNodes.length + 1);
   };
 
-  const addUserInputToNode = (inputType) => {
+const addUserInputToNode = (inputType) => {
     if (!selectedNode || selectedNode === "start") return;
   
     setNodes((nds) =>
@@ -535,6 +542,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
               addButtonItem,
               saveButtonConfig,
               updateNodeData,
+              deleteNode, // Add this line
               id: node.id
             };
             setTempButtonConfig({ 
@@ -554,6 +562,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
               cancelNumberConfig,
               openNumberConfigPanel,
               updateNodeData,
+              deleteNode, // Add this line
               tempNumberConfig,
               configPanelVisibleNodeId,
               selectedNode,  
@@ -571,6 +580,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
               cancelTextConfig,
               openTextConfigPanel,
               updateNodeData,
+              deleteNode, // Add this line
               tempTextInputConfig,
               textConfigPanelVisibleNodeId,
               variableOptions,
@@ -580,6 +590,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           } else {
             // Default node handling
             updatedNode.type = "default";
+            updatedData.deleteNode = deleteNode; // Add this line
             if (inputType !== "Number Input") {
               updatedData.numberInputOptions = {};
               setConfigPanelVisibleNodeId(null);
@@ -598,6 +609,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     setConfigPanelVisibleNodeId(null);
     setTextConfigPanelVisibleNodeId(null);
   };
+
 
   const handleNumberConfigChange = (key, value) => {
     setTempNumberConfig(prevConfig => ({
@@ -774,6 +786,7 @@ const attachHandlersToNodes = (loadedNodes) => {
           cancelNumberConfig,
           openNumberConfigPanel,
           updateNodeData,
+          deleteNode, // Add this line
           tempNumberConfig,
           configPanelVisibleNodeId,
           selectedNode,
@@ -790,6 +803,7 @@ const attachHandlersToNodes = (loadedNodes) => {
           cancelTextConfig,
           openTextConfigPanel,
           updateNodeData,
+          deleteNode, // Add this line
           tempTextInputConfig,
           textConfigPanelVisibleNodeId,
           variableOptions
@@ -831,6 +845,7 @@ const attachHandlersToNodes = (loadedNodes) => {
           addButtonItem: nodeSpecificAddButtonItem,
           saveButtonConfig,
           updateNodeData,
+          deleteNode, // Add this line
           id: node.id
         }
       };
@@ -839,7 +854,8 @@ const attachHandlersToNodes = (loadedNodes) => {
         ...node,
         data: {
           ...node.data,
-          updateNodeData
+          updateNodeData,
+          deleteNode // Add this line
         }
       };
     }
@@ -847,6 +863,8 @@ const attachHandlersToNodes = (loadedNodes) => {
     return node;
   });
 };
+
+
 
   // load existing flow nodes
 const getFlowNodes = async () => {
@@ -1039,6 +1057,7 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
         prompt: backendNode.header_text_template?.text || "Click to edit question/prompt",
         inputType: inputType,
         updateNodeData,
+        deleteNode, 
         numberInputOptions,
         textInputOptions,
         buttonOptions,
@@ -1109,6 +1128,44 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
   
   return { localNodes, localEdges };
 };
+
+const deleteNode = useCallback((nodeId) => {
+    // Prevent deleting the start node
+    if (nodeId === "start") {
+      toast.error("Cannot delete the start node");
+      return;
+    }
+
+    // Show confirmation dialog
+    const confirmDelete = window.confirm("Are you sure you want to delete this node? This action cannot be undone.");
+    
+    if (!confirmDelete) {
+      return;
+    }
+
+    // Remove the node
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    
+    // Remove all edges connected to this node
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    
+    // Clear selection if the deleted node was selected
+    if (selectedNode === nodeId) {
+      setSelectedNode(null);
+    }
+
+    // Close any open config panels for this node
+    if (configPanelVisibleNodeId === nodeId) {
+      setConfigPanelVisibleNodeId(null);
+    }
+    if (textConfigPanelVisibleNodeId === nodeId) {
+      setTextConfigPanelVisibleNodeId(null);
+    }
+
+    toast.success("Node deleted successfully");
+  }, [selectedNode, configPanelVisibleNodeId, textConfigPanelVisibleNodeId, setNodes, setEdges]);
+
+
 
 useEffect(() => {
   if (flowId) {

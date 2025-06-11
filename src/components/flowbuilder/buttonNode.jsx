@@ -17,6 +17,14 @@ const ButtonNode = ({ data, isConnectable }) => {
   // Handle node type (route or list)
   const nodeType = data.nodeType || 'route'; 
   
+  // Handle delete button click
+  const handleDelete = (e) => {
+    e.stopPropagation(); // Prevent node selection when clicking delete
+    if (data.deleteNode) {
+      data.deleteNode(data.id);
+    }
+  };
+  
   // Handler for changing node type (route or list)
   const handleNodeTypeChange = (event) => {
     const newType = event.target.value;
@@ -33,7 +41,7 @@ const ButtonNode = ({ data, isConnectable }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow border-2 min-w-[300px] relative">
+    <div className="bg-white rounded-lg shadow border-2 min-w-[300px] relative">
       {/* Input handle at the top */}
       <Handle
         type="target"
@@ -43,111 +51,136 @@ const ButtonNode = ({ data, isConnectable }) => {
         style={{ top: -6 }}
       />
       
-      {/* Title field */}
-      <div className="mb-2">
-        <input
-          type="text"
-          defaultValue={data.title}
-          onBlur={(e) => data.updateNodeData(data.id, "title", e.target.value)}
-          className="w-full p-2 text-sm font-medium focus:outline-none bg-transparent"
-          placeholder="Enter title"
-        />
-      </div>
-      
-      {/* Prompt field */}
-      <div className="mb-2">
-        <input
-          type="text"
-          defaultValue={data.prompt}
-          onBlur={(e) => data.updateNodeData(data.id, "prompt", e.target.value)}
-          className="w-full p-2 text-sm font-medium focus:outline-none bg-transparent"
-          placeholder="Enter prompt"
-        />
-      </div>
-      
-      {/* Node type selection */}
-      <div className="mb-3 p-2 bg-gray-50 rounded-md">
-        <FormControl component="fieldset" size="small">
-          <FormLabel component="legend" style={{ fontSize: '12px', marginBottom: '8px' }}>
-            <div className="flex items-center">
-              <span>Node Type</span>
-              <Tooltip title="'Route' nodes allow buttons to connect to other nodes. 'List' nodes collect user selection and continue to next node.">
-                <InfoIcon fontSize="small" className="ml-1 text-gray-400" />
-              </Tooltip>
-            </div>
-          </FormLabel>
-          <RadioGroup
-            row
-            value={nodeType}
-            onChange={handleNodeTypeChange}
-          >
-            <FormControlLabel 
-              value="route" 
-              control={<Radio size="small" />} 
-              label="Route" 
-              style={{ marginRight: '12px' }}
-            />
-            <FormControlLabel 
-              value="list" 
-              control={<Radio size="small" />} 
-              label="List" 
-            />
-          </RadioGroup>
-        </FormControl>
-      </div>
-      
-      <div className="space-y-3">
-        {data.buttonOptions?.map((button, index) => (
-          <div key={index} className="relative flex items-center">
-            <TextField
-              fullWidth
-              size="small"
-              value={button.label}
-              onChange={(e) => data.handleButtonConfigChange(index, 'label', e.target.value)}
-              label={`${nodeType === 'route' ? 'Button' : 'Option'} ${index + 1}`}
-              margin="dense"
-            />
-            
-            <IconButton 
-              size="small" 
-              color="error" 
-              onClick={() => removeButton(index)}
-              disabled={data.buttonOptions.length <= 1}
-              style={{ marginLeft: '8px' }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-            
-            {/* Connection handle for each button - only shown for route nodes */}
-            {nodeType === 'route' && (
-              <Handle
-                type="source"
-                position="right"
-                id={`button-${index}`}
-                className="w-3 h-3 border-2 border-blue-400 bg-blue-100 rounded-full hover:bg-blue-200 transition-colors"
-                isConnectable={isConnectable}
-                style={{ 
-                  right: -12,
-                  top: '50%',
-                  transform: 'translateY(-50%)'
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-      
-      {/* Add button control */}
-      <div className="mt-4 space-y-2">
-        <Button
-          onClick={data.addButtonItem}
-          fullWidth
-          variant="outlined"
+      {/* Header with title and delete button */}
+      <div className="flex justify-between items-center p-2 border-b border-gray-100">
+        <div className="flex-1">
+          <input
+            type="text"
+            defaultValue={data.title}
+            onBlur={(e) => data.updateNodeData(data.id, "title", e.target.value)}
+            className="w-full text-sm font-medium focus:outline-none bg-transparent"
+            placeholder="Enter title"
+          />
+        </div>
+        {/* Delete button */}
+        <IconButton
           size="small"
-          startIcon={<AddIcon />}
+          onClick={handleDelete}
+          className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+          style={{ 
+            padding: '4px',
+            fontSize: '16px'
+          }}
+          title="Delete node"
         >
-          Add {nodeType === 'route' ? 'Button' : 'Option'}
-        </Button>
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      </div>
+
+      {/* Content area */}
+      <div className="p-4 pt-2">
+        {/* Prompt field */}
+        <div className="mb-2">
+          <input
+            type="text"
+            defaultValue={data.prompt}
+            onBlur={(e) => data.updateNodeData(data.id, "prompt", e.target.value)}
+            className="w-full p-2 text-sm font-medium focus:outline-none bg-transparent"
+            placeholder="Enter prompt"
+          />
+        </div>
+        
+        {/* Node type selection */}
+        <div className="mb-3 p-2 bg-gray-50 rounded-md">
+          <FormControl component="fieldset" size="small">
+            <FormLabel component="legend" style={{ fontSize: '12px', marginBottom: '8px' }}>
+              <div className="flex items-center">
+                <span>Node Type</span>
+                <Tooltip title="'Route' nodes allow buttons to connect to other nodes. 'List' nodes collect user selection and continue to next node.">
+                  <InfoIcon fontSize="small" className="ml-1 text-gray-400" />
+                </Tooltip>
+              </div>
+            </FormLabel>
+            <RadioGroup
+              row
+              value={nodeType}
+              onChange={handleNodeTypeChange}
+            >
+              <FormControlLabel 
+                value="route" 
+                control={<Radio size="small" />} 
+                label="Route" 
+                style={{ marginRight: '12px' }}
+              />
+              <FormControlLabel 
+                value="list" 
+                control={<Radio size="small" />} 
+                label="List" 
+              />
+            </RadioGroup>
+          </FormControl>
+        </div>
+        
+        <div className="space-y-3">
+          {data.buttonOptions?.map((button, index) => (
+            <div key={index} className="relative flex items-center">
+              <TextField
+                fullWidth
+                size="small"
+                value={button.label}
+                onChange={(e) => data.handleButtonConfigChange(index, 'label', e.target.value)}
+                label={`${nodeType === 'route' ? 'Button' : 'Option'} ${index + 1}`}
+                margin="dense"
+              />
+              
+              <IconButton 
+                size="small" 
+                color="error" 
+                onClick={() => removeButton(index)}
+                disabled={data.buttonOptions.length <= 1}
+                style={{ marginLeft: '8px' }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+              
+              {/* Connection handle for each button - only shown for route nodes */}
+              {nodeType === 'route' && (
+                <Handle
+                  type="source"
+                  position="right"
+                  id={`button-${index}`}
+                  className="w-3 h-3 border-2 border-blue-400 bg-blue-100 rounded-full hover:bg-blue-200 transition-colors"
+                  isConnectable={isConnectable}
+                  style={{ 
+                    right: -12,
+                    top: '50%',
+                    transform: 'translateY(-50%)'
+                  }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* Add button control */}
+        <div className="mt-4 space-y-2">
+          <Button
+            onClick={data.addButtonItem}
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<AddIcon />}
+          >
+            Add {nodeType === 'route' ? 'Button' : 'Option'}
+          </Button>
+        </div>
+        
+        {/* Visual indicator for list nodes */}
+        {nodeType === 'list' && (
+          <div className="mt-2 text-xs text-gray-500 text-center">
+            ↓ Connect to next node
+          </div>
+        )}
       </div>
       
       {/* Output handle for list nodes - made more visible and better positioned */}
@@ -164,13 +197,6 @@ const ButtonNode = ({ data, isConnectable }) => {
             transform: 'translateX(-50%)'
           }}
         />
-      )}
-      
-      {/* Visual indicator for list nodes */}
-      {nodeType === 'list' && (
-        <div className="mt-2 text-xs text-gray-500 text-center">
-          ↓ Connect to next node
-        </div>
       )}
     </div>
   );
