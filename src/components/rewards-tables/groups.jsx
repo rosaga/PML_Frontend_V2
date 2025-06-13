@@ -8,7 +8,7 @@ import RequestUnitsModal from "../modal/requestUnits";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import axios from "axios";
 import { format, parseISO } from "date-fns";
-import NewGroupModal from "../modal/newGroup";
+import NewGroupSMSModal from "../modal/newGroupSMS";
 import { getToken } from "@/utils/auth";
 import { GetGroups } from "@/app/api/actions/group/group";
 import  GroupContactDetails  from "./groupDetails";
@@ -154,7 +154,7 @@ const GroupsTable = () => {
   return (
     <>
     <ToastContainer />
-      {isModalOpen && <NewGroupModal closeModal={closeModal} />}
+      {isModalOpen && <NewGroupSMSModal closeModal={closeModal} />}
       {groupDetailsOpen ? <GroupContactDetails groupID={groupID} />
       :
       <>
