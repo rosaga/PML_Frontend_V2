@@ -165,7 +165,9 @@ const Dashboard = () => {
   
             // Loop through the StatusCounts and calculate success/failed totals
             res.data.StatusCounts.forEach((status) => {
-              if (status.StatusDescription === "Recieved Pending Confirmation" || status.StatusDescription === "SUCCESS" || status.StatusDescription === "DeliveredToTerminal") {
+              if (status.StatusDescription === "Recieved Pending Confirmation" || status.StatusDescription === "SUCCESS" || status.StatusDescription === "DeliveredToTerminal"
+                || status.StatusDescription === "Accepted for processing"
+              ) {
                 successCount += status.MessageCount;
               } else{
                 pendingCount += status.MessageCount;
@@ -258,7 +260,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Total Sent</div>
+                    <div className="text-gray-500">Total Success</div>
                     <div>
                       <span>
                         <Image
@@ -279,7 +281,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Total Success</div>
+                    <div className="text-gray-500">Total Delivered</div>
                     <div>
                       <span>
                         <Image
@@ -300,7 +302,7 @@ const Dashboard = () => {
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Total Failed</div>
+                    <div className="text-gray-500">Total Failed Delivery</div>
                     <div>
                       <span>
                         <Image
