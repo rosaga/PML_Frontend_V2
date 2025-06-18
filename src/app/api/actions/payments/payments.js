@@ -68,7 +68,7 @@ export async function processFreeTrialRequest(org_id, phoneNumber, selectedPacka
     const paymentData = {
       bundles: [{
         "bundle_type": "20",
-        "units": 10,
+        "units": 5,
         "amount": 0
       }],
       amount: 0,

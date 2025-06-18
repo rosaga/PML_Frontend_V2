@@ -280,7 +280,7 @@ const handleFreeTrial = async () => {
 
            
             <div className="text-sm text-gray-600 mb-2">
-              10 Free units of 20MB
+              5 Free units of 20MB
             </div>
             <div className="text-sm text-gray-600 mb-8">10 Free SMS</div>
 
