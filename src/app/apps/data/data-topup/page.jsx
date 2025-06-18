@@ -5,9 +5,7 @@ import { getToken } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 
 
-import {
-  processFreeTrialRequest,
-} from "@/app/api/actions/payments/payments";
+import { processFreeTrialRequest } from "@/app/api/actions/payments/payments";
 
 const DataUnitsTopupPage = () => {
 
