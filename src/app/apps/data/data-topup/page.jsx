@@ -1,8 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getToken } from "@/utils/auth";
+import { useRouter } from "next/navigation";
+
+
+import {
+  processFreeTrialRequest,
+} from "@/app/api/actions/payments/payments";
 
 const DataUnitsTopupPage = () => {
+
+
+  let orgId = null;
+  let token = null;
+  if (typeof window !== 'undefined') {
+    orgId = localStorage.getItem('selectedAccountId');
+    token = getToken();
+  }
+
   const [currentStep, setCurrentStep] = useState(1);
   const [bundleSize, setBundleSize] = useState("20MB");
   const [units, setUnits] = useState(1);
@@ -15,7 +31,11 @@ const DataUnitsTopupPage = () => {
   const [cart, setCart] = useState([]);
   
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [loadingTrial, setLoadingTrial] = useState(false);
+  const [trialError, setTrialError]   = useState("");
   
+  const router = useRouter();
+
   const ratePerMB = 0.20;
 
   useEffect(() => {
@@ -52,6 +72,26 @@ const DataUnitsTopupPage = () => {
   const removeBundle = (id) => {
     setCart(cart.filter(item => item.id !== id));
   };
+
+
+const handleFreeTrial = async () => {
+  if (!orgId) {
+    setTrialError("Organisation not found. Please log in again.");
+    return;
+  }
+  setLoadingTrial(true);
+  setTrialError("");
+
+  try {
+    await processFreeTrialRequest(orgId, phoneNumber, "TRIAL_PACKAGE");
+    setPaymentSuccess(true);
+    router.push("/apps/data/dashboard"); 
+  } catch (err) {
+    setTrialError(err.message ?? "Could not start free-trial.");
+  } finally {
+    setLoadingTrial(false);
+  }
+};
 
   const goToDashboard = () => {
 
@@ -173,7 +213,7 @@ const DataUnitsTopupPage = () => {
         Top up your Data Units in 3 Easy Steps
       </h1>
 
-      {/* Steps Navigation - Updated to look like image */}
+      {/* Steps Navigation */}
       {!showGrowthForm && (
         <div className="flex items-center justify-center mb-12">
           {/* Step 1 */}
@@ -216,7 +256,7 @@ const DataUnitsTopupPage = () => {
         </div>
       )}
 
-      {/* Conditional Rendering of Sections */}
+      {/* Rendering of Sections */}
       {currentStep === 1 && !showGrowthForm && (
         // Packages Section (Select A Package)
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -246,10 +286,18 @@ const DataUnitsTopupPage = () => {
             </div>
             <div className="text-sm text-gray-600 mb-8">10 Free SMS</div>
 
-            <button className="bg-[#F58426] hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded w-full cursor-pointer"
-                onClick={goToDashboard}>
-              Request Now
+            <button
+              onClick={handleFreeTrial}
+              disabled={loadingTrial}
+              className="bg-[#F58426] hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded w-full cursor-pointer disabled:opacity-50"
+            >
+              {loadingTrial ? "Processing…" : "Request Now"}
             </button>
+
+            {trialError && (
+              <p className="mt-2 text-sm text-red-600 text-center">{trialError}</p>
+            )}
+
           </div>
 
           {/* Starter Package */}
