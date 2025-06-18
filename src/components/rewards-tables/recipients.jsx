@@ -8,7 +8,7 @@ import axios from "axios";
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { format, parseISO, set } from "date-fns";
 import UploadRecipientsModal from "../modal/uploadRecipients";
-import NewContactAirtimeModal from "../modal/newContactAirtime"
+import NewContactModal from "../modal/newContact"
 import { getToken } from "@/utils/auth";
 import { GetContacts } from "../../app/api/actions/contact/contact"
 import { ToastContainer, toast } from 'react-toastify';
@@ -226,7 +226,7 @@ const UploadRecipients = () => {
     <>
       <ToastContainer />
       {isModalOpen && <UploadRecipientsModal closeModal={closeModal} />}
-      {isModalOpen1 && <NewContactAirtimeModal closeModal={closeModal} />}
+      {isModalOpen1 && <NewContactModal closeModal={closeModal} />}
       <div className="flex flex-col md:flex-row items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Contacts</p>
         <div className="md:ml-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
