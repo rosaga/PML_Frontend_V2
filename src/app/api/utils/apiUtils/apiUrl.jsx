@@ -24,4 +24,5 @@ export default {
     APPROVE_SMS_UNITS: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v2/admin/recharge/approve`,
     GET_AIRTIME: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
     REQUEST_OTP: `${process.env.NEXT_PUBLIC_BASE_URL}/public/request/otp`,
+    MAKE_PAYMENT: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/payment`,
 };

@@ -243,15 +243,20 @@ const SidebarData = () => {
             </ul>
           </div>
           
-          {/* View Plans Button*/}
-          <div className="flex-shrink-0 mt-4">
-            <div
-              className="bg-[#F58426] text-white py-2 px-5 rounded-lg flex items-center justify-center cursor-pointer w-full"
-              onClick={() => router.push("/apps/data/data-topup")}
-            >
-              <span className="text-sm font-medium">View Plans</span>
-            </div>
+        {/* Top Up Button*/}
+        <div className="flex-shrink-0 mt-4">
+          <div
+            className="bg-[#F58426] text-white py-2 px-5 rounded-lg flex items-center justify-center cursor-pointer w-full gap-2"
+            onClick={() => router.push("/apps/data/data-topup")}
+          >
+            <img 
+              src="/images/topup.png" 
+              alt="Top Up" 
+              className="w-5 h-5"
+            />
+            <span className="text-sm font-medium">Top Up</span>
           </div>
+        </div>
         </div>
       </aside>
       
