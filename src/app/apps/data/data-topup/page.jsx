@@ -233,7 +233,7 @@ const DataUnitsTopupPage = () => {
             Payment Successful!
           </h2>
           <p className="text-center text-gray-600 mb-4">
-            Your payment has been confirmed. You've received:
+            Your payment has been confirmed. You have received:
           </p>
 
           {/* List out each bundle + units */}
