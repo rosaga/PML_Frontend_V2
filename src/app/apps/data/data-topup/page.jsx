@@ -47,7 +47,7 @@ const DataUnitsTopupPage = () => {
   const canAdd      = bundleSize && Number(units) > 0 &&
                       totalCost <= 250000;
   const canProceed  = 
-                    totalCost >= 100 &&
+                    totalCost >= 10000 &&
                     totalCost <= 250000;
 
 
@@ -723,7 +723,7 @@ const DataUnitsTopupPage = () => {
             </button>
             <button
               onClick={handlePayment}
-              disabled={loadingPaid || totalCost < 100 || totalCost > 250000}
+              disabled={loadingPaid || totalCost < 10000 || totalCost > 250000}
               className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded disabled:opacity-50"
             >
               {loadingPaid ? "Processing…" : "Pay"}
