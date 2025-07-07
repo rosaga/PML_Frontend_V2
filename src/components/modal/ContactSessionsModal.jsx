@@ -50,7 +50,7 @@ const ContactSessionsModal = ({ closeModal, contact }) => {
     try {
       const offset = paginationModel.page * paginationModel.pageSize;
       const response = await fetch(
-        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/session?eq__contact_id=${contactId}&limit=${paginationModel.pageSize}&offset=${offset}`,
+        `https://flowbot-1048592730476.europe-west4.run.app/api/v2/session?eq__contact_id=${contactId}&limit=${paginationModel.pageSize}&offset=${offset}&orderby=created_at desc`,
         {
           method: 'GET',
           headers: {
@@ -222,7 +222,7 @@ const ContactSessionsModal = ({ closeModal, contact }) => {
                         <thead>
                           <tr className="bg-[#090A29] text-white">
                             <th className="border border-gray-300 py-3 px-4 text-left font-medium">Session ID</th>
-                            <th className="border border-gray-300 py-3 px-4 text-left font-medium">Flow ID</th>
+                            <th className="border border-gray-300 py-3 px-4 text-left font-medium">Flow Name</th>
                             <th className="border border-gray-300 py-3 px-4 text-left font-medium">Channel</th>
                             <th className="border border-gray-300 py-3 px-4 text-left font-medium">Status</th>
                             <th className="border border-gray-300 py-3 px-4 text-left font-medium">Created At</th>
@@ -237,16 +237,16 @@ const ContactSessionsModal = ({ closeModal, contact }) => {
                               onClick={() => handleSessionClick(session)}
                             >
                               <td className="border border-gray-300 py-3 px-4">{session.id}</td>
-                              <td className="border border-gray-300 py-3 px-4">{session.flow_id}</td>
-                              <td className="border border-gray-300 py-3 px-4">{session.channel}</td>
+                              <td className="border border-gray-300 py-3 px-4">{session.flow?.name}</td>
+                              <td className="border border-gray-300 py-3 px-4">{session.flow?.type}</td>
                               <td className="border border-gray-300 py-3 px-4">
                                 <span className={`px-2 py-1 rounded text-sm ${
-                                  session.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                                  session.status === 'ACTIVE' ? 'bg-blue-100 text-blue-800' :
-                                  session.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                                  session.flow?.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                                  session.flow?.status === 'DRAFT' ? 'bg-blue-100 text-blue-800' :
+                                  session.flow?.status === 'FAILED' ? 'bg-red-100 text-red-800' :
                                   'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {session.status || 'N/A'}
+                                  {session.flow?.status || 'N/A'}
                                 </span>
                               </td>
                               <td className="border border-gray-300 py-3 px-4">

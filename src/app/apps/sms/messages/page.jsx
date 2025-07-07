@@ -40,9 +40,6 @@ const Messages = () => {
     page: 0,
   });
 
-  const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(10);
-
   const openSendSingle = () => {
     setIsSingleModalOpen(true);
   };
@@ -70,23 +67,29 @@ const Messages = () => {
     setSearchParams({});
   };
 
+
   const getMessages = () => {
-    if (org_id) {
-      messagesAction({ org_id, page, limit })
-        .then((res) => {
-          if (res.errors) {
-            console.log("AN ERROR HAS OCCURED");
-          } else {
-            setMessages(res.data);
-            setLoading(false);
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } else {
-      console.log("org_id is null or undefined. Skipping API call.");
+    if (!org_id) {
+      console.warn("org_id is null or undefined. Skipping API call.");
+      return;
     }
+
+    setLoading(true);
+    messagesAction({
+      org_id,
+      page:  1,
+      limit: 20,
+      ...searchParams,
+    })
+      .then((res) => {
+        if (res?.errors) {
+          console.error(res.errors);
+        } else {
+          setMessages(res.data || []);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -168,25 +171,21 @@ const Messages = () => {
 
             <div className="mt-4">
               <div style={{ width: "100%" }}>
-                <DataGrid
-                  rows={messages}
-                  columns={columns}
-                  loading={loading}
-                  getRowId={(row) => row.id}
-                  paginationModel={paginationModel}
-                  onPaginationModelChange={setPaginationModel}
-                  rowCount={total}
-                  paginationMode="server"
-                  sx={{
-                    "& .MuiDataGrid-columnHeader": {
-                      backgroundColor: "#F1F2F3",
-                    },
-                    "&.MuiDataGrid-root": {
-                      border: "none",
-                    },
-                  }}
-                  slots={{ toolbar: GridToolbar }}
-                />
+              <DataGrid
+                rows={messages}
+                columns={columns}
+                loading={loading}
+                getRowId={(row) => row.id}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={[10]}
+                paginationMode="client"
+                sx={{
+                  "& .MuiDataGrid-columnHeader": { backgroundColor: "#F1F2F3" },
+                  "&.MuiDataGrid-root":         { border: "none" },
+                }}
+                slots={{ toolbar: GridToolbar }}
+              />
               </div>
             </div>
           </div>

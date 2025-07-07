@@ -1,137 +1,88 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { getToken } from "../../utils/auth";
-import { saveAs } from "file-saver";
-import { contactsUpload } from '../../../src/app/api/actions/contact/contact';
-import { useRouter } from 'next/navigation';
-import { ToastContainer, toast } from 'react-toastify';
 
+import React, { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { saveAs } from "file-saver";
+import { contactsUpload } from "@/app/api/actions/contact/contact";
+import { ToastContainer, toast } from "react-toastify";
 
 const NewGroupModal = ({ closeModal }) => {
+  const router   = useRouter();
+  const pathname = usePathname();
+  const [, , service] = pathname.split("/");
 
   let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
   }
-
-  const [groupName, setGroupName] = useState("");
-  const [csvFile, setCsvFile] = useState(null);
-  const [description, setDescription] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [duplicates, setDuplicates] = useState([]);
+  const [groupName, setGroupName]               = useState("");
+  const [csvFile, setCsvFile]                   = useState(null);
+  const [description, setDescription]           = useState("");
+  const [successMessage, setSuccessMessage]     = useState("");
+  const [errorMessage, setErrorMessage]         = useState("");
+  const [duplicates, setDuplicates]             = useState([]);
   const [invalidPhoneNumbers, setInvalidPhoneNumbers] = useState([]);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
-  const router = useRouter(); 
-  
-  function handleDownloadTemplate() {
+
+  const handleDownloadTemplate = () => {
     const templateData = [
-      {
-        mobile: "0711223344",
-        firstName: "John",
-        lastName: "Doe" 
-      },
-      {
-        mobile: "0722334455",
-        firstName: "Jane",
-        lastName: "Smith"
-      },
+      { mobile: "0711223344", firstName: "John",  lastName: "Doe"   },
+      { mobile: "0722334455", firstName: "Jane",  lastName: "Smith" },
     ];
-
-    const csvData = convertToCsv(templateData);
-
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
+    const csvRows = [
+      Object.keys(templateData[0]).join(","),
+      ...templateData.map(row => Object.values(row).join(",")),
+    ];
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8" });
     saveAs(blob, "contact_template.csv");
-  }
-
-  function convertToCsv(data) {
-    const csvRows = [];
-    const headers = Object.keys(data[0]);
-
-    csvRows.push(headers.join(","));
-
-    for (const row of data) {
-      const values = headers.map((header) => row[header]);
-      csvRows.push(values.join(","));
-    }
-    return csvRows.join("\n");
-  }
-
-  const validateCsvFile = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (event) => {
-        const text = event.target.result;
-        const lines = text.split('\n');
-        const headers = lines[0].split(',');
-        
-        const mobileIndex = headers.findIndex(header => 
-          header.trim().toLowerCase() === 'mobile' || 
-          header.trim().toLowerCase() === 'phone' ||
-          header.trim().toLowerCase() === 'phonenumber'
-        );
-        
-        if (mobileIndex === -1) {
-          reject("CSV file must have a 'mobile' column");
-          return;
-        }
-        
-        const duplicatePhones = new Set();
-        const uniquePhones = new Set();
-        const invalidPhones = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-          if (!lines[i].trim()) continue;
-          
-          const values = lines[i].split(',');
-          const phoneNumber = values[mobileIndex].trim();
-          
-          const digitsOnly = phoneNumber.replace(/\D/g, '');
-          if (digitsOnly.length < 9) {
-            invalidPhones.push({ line: i + 1, phone: phoneNumber });
-            continue;
-          }
-          
-          if (uniquePhones.has(phoneNumber)) {
-            duplicatePhones.add(phoneNumber);
-          } else {
-            uniquePhones.add(phoneNumber);
-          }
-        }
-        
-        if (invalidPhones.length > 0 || duplicatePhones.size > 0) {
-          setInvalidPhoneNumbers(invalidPhones);
-          setDuplicates(Array.from(duplicatePhones));
-          setShowValidationErrors(true);
-          reject({
-            invalidPhones,
-            duplicates: Array.from(duplicatePhones)
-          });
-        } else {
-          resolve(file);
-        }
-      };
-      
-      reader.onerror = () => {
-        reject("Error reading the CSV file");
-      };
-      
-      reader.readAsText(file);
-    });
   };
 
-  const handleFileChange = (e) => {
+  const validateCsvFile = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = event => {
+      const lines = event.target.result.split("\n");
+      const headers = lines[0].split(",");
+      const mobileIndex = headers.findIndex(h =>
+        ["mobile","phone","phonenumber"].includes(h.trim().toLowerCase())
+      );
+      if (mobileIndex === -1) {
+        reject("CSV file must have a 'mobile' column");
+        return;
+      }
+      const dupSet = new Set(), uniqSet = new Set(), invalids = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const phone = lines[i].split(",")[mobileIndex].trim();
+        const digits = phone.replace(/\D/g, "");
+        if (digits.length < 9) {
+          invalids.push({ line: i+1, phone });
+        } else if (uniqSet.has(phone)) {
+          dupSet.add(phone);
+        } else {
+          uniqSet.add(phone);
+        }
+      }
+      if (invalids.length || dupSet.size) {
+        setInvalidPhoneNumbers(invalids);
+        setDuplicates([...dupSet]);
+        setShowValidationErrors(true);
+        reject({ invalidPhones: invalids, duplicates: [...dupSet] });
+      } else {
+        resolve(file);
+      }
+    };
+    reader.onerror = () => reject("Error reading the CSV file");
+    reader.readAsText(file);
+  });
+
+  const handleFileChange = e => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+    if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
       setErrorMessage("Please select a CSV file");
       setCsvFile(null);
       return;
     }
-    
     setCsvFile(file);
     setErrorMessage("");
     setShowValidationErrors(false);
@@ -139,34 +90,25 @@ const NewGroupModal = ({ closeModal }) => {
     setInvalidPhoneNumbers([]);
   };
 
-  const handleGroupCreate = (e) => {
+  const handleGroupCreate = e => {
     e.preventDefault();
-  
-    if (!csvFile) {
-      setErrorMessage('Please select a file');
-      return;
-    }
-  
     if (!groupName.trim()) {
-      setErrorMessage('Please enter a group name');
+      setErrorMessage("Please enter a group name");
       return;
     }
-    
+    if (!csvFile) {
+      setErrorMessage("Please select a file");
+      return;
+    }
     validateCsvFile(csvFile)
-      .then(validatedFile => {
-        const formValues = {
-          org_id: org_id,
-          description: description,
-          name: groupName,
-          contacts: csvFile,
-        };
-      
+      .then(() => {
+        const formValues = { org_id, name: groupName, description, contacts: csvFile };
         return contactsUpload(formValues);
       })
-      .then((res) => {
+      .then(res => {
         if (res.status === 201) {
           toast.success("CONTACTS UPLOAD SUCCESS");
-          setSuccessMessage("Contacts Upload Successful");
+          setSuccessMessage("Contacts upload successful");
           setErrorMessage("");
           setShowValidationErrors(false);
         } else {
@@ -174,15 +116,11 @@ const NewGroupModal = ({ closeModal }) => {
           setErrorMessage("Contacts upload failed. Please try again.");
         }
       })
-      .catch((error) => {
-        if (error.invalidPhones || error.duplicates) {
-          return;
-        }
-        
-        if (error.response && error.response.status === 400) {
+      .catch(err => {
+        if (err.invalidPhones || err.duplicates) return;
+        if (err.response?.status === 400) {
           setErrorMessage("Wrong file type selected. Please use CSV format.");
         } else {
-          console.log("Error:", error);
           setErrorMessage("Contacts upload failed. Please try again.");
         }
       });
@@ -190,193 +128,183 @@ const NewGroupModal = ({ closeModal }) => {
 
   const goToCampaign = () => {
     closeModal();
-    router.push('/apps/data/data-rewards?tab=Campaign');
+    let target = "";
+    switch (service) {
+      case "data":
+        target = `/apps/data/data-rewards?tab=Campaign`;
+        break;
+      case "airtime":
+        target = `/apps/airtime/airtime-rewards?tab=Campaign`;
+        break;
+      case "sms":
+        target = `/apps/sms/messages`;
+        break;
+      case "flowbot":
+        target = `/apps/flowbot/flowbuilder`;
+        break;
+      default:
+        target = `/apps/${service}?tab=Campaign`;
+    }
+    router.push(target);
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (event.target.id === "authentication-modal") {
-        closeModal();
-      }
+    const onClick = e => {
+      if (e.target.id === "authentication-modal") closeModal();
     };
-
-    window.addEventListener("click", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-    };
+    window.addEventListener("click", onClick);
+    return () => window.removeEventListener("click", onClick);
   }, [closeModal]);
 
   return (
     <div
       id="authentication-modal"
-      tabIndex="-1"
+      tabIndex={-1}
       aria-hidden="true"
-      className="fixed inset-0 z-50 flex justify-center items-center w-full h-screen bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center w-full h-screen bg-black bg-opacity-50"
     >
-      <div className="relative p-4 w-full max-w-2xl max-h-full">
-        <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      <div className="relative w-full max-w-2xl p-4 max-h-full">
+        <div className="bg-white rounded-lg shadow dark:bg-gray-700">
           {successMessage ? (
-            <div className="p-4 text-center">
-              <div className="mb-4 text-2xl font-semibold text-green-500">
-                Success!
-              </div>
-              <div className="mb-4 text-gray-900 dark:text-white">
-                {successMessage}
-              </div>
+            <div className="p-6 text-center">
+              <h2 className="mb-4 text-2xl font-semibold text-green-500">Success!</h2>
+              <p className="mb-6 text-gray-900 dark:text-white">{successMessage}</p>
               <div className="flex space-x-2">
                 <button
-                  onClick={() => {
-                    setSuccessMessage("");
-                    closeModal();
-                  }}
-                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  onClick={() => { setSuccessMessage(""); closeModal(); }}
+                  className="w-full px-5 py-2.5 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={goToCampaign}
-                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-400 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-300"
                 >
-                  Go to Campaigns
+                  Go to {service.charAt(0).toUpperCase() + service.slice(1)} Campaigns
                 </button>
               </div>
             </div>
           ) : errorMessage ? (
-            <div className="p-4 text-center">
-              <div className="mb-4 text-2xl font-semibold text-red-500">
-                Oops!
-              </div>
-              <div className="mb-4 text-gray-900 dark:text-white">
-                {errorMessage}
-              </div>
+            <div className="p-6 text-center">
+              <h2 className="mb-4 text-2xl font-semibold text-red-500">Oops!</h2>
+              <p className="mb-6 text-gray-900 dark:text-white">{errorMessage}</p>
               <button
-                onClick={() => {
-                  setErrorMessage("");
-                }}
-                className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                onClick={() => setErrorMessage("")}
+                className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-400 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-300"
               >
                 OK
               </button>
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+              <div className="flex items-center justify-between p-4 border-b dark:border-gray-600">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   New Group
                 </h3>
                 <button
-                  type="button"
-                  className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                  onClick={handleDownloadTemplate}           
+                  onClick={handleDownloadTemplate}
+                  className="px-4 py-1 text-sm font-medium text-orange-400 border border-orange-400 rounded-lg hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
                   Download CSV Template
                 </button>
               </div>
-              <div className="p-4 md:p-5">
-                <form className="space-y-2" action="#">
+              <div className="p-6">
+                <form className="space-y-4" onSubmit={e => e.preventDefault()}>
                   <div>
-                    <label
-                      htmlFor="groupName"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
+                    <label htmlFor="groupName" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                       Group Name
                     </label>
                     <input
                       type="text"
-                      name="groupName"
                       id="groupName"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Group 1"
-                      onChange={(e) => setGroupName(e.target.value)}
+                      value={groupName}
+                      onChange={e => setGroupName(e.target.value)}
                       required
                     />
                   </div>
                   <div>
-                    <label
-                      htmlFor="csvFile"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
+                    <label htmlFor="csvFile" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                       Upload CSV File
                     </label>
                     <input
                       type="file"
-                      name="csvFile"
                       id="csvFile"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      onChange={handleFileChange}
                       accept=".csv"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      onChange={handleFileChange}
                       required
                     />
                   </div>
-                  
-                  {/* the validation errors */}
+
                   {showValidationErrors && (
-                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <h4 className="text-red-600 font-medium mb-2">We found some issues with your file!</h4>
-                      
+                    <div className="p-4 mt-2 bg-red-50 border border-red-200 rounded-lg">
+                      <h4 className="mb-2 text-sm font-medium text-red-600">
+                        Please fix these before uploading:
+                      </h4>
                       {invalidPhoneNumbers.length > 0 && (
-                        <div className="mb-2">
-                          <p className="text-red-500 text-sm font-medium">Found {invalidPhoneNumbers.length} phone numbers with less than 9 digits:</p>
-                          <ul className="list-disc list-inside text-xs text-red-500 ml-2">
-                            {invalidPhoneNumbers.slice(0, 5).map((item, index) => (
-                              <li key={index}>Line {item.line}: {item.phone}</li>
+                        <div className="mb-2 text-xs text-red-500">
+                          <p>Invalid phone numbers (less than 9 digits):</p>
+                          <ul className="list-disc list-inside ml-4">
+                            {invalidPhoneNumbers.slice(0, 5).map((item, i) => (
+                              <li key={i}>Line {item.line}: {item.phone}</li>
                             ))}
-                            {invalidPhoneNumbers.length > 5 && <li>...and {invalidPhoneNumbers.length - 5} more</li>}
+                            {invalidPhoneNumbers.length > 5 && (
+                              <li>...and {invalidPhoneNumbers.length - 5} more</li>
+                            )}
                           </ul>
                         </div>
                       )}
-                      
                       {duplicates.length > 0 && (
-                        <div>
-                          <p className="text-red-500 text-sm font-medium">Found {duplicates.length} duplicate phone numbers:</p>
-                          <ul className="list-disc list-inside text-xs text-red-500 ml-2">
-                            {duplicates.slice(0, 5).map((phone, index) => (
-                              <li key={index}>{phone}</li>
+                        <div className="text-xs text-red-500">
+                          <p>Duplicate phone numbers:</p>
+                          <ul className="list-disc list-inside ml-4">
+                            {duplicates.slice(0, 5).map((phone, i) => (
+                              <li key={i}>{phone}</li>
                             ))}
-                            {duplicates.length > 5 && <li>...and {duplicates.length - 5} more</li>}
+                            {duplicates.length > 5 && (
+                              <li>...and {duplicates.length - 5} more</li>
+                            )}
                           </ul>
                         </div>
                       )}
-                      
-                      <p className="text-sm text-red-500 mt-2">Please correct these issues before uploading.</p>
                     </div>
                   )}
-                  
-                  <div className="mb-4">
-                    <label
-                      htmlFor="description"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
+
+                  <div>
+                    <label htmlFor="description" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                       Description
                     </label>
                     <textarea
-                      name="description"
                       id="description"
-                      rows="5"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      placeholder="Description for the Group"
-                      onChange={(e) => setDescription(e.target.value)}
+                      rows="4"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Description for the group"
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
                       required
                     />
                   </div>
+
                   <div className="flex space-x-2">
                     <button
                       type="button"
-                      className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                       onClick={closeModal}
+                      className="w-full px-5 py-2.5 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
-                      className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                       onClick={handleGroupCreate}
+                      className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-400 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-300"
                     >
                       Submit
                     </button>
                   </div>
                 </form>
+                <ToastContainer position="top-right" autoClose={3000} />
               </div>
             </>
           )}

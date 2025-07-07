@@ -29,6 +29,8 @@ import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
 import OfflineShareIcon from '@mui/icons-material/OfflineShare';
 
 import "reactflow/dist/style.css";
+import DeleteIcon from '@mui/icons-material/Delete';
+
 
 const initialNodes = [
   {
@@ -141,7 +143,7 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
   };
 
 
-  const addNode = () => {
+ const addNode = () => {
     const newNodeId = `node-${nodeIdCounter}`;
     const newNode = {
       id: newNodeId,
@@ -152,6 +154,7 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
         prompt: "Click to edit question/prompt", 
         inputType: null, 
         updateNodeData,
+        deleteNode, // Add this line
         numberInputOptions: {}, 
         textInputOptions: {}, 
         buttonOptions: [{ label: 'Button 1' }, { label: 'Button 2' }] 
@@ -237,128 +240,73 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
   };
 
   // This function creates a topologically sorted list of nodes starting from the "start" node
-  const createSortedNodeList = () => {
-    // First, get all the regular nodes from the canvas
-    const regularNodes = [];
-    const visited = new Set();
-    
-    // Find direct children of the start node
-    const startNodeChildren = edges
-      .filter(edge => edge.source === "start")
-      .map(edge => nodes.find(node => node.id === edge.target))
-      .filter(Boolean);
-    
-    // For each child of the start node, do a depth-first traversal
-    for (const child of startNodeChildren) {
-      visitNode(child, visited, regularNodes);
-    }
-    
-    const allNodes = [];
-    
-    // Add regular nodes first
-    regularNodes.forEach(node => {
-      allNodes.push(node);
-      
-      // If this is a route node with buttons, create nodes for each button
-      if (node.data.inputType === "Buttons" && node.data.nodeType === 'route' && node.data.buttonOptions?.length > 0) {
-        node.data.buttonOptions.forEach((button, btnIndex) => {
-          // Create a node for this button option
-          const buttonOptionNode = {
-            id: `${node.id}-btn-${btnIndex}`,
-            // Flag to identify this as a button option node
-            isButtonOption: true,
-            // Reference to parent node and button index
-            parentId: node.id,
-            buttonIndex: btnIndex,
-            data: {
-              title: button.label,
-              prompt: `Option: ${button.label}`
-            },
-            // Position 
-            position: {
-              x: (node.position?.x || 0) + 200,
-              y: (node.position?.y || 0) + (btnIndex * 100)
-            }
-          };
-          
-          allNodes.push(buttonOptionNode);
-        });
+const createSortedNodeList = () => {
+  // Get all the regular nodes from the canvas (no virtual button nodes)
+  const regularNodes = [];
+  const visited = new Set();
+  
+  // Find direct children of the start node
+  const startNodeChildren = edges
+    .filter(edge => edge.source === "start")
+    .map(edge => nodes.find(node => node.id === edge.target))
+    .filter(Boolean);
+  
+  // For each child of the start node, do a depth-first traversal
+  for (const child of startNodeChildren) {
+    visitNode(child, visited, regularNodes);
+  }
+  
+  // Return only the regular nodes (no virtual button nodes)
+  return regularNodes;
+};
+
+
+// Helper function for depth-first traversal
+const visitNode = (node, visited, result) => {
+  if (visited.has(node.id)) return;
+  
+  visited.add(node.id);
+  result.push(node);
+  
+  // Find all children of this node
+  const children = edges
+    .filter(edge => {
+      // For route nodes, consider edges with button-specific sourceHandles
+      if (node.data.inputType === "Buttons" && node.data.nodeType === 'route') {
+        return edge.source === node.id && edge.sourceHandle?.startsWith('button-');
       }
-    });
-    
-    return allNodes;
-  };
+      // For list nodes, look for the list-output handle
+      else if (node.data.inputType === "Buttons" && node.data.nodeType === 'list') {
+        return edge.source === node.id && edge.sourceHandle === 'list-output';
+      }
+      // For other node types, regular connections
+      else {
+        return edge.source === node.id;
+      }
+    })
+    .map(edge => nodes.find(n => n.id === edge.target))
+    .filter(Boolean);
+  
+  for (const child of children) {
+    visitNode(child, visited, result);
+  }
+};
 
 
-  // Helper function for depth-first traversal
-  const visitNode = (node, visited, result) => {
-    if (visited.has(node.id)) return;
-    
-    visited.add(node.id);
-    result.push(node);
-    
-    // Find all children of this node
-    const children = edges
-      .filter(edge => {
-        // For route nodes, only consider edges with button-specific sourceHandles
-        if (node.data.inputType === "Buttons" && node.data.nodeType === 'route') {
-          return edge.source === node.id && edge.sourceHandle?.startsWith('button-');
-        }
-        // For list nodes, look for the list-output handle
-        else if (node.data.inputType === "Buttons" && node.data.nodeType === 'list') {
-          return edge.source === node.id && edge.sourceHandle === 'list-output';
-        }
-        // For other node types, regular connections
-        else {
-          return edge.source === node.id;
-        }
-      })
-      .map(edge => nodes.find(n => n.id === edge.target))
-      .filter(Boolean);
-    
-    for (const child of children) {
-      visitNode(child, visited, result);
-    }
-  };
+ 
 
 // Convert nodes to backend format with proper parent relationships
 const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
-  if (node.isButtonOption) {
-    // Find the index of the parent node in our list
-    const parentIndex = allNodes.findIndex(n => n.id === node.parentId);
-    
-    return {
-      backend_enabled: true,
-      exit_enabled: true,
-      extra_data: {
-        position: node.position,
-        isButtonOption: true,
-        buttonIndex: node.buttonIndex
-      },
-      header_text_template: {
-        language: "en",
-        text: node.data.prompt || ""
-      },
-      name: node.data.title || "",
-      // Button options are TEXT nodes by default
-      node_type: "TEXT",
-      // Parent index points to the parent route node
-      parent_index: parentIndex >= 0 ? parentIndex : 0,
-      created_at: timestamp,
-      updated_at: timestamp,
-      created_by: "",
-      updated_by: ""
-    };
-  }
-  
   // For regular nodes, determine parent based on connections
   let parentIndex = null;
+  let triggerButtonIndex = null; // New: track which button triggered this node
+  let parentId = null; // Track parent ID for button name logic
   
   // Look for incoming edges to this node
   const incomingEdges = edges.filter(edge => edge.target === node.id);
   
   if (incomingEdges.length > 0) {
-    const parentId = incomingEdges[0].source;
+    parentId = incomingEdges[0].source;
     const sourceHandle = incomingEdges[0].sourceHandle;
     
     if (parentId === "start") {
@@ -372,18 +320,10 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
         if (parentNode?.data?.inputType === "Buttons" && parentNode?.data?.nodeType === "route") {
           // Get the button index from the handle
           const buttonIndex = parseInt(sourceHandle.split('-')[1]);
+          triggerButtonIndex = buttonIndex; // Store which button triggers this node
           
-          // Find the corresponding button option node
-          const buttonOptionId = `${parentId}-btn-${buttonIndex}`;
-          const buttonOptionIndex = allNodes.findIndex(n => n.id === buttonOptionId);
-          
-          if (buttonOptionIndex >= 0) {
-            // Use the button option node as the parent
-            parentIndex = buttonOptionIndex;
-          } else {
-            // Fallback to the parent node
-            parentIndex = allNodes.findIndex(n => n.id === parentId);
-          }
+          // Find the parent route node in our sorted list
+          parentIndex = allNodes.findIndex(n => n.id === parentId);
         } else {
           // Normal node parent
           parentIndex = allNodes.findIndex(n => n.id === parentId);
@@ -453,6 +393,25 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     };
   }
   
+  // Add trigger button index for nodes connected to route buttons
+  if (triggerButtonIndex !== null) {
+    extraData.trigger_button_index = triggerButtonIndex;
+  }
+  
+  // Determine the node name - for route button children, ALWAYS use the button text
+  let nodeName = node.data.title || "";
+  
+  // If this node is triggered by a route button, override with the button text
+  if (triggerButtonIndex !== null) {
+    const parentNode = nodes.find(n => n.id === parentId);
+    if (parentNode?.data?.inputType === "Buttons" && 
+        parentNode?.data?.nodeType === "route" && 
+        parentNode?.data?.buttonOptions?.[triggerButtonIndex]) {
+      // Always use the button label as the node name, regardless of user-edited title
+      nodeName = parentNode.data.buttonOptions[triggerButtonIndex].label;
+    }
+  }
+
   return {
     backend_enabled: true,
     exit_enabled: true,
@@ -461,7 +420,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
       language: "en",
       text: node.data.prompt || ""
     },
-    name: node.data.title || "",
+    name: nodeName,
     node_type: nodeType,
     parent_index: parentIndex !== null ? parentIndex : 0,
     created_at: timestamp,
@@ -498,7 +457,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     setShowTestPanel(false);
   };
 
-  const applyTemplate = () => {
+const applyTemplate = () => {
     const { nodes: templateNodes, edges: templateEdges } = createTemplateFlow();
     
     // Update nodes with necessary handler functions
@@ -513,6 +472,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           cancelNumberConfig,
           openNumberConfigPanel,
           updateNodeData,
+          deleteNode, // Add this line
           tempNumberConfig,
           configPanelVisibleNodeId,
           selectedNode,
@@ -527,6 +487,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           cancelTextConfig,
           openTextConfigPanel,
           updateNodeData,
+          deleteNode, // Add this line
           tempTextInputConfig,
           textConfigPanelVisibleNodeId,
           variableOptions
@@ -538,13 +499,15 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           handleButtonConfigChange,
           addButtonItem,
           saveButtonConfig,
-          updateNodeData
+          updateNodeData,
+          deleteNode // Add this line
         };
       }
       else {
         updatedNode.data = {
           ...node.data,
-          updateNodeData
+          updateNodeData,
+          deleteNode // Add this line
         };
       }
       
@@ -557,7 +520,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     setNodeIdCounter(templateNodes.length + 1);
   };
 
-  const addUserInputToNode = (inputType) => {
+const addUserInputToNode = (inputType) => {
     if (!selectedNode || selectedNode === "start") return;
   
     setNodes((nds) =>
@@ -579,6 +542,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
               addButtonItem,
               saveButtonConfig,
               updateNodeData,
+              deleteNode, // Add this line
               id: node.id
             };
             setTempButtonConfig({ 
@@ -598,6 +562,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
               cancelNumberConfig,
               openNumberConfigPanel,
               updateNodeData,
+              deleteNode, // Add this line
               tempNumberConfig,
               configPanelVisibleNodeId,
               selectedNode,  
@@ -615,6 +580,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
               cancelTextConfig,
               openTextConfigPanel,
               updateNodeData,
+              deleteNode, // Add this line
               tempTextInputConfig,
               textConfigPanelVisibleNodeId,
               variableOptions,
@@ -624,6 +590,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
           } else {
             // Default node handling
             updatedNode.type = "default";
+            updatedData.deleteNode = deleteNode; // Add this line
             if (inputType !== "Number Input") {
               updatedData.numberInputOptions = {};
               setConfigPanelVisibleNodeId(null);
@@ -642,6 +609,7 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
     setConfigPanelVisibleNodeId(null);
     setTextConfigPanelVisibleNodeId(null);
   };
+
 
   const handleNumberConfigChange = (key, value) => {
     setTempNumberConfig(prevConfig => ({
@@ -806,6 +774,97 @@ const convertNodeToBackendFormat = (node, index, allNodes, timestamp) => {
       });
     }
   };
+const attachHandlersToNodes = (loadedNodes) => {
+  return loadedNodes.map(node => {
+    if (node.type === "numberNode") {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          handleNumberConfigChange,
+          saveNumberConfig,
+          cancelNumberConfig,
+          openNumberConfigPanel,
+          updateNodeData,
+          deleteNode, // Add this line
+          tempNumberConfig,
+          configPanelVisibleNodeId,
+          selectedNode,
+          variableOptions
+        }
+      };
+    } else if (node.type === "textNode") {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          handleTextConfigChange,
+          saveTextConfig,
+          cancelTextConfig,
+          openTextConfigPanel,
+          updateNodeData,
+          deleteNode, // Add this line
+          tempTextInputConfig,
+          textConfigPanelVisibleNodeId,
+          variableOptions
+        }
+      };
+    } else if (node.type === "buttonNode") {
+      // Create a node-specific addButtonItem function
+      const nodeSpecificAddButtonItem = () => {
+        const newButton = { label: `Button ${node.data.buttonOptions.length + 1}` };
+        
+        // Update temp state
+        setTempButtonConfig(prevConfig => ({
+          ...prevConfig,
+          buttons: [...(node.data.buttonOptions || []), newButton]
+        }));
+      
+        // Update node data
+        setNodes(nds =>
+          nds.map(n => {
+            if (n.id === node.id) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  buttonOptions: [...(n.data.buttonOptions || []), newButton]
+                }
+              };
+            }
+            return n;
+          })
+        );
+      };
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          handleButtonConfigChange,
+          addButtonItem: nodeSpecificAddButtonItem,
+          saveButtonConfig,
+          updateNodeData,
+          deleteNode, // Add this line
+          id: node.id
+        }
+      };
+    } else if (node.type === "default") {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          updateNodeData,
+          deleteNode // Add this line
+        }
+      };
+    }
+    
+    return node;
+  });
+};
+
+
 
   // load existing flow nodes
 const getFlowNodes = async () => {
@@ -833,11 +892,14 @@ const getFlowNodes = async () => {
       // Convert backend nodes to our local format
       const { localNodes, localEdges } = convertBackendNodesToLocalFormat(flowData.nodes);
       
-      setNodes(localNodes);
+      // Attach handlers to the loaded nodes
+      const nodesWithHandlers = attachHandlersToNodes(localNodes);
+      
+      setNodes(nodesWithHandlers);
       setEdges(localEdges);
       
       // Find the highest numerical part in existing node IDs
-      const nodeIds = localNodes
+      const nodeIds = nodesWithHandlers
         .filter(n => n.id !== "start")
         .map(n => {
           const match = n.id.match(/node-(\d+)/);
@@ -893,35 +955,26 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
   
   const localEdges = [];
   
-  // Step 1: Sort backend nodes by their order/index to maintain proper hierarchy
+  // Step 1: Sort backend nodes by their creation time to preserve original order
+  // This is crucial because backend might reorder nodes by ID
   const sortedBackendNodes = [...backendNodes].sort((a, b) => {
-    // If nodes have an explicit order field, use that
-    if (a.order !== undefined && b.order !== undefined) {
-      return a.order - b.order;
+    // First try to sort by creation time
+    if (a.created_at && b.created_at) {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     }
+    // Fallback to ID sorting if no creation time
     return a.id - b.id;
   });
+    
+  // Step 2: Create a mapping from backend array index to local node ID
+  const backendIndexToLocalId = {}; 
   
-  // Step 2: Create a mapping from backend array index to backend node
-  const backendIndexToNode = {};
-  sortedBackendNodes.forEach((node, index) => {
-    backendIndexToNode[index] = node;
-  });
-  
-  // Step 3: Create a mapping from backend node ID to local node ID
-  const backendIdToLocalId = {};
-  const backendIndexToLocalId = {}; // This will map array indices to local IDs
-  
-  // Step 4: Create all local nodes (excluding button option nodes)
+  // Step 3: Create all local nodes
   let localNodeCounter = 1;
   
   sortedBackendNodes.forEach((backendNode, backendIndex) => {
-    // Skip button option nodes - they're not represented as actual nodes in ReactFlow
-    if (backendNode.extra_data?.isButtonOption) return;
-    
     const localId = `node-${localNodeCounter}`;
-    backendIdToLocalId[backendNode.id] = localId;
-    backendIndexToLocalId[backendIndex] = localId; 
+    backendIndexToLocalId[backendIndex] = localId;
     localNodeCounter++;
     
     // Determine position from extra_data
@@ -979,16 +1032,32 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
       }
     }
     
+    // Determine the title - for route button children, use the button name
+    let nodeTitle = backendNode.name || "Click to edit title";
+    
+    // Check if this node is a child of a route node
+    if (backendNode.parent_index !== null && backendNode.extra_data?.trigger_button_index !== undefined) {
+      const parentNode = sortedBackendNodes[backendNode.parent_index];
+      if (parentNode?.node_type === "ROUTE" && parentNode.extra_data?.buttons) {
+        const buttonIndex = backendNode.extra_data.trigger_button_index;
+        const buttonText = parentNode.extra_data.buttons[buttonIndex]?.text;
+        if (buttonText) {
+          nodeTitle = buttonText;
+        }
+      }
+    }
+
     const localNode = {
       id: localId,
       type: nodeType,
       position: position,
       data: {
         id: localId,
-        title: backendNode.name || "Click to edit title",
+        title: nodeTitle,
         prompt: backendNode.header_text_template?.text || "Click to edit question/prompt",
         inputType: inputType,
         updateNodeData,
+        deleteNode, 
         numberInputOptions,
         textInputOptions,
         buttonOptions,
@@ -997,49 +1066,14 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
       className: "min-w-[250px]"
     };
     
-    // Add node-type specific handlers
-    if (nodeType === "numberNode") {
-      localNode.data = {
-        ...localNode.data,
-        handleNumberConfigChange,
-        saveNumberConfig,
-        cancelNumberConfig,
-        openNumberConfigPanel,
-        configPanelVisibleNodeId,
-        selectedNode,
-        variableOptions
-      };
-    } else if (nodeType === "textNode") {
-      localNode.data = {
-        ...localNode.data,
-        handleTextConfigChange,
-        saveTextConfig,
-        cancelTextConfig,
-        openTextConfigPanel,
-        textConfigPanelVisibleNodeId,
-        variableOptions
-      };
-    } else if (nodeType === "buttonNode") {
-      localNode.data = {
-        ...localNode.data,
-        handleButtonConfigChange,
-        addButtonItem,
-        saveButtonConfig,
-        updateNodeData
-      };
-    }
-    
     localNodes.push(localNode);
   });
   
-  // Step 5: Create the connections (edges) based on parent_index
+  // Step 4: Create the connections (edges) based on parent_index and trigger_button_index
   sortedBackendNodes.forEach((backendNode, backendIndex) => {
-    // Skip button option nodes
-    if (backendNode.extra_data?.isButtonOption) return;
-    
     const currentLocalId = backendIndexToLocalId[backendIndex];
     if (!currentLocalId) return;
-    
+        
     // Special case: Only the very first node (array index 0) with parent_index 0 connects to start
     if (backendIndex === 0 && backendNode.parent_index === 0) {
       localEdges.push({
@@ -1055,49 +1089,38 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
       if (!parentBackendNode) {
         return;
       }
+            
+      const parentLocalId = backendIndexToLocalId[backendNode.parent_index];
       
-      // Check if parent is a button option node
-      if (parentBackendNode.extra_data?.isButtonOption) {
-        // Find the actual route node this option belongs to
-        const routeNodeIndex = parentBackendNode.parent_index;
-        const routeNode = sortedBackendNodes[routeNodeIndex];
+      if (parentLocalId) {
+        // Check if this node was triggered by a specific button in a route
+        const triggerButtonIndex = backendNode.extra_data?.trigger_button_index;
         
-        if (routeNode) {
-          const routeNodeLocalId = backendIndexToLocalId[routeNodeIndex];
-          const buttonIndex = parentBackendNode.extra_data.buttonIndex;
-          
-          if (routeNodeLocalId) {
-            localEdges.push({
-              id: `edge-${routeNodeLocalId}-btn${buttonIndex}-${currentLocalId}`,
-              source: routeNodeLocalId,
-              target: currentLocalId,
-              sourceHandle: `button-${buttonIndex}`
-            });
-          }
+        if (parentBackendNode.node_type === "ROUTE" && triggerButtonIndex !== undefined) {
+          // Connect from the specific button handle
+          localEdges.push({
+            id: `edge-${parentLocalId}-btn${triggerButtonIndex}-${currentLocalId}`,
+            source: parentLocalId,
+            target: currentLocalId,
+            sourceHandle: `button-${triggerButtonIndex}`
+          });
         }
-      }
-      // If parent is a regular node
-      else {
-        const parentLocalId = backendIndexToLocalId[backendNode.parent_index];
-        
-        if (parentLocalId) {
-          // For LIST nodes, connect to the special list-output handle
-          if (parentBackendNode.node_type === "LIST") {
-            localEdges.push({
-              id: `edge-${parentLocalId}-list-${currentLocalId}`,
-              source: parentLocalId,
-              target: currentLocalId,
-              sourceHandle: 'list-output'
-            });
-          }
-          // For regular node connections
-          else {
-            localEdges.push({
-              id: `edge-${parentLocalId}-${currentLocalId}`,
-              source: parentLocalId,
-              target: currentLocalId
-            });
-          }
+        else if (parentBackendNode.node_type === "LIST") {
+          // Connect from the list output handle
+          localEdges.push({
+            id: `edge-${parentLocalId}-list-${currentLocalId}`,
+            source: parentLocalId,
+            target: currentLocalId,
+            sourceHandle: 'list-output'
+          });
+        }
+        else {
+          // Regular node connection
+          localEdges.push({
+            id: `edge-${parentLocalId}-${currentLocalId}`,
+            source: parentLocalId,
+            target: currentLocalId
+          });
         }
       }
     }
@@ -1105,6 +1128,44 @@ const convertBackendNodesToLocalFormat = (backendNodes) => {
   
   return { localNodes, localEdges };
 };
+
+const deleteNode = useCallback((nodeId) => {
+    // Prevent deleting the start node
+    if (nodeId === "start") {
+      toast.error("Cannot delete the start node");
+      return;
+    }
+
+    // Show confirmation dialog
+    const confirmDelete = window.confirm("Are you sure you want to delete this node? This action cannot be undone.");
+    
+    if (!confirmDelete) {
+      return;
+    }
+
+    // Remove the node
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    
+    // Remove all edges connected to this node
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    
+    // Clear selection if the deleted node was selected
+    if (selectedNode === nodeId) {
+      setSelectedNode(null);
+    }
+
+    // Close any open config panels for this node
+    if (configPanelVisibleNodeId === nodeId) {
+      setConfigPanelVisibleNodeId(null);
+    }
+    if (textConfigPanelVisibleNodeId === nodeId) {
+      setTextConfigPanelVisibleNodeId(null);
+    }
+
+    toast.success("Node deleted successfully");
+  }, [selectedNode, configPanelVisibleNodeId, textConfigPanelVisibleNodeId, setNodes, setEdges]);
+
+
 
 useEffect(() => {
   if (flowId) {

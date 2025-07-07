@@ -1,35 +1,48 @@
 export const getToken = () => {
-  if (typeof window === 'undefined') {
-    // Return null if the code is running server-side
+  if (typeof window === 'undefined') return null;
+
+  const { pathname } = window.location;
+  // do not run on sign in page 
+  if (pathname.startsWith('/signin')) {
     return null;
   }
 
-  const token = localStorage.getItem('token');
-  const expirationTime = localStorage.getItem('tokenExpiration');
-  
-  if (!token || !expirationTime) {
-    alert('Session Expired, Please login again');
-    window.location.href = '/signin';
-    return null;
-  }
+  const token           = localStorage.getItem('token');
+  const expiry          = localStorage.getItem('tokenExpiration');
+  const now             = Date.now();
+  const isExpired       = !token || !expiry || now > parseInt(expiry, 10);
 
-  const now = Date.now();
-  if (now > parseInt(expirationTime, 10)) {
+  // if session has expired and no alert shown
+  if (isExpired && !sessionStorage.getItem('expiredAlertShown')) {
+    sessionStorage.setItem('expiredAlertShown', '1');
     clearToken();
-    window.location.href = '/signin';
+    alert('Session expired. Please log in again.');
+    window.location.replace('/signin');
+    return null;
+  }
+
+  // if session has expired and the alert already shown then redirect
+  if (isExpired) {
+    clearToken();
+    window.location.replace('/signin');
     return null;
   }
 
   return token;
 };
 
+
+
 export const setToken = (token) => {
   if (typeof window !== 'undefined') {
-    const expirationTime = Date.now() + 3600000; // 1 hour expiration
+    const expirationTime = Date.now() + 3600000;
     localStorage.setItem('token', token);
     localStorage.setItem('tokenExpiration', expirationTime.toString());
+
+    sessionStorage.removeItem('expiredAlertShown');
   }
 };
+
 
 export const setOrganisation = (orgId, orgName) => {
   if (typeof window !== 'undefined') {
