@@ -192,7 +192,7 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
 
   export async function GetBalance(org_id) {
     
-    const balanceUrl = `${apiUrl.GET_BALANCE}/organization/balance/${org_id}`;
+    const balanceUrl = `${apiUrl.GET_BALANCE}/organization/balance/${org_id}?size=10000`;
   
     try {
       const config = await authHeaders();
