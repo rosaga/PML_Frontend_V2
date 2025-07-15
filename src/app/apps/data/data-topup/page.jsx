@@ -35,6 +35,7 @@ const DataUnitsTopupPage = () => {
   const [cart, setCart] = useState([]);
   
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [freeTrialSuccess, setFreeTrialSuccess] = useState(false);
   const [loadingTrial, setLoadingTrial] = useState(false);
   const [trialError, setTrialError] = useState("");
   
@@ -131,7 +132,7 @@ const DataUnitsTopupPage = () => {
 
     try {
       await processFreeTrialRequest(orgId, phoneNumber, "FREE TRIAL");
-      setPaymentSuccess(true);
+      setFreeTrialSuccess(true);
     } catch (err) {
       setTrialError(err.message ?? "Could not start free-trial.");
     } finally {
@@ -375,6 +376,82 @@ const DataUnitsTopupPage = () => {
               );
             })}
           </ul>
+
+          <div className="grid grid-cols-2 gap-4 w-full">
+            <button
+              onClick={handleProceed}
+              className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded"
+            >
+              Proceed to Campaigns
+            </button>
+            <button
+              onClick={handleExit}
+              className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded"
+            >
+              Exit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    );
+  } else if (freeTrialSuccess){
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <h1 className="text-center text-3xl font-semibold mb-12">
+          Top up your Data Units in 3 Easy Steps
+        </h1>
+
+        {/* Steps Navigation */}
+        <div className="flex items-center justify-center mb-12">
+          {/* Step 1 */}
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-gray-500">
+              1
+            </div>
+            <span className="ml-3 mr-5 text-gray-700">Select A Package</span>
+            <span className="mx-3 text-gray-400">&#10095;</span>
+          </div>
+          {/* Step 2 */}
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-gray-500">
+              2
+            </div>
+            <span className="ml-3 mr-5 text-gray-700">Customize Order</span>
+            <span className="mx-3 text-gray-400">&#10095;</span>
+          </div>
+          {/* Step 3 */}
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-orange-400">
+              3
+            </div>
+            <span className="ml-3 text-gray-700">Review & Pay</span>
+          </div>
+        </div>
+
+        {/* Success Message Container */}
+        <div className="border rounded-lg p-8 mb-12 mx-auto max-w-3xl">
+        <div className="p-8 flex flex-col items-center justify-center">
+          <div className="w-32 h-32 bg-green-500 rounded-full flex items-center justify-center mb-6">
+            <svg
+              className="w-20 h-20 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="3"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+
+          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+            Your Free trial has started
+          </h2>
 
           <div className="grid grid-cols-2 gap-4 w-full">
             <button
