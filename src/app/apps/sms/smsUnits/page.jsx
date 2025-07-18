@@ -168,12 +168,14 @@ const Recharges = () => {
               <p className="mt-4 font-medium text-lg">SMS Units</p>
               
               <div className="ml-auto flex space-x-4">
+                {hasRole(token, 'SuperAdmin') && (
                 <PeakButton
                   buttonText="Provision"
                   icon={AddIcon}
                   className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] p-2 shadow-sm outline-none"
                   onClick={openModal1}
                 />
+                 )}
                 <PeakButton
                   buttonText="Request Units"
                   icon={AddIcon}
