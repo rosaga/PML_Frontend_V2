@@ -28,6 +28,7 @@ const Dashboard = () => {
 
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedDay, setSelectedDay] = useState("");
 
   const page = 1;
   const limit = 5;
@@ -123,8 +124,18 @@ const Dashboard = () => {
     return options;
   };
 
+  const generateDayOptions = () => {
+    const options = [{ value: "", label: "All Days" }];
+    for (let day = 1; day <= 31; day++) {
+      const dayValue = day < 10 ? `0${day}` : `${day}`;
+      options.push({ value: dayValue, label: dayValue });
+    }
+    return options;
+  };
+
   const yearOptions = generateYearOptions();
   const monthOptions = generateMonthOptions();
+  const dayOptions = generateDayOptions();
 
   
 
@@ -151,7 +162,7 @@ const Dashboard = () => {
 
   const getMessageCounts = () => {
     if (org_id) {
-      messageCountsAction({ org_id, selectedMonth, selectedYear })
+      messageCountsAction({ org_id, selectedMonth, selectedYear, selectedDay })
         .then((res) => {
           if (res.errors) {
             console.log("AN ERROR HAS OCCURED");
@@ -211,7 +222,7 @@ const Dashboard = () => {
     getMessages();
     getMessageCounts();
     getSmsBalance();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, selectedDay]);
 
 
 
@@ -243,6 +254,20 @@ const Dashboard = () => {
                   className="p-2 border rounded"
                 >
                   {monthOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select
+                  id="dayFilter"
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                  className="p-2 border rounded"
+                >
+                  {dayOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
