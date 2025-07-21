@@ -267,3 +267,44 @@ export async function DeleteSmsCampaign(campaign_id, org_id) {
     };
   }
 }
+
+const MESSAGING_API_BASE_URL2 =
+  'https://messaging-peak-1048592730476.europe-west4.run.app/api/v1';
+
+export async function GetSmsCampaignMessages({
+  org_id,
+  page = 1,
+  size = 10000,
+  ...filters
+}) {
+  if (!org_id) return { data: [], count: 0 };
+
+  const qs = new URLSearchParams({ page, size });
+  Object.entries(filters).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      qs.append(key, val);
+    }
+  });
+
+  const url = `${MESSAGING_API_BASE_URL2}/message/${org_id}/list?${qs.toString()}`;
+  console.log('Fetching messages from:', url);
+
+  try {
+    const config = await authHeaders();
+    const res    = await axios.get(url, config);
+
+    if (res.status === 200) {
+      if (Array.isArray(res.data)) {
+      return { data: res.data, count: res.data.length };
+           }
+          return {
+            data : res.data.data  || [],
+            count: res.data.count || 0,
+          };
+    }
+    return { data: [], count: 0 };
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    return { errors: { _error: 'Could not load messages' } };
+  }
+}
