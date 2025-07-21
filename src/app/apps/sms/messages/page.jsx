@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Box from "@mui/material/Box";
@@ -93,9 +94,11 @@ const Messages = () => {
     }
   };
 
+
   return (
     <div className="p-4 sm:ml-64 h-screen">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
+
         {loading ? (
           <Box className="flex justify-center items-center h-full">
             <CircularProgress style={{ color: "#E88A17" }} />
@@ -210,6 +213,7 @@ const Messages = () => {
           </div>
         )}
       </div>
+
       
       {/* Modals */}
       {isSingleModalOpen && <SendSmsModal closeModal={closeModal} />}
