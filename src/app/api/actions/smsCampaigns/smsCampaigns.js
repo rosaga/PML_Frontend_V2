@@ -3,6 +3,24 @@ import { authHeaders } from '../../../api/utils/headers/headers';
 
 const MESSAGING_API_BASE_URL = 'https://messaging-peak-1048592730476.europe-west4.run.app/api/v2';
 
+export async function fetchAllCampaigns(baseParams) {
+  let page  = 1;
+  const limit = 100;
+  const all  = [];
+
+  while (true) {
+    const res = await GetSmsCampaigns({ ...baseParams, page, limit });
+    all.push(...(res.data ?? []));
+
+    if (all.length >= (res.count ?? all.length) || (res.data?.length ?? 0) < limit) {
+      break;
+    }
+    page += 1;
+  }
+
+  return { data: all, count: all.length };
+}
+
 export async function GetSmsCampaigns(params) {
   const {
     org_id,
