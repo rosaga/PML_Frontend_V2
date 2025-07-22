@@ -31,6 +31,67 @@ import OfflineShareIcon from '@mui/icons-material/OfflineShare';
 import "reactflow/dist/style.css";
 import DeleteIcon from '@mui/icons-material/Delete';
 
+const ErrorModal = ({ isOpen, onClose, endRouteNodes, nodes }) => {
+  if (!isOpen) return null;
+
+  const getNodeNames = (nodeIds) => {
+    return nodeIds.map(nodeId => {
+      const node = nodes.find(n => n.id === nodeId);
+      return node?.data?.title || 'Untitled Node';
+    });
+  };
+
+  const nodeNames = getNodeNames(endRouteNodes);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div className="flex items-center mb-4">
+          <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-lg font-medium text-gray-900">
+              Cannot Save Flow
+            </h3>
+          </div>
+        </div>
+        
+        <div className="mb-4">
+          <p className="text-sm text-gray-600 mb-3">
+            The following route node{nodeNames.length > 1 ? 's are' : ' is'} not connected to other nodes. Please connect all route buttons or change them to a different node type:
+          </p>
+          
+          <ul className="list-disc list-inside space-y-1 text-sm text-gray-800 bg-gray-50 p-3 rounded-md max-h-32 overflow-y-auto">
+            {nodeNames.map((nodeName, index) => (
+              <li key={index} className="font-medium">
+                {nodeName}
+              </li>
+            ))}
+          </ul>
+        </div>
+        
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Fix Issues
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const initialNodes = [
   {
@@ -78,6 +139,8 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
   const [flowName, setFlowName] = useState(propFlowName ? decodeURIComponent(propFlowName) : "");
   const router = useRouter();
   const [showVariablePanel, setShowVariablesPanel] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModalData, setErrorModalData] = useState([]); 
 
   // Get flowId from props or URL
   const getFlowId = useCallback(() => {
@@ -89,6 +152,11 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
     }
     return null;
   }, [propFlowId]);
+
+  const closeErrorModal = () => {
+  setShowErrorModal(false);
+  setErrorModalData([]);
+};
   
   const flowId = getFlowId();
 
@@ -154,7 +222,7 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
         prompt: "Click to edit question/prompt", 
         inputType: null, 
         updateNodeData,
-        deleteNode, // Add this line
+        deleteNode, 
         numberInputOptions: {}, 
         textInputOptions: {}, 
         buttonOptions: [{ label: 'Button 1' }, { label: 'Button 2' }] 
@@ -182,9 +250,16 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
 
   // Save the entire flow as a batch
   const saveEntireFlow = async () => {
+    const endRouteNodes = findRouteEndNodes();
+      if (endRouteNodes.length > 0) {
+        setShowErrorModal(true);
+        setErrorModalData(endRouteNodes);
+        return;
+      }
+      
     if (!flowId) {
       console.error("No flow ID available");
-      alert("No flow ID found. Please check the URL parameters.");
+      toast.error("No flow ID found. Please check the URL parameters.");
       return;
     }
 
@@ -232,6 +307,7 @@ export default function FlowBuilderUI({ flowId: propFlowId, flowName: propFlowNa
     } catch (error) {
       console.error("Error saving flow:", error);
       setSaveStatus('error');
+      toast.error("Failed to save flow");
       return null;
     } finally {
       setIsSaving(false);
@@ -259,6 +335,39 @@ const createSortedNodeList = () => {
   // Return only the regular nodes (no virtual button nodes)
   return regularNodes;
 };
+
+const findRouteEndNodes = () => {
+  const routeEndNodes = [];
+  
+  nodes.forEach(node => {
+    if (node.data.inputType === "Buttons" && node.data.nodeType === 'route') {
+      // For each button in the route node, check if it has outgoing connections
+      const buttonOptions = node.data.buttonOptions || [];
+      let hasAnyButtonConnections = false;
+      
+      for (let i = 0; i < buttonOptions.length; i++) {
+        const hasButtonConnection = edges.some(edge => 
+          edge.source === node.id && edge.sourceHandle === `button-${i}`
+        );
+        if (hasButtonConnection) {
+          hasAnyButtonConnections = true;
+          break;
+        }
+      }
+      
+      // If none of the buttons have connections, this is an end route node
+      if (!hasAnyButtonConnections) {
+        routeEndNodes.push(node.id);
+      }
+    }
+  });
+  
+  return routeEndNodes;
+};
+
+const routeEndNodes = React.useMemo(() => {
+  return findRouteEndNodes();
+}, [nodes, edges]);
 
 
 // Helper function for depth-first traversal
@@ -472,7 +581,7 @@ const applyTemplate = () => {
           cancelNumberConfig,
           openNumberConfigPanel,
           updateNodeData,
-          deleteNode, // Add this line
+          deleteNode, 
           tempNumberConfig,
           configPanelVisibleNodeId,
           selectedNode,
@@ -487,7 +596,7 @@ const applyTemplate = () => {
           cancelTextConfig,
           openTextConfigPanel,
           updateNodeData,
-          deleteNode, // Add this line
+          deleteNode, 
           tempTextInputConfig,
           textConfigPanelVisibleNodeId,
           variableOptions
@@ -500,14 +609,14 @@ const applyTemplate = () => {
           addButtonItem,
           saveButtonConfig,
           updateNodeData,
-          deleteNode // Add this line
+          deleteNode 
         };
       }
       else {
         updatedNode.data = {
           ...node.data,
           updateNodeData,
-          deleteNode // Add this line
+          deleteNode 
         };
       }
       
@@ -542,7 +651,8 @@ const addUserInputToNode = (inputType) => {
               addButtonItem,
               saveButtonConfig,
               updateNodeData,
-              deleteNode, // Add this line
+              deleteNode, 
+              isEndRouteNode: routeEndNodes.includes(node.id),
               id: node.id
             };
             setTempButtonConfig({ 
@@ -562,7 +672,7 @@ const addUserInputToNode = (inputType) => {
               cancelNumberConfig,
               openNumberConfigPanel,
               updateNodeData,
-              deleteNode, // Add this line
+              deleteNode, 
               tempNumberConfig,
               configPanelVisibleNodeId,
               selectedNode,  
@@ -580,7 +690,7 @@ const addUserInputToNode = (inputType) => {
               cancelTextConfig,
               openTextConfigPanel,
               updateNodeData,
-              deleteNode, // Add this line
+              deleteNode, 
               tempTextInputConfig,
               textConfigPanelVisibleNodeId,
               variableOptions,
@@ -590,7 +700,7 @@ const addUserInputToNode = (inputType) => {
           } else {
             // Default node handling
             updatedNode.type = "default";
-            updatedData.deleteNode = deleteNode; // Add this line
+            updatedData.deleteNode = deleteNode; 
             if (inputType !== "Number Input") {
               updatedData.numberInputOptions = {};
               setConfigPanelVisibleNodeId(null);
@@ -786,7 +896,7 @@ const attachHandlersToNodes = (loadedNodes) => {
           cancelNumberConfig,
           openNumberConfigPanel,
           updateNodeData,
-          deleteNode, // Add this line
+          deleteNode, 
           tempNumberConfig,
           configPanelVisibleNodeId,
           selectedNode,
@@ -803,7 +913,7 @@ const attachHandlersToNodes = (loadedNodes) => {
           cancelTextConfig,
           openTextConfigPanel,
           updateNodeData,
-          deleteNode, // Add this line
+          deleteNode, 
           tempTextInputConfig,
           textConfigPanelVisibleNodeId,
           variableOptions
@@ -845,7 +955,8 @@ const attachHandlersToNodes = (loadedNodes) => {
           addButtonItem: nodeSpecificAddButtonItem,
           saveButtonConfig,
           updateNodeData,
-          deleteNode, // Add this line
+          deleteNode, 
+          isEndRouteNode: routeEndNodes.includes(node.id), 
           id: node.id
         }
       };
@@ -855,7 +966,7 @@ const attachHandlersToNodes = (loadedNodes) => {
         data: {
           ...node.data,
           updateNodeData,
-          deleteNode // Add this line
+          deleteNode 
         }
       };
     }
@@ -1327,6 +1438,14 @@ return (
         />
       )}
     </div>
+    {showErrorModal && (
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={closeErrorModal}
+        endRouteNodes={errorModalData}
+        nodes={nodes}
+      />
+    )}
   </div>
 );
 }

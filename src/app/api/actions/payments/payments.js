@@ -64,7 +64,14 @@ export async function checkPreviousPayments(org_id) {
   }
 }
 
-export async function processFreeTrialRequest(org_id, phoneNumber, selectedPackage) {
+
+export async function processFreeTrialRequest( 
+  org_id,
+  phoneNumber,
+  selectedPackage,
+  bundles = [],
+  amount = 0
+) {
   if (!selectedPackage) throw new Error("No package selected.");
   if (!org_id) throw new Error("Organization ID missing.");
 
@@ -73,12 +80,19 @@ export async function processFreeTrialRequest(org_id, phoneNumber, selectedPacka
 
   const MSISDN = phoneNumber.startsWith("+") ? phoneNumber.slice(1) : phoneNumber;
 
-  const payload = {
-    package: selectedPackage,
+  const bundlesToProcess = bundles.length > 0 ? bundles : [{}];
+
+  const formattedBundles = bundlesToProcess.map(item => ({
+    bundle_type: "20",
     units: 5,
-    amount: 0,
-    MSISDN
-  };
+    amount: 0
+  }));
+
+  const payload = {};
+  payload.bundles = formattedBundles;
+  payload.amount = amount || 0;
+  payload.MSISDN = MSISDN;
+  payload.package = selectedPackage;
 
   return makePayment(org_id, payload);
 }

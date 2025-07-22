@@ -12,10 +12,20 @@ import IconButton from '@mui/material/IconButton';
 import FormLabel from '@mui/material/FormLabel';
 import Tooltip from '@mui/material/Tooltip';
 import InfoIcon from '@mui/icons-material/Info';
+import WarningIcon from '@mui/icons-material/Warning';
+import Alert from '@mui/material/Alert';
 
 const ButtonNode = ({ data, isConnectable }) => {
   // Handle node type (route or list)
   const nodeType = data.nodeType || 'route'; 
+  
+  // Check if this is an end route node (route node with no outgoing connections)
+  const isEndRouteNode = React.useMemo(() => {
+    if (data.inputType === "Buttons" && data.nodeType === 'route') {
+      return data.isEndRouteNode || false;
+    }
+    return false;
+  }, [data.inputType, data.nodeType, data.isEndRouteNode]);
   
   // Handle delete button click
   const handleDelete = (e) => {
@@ -41,7 +51,9 @@ const ButtonNode = ({ data, isConnectable }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow border-2 min-w-[300px] relative">
+    <div className={`bg-white rounded-lg shadow border-2 min-w-[300px] relative ${
+      isEndRouteNode ? 'border-red-500 bg-red-50' : ''
+    }`}>
       {/* Input handle at the top */}
       <Handle
         type="target"
@@ -53,7 +65,7 @@ const ButtonNode = ({ data, isConnectable }) => {
       
       {/* Header with title and delete button */}
       <div className="flex justify-between items-center p-2 border-b border-gray-100">
-        <div className="flex-1">
+        <div className="flex-1 flex items-center">
           <input
             type="text"
             defaultValue={data.title}
@@ -61,6 +73,13 @@ const ButtonNode = ({ data, isConnectable }) => {
             className="w-full text-sm font-medium focus:outline-none bg-transparent"
             placeholder="Enter title"
           />
+          {isEndRouteNode && (
+            <WarningIcon 
+              className="ml-2 text-red-500" 
+              fontSize="small" 
+              title="Warning: Route node should not be the end of a flow"
+            />
+          )}
         </div>
         {/* Delete button */}
         <IconButton
@@ -76,6 +95,15 @@ const ButtonNode = ({ data, isConnectable }) => {
           <DeleteIcon fontSize="small" />
         </IconButton>
       </div>
+
+      {/* Warning alert for end route nodes */}
+      {isEndRouteNode && (
+        <div className="p-2">
+          <Alert severity="warning" className="text-xs">
+            Route nodes should not be the end of a flow. Connect buttons to other nodes or change to a different node type.
+          </Alert>
+        </div>
+      )}
 
       {/* Content area */}
       <div className="p-4 pt-2">

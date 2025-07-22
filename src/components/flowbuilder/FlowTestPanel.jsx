@@ -265,7 +265,7 @@ const FlowTestPanel = ({ flowId, onClose }) => {
                 <p>{message.text}</p>
                 
                 {/* Show options if available */}
-                {message.sender === 'bot' && message.rawOptions && message.rawOptions.length > 0 && !message.isEnd && (
+                {message.sender === 'bot' && message.rawOptions && message.rawOptions.length > 0 && (
                   <div className="mt-2 space-y-2">
                     {message.rawOptions.map((option, optIndex) => (
                       <button
