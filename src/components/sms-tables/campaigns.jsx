@@ -19,8 +19,10 @@ import SendBulkModal from "../modal/sendBulkSms";
 import { format, parseISO } from "date-fns";
 import { GetSmsCampaigns } from "../../app/api/actions/smsCampaigns/smsCampaigns";
 import { getToken } from "@/utils/auth";
+import { useRouter } from "next/navigation";
 
 const SmsCampaignsTable = ({ campaignType = "all" }) => {
+  const router = useRouter();
   const generateYearOptions = () => {
     const options = [{ value: "", label: "All Years" }];
     const startYear = 2024;
@@ -285,6 +287,14 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     },
   ];
 
+  const handleRowClick = (params) => {
+
+    const { requestid, id } = params.row;
+    router.push(
+    `/apps/sms/campaign-details?campaign_id=${id}&conversation_id=${requestid}`
+    );
+    };
+
   return (
     <div className="flex flex-col h-full">
       {/* Filters */}
@@ -479,6 +489,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
             columns={columns}
             loading={loading}
             getRowId={(row) => row.id}
+            onRowClick={handleRowClick}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[5, 10, 25, 50]}
