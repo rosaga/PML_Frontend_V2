@@ -23,47 +23,6 @@ import { useRouter } from "next/navigation";
 
 const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const router = useRouter();
-  const generateYearOptions = () => {
-    const options = [{ value: "", label: "All Years" }];
-    const startYear = 2024;
-    const currentYear = new Date().getFullYear();
-    for (let year = startYear; year <= currentYear + 1; year++) {
-      options.push({ value: year.toString(), label: year.toString() });
-    }
-    return options;
-  };
-
-  const generateMonthOptions = () => {
-    const options = [{ value: "", label: "All Months" }];
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    for (let i = 0; i < 12; i++) {
-      const monthNumber = i + 1;
-      const monthValue =
-        monthNumber < 10 ? `0${monthNumber}` : `${monthNumber}`;
-      options.push({ value: monthValue, label: monthNames[i] });
-    }
-    return options;
-  };
-
-  const yearOptions = generateYearOptions();
-  const monthOptions = generateMonthOptions();
-  const dayOptions = Array.from({ length: 31 }, (_, i) => {
-    const d = i + 1;
-    return { value: d.toString().padStart(2, "0"), label: d.toString() };
-  });
 
   let org_id = null;
   let token = null;
@@ -82,18 +41,17 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
 
   const [basicFilters, setBasicFilters] = useState({
     name: "",
-    groupId: "",
   });
   const [advancedFilters, setAdvancedFilters] = useState({
     id: "",
     description: "",
     serviceId: "",
     content: "",
+    groupId: "",
   });
   const [dateFilters, setDateFilters] = useState({
-    year: "",
-    month: "",
-    day: "",
+    startDate: "",
+    endDate: "",
   });
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
@@ -117,11 +75,10 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const handleApplyFilters = () => {
     const params = {};
 
-    //basic
+    // basic filters
     if (basicFilters.name) params.like__name = basicFilters.name;
-    if (basicFilters.groupId) params.eq__group_id = basicFilters.groupId;
 
-    // advanced
+    // advanced filters
     if (advancedFilters.id) params.eq__id = advancedFilters.id;
     if (advancedFilters.description)
       params.ilike__description = advancedFilters.description;
@@ -129,57 +86,56 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       params.eq__service_id = advancedFilters.serviceId;
     if (advancedFilters.content)
       params.ilike__content = advancedFilters.content;
+    if (advancedFilters.groupId) params.eq__group_id = advancedFilters.groupId;
 
-    // dates
-    if (dateFilters.year) {
-      const y = parseInt(dateFilters.year, 10);
-      const m = dateFilters.month ? parseInt(dateFilters.month, 10) : null;
-      const d = dateFilters.day ? parseInt(dateFilters.day, 10) : null;
-      let start, end;
-
-      if (m && d) {
-        start = new Date(y, m - 1, d, 0, 0, 0);
-        end = new Date(y, m - 1, d, 23, 59, 59);
-      } else if (m) {
-        const last = new Date(y, m, 0).getDate();
-        start = new Date(y, m - 1, 1, 0, 0, 0);
-        end = new Date(y, m - 1, last, 23, 59, 59);
-      } else {
-        start = new Date(y, 0, 1, 0, 0, 0);
-        end = new Date(y, 11, 31, 23, 59, 59);
-      }
-
-      params.gte__scheduled = start.toISOString();
-      params.lte__scheduled = end.toISOString();
+    // date filters
+    if (dateFilters.startDate) {
+      const startDate = new Date(dateFilters.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      params.gte__scheduled = startDate.toISOString();
+    }
+    if (dateFilters.endDate) {
+      const endDate = new Date(dateFilters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      params.lte__scheduled = endDate.toISOString();
     }
 
     setSearchParams(params);
   };
 
   const handleClearAllFilters = () => {
-    setBasicFilters({ name: "", groupId: "" });
-    setAdvancedFilters({ id: "", description: "", serviceId: "", content: "" });
-    setDateFilters({ year: "", month: "", day: "" });
+    setBasicFilters({ name: "" });
+    setAdvancedFilters({
+      id: "",
+      description: "",
+      serviceId: "",
+      content: "",
+      groupId: "",
+    });
+    setDateFilters({ startDate: "", endDate: "" });
     setSearchParams({});
   };
 
-  
   useEffect(() => {
     handleClearAllFilters();
     setPaginationModel({ pageSize: 10, page: 0 });
   }, [campaignType]);
 
-  // fetch
   const getCampaigns = async () => {
     if (!org_id) return console.warn("org_id missing, skipping fetch");
     setLoading(true);
 
+    const hasFilters = Object.keys(searchParams).length > 0;
+
     const params = {
       org_id,
-      page: paginationModel.page + 1,
-      limit: paginationModel.pageSize,
+      ...(hasFilters
+        ? { page: 1, limit: 10000 }
+        : { page: paginationModel.page + 1, limit: paginationModel.pageSize }
+      ),
       ...searchParams,
     };
+
     const now = new Date().toISOString();
     if (campaignType === "scheduled" && !params.gte__scheduled)
       params.gte__scheduled = now;
@@ -191,6 +147,10 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       if (res.errors) console.error(res.errors);
       setCampaigns(res.data || []);
       setTotal(res.count || 0);
+
+      if (hasFilters && paginationModel.page !== 0) {
+        setPaginationModel((prev) => ({ ...prev, page: 0 }));
+      }
     } catch (e) {
       console.error("Fetch error:", e);
     } finally {
@@ -288,12 +248,11 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   ];
 
   const handleRowClick = (params) => {
-
     const { requestid, id } = params.row;
     router.push(
-    `/apps/sms/campaign-details?campaign_id=${id}&conversation_id=${requestid}`
+      `/apps/sms/campaign-details?campaign_id=${id}&conversation_id=${requestid}`
     );
-    };
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -314,8 +273,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
           </button>
         </div>
 
-        {/* Basic */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Basic Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium mb-1">
               Campaign Name
@@ -323,71 +282,34 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
             <input
               type="text"
               value={basicFilters.name}
-              onChange={(e) => handleBasicFilterChange("name", e.target.value)}
+              onChange={(e) =>
+                handleBasicFilterChange("name", e.target.value)
+              }
               className="w-full p-2 border rounded"
               placeholder="Search campaign name..."
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Group ID</label>
+            <label className="block text-sm font-medium mb-1">Start Date</label>
             <input
-              type="text"
-              value={basicFilters.groupId}
+              type="date"
+              value={dateFilters.startDate}
               onChange={(e) =>
-                handleBasicFilterChange("groupId", e.target.value)
+                handleDateFilterChange("startDate", e.target.value)
               }
               className="w-full p-2 border rounded"
-              placeholder="Enter group ID"
             />
           </div>
-        </div>
-
-        {/* Date */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Year</label>
-            <select
-              value={dateFilters.year}
-              onChange={(e) => handleDateFilterChange("year", e.target.value)}
-              className="w-full p-2 border rounded"
-            >
-              {yearOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Month</label>
-            <select
-              value={dateFilters.month}
+            <label className="block text-sm font-medium mb-1">End Date</label>
+            <input
+              type="date"
+              value={dateFilters.endDate}
               onChange={(e) =>
-                handleDateFilterChange("month", e.target.value)
+                handleDateFilterChange("endDate", e.target.value)
               }
               className="w-full p-2 border rounded"
-            >
-              {monthOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Day</label>
-            <select
-              value={dateFilters.day}
-              onChange={(e) => handleDateFilterChange("day", e.target.value)}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">All Days</option>
-              {dayOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 
@@ -395,7 +317,21 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
         {showAdvancedFilters && (
           <div className="border-t pt-4">
             <h4 className="text-md font-medium mb-3">Advanced Filters</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Group ID
+                </label>
+                <input
+                  type="text"
+                  value={advancedFilters.groupId}
+                  onChange={(e) =>
+                    handleAdvancedFilterChange("groupId", e.target.value)
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Enter group ID"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Description
@@ -493,8 +429,12 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[5, 10, 25, 50]}
-            paginationMode="server"
-            rowCount={total}
+            paginationMode={
+              Object.keys(searchParams).length > 0 ? "client" : "server"
+            }
+            rowCount={
+              Object.keys(searchParams).length > 0 ? undefined : total
+            }
             sx={{
               "& .MuiDataGrid-columnHeader": { backgroundColor: "#F1F2F3" },
               "&.MuiDataGrid-root": { border: "none" },
