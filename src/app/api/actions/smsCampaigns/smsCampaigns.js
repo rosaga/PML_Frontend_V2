@@ -24,6 +24,7 @@ export async function fetchAllCampaigns(baseParams) {
 export async function GetSmsCampaigns(params) {
   const {
     org_id,
+    email,
     page,
     limit,
     status,
@@ -34,24 +35,21 @@ export async function GetSmsCampaigns(params) {
   } = params;
 
   let campaignUrl = `${MESSAGING_API_BASE_URL}/campaign/list`;
-  
   const queryParams = new URLSearchParams();
-  
-  if (org_id) {
-    queryParams.append('org_id', org_id);
+
+  if (email) {
+    queryParams.append('eq__createdby', email);
   }
-  
-  if (page) {
+
+  if (page != null) {
     queryParams.append('page', page);
   }
-  if (limit) {
+  if (limit != null) {
     queryParams.append('limit', limit);
   }
-  
   if (status) {
     queryParams.append('status', status);
   }
-  
   if (year) {
     queryParams.append('year', year);
   }
@@ -61,23 +59,22 @@ export async function GetSmsCampaigns(params) {
   if (day) {
     queryParams.append('day', day);
   }
-  
-  Object.keys(additionalParams).forEach(key => {
-    if (additionalParams[key]) {
-      queryParams.append(key, additionalParams[key]);
+
+  Object.entries(additionalParams).forEach(([key, val]) => {
+    if (val != null) {
+      queryParams.append(key, val);
     }
   });
-  
+
   if (queryParams.toString()) {
     campaignUrl += `?${queryParams.toString()}`;
   }
 
   try {
     const config = await authHeaders();
-    
     const res = await axios.get(campaignUrl, config);
-    
-    if (res.data && res.status === 200) {
+
+    if (res.status === 200 && res.data) {
       console.log("SMS Campaigns Response:", res.data);
       return {
         data: res.data.data || [],
@@ -85,11 +82,10 @@ export async function GetSmsCampaigns(params) {
         total: res.data.count || 0
       };
     }
-    
+
     return res.data;
   } catch (error) {
     console.error("Error fetching SMS campaigns:", error);
-    
     if (error.response) {
       return {
         errors: {
@@ -99,7 +95,6 @@ export async function GetSmsCampaigns(params) {
         },
       };
     }
-    
     return {
       errors: {
         _error: 'Network error. Please try again.',
@@ -107,6 +102,8 @@ export async function GetSmsCampaigns(params) {
     };
   }
 }
+
+
 
 export async function CreateSmsCampaign(formValues) {
   const newCampaign = {
