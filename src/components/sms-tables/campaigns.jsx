@@ -20,15 +20,24 @@ import { format, parseISO } from "date-fns";
 import { GetSmsCampaigns } from "../../app/api/actions/smsCampaigns/smsCampaigns";
 import { getToken } from "@/utils/auth";
 import { useRouter } from "next/navigation";
+import apiUrl from "@/app/api/utils/apiUtils/apiUrl";
+import { jwtDecode } from "jwt-decode";
+
 
 const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const router = useRouter();
 
   let org_id = null;
   let token = null;
+  let email = null;
+
   if (typeof window !== "undefined") {
     org_id = localStorage.getItem("selectedAccountId");
     token = getToken();
+    if (token) {
+      const { email: userEmail } = jwtDecode(token);
+      email = userEmail;
+    }
   }
 
   const [isSingleModalOpen, setIsSingleModalOpen] = useState(false);
@@ -38,6 +47,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const [searchParams, setSearchParams] = useState({});
   const [total, setTotal] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [organizations, setOrganizations] = useState([]);
 
   const [basicFilters, setBasicFilters] = useState({
     name: "",
@@ -48,6 +58,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     serviceId: "",
     content: "",
     groupId: "",
+    organizationId: "",
   });
   const [dateFilters, setDateFilters] = useState({
     startDate: "",
@@ -72,6 +83,19 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const handleDateFilterChange = (key, val) =>
     setDateFilters((p) => ({ ...p, [key]: val }));
 
+  const fetchOrganizations = async () => {
+    try {
+      const response = await axios.get(`${apiUrl.GET_ACCOUNTS}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOrganizations(response.data || []);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+      const uniqueOrgIds = [...new Set(campaigns.map(c => c.org_id).filter(Boolean))];
+      setOrganizations(uniqueOrgIds.map(id => ({ id, name: `Organization ${id}` })));
+    }
+  };
+
   const handleApplyFilters = () => {
     const params = {};
 
@@ -87,6 +111,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     if (advancedFilters.content)
       params.ilike__content = advancedFilters.content;
     if (advancedFilters.groupId) params.eq__group_id = advancedFilters.groupId;
+    if (advancedFilters.organizationId) params.eq__org_id = advancedFilters.organizationId;
 
     // date filters
     if (dateFilters.startDate) {
@@ -111,6 +136,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       serviceId: "",
       content: "",
       groupId: "",
+      organizationId: "",
     });
     setDateFilters({ startDate: "", endDate: "" });
     setSearchParams({});
@@ -121,35 +147,39 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     setPaginationModel({ pageSize: 10, page: 0 });
   }, [campaignType]);
 
+  useEffect(() => {
+    fetchOrganizations();
+  }, [token]);
+
   const getCampaigns = async () => {
-    if (!org_id) return console.warn("org_id missing, skipping fetch");
+    if (!email) return console.warn("user email missing, skipping fetch");
     setLoading(true);
-
+  
     const hasFilters = Object.keys(searchParams).length > 0;
-
+  
+    const basePaging = hasFilters
+      ? { page: 1, limit: 10000 }
+      : { page: paginationModel.page + 1, limit: paginationModel.pageSize };
+  
     const params = {
-      org_id,
-      ...(hasFilters
-        ? { page: 1, limit: 10000 }
-        : { page: paginationModel.page + 1, limit: paginationModel.pageSize }
-      ),
+      ...basePaging,
+      email,
       ...searchParams,
     };
-
+  
     const now = new Date().toISOString();
     if (campaignType === "scheduled" && !params.gte__scheduled)
       params.gte__scheduled = now;
     if (campaignType === "completed" && !params.lte__scheduled)
       params.lte__scheduled = now;
-
+  
     try {
       const res = await GetSmsCampaigns(params);
       if (res.errors) console.error(res.errors);
       setCampaigns(res.data || []);
       setTotal(res.count || 0);
-
       if (hasFilters && paginationModel.page !== 0) {
-        setPaginationModel((prev) => ({ ...prev, page: 0 }));
+        setPaginationModel(prev => ({ ...prev, page: 0 }));
       }
     } catch (e) {
       console.error("Fetch error:", e);
@@ -157,6 +187,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     getCampaigns();
@@ -217,6 +248,16 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     },
     { field: "service_id", headerName: "SENDER ID", flex: 1, minWidth: 120 },
     { field: "group_id", headerName: "GROUP ID", flex: 1, minWidth: 100 },
+    {
+      field: "org_id", 
+      headerName: "ORGANIZATION", 
+      flex: 1, 
+      minWidth: 120,
+      renderCell: (params) => {
+        const org = organizations.find(o => o.id === params.value);
+        return <span>{org ? org.name : params.value || "N/A"}</span>;
+      }
+    },
     {
       field: "createdat",
       headerName: "DATE CREATED",
@@ -317,7 +358,26 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
         {showAdvancedFilters && (
           <div className="border-t pt-4">
             <h4 className="text-md font-medium mb-3">Advanced Filters</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Organization
+                </label>
+                <select
+                  value={advancedFilters.organizationId}
+                  onChange={(e) =>
+                    handleAdvancedFilterChange("organizationId", e.target.value)
+                  }
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">All Organizations</option>
+                  {organizations.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Group ID
@@ -400,6 +460,11 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
         <div className="flex items-center space-x-4">
           <p className="font-medium text-lg">{getDisplayTitle()}</p>
           <span className="text-sm text-gray-600">Total: {total}</span>
+          {advancedFilters.organizationId && (
+            <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
+              Filtered by Organization: {organizations.find(o => o.id === advancedFilters.organizationId)?.name || advancedFilters.organizationId}
+            </span>
+          )}
         </div>
         <div className="ml-auto flex space-x-4">
           <PeakButton
