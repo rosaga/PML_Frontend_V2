@@ -23,7 +23,6 @@ import { useRouter } from "next/navigation";
 import apiUrl from "@/app/api/utils/apiUtils/apiUrl";
 import { jwtDecode } from "jwt-decode";
 
-
 const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const router = useRouter();
 
@@ -44,15 +43,17 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams, setSearchParams] = useState({});
   const [total, setTotal] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [organizations, setOrganizations] = useState([]);
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
-  const [basicFilters, setBasicFilters] = useState({
+  const [filters, setFilters] = useState({
+    // Basic filters
     name: "",
-  });
-  const [advancedFilters, setAdvancedFilters] = useState({
+    startDate: "",
+    endDate: "",
+    // Advanced filters
     id: "",
     description: "",
     serviceId: "",
@@ -60,10 +61,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     groupId: "",
     organizationId: "",
   });
-  const [dateFilters, setDateFilters] = useState({
-    startDate: "",
-    endDate: "",
-  });
+
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
     page: 0,
@@ -76,12 +74,9 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     setIsBulkModalOpen(false);
   };
 
-  const handleBasicFilterChange = (key, val) =>
-    setBasicFilters((p) => ({ ...p, [key]: val }));
-  const handleAdvancedFilterChange = (key, val) =>
-    setAdvancedFilters((p) => ({ ...p, [key]: val }));
-  const handleDateFilterChange = (key, val) =>
-    setDateFilters((p) => ({ ...p, [key]: val }));
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
 
   const fetchOrganizations = async () => {
     try {
@@ -91,46 +86,77 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       setOrganizations(response.data || []);
     } catch (error) {
       console.error('Error fetching organizations:', error);
-      const uniqueOrgIds = [...new Set(campaigns.map(c => c.org_id).filter(Boolean))];
-      setOrganizations(uniqueOrgIds.map(id => ({ id, name: `Organization ${id}` })));
+      setOrganizations([]);
     }
+  };
+
+  const buildServerFilters = () => {
+    const serverParams = {};
+    
+    if (filters.name.trim()) {
+      serverParams['like__name'] = filters.name.trim();
+    }
+    
+    if (filters.startDate) {
+      const startDate = new Date(filters.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      serverParams['gte__createdat'] = startDate.toISOString();
+    }
+    
+    if (filters.endDate) {
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      serverParams['lte__createdat'] = endDate.toISOString();
+    }
+
+    // Advanced filters
+    if (filters.id.trim()) {
+      serverParams['eq__id'] = filters.id.trim();
+    }
+    
+    if (filters.description.trim()) {
+      serverParams['like__description'] = filters.description.trim();
+    }
+    
+    if (filters.serviceId.trim()) {
+      serverParams['eq__service_id'] = filters.serviceId.trim();
+    }
+    
+    if (filters.content.trim()) {
+      serverParams['like__content'] = filters.content.trim();
+    }
+    
+    if (filters.groupId.trim()) {
+      serverParams['eq__group_id'] = filters.groupId.trim();
+    }
+    
+    if (filters.organizationId.trim()) {
+      serverParams['eq__org_id'] = filters.organizationId.trim();
+    }
+
+    return serverParams;
+  };
+
+  const checkIfHasActiveFilters = () => {
+    return Object.values(filters).some(value => 
+      typeof value === 'string' ? value.trim() !== '' : value !== ''
+    );
   };
 
   const handleApplyFilters = () => {
-    const params = {};
-
-    // basic filters
-    if (basicFilters.name) params.like__name = basicFilters.name;
-
-    // advanced filters
-    if (advancedFilters.id) params.eq__id = advancedFilters.id;
-    if (advancedFilters.description)
-      params.ilike__description = advancedFilters.description;
-    if (advancedFilters.serviceId)
-      params.eq__service_id = advancedFilters.serviceId;
-    if (advancedFilters.content)
-      params.ilike__content = advancedFilters.content;
-    if (advancedFilters.groupId) params.eq__group_id = advancedFilters.groupId;
-    if (advancedFilters.organizationId) params.eq__org_id = advancedFilters.organizationId;
-
-    // date filters
-    if (dateFilters.startDate) {
-      const startDate = new Date(dateFilters.startDate);
-      startDate.setHours(0, 0, 0, 0);
-      params.gte__scheduled = startDate.toISOString();
-    }
-    if (dateFilters.endDate) {
-      const endDate = new Date(dateFilters.endDate);
-      endDate.setHours(23, 59, 59, 999);
-      params.lte__scheduled = endDate.toISOString();
-    }
-
-    setSearchParams(params);
+    const hasFilters = checkIfHasActiveFilters();
+    setHasActiveFilters(hasFilters);
+    
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
+    
+    getCampaigns(true);
   };
 
   const handleClearAllFilters = () => {
-    setBasicFilters({ name: "" });
-    setAdvancedFilters({
+    setFilters({
+      name: "",
+      startDate: "",
+      endDate: "",
       id: "",
       description: "",
       serviceId: "",
@@ -138,65 +164,74 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       groupId: "",
       organizationId: "",
     });
-    setDateFilters({ startDate: "", endDate: "" });
-    setSearchParams({});
+    setHasActiveFilters(false);
+    setPaginationModel({ pageSize: 10, page: 0 });
   };
 
   useEffect(() => {
     handleClearAllFilters();
-    setPaginationModel({ pageSize: 10, page: 0 });
   }, [campaignType]);
 
   useEffect(() => {
     fetchOrganizations();
   }, [token]);
 
-  const getCampaigns = async () => {
-    if (!email) return console.warn("user email missing, skipping fetch");
+  const getCampaigns = async (isFilterChange = false) => {
+    if (!email) {
+      console.warn("user email missing, skipping fetch");
+      return;
+    }
+    
     setLoading(true);
-  
-    const hasFilters = Object.keys(searchParams).length > 0;
-  
-    const basePaging = hasFilters
-      ? { page: 1, limit: 10000 }
-      : { page: paginationModel.page + 1, limit: paginationModel.pageSize };
-  
-    const params = {
-      ...basePaging,
-      email,
-      ...searchParams,
-    };
-  
-    const now = new Date().toISOString();
-    if (campaignType === "scheduled" && !params.gte__scheduled)
-      params.gte__scheduled = now;
-    if (campaignType === "completed" && !params.lte__scheduled)
-      params.lte__scheduled = now;
-  
+
     try {
+      const params = {
+        page: paginationModel.page + 1,
+        limit: paginationModel.pageSize,
+        email,
+        orderby: "createdat DESC",
+      };
+
+      const now = new Date().toISOString();
+      if (campaignType === "scheduled") {
+        params['gte__scheduled'] = now;
+      } else if (campaignType === "completed") {
+        params['lte__scheduled'] = now;
+      }
+
+      const serverFilters = buildServerFilters();
+      Object.assign(params, serverFilters);
+
+      console.log("Fetching campaigns with params:", params);
+
       const res = await GetSmsCampaigns(params);
-      if (res.errors) console.error(res.errors);
-      setCampaigns(res.data || []);
-      setTotal(res.count || 0);
-      if (hasFilters && paginationModel.page !== 0) {
-        setPaginationModel(prev => ({ ...prev, page: 0 }));
+      
+      if (res.errors) {
+        console.error("API errors:", res.errors);
+        setCampaigns([]);
+        setTotal(0);
+      } else {
+        setCampaigns(res.data || []);
+        setTotal(res.count || 0);
       }
     } catch (e) {
       console.error("Fetch error:", e);
+      setCampaigns([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
   };
-  
 
   useEffect(() => {
     getCampaigns();
   }, [
-    isSingleModalOpen,
-    isBulkModalOpen,
-    searchParams,
+    email,
     campaignType,
     paginationModel,
+    isSingleModalOpen,
+    isBulkModalOpen,
+    hasActiveFilters,
   ]);
 
   const getDisplayTitle = () => {
@@ -312,10 +347,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
             </label>
             <input
               type="text"
-              value={basicFilters.name}
-              onChange={(e) =>
-                handleBasicFilterChange("name", e.target.value)
-              }
+              value={filters.name}
+              onChange={(e) => handleFilterChange("name", e.target.value)}
               className="w-full p-2 border rounded"
               placeholder="Search campaign name..."
             />
@@ -324,10 +357,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
             <label className="block text-sm font-medium mb-1">Start Date</label>
             <input
               type="date"
-              value={dateFilters.startDate}
-              onChange={(e) =>
-                handleDateFilterChange("startDate", e.target.value)
-              }
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange("startDate", e.target.value)}
               className="w-full p-2 border rounded"
             />
           </div>
@@ -335,29 +366,37 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
             <label className="block text-sm font-medium mb-1">End Date</label>
             <input
               type="date"
-              value={dateFilters.endDate}
-              onChange={(e) =>
-                handleDateFilterChange("endDate", e.target.value)
-              }
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange("endDate", e.target.value)}
               className="w-full p-2 border rounded"
             />
           </div>
         </div>
 
-        {/* Advanced */}
+        {/* Advanced Filters */}
         {showAdvancedFilters && (
           <div className="border-t pt-4">
             <h4 className="text-md font-medium mb-3">Advanced Filters</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Campaign ID
+                </label>
+                <input
+                  type="text"
+                  value={filters.id}
+                  onChange={(e) => handleFilterChange("id", e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="Enter campaign ID"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Organization
                 </label>
                 <select
-                  value={advancedFilters.organizationId}
-                  onChange={(e) =>
-                    handleAdvancedFilterChange("organizationId", e.target.value)
-                  }
+                  value={filters.organizationId}
+                  onChange={(e) => handleFilterChange("organizationId", e.target.value)}
                   className="w-full p-2 border rounded"
                 >
                   <option value="">All Organizations</option>
@@ -374,10 +413,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
                 </label>
                 <input
                   type="text"
-                  value={advancedFilters.groupId}
-                  onChange={(e) =>
-                    handleAdvancedFilterChange("groupId", e.target.value)
-                  }
+                  value={filters.groupId}
+                  onChange={(e) => handleFilterChange("groupId", e.target.value)}
                   className="w-full p-2 border rounded"
                   placeholder="Enter group ID"
                 />
@@ -388,10 +425,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
                 </label>
                 <input
                   type="text"
-                  value={advancedFilters.description}
-                  onChange={(e) =>
-                    handleAdvancedFilterChange("description", e.target.value)
-                  }
+                  value={filters.description}
+                  onChange={(e) => handleFilterChange("description", e.target.value)}
                   className="w-full p-2 border rounded"
                   placeholder="Search description..."
                 />
@@ -402,10 +437,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
                 </label>
                 <input
                   type="text"
-                  value={advancedFilters.serviceId}
-                  onChange={(e) =>
-                    handleAdvancedFilterChange("serviceId", e.target.value)
-                  }
+                  value={filters.serviceId}
+                  onChange={(e) => handleFilterChange("serviceId", e.target.value)}
                   className="w-full p-2 border rounded"
                   placeholder="Enter sender ID"
                 />
@@ -416,10 +449,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
                 </label>
                 <input
                   type="text"
-                  value={advancedFilters.content}
-                  onChange={(e) =>
-                    handleAdvancedFilterChange("content", e.target.value)
-                  }
+                  value={filters.content}
+                  onChange={(e) => handleFilterChange("content", e.target.value)}
                   className="w-full p-2 border rounded"
                   placeholder="Search message content..."
                 />
@@ -428,17 +459,17 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
           </div>
         )}
 
-        {/* buttons */}
+        {/* Filter Buttons */}
         <div className="flex space-x-2">
           <button
             onClick={handleApplyFilters}
-            className="bg-[#f97316] text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-[#f97316] text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
           >
             Apply Filters
           </button>
           <button
             onClick={handleClearAllFilters}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
           >
             Clear All
           </button>
@@ -450,9 +481,14 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
         <div className="flex items-center space-x-4">
           <p className="font-medium text-lg">{getDisplayTitle()}</p>
           <span className="text-sm text-gray-600">Total: {total}</span>
-          {advancedFilters.organizationId && (
+          {hasActiveFilters && (
+            <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
+              Filters Applied
+            </span>
+          )}
+          {filters.organizationId && (
             <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
-              Filtered by Organization: {organizations.find(o => o.id === advancedFilters.organizationId)?.name || advancedFilters.organizationId}
+              Org: {organizations.find(o => o.id === filters.organizationId)?.name || filters.organizationId}
             </span>
           )}
         </div>
@@ -484,12 +520,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             pageSizeOptions={[5, 10, 25, 50]}
-            paginationMode={
-              Object.keys(searchParams).length > 0 ? "client" : "server"
-            }
-            rowCount={
-              Object.keys(searchParams).length > 0 ? undefined : total
-            }
+            paginationMode="server" // Always server-side pagination
+            rowCount={total}
             sx={{
               "& .MuiDataGrid-columnHeader": { backgroundColor: "#F1F2F3" },
               "&.MuiDataGrid-root": { border: "none" },
