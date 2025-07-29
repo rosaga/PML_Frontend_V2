@@ -249,16 +249,6 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     { field: "service_id", headerName: "SENDER ID", flex: 1, minWidth: 120 },
     { field: "group_id", headerName: "GROUP ID", flex: 1, minWidth: 100 },
     {
-      field: "org_id", 
-      headerName: "ORGANIZATION", 
-      flex: 1, 
-      minWidth: 120,
-      renderCell: (params) => {
-        const org = organizations.find(o => o.id === params.value);
-        return <span>{org ? org.name : params.value || "N/A"}</span>;
-      }
-    },
-    {
       field: "createdat",
       headerName: "DATE CREATED",
       flex: 1,
