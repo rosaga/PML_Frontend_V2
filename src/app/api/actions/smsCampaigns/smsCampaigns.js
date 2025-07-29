@@ -9,7 +9,7 @@ export async function fetchAllCampaigns(baseParams) {
   const all  = [];
 
   while (true) {
-    const res = await GetSmsCampaigns({ ...baseParams, page, limit });
+    const res = await GetSmsCampaigns({ ...baseParams, page, limit, orderby: "id DESC" });
     all.push(...(res.data ?? []));
 
     if (all.length >= (res.count ?? all.length) || (res.data?.length ?? 0) < limit) {
@@ -24,34 +24,45 @@ export async function fetchAllCampaigns(baseParams) {
 export async function GetSmsCampaigns(params) {
   const {
     org_id,
+    email,
     page,
     limit,
     status,
     year,
     month,
     day,
+    orderby,
+    // Server-side filter parameters
+    like__name,
+    like__description,
+    like__content,
+    eq__id,
+    eq__service_id,
+    eq__group_id,
+    eq__org_id,
+    gte__createdat,
+    lte__createdat,
+    gte__scheduled,
+    lte__scheduled,
     ...additionalParams
   } = params;
 
   let campaignUrl = `${MESSAGING_API_BASE_URL}/campaign/list`;
-  
   const queryParams = new URLSearchParams();
-  
-  if (org_id) {
-    queryParams.append('org_id', org_id);
+
+  // basic parameters
+  if (email) {
+    queryParams.append('eq__createdby', email);
   }
-  
-  if (page) {
+  if (page != null) {
     queryParams.append('page', page);
   }
-  if (limit) {
+  if (limit != null) {
     queryParams.append('limit', limit);
   }
-  
   if (status) {
     queryParams.append('status', status);
   }
-  
   if (year) {
     queryParams.append('year', year);
   }
@@ -61,23 +72,62 @@ export async function GetSmsCampaigns(params) {
   if (day) {
     queryParams.append('day', day);
   }
-  
-  Object.keys(additionalParams).forEach(key => {
-    if (additionalParams[key]) {
-      queryParams.append(key, additionalParams[key]);
+  if (orderby) {
+    queryParams.append('orderby', orderby);
+  }
+
+  // server filters
+  if (like__name) {
+    queryParams.append('like__name', like__name);
+  }
+  if (like__description) {
+    queryParams.append('like__description', like__description);
+  }
+  if (like__content) {
+    queryParams.append('like__content', like__content);
+  }
+  if (eq__id) {
+    queryParams.append('eq__id', eq__id);
+  }
+  if (eq__service_id) {
+    queryParams.append('eq__service_id', eq__service_id);
+  }
+  if (eq__group_id) {
+    queryParams.append('eq__group_id', eq__group_id);
+  }
+  if (eq__org_id) {
+    queryParams.append('eq__org_id', eq__org_id);
+  }
+  if (gte__createdat) {
+    queryParams.append('gte__createdat', gte__createdat);
+  }
+  if (lte__createdat) {
+    queryParams.append('lte__createdat', lte__createdat);
+  }
+  if (gte__scheduled) {
+    queryParams.append('gte__scheduled', gte__scheduled);
+  }
+  if (lte__scheduled) {
+    queryParams.append('lte__scheduled', lte__scheduled);
+  }
+
+  Object.entries(additionalParams).forEach(([key, val]) => {
+    if (val != null && val !== '') {
+      queryParams.append(key, val);
     }
   });
-  
+
   if (queryParams.toString()) {
     campaignUrl += `?${queryParams.toString()}`;
   }
 
+  console.log('API Request URL:', campaignUrl);
+
   try {
     const config = await authHeaders();
-    
     const res = await axios.get(campaignUrl, config);
-    
-    if (res.data && res.status === 200) {
+
+    if (res.status === 200 && res.data) {
       console.log("SMS Campaigns Response:", res.data);
       return {
         data: res.data.data || [],
@@ -85,11 +135,10 @@ export async function GetSmsCampaigns(params) {
         total: res.data.count || 0
       };
     }
-    
+
     return res.data;
   } catch (error) {
     console.error("Error fetching SMS campaigns:", error);
-    
     if (error.response) {
       return {
         errors: {
@@ -99,7 +148,6 @@ export async function GetSmsCampaigns(params) {
         },
       };
     }
-    
     return {
       errors: {
         _error: 'Network error. Please try again.',
@@ -107,6 +155,8 @@ export async function GetSmsCampaigns(params) {
     };
   }
 }
+
+
 
 export async function CreateSmsCampaign(formValues) {
   const newCampaign = {
