@@ -56,6 +56,9 @@ const SendBulkModal = ({ closeModal }) => {
   const [groups, setGroups] = useState([]);
   const [searchParams, setSearchParams] = useState({});
   const [charCount, setCharCount] = useState(0);
+  const [repeatInterval, setRepeatInterval] = useState("");
+  const [repeatCount, setRepeatCount] = useState(0);
+
 
 
   const [page, setPage] = useState(1);
@@ -91,7 +94,9 @@ const SendBulkModal = ({ closeModal }) => {
       content: formattedContent,
       scheduled: value,
       channel: selectedChannel,
-      organization_id: org_id
+      organization_id: org_id,
+      repeat_count: schedule ? repeatCount : 0,
+      repeat_interval: schedule ? repeatInterval : ""
   };
 
     const res = broadcastMessages({selectedSenderId,newSms}).then((res) => {
@@ -341,6 +346,54 @@ const SendBulkModal = ({ closeModal }) => {
                     />
                   </div>
                 )}
+
+                {schedule && (
+                  <>
+                    <div className="flex space-x-4 mt-4">
+                      <div className="flex-1">
+                        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                          Repeat Interval
+                        </label>
+                        <select
+                          value={repeatInterval}
+                          onChange={(e) => setRepeatInterval(e.target.value)}
+                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        >
+                          <option value="">Select Interval</option>
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                        </select>
+                      </div>
+
+                      <div className="flex-1">
+                        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                          Repeat Count
+                        </label>
+                        <input
+                          type="number"
+                          value={repeatCount}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+
+                            if (repeatInterval === "daily" && val > 30) {
+                              toast.error("Daily repeats cannot exceed 30");
+                              return;
+                            }
+                            if (repeatInterval === "weekly" && val > 4) {
+                              toast.error("Weekly repeats cannot exceed 4");
+                              return;
+                            }
+
+                            setRepeatCount(val);
+                          }}
+                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
 
                 <div className="flex space-x-2 mt-4">
                   <button
