@@ -47,7 +47,7 @@ export async function CreateCampaign(formValues) {
 
   export async function GetCampaigns(org_id,page,pageSize,searchParams ) {
 
-    let campaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/campaign?orderby=createdat DESC`
+    let campaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/campaign?orderby=created_at DESC`
 
     if (page) {
     campaignUrl += `&page=${page}`;
@@ -88,7 +88,7 @@ export async function CreateCampaign(formValues) {
 
     let groupUrl
     if (page || pageSize) {
-     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?orderby=createdat DESC&eq__campaign_id=${campaing_id}&size=${pageSize}&page=${page}`;
+     groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?orderby=created_at DESC&eq__campaign_id=${campaing_id}&size=${pageSize}&page=${page}`;
     }else{
       groupUrl = `${apiUrl.GET_CONTACTS}/${org_id}/reward?eq__campaign_id=${campaing_id}`;
     }
@@ -122,9 +122,9 @@ export async function CreateCampaign(formValues) {
 
     let recentCampaignUrl
     if (page || pageSize) {
-      recentCampaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?orderby=createdat DESCeq__groups.status=ACTIVE&size=${pageSize}&page=${page}`;
+      recentCampaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?orderby=created_at DESCeq__groups.status=ACTIVE&size=${pageSize}&page=${page}`;
     }else{
-      recentCampaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?orderby=createdat DESCeq__groups.status=ACTIVE`;
+      recentCampaignUrl = `${apiUrl.GET_CONTACTS}/${org_id}/activecampaigns?orderby=created_at DESCeq__groups.status=ACTIVE`;
     }
   
     try {

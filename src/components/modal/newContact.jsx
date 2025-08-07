@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { contactCreate } from "@/app/api/actions/contact/contact";
 
-const NewContactModal = ({ closeModal }) => {
+const NewContactModal = ({ closeModal, onSuccess, hideGoToButton = false }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [, , service] = pathname.split("/");
@@ -36,6 +36,10 @@ const NewContactModal = ({ closeModal }) => {
       if (res.status === 201) {
         setSuccessMessage(`Contact ${phoneNumber} has been created`);
         setErrorMessage("");
+        
+        if (onSuccess && res.data) {
+          onSuccess(res.data);
+        }
       } else if (res.status === 400) {
         setErrorMessage("Contact already exists.");
         setSuccessMessage("");
@@ -77,6 +81,11 @@ const NewContactModal = ({ closeModal }) => {
     router.push(target);
   };
 
+  const handleSuccessClose = () => {
+    setSuccessMessage("");
+    closeModal();
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (event.target.id === "authentication-modal") {
@@ -103,23 +112,22 @@ const NewContactModal = ({ closeModal }) => {
               <p className="mb-6 text-gray-900 dark:text-white">
                 {successMessage}
               </p>
-              <div className="flex space-x-2">
+              <div className={`flex space-x-2 ${hideGoToButton ? 'justify-center' : ''}`}>
                 <button
-                  onClick={() => {
-                    setSuccessMessage("");
-                    closeModal();
-                  }}
-                  className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5"
+                  onClick={handleSuccessClose}
+                  className={`${hideGoToButton ? 'w-auto px-8' : 'w-full'} text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5`}
                 >
-                  Cancel
+                  {hideGoToButton ? 'Close' : 'Cancel'}
                 </button>
-                <button
-                  onClick={goToDispatch}
-                  className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5"
-                >
-                  Go to{" "}
-                  {service.charAt(0).toUpperCase() + service.slice(1)} Dispatch
-                </button>
+                {!hideGoToButton && (
+                  <button
+                    onClick={goToDispatch}
+                    className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5"
+                  >
+                    Go to{" "}
+                    {service.charAt(0).toUpperCase() + service.slice(1)} Dispatch
+                  </button>
+                )}
               </div>
             </div>
           ) : errorMessage ? (
