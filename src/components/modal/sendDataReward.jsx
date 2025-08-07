@@ -45,28 +45,91 @@ const SendDataRewardModal = ({ closeModal }) => {
 
     const fetchAndFilterContacts = async () => {
       try {
-        const contacts = await fetchContacts("", org_id);
-        const query = searchQuery.toLowerCase();
+        const query = searchQuery.trim();
+        
+        const isPhoneNumber = /^[\d+\-\s()]+$/.test(query);
+        
+        if (!isPhoneNumber || query.length < 4) {
+          setFilteredContacts([]);
+          setShowDropdown(false);
+          return;
+        }
+        
+        let filterQuery = "";
+        
+        filterQuery = `like__mobile_no=${encodeURIComponent(query)}`;
+        
+        let contacts = await fetchContacts(filterQuery, org_id);
+        
+        /*
 
-        const filtered = contacts.filter((contact) => {
-          const byNumber = contact.mobile_no?.includes(query);
-          const first = contact.metadata?.FIRSTNAME?.toLowerCase() || "";
-          const last = contact.metadata?.LASTNAME?.toLowerCase() || "";
-          const byName = `${first} ${last}`.includes(query);
-          return byNumber || byName;
-        });
+        filterQuery = `eq__metadata->FIRSTNAME=${encodeURIComponent(query)}`;
+        
+        let contacts = await fetchContacts(filterQuery, org_id);
+        
+        if (contacts.length === 0 && !isPhoneNumber) {
+          const lastnameFilter = `eq__metadata->LASTNAME=${encodeURIComponent(query)}`;
+          contacts = await fetchContacts(lastnameFilter, org_id);
+        }
+        
+        if (contacts.length === 0 && !isPhoneNumber) {
+          const allContacts = await fetchContacts("", org_id);
+          const searchLower = query.toLowerCase();
+          
+          contacts = allContacts.filter((contact) => {
+            const first = contact.metadata?.FIRSTNAME?.toLowerCase() || "";
+            const last = contact.metadata?.LASTNAME?.toLowerCase() || "";
+            const mobile = contact.mobile_no || "";
+            const fullName = `${first} ${last}`.trim();
+            
+            return fullName.includes(searchLower) ||
+                  first.includes(searchLower) ||
+                  last.includes(searchLower) ||
+                  mobile.includes(query);
+          });
+        }
+        */
 
-        setFilteredContacts(filtered);
-        setShowDropdown(filtered.length > 0);
+        setFilteredContacts(contacts);
+        setShowDropdown(contacts.length > 0);
         setContactSelected(false);
       } catch (err) {
         console.error("Failed to fetch contacts", err);
-        setFilteredContacts([]);
-        setShowDropdown(false);
+        try {
+          const allContacts = await fetchContacts("", org_id);
+          const searchQuery_trimmed = searchQuery.trim();
+          
+          const filtered = allContacts.filter((contact) => {
+            const mobile = contact.mobile_no || "";
+            return mobile.includes(searchQuery_trimmed);
+          });
+          
+          /*
+          const filtered = allContacts.filter((contact) => {
+            const first = contact.metadata?.FIRSTNAME?.toLowerCase() || "";
+            const last = contact.metadata?.LASTNAME?.toLowerCase() || "";
+            const mobile = contact.mobile_no || "";
+            const fullName = `${first} ${last}`.trim();
+            
+            return fullName.includes(searchLower) ||
+                  first.includes(searchLower) ||
+                  last.includes(searchLower) ||
+                  mobile.includes(searchQuery.trim());
+          });
+          */
+          
+          setFilteredContacts(filtered);
+          setShowDropdown(filtered.length > 0);
+        } catch (fallbackErr) {
+          console.error("Fallback filtering also failed", fallbackErr);
+          setFilteredContacts([]);
+          setShowDropdown(false);
+        }
       }
     };
 
-    fetchAndFilterContacts();
+    const timeoutId = setTimeout(fetchAndFilterContacts, 300);
+    return () => clearTimeout(timeoutId);
   }, [searchQuery, org_id, contactSelected]);
 
   const handleSelect = (contact) => {
@@ -200,7 +263,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                     htmlFor="mobile"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
-                    Search Contact
+                    Search Contact by Phone Number
                   </label>
                   <input
                     id="mobile"
@@ -209,7 +272,7 @@ const SendDataRewardModal = ({ closeModal }) => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={handleInputFocus}
                     className={`bg-gray-50 border ${contactSelected ? 'border-green-500' : 'border-gray-300'} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5`}
-                    placeholder="Select a Contact"
+                    placeholder="Enter at least 4 digits of phone number"
                   />
                   {showDropdown && (
                     <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-56 overflow-y-auto shadow-lg">
