@@ -207,89 +207,88 @@ const NewGroupContactModal = ({ closeModal, existingGroupId, groupName }) => {
     
   };
 
-  const handleAddContactToGroup = async (e) => {
-    e.preventDefault();
+const handleAddContactToGroup = async (e) => {
+  e.preventDefault();
+  
+  if (!selectedContact || !selectedContact.id) {
+    setErrorMessage("Please select a contact");
+    return;
+  }
+
+  if (!existingGroupId) {
+    setErrorMessage("No group selected");
+    return;
+  }
+
+  try {
+    const payload = [{
+      contact_id: selectedContact.id,
+      group_id: existingGroupId
+    }];
+
+    const response = await attachContactToGroup(org_id, existingGroupId, payload);
     
-    if (!selectedContact || !selectedContact.id) {
-      setErrorMessage("Please select a contact");
-      return;
-    }
-
-    if (!existingGroupId) {
-      setErrorMessage("No group selected");
-      return;
-    }
-
-    try {
-      const payload = [{
-        contact_id: selectedContact.id,
-        group_id: existingGroupId
-      }];
-
-      const response = await attachContactToGroup(org_id, payload);
-      
-      if (response.status === 200) {
-        toast.success("Contact added to group successfully");
-        setSuccessMessage(`Contact added to ${groupName} successfully`);
-        setErrorMessage("");
-      } else {
-        toast.error("Failed to add contact to group");
-        setErrorMessage("Failed to add contact to group. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error adding contact to group:", error);
+    if (response.status === 200) {
+      toast.success("Contact added to group successfully");
+      setSuccessMessage(`Contact added to ${groupName} successfully`);
+      setErrorMessage("");
+    } else {
+      toast.error("Failed to add contact to group");
       setErrorMessage("Failed to add contact to group. Please try again.");
     }
-  };
+  } catch (error) {
+    console.error("Error adding contact to group:", error);
+    setErrorMessage("Failed to add contact to group. Please try again.");
+  }
+};
 
-  const handleCsvUpload = async (e) => {
-    e.preventDefault();
+const handleCsvUpload = async (e) => {
+  e.preventDefault();
 
-    if (!csvFile) {
-      setErrorMessage("Please select a CSV file");
+  if (!csvFile) {
+    setErrorMessage("Please select a CSV file");
+    return;
+  }
+
+  if (!existingGroupId) {
+    setErrorMessage("No group selected");
+    return;
+  }
+
+  try {
+    setIsProcessingCsv(true);
+    
+    await validateCsvFile(csvFile);
+
+    const formData = new FormData();
+    formData.append('contacts', csvFile);
+    
+    const response = await attachGroupToGroup(org_id, existingGroupId, formData);
+
+    if (response.status === 201 || response.status === 200) {
+      toast.success("CSV contacts uploaded successfully");
+      setSuccessMessage(`Contacts from CSV added to ${groupName} successfully`);
+      setErrorMessage("");
+      setShowValidationErrors(false);
+    } else {
+      toast.error("Failed to upload CSV contacts");
+      setErrorMessage("Failed to upload CSV contacts. Please try again.");
+    }
+  } catch (error) {
+    if (error.invalidPhones || error.duplicates) {
       return;
     }
-
-    if (!existingGroupId) {
-      setErrorMessage("No group selected");
-      return;
+    
+    if (error.response && error.response.status === 400) {
+      setErrorMessage("Wrong file type selected. Please use CSV format.");
+    } else {
+      console.error("Error uploading CSV contacts:", error);
+      setErrorMessage(typeof error === 'string' ? error : "Failed to upload CSV contacts. Please try again.");
     }
-
-    try {
-      setIsProcessingCsv(true);
-      
-      await validateCsvFile(csvFile);
-
-      const formData = new FormData();
-      formData.append('file', csvFile);
-      formData.append('group_id', existingGroupId);
-
-      const response = await attachGroupToGroup(org_id, formData);
-
-      if (response.status === 200) {
-        toast.success("CSV contacts uploaded successfully");
-        setSuccessMessage(`Contacts from CSV added to ${groupName} successfully`);
-        setErrorMessage("");
-        setShowValidationErrors(false);
-      } else {
-        toast.error("Failed to upload CSV contacts");
-        setErrorMessage("Failed to upload CSV contacts. Please try again.");
-      }
-    } catch (error) {
-      if (error.invalidPhones || error.duplicates) {
-        return;
-      }
-      
-      if (error.response && error.response.status === 400) {
-        setErrorMessage("Wrong file type selected. Please use CSV format.");
-      } else {
-        console.error("Error uploading CSV contacts:", error);
-        setErrorMessage(typeof error === 'string' ? error : "Failed to upload CSV contacts. Please try again.");
-      }
-    } finally {
-      setIsProcessingCsv(false);
-    }
-  };
+  } finally {
+    setIsProcessingCsv(false);
+  }
+};
 
   const goToCampaign = () => {
     closeModal();
