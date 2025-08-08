@@ -80,24 +80,23 @@ const GroupContactDetails = ({ groupID, groupName }) => {
 
       if (response.status === 204) {
         toast.success(`Contact ${contactMobile} removed from ${groupName} successfully`);
-        
-        setContacts(prevContacts => 
-          prevContacts.filter(contact => contact.id !== contactId)
-        );
+        await getDetails();
+
       } else if (response.errors) {
         toast.error(response.errors._error || "Failed to remove contact from group");
       }
-    } catch (error) {
-      console.error("Error removing contact from group:", error);
+    } catch (err) {
+      console.error("Error removing contact from group:", err);
       toast.error("Failed to remove contact from group. Please try again.");
     } finally {
       setDeletingContacts(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(contactId);
-        return newSet;
+        const next = new Set(prev);
+        next.delete(contactId);
+        return next;
       });
     }
   };
+
 
   const cancelDelete = () => {
     setConfirmDelete(null);
@@ -170,15 +169,17 @@ const GroupContactDetails = ({ groupID, groupName }) => {
       flex: 0,
       minWidth: 80,
       renderCell: (params) => {
-        const isDeleting = deletingContacts.has(params.row.id);
-        const mobileNumber = params.row.contact?.mobile_no || params.row.mobile_no || 'Unknown';
-        
+        const contactIdForDelete = params.row.contact_id ?? params.row.contact?.id;
+        const isDeleting = deletingContacts.has(contactIdForDelete);
+        const mobileNumber =
+          params.row.contact?.mobile_no || params.row.mobile_no || "Unknown";
+
         return (
           <button
-            onClick={() => handleDeleteContact(params.row.id, mobileNumber)}
+            onClick={() => handleDeleteContact(contactIdForDelete, mobileNumber)}
             disabled={isDeleting}
             className={`p-1 rounded hover:bg-red-50 transition-colors ${
-              isDeleting ? 'opacity-50 cursor-not-allowed' : 'hover:text-red-600 cursor-pointer'
+              isDeleting ? "opacity-50 cursor-not-allowed" : "hover:text-red-600 cursor-pointer"
             }`}
             title={`Remove ${mobileNumber} from group`}
           >
@@ -189,7 +190,7 @@ const GroupContactDetails = ({ groupID, groupName }) => {
             )}
           </button>
         );
-      },
+      }
     },
   ];
 

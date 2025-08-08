@@ -125,14 +125,13 @@ export async function contactCreate(formValues) {
   }
 }
 
-
-export async function attachContactToGroup(org_id, contactGroupData) {
-  const attachUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group/contact`;
+export async function attachContactToGroup(org_id, group_id, contactGroupData) {
+  const attachUrl = `${apiUrl.GET_CONTACTS.replace('/contacts', '/organization')}/${org_id}/group/${group_id}/contact/attach`;
 
   try {
     const config = await authHeaders();
     
-    const response = await axios.post(attachUrl, contactGroupData, config);
+    const response = await axios.put(attachUrl, contactGroupData, config);
     
     if (response.status === 200) {
       console.log("Contacts attached to group successfully:", response.data);
@@ -156,29 +155,44 @@ export async function attachContactToGroup(org_id, contactGroupData) {
   }
 }
 
-export async function attachGroupToGroup(org_id, formData) {
-  const groupId = formData.get('group_id');
-  const url     = `${apiUrl.GET_CONTACTS}/${org_id}/group/${groupId}/contact/attach`;
+export async function attachGroupToGroup(org_id, group_id, formData) {
+  const attachUrl = `${apiUrl.GET_CONTACTS.replace('/contacts', '/organization')}/${org_id}/group/${group_id}/contact/attach`;
 
   try {
-    const config = await authHeaders();
-    return await axios.put(url, formData, {
-      headers: {
-        ...config.headers,
-        'Content-Type': 'multipart/form-data'
-      }
+    const cfg = await authHeaders();
+    const authHeader = cfg?.headers?.Authorization || cfg?.Authorization;
+
+    const response = await axios.put(attachUrl, formData, {
+      headers: authHeader ? { Authorization: authHeader } : undefined,
+      // Do NOT set Content-Type; the browser will add the multipart boundary.
     });
-  } catch (error) {
-    console.error('Error uploading CSV/XLSX to group:', error);
-    if (error.response) {
-      return { errors: { _error: 'The contacts could not be uploaded to the group.' } };
+
+    if (response.status === 200 || response.status === 201) {
+      console.log("CSV contacts uploaded successfully:", response.data);
     }
-    return { errors: { _error: 'Network error. Please try again.' } };
+
+    return response;
+  } catch (error) {
+    console.error("Error uploading CSV contacts:", error);
+    if (error.response) {
+      return {
+        errors: {
+          _error:
+            error.response.data?.msg ||
+            error.response.data?.error ||
+            "The CSV contacts could not be uploaded.",
+        },
+      };
+    }
+    return {
+      errors: { _error: "Network error. Please try again." },
+    };
   }
 }
 
+
 export async function removeContactFromGroup(org_id, group_id, contact_id) {
-  const url = `${apiUrl}/organization/${org_id}/groups/${group_id}/contacts/${contact_id}`;
+  const url = `${apiUrl.GET_CONTACTS}/${org_id}/groups/${group_id}/contacts/${contact_id}`;
   try {
     const config = await authHeaders();
     const response = await axios.delete(url, config);
@@ -208,48 +222,48 @@ export async function removeContactFromGroup(org_id, group_id, contact_id) {
 }
 
 export async function getGroupContacts(org_id, groupId, page, pageSize, searchParams) {
-  let groupContactsUrl = `${apiUrl.GET_CONTACTS}/${org_id}/group/contact`;
-  
-  if (groupId) {
-    groupContactsUrl += `?eq__group_id=${groupId}`;
+  if (!org_id || !groupId) {
+    return {
+      errors: { _error: 'org_id and groupId are required.' },
+    };
   }
-  
-  if (page) {
-    groupContactsUrl += `&page=${page}`;
-  }
-  if (pageSize) {
-    groupContactsUrl += `&size=${pageSize}`;
-  }
+
+  const baseUrl = `${apiUrl.GET_CONTACTS}/${org_id}/groups/${groupId}/contacts`;
+
+  // Build query params safely
+  const params = new URLSearchParams();
+  if (page !== undefined && page !== null) params.set('page', page);
+  if (pageSize !== undefined && pageSize !== null) params.set('size', pageSize);
+
   if (searchParams) {
-    const searchParamsString = new URLSearchParams(searchParams).toString();
-    groupContactsUrl += `&${searchParamsString}`;
+    const sp = new URLSearchParams(searchParams);
+    for (const [k, v] of sp.entries()) params.set(k, v);
   }
+
+  const url = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
 
   try {
     const config = await authHeaders();
-    const response = await axios.get(groupContactsUrl, config);
-    
+    const response = await axios.get(url, config);
+
     if (response.status === 200) {
-      console.log("Group contacts fetched successfully:", response.data);
+      console.log('Group contacts fetched successfully:', response.data);
     }
-    
+
     return response;
   } catch (error) {
     console.error('Error fetching group contacts:', error);
     if (error.response) {
       return {
-        errors: {
-          _error: 'The group contacts could not be fetched.',
-        },
+        errors: { _error: 'The group contacts could not be fetched.' },
       };
     }
     return {
-      errors: {
-        _error: 'Network error. Please try again.',
-      },
+      errors: { _error: 'Network error. Please try again.' },
     };
   }
 }
+
 
 export async function contactsUploadBatch(formValues) {
   const uploadContactsUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/contact/upload`;
