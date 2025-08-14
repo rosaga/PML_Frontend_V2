@@ -29,6 +29,7 @@ const GroupsTable = () => {
   const [loading, setLoading] = useState(true);
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
   const [groupID, setGroupID] = useState(null);
+  const [groupName, setGroupName] = useState("");
   const [isDeleted, setIsDeleted] = useState(false);
   const [total, setTotal] = useState(0);
   const [searchParams, setSearchParams] = useState({});
@@ -145,17 +146,17 @@ const GroupsTable = () => {
     },
   ];
 
-  const groupDetails = (id) => {
-
+  const groupDetails = (id, name) => { 
     setGroupDetailsOpen(true);
     setGroupID(id);
-    
+    setGroupName(name); 
   };
+
   return (
     <>
     <ToastContainer />
       {isModalOpen && <NewGroupModal closeModal={closeModal} />}
-      {groupDetailsOpen ? <GroupContactDetails groupID={groupID} />
+      {groupDetailsOpen ? <GroupContactDetails groupID={groupID} groupName={groupName} />
       :
       <>
       <div className="flex flex-col md:flex-row items-center justify-between">
@@ -185,7 +186,7 @@ const GroupsTable = () => {
             loading={loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
-            onRowClick={(params) => groupDetails(params.row.id)}
+            onRowClick={(params) => groupDetails(params.row.id, params.row.name)}
             rowCount={total}
             paginationMode="server"
             sx={{
