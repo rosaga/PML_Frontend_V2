@@ -16,6 +16,7 @@ import GroupDashboard from "@/components/rewards-tables/groupDashboard";
 import { GetDashboardSummary, GetDataBalance } from "@/app/api/actions/dashboard/dashboard";
 import { useRouter } from "next/navigation";
 import CircularProgress from "@mui/material/CircularProgress";
+import TrendsVisualization from '@/components/dashboard/TrendsVisualization';
 
 interface RowData {
   id: number;
@@ -315,6 +316,14 @@ const Dashboard = () => {
                   </div>
                   <div className="text-2xl font-bold">0</div>
                 </div>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <div className="p-4 shadow-md rounded-lg">
+                <TrendsVisualization 
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                />
               </div>
             </div>
 
