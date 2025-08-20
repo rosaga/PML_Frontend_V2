@@ -191,8 +191,9 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
 
 
   export async function GetBalance(org_id) {
+    const nowIso = new Date().toISOString();
     
-    const balanceUrl = `${apiUrl.GET_BALANCE}/organization/balance/${org_id}?size=10000`;
+    const balanceUrl = `${apiUrl.GET_BALANCE}/organization/balance/${org_id}?size=10000&gt__expires_on=${encodeURIComponent(nowIso)}`;
   
     try {
       const config = await authHeaders();

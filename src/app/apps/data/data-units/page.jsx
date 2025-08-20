@@ -170,9 +170,16 @@ const DataUnits = () => {
   };
 
   async function fetchBalance() {
-    const balanceData = await GetBalance(org_id);
-    if (balanceData) {
-      setBalances(balanceData.data.data);
+    const res = await GetBalance(org_id);
+    if (res?.data?.data) {
+      const now = new Date();
+      const activeOnly = res.data.data.filter(b => {
+        const v = b?.expires_on;
+        if (!v) return true;
+        const ts = new Date(typeof v === 'string' ? v.replace(' ', 'T') : v);
+        return !isNaN(ts.getTime()) && ts > now;
+      });
+      setBalances(activeOnly);
     }
   }
 
