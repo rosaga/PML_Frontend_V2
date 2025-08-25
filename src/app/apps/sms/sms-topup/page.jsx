@@ -1,7 +1,26 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getToken } from "@/utils/auth";
+import {
+  processMpesaSmsPayment,
+  toMsisdn,
+  checkPaymentStatus,
+} from "@/app/api/actions/payments/payments";
+
+function toKES(amount) {
+  if (!Number.isFinite(amount)) return 0;
+  return Math.ceil(amount);
+}
 
 const SMSPricing = () => {
+
+  let orgId = null;
+  let token = null;
+  if (typeof window !== "undefined") {
+    orgId = localStorage.getItem("selectedAccountId");
+    token = getToken();
+  }
+
   const [activeTab, setActiveTab] = useState("packages");
 
   const [showModal, setShowModal] = useState(false);
@@ -9,47 +28,68 @@ const SMSPricing = () => {
   const [selectedPackage, setSelectedPackage] = useState(null);
 
   const [smsUnits, setSmsUnits] = useState(1);
-  const [rate, setRate] = useState(1.06);
-  const [cost, setCost] = useState(1.06);
+  const [rate, setRate] = useState(0.65);
+  const [cost, setCost] = useState(0.65);
   const [unitsError, setUnitsError] = useState("");
 
   const [paymentPhone, setPaymentPhone] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [isPaying, setIsPaying] = useState(false);
 
+  const [paymentInfo, setPaymentInfo] = useState(null);
+
   const pricingPackages = [
     {
       id: 1,
       title: "Basic",
-      range: "25,000 - 125,000 Units",
-      price: "1.06 ksh per SMS",
+      code: "BASIC_PACKAGE",
+      range: "10,000 - 99,000 SMS",
+      price: "0.65 ksh per SMS",
       buttonText: "Select Package",
       buttonAction: "select",
-      rate: 1.06,
-      minUnits: 25000,
-      maxUnits: 125000,
+      rate: 0.65,
+      minUnits: 1,
+      maxUnits: 99000,
+      minAmount: 6500,
     },
     {
       id: 2,
       title: "Plus",
-      range: "125,001 - 524,999 Units",
-      price: "0.85 ksh per SMS",
+      code: "PLUS_PACKAGE",
+      range: "100,000 - 299,000 SMS",
+      price: "0.50 ksh per SMS",
       buttonText: "Select Package",
       buttonAction: "select",
-      rate: 0.85,
-      minUnits: 125001,
-      maxUnits: 524999,
+      rate: 0.50,
+      minUnits: 10,
+      maxUnits: 299000,
+      minAmount: 50000,
     },
     {
       id: 3,
       title: "Premium",
-      range: "525,000+",
-      price: "Custom",
-      buttonText: "Contact Sales",
-      buttonAction: "contact",
-      rate: null,
-      minUnits: null,
-      maxUnits: null,
+      code: "PREMIUM_PACKAGE",
+      range: "300,001 - 999,000 SMS",
+      price: "0.45 ksh per SMS",
+      buttonText: "Select Package",
+      buttonAction: "select",
+      rate: 0.45,
+      minUnits: 10,
+      maxUnits: 999000,
+      minAmount: 135000,
+    },
+    {
+      id: 4,
+      title: "Premium Plus",
+      code: "PREMIUM_PLUS_PACKAGE",
+      range: "1,000,000 - 10,000,000 SMS",
+      price: "0.25 ksh per SMS",
+      buttonText: "Select Package",
+      buttonAction: "select",
+      rate: 0.25,
+      minUnits: 10,
+      maxUnits: 10000000,
+      minAmount: 250000,
     },
   ];
 
@@ -57,12 +97,14 @@ const SMSPricing = () => {
 
   const openBuyModalForPackage = (pkg) => {
     setSelectedPackage(pkg);
-    const r = pkg.rate ?? rate;
+    const r = pkg.rate ?? 0.65;
     setRate(r);
     const startUnits = pkg.minUnits ?? 1;
     setSmsUnits(startUnits);
     setCost(startUnits * r);
     setUnitsError("");
+    setPaymentError("");
+    setPaymentInfo(null);
     setModalType("buy");
     setShowModal(true);
   };
@@ -112,19 +154,20 @@ const SMSPricing = () => {
 
     setPaymentPhone("");
     setPaymentError("");
+    setPaymentInfo(null);
     setModalType("payment");
   };
 
   const isValidPhone = (phone) => {
-    const digits = (phone || "").replace(/[^\d]/g, "");
-    return digits.length >= 10 && digits.length <= 12;
+    const msisdn = toMsisdn(phone);
+    return /^2547\d{8}$/.test(msisdn);
   };
 
   const handlePay = async () => {
     setPaymentError("");
 
     if (!isValidPhone(paymentPhone)) {
-      setPaymentError("Please enter a valid mobile number.");
+      setPaymentError("Please enter a valid Kenyan mobile number (e.g. 07XX XXX XXX).");
       return;
     }
     if (cost <= 0) {
@@ -134,12 +177,68 @@ const SMSPricing = () => {
 
     try {
       setIsPaying(true);
-      const simulatedSuccess = true;
-      setIsPaying(false);
-      setModalType(simulatedSuccess ? "success" : "failure");
+      setModalType("processing");
+
+      const amountKES = toKES(cost);
+
+      const resp = await processMpesaSmsPayment(orgId, {
+        units: smsUnits,
+        amount: amountKES,
+        phoneNumber: paymentPhone,
+        packageCode: selectedPackage?.code || "BUILD_PACKAGE",
+      });
+
+      if (resp?.errors?._error) {
+        setPaymentError(resp.errors._error);
+        setModalType("failure");
+        setPaymentInfo(null);
+        setIsPaying(false);
+        return;
+      }
+
+      const paymentId = resp?.payment?.id || resp?.id;
+      if (!paymentId) {
+        throw new Error("Payment ID not received");
+      }
+
+      setPaymentError("");
+      const maxAttempts = 30;
+      let attempts = 0;
+
+      const pollPaymentStatus = async () => {
+        try {
+          const payment = await checkPaymentStatus(orgId, paymentId);
+          if (payment.status === "SUCCESS") {
+            setPaymentInfo(payment);
+            setModalType("success");
+            setIsPaying(false);
+            return;
+          }
+          if (payment.status === "FAILED") {
+            throw new Error(payment.status_desc || "Payment failed");
+          }
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(pollPaymentStatus, 10000);
+          } else {
+            throw new Error("Payment timeout. Please check your M-Pesa messages.");
+          }
+        } catch (err) {
+          setPaymentError(err.message ?? "Failed to verify payment status");
+          setModalType("failure");
+          setPaymentInfo(null);
+          setIsPaying(false);
+        }
+      };
+
+      setTimeout(pollPaymentStatus, 5000);
+
     } catch (err) {
+      console.error("STK initiation error:", err);
       setIsPaying(false);
+      setPaymentError(err?.message || "Payment failed.");
       setModalType("failure");
+      setPaymentInfo(null);
     }
   };
 
@@ -150,12 +249,36 @@ const SMSPricing = () => {
     setUnitsError("");
     setPaymentError("");
     setIsPaying(false);
+    setPaymentInfo(null);
   };
 
   const handleContactSubmit = (payload) => {
     console.log("Contact sales form submitted:", payload);
     setShowModal(false);
   };
+
+  const PaymentProcessingModal = () => (
+    <div className="space-y-6 text-center">
+      <div className="flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+          Processing Payment
+        </h2>
+        <p className="text-center text-gray-600 mb-4">
+          An STK push has been sent to your phone.
+        </p>
+        <p className="text-center text-gray-600 mb-4">
+          Please check your phone and enter your M-Pesa PIN to complete the transaction.
+        </p>
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+          <div className="bg-orange-400 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+        </div>
+        <p className="text-sm text-gray-500 text-center">
+          Please wait while we process your payment...
+        </p>
+      </div>
+    </div>
+  );
 
   function ContactForm({ contextTitle = "Request Custom Quote", onSubmit }) {
     const [form, setForm] = useState({
@@ -276,8 +399,10 @@ const SMSPricing = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-xl font-medium text-gray-700 mb-6">SMS Pricing</h2>
+    <div className="container mx-auto px-4 py-8 ml-48">
+      <h2 className="text-center text-3xl font-semibold mb-12">
+        Top up your SMS Units in 3 Easy Steps
+      </h2>
 
       {/* Tabs */}
       <div className="flex justify-center mb-8">
@@ -303,11 +428,8 @@ const SMSPricing = () => {
 
       {/* Packages Tab Content */}
       {activeTab === "packages" && (
-        <div className="max-w-6xl mx-auto">
-          <div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-            style={{ marginLeft: "100px" }}
-          >
+        <div className="max-w-7xl justify-center mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 justify-center">
             {pricingPackages.map((pkg) => (
               <div
                 key={pkg.id}
@@ -339,7 +461,12 @@ const SMSPricing = () => {
                 <h3 className="text-base font-medium text-gray-700 mb-1 text-center">
                   {pkg.range}
                 </h3>
-                <p className="text-sm text-gray-600 mb-4 text-center">{pkg.price}</p>
+                <p className="text-sm text-gray-600 mb-2 text-center">{pkg.price}</p>
+                {pkg.minAmount && (
+                  <p className="text-xs text-gray-500 mb-4 text-center">
+                    Min: Ksh {pkg.minAmount.toLocaleString()}
+                  </p>
+                )}
 
                 {/* Action Button */}
                 <button
@@ -386,7 +513,7 @@ const SMSPricing = () => {
           aria-modal="true"
           role="dialog"
         >
-          <div className="absolute inset-0 bg-black/50" onClick={closeAllModals} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => !isPaying && closeAllModals()} />
           <div className="relative z-10 w-full max-w-xl bg-white rounded-lg shadow-lg p-6">
             {/* Header */}
             <div className="flex items-start justify-between pb-4 border-b border-gray-200">
@@ -394,9 +521,10 @@ const SMSPricing = () => {
                 <h3 className="text-xl font-medium text-gray-800">
                   {modalType === "buy" && `Buy ${selectedPackage?.title} Package`}
                   {modalType === "payment" && `Payment — ${selectedPackage?.title} Package`}
+                  {modalType === "processing" && "Processing Payment"}
                   {modalType === "contact" &&
                     `Contact Sales — ${selectedPackage?.title || "Custom"}`}
-                  {modalType === "success" && "Payment Successful"}
+                  {modalType === "success" && "Payment Successful!"}
                   {modalType === "failure" && "Payment Failed"}
                 </h3>
                 {modalType === "buy" && (
@@ -421,17 +549,20 @@ const SMSPricing = () => {
                       {smsUnits.toLocaleString()}
                     </span>{" "}
                     · Rate: <span className="font-medium">{rate} ksh</span> · Amount:{" "}
-                    <span className="font-medium">{cost.toFixed(2)} ksh</span>
+                    <span className="font-medium">{toKES(cost)} ksh</span>
                   </p>
                 )}
               </div>
-              <button
-                className="text-gray-400 hover:text-gray-600"
-                aria-label="Close"
-                onClick={closeAllModals}
-              >
-                ✕
-              </button>
+              {modalType !== "processing" && (
+                <button
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Close"
+                  onClick={closeAllModals}
+                  disabled={isPaying}
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Body */}
@@ -462,7 +593,7 @@ const SMSPricing = () => {
                     )}
                     {unitsError === "max" && (
                       <p className="text-red-600 text-sm mt-2">
-                        Maximum exceeded: enter no more than{" "}
+                        Maximum exceeded: Should not be more than{" "}
                         {selectedPackage?.maxUnits?.toLocaleString()} units for the{" "}
                         {selectedPackage?.title} package.
                       </p>
@@ -470,10 +601,10 @@ const SMSPricing = () => {
                   </div>
 
                   <div>
-                    <label className="block text-gray-700 mb-2">Total Cost</label>
+                    <label className="block text-gray-700 mb-2">Estimated Cost</label>
                     <input
                       type="text"
-                      value={Number.isFinite(cost) ? `${cost.toFixed(2)}` : "0.00"}
+                      value={Number.isFinite(cost) ? `${toKES(cost)} KES` : "0 KES"}
                       readOnly
                       className="w-full p-3 border border-gray-300 rounded-md bg-gray-50"
                     />
@@ -493,7 +624,7 @@ const SMSPricing = () => {
                         !!unitsError ||
                         smsUnits <= 0 ||
                         !Number.isFinite(cost) ||
-                        cost <= 0
+                        toKES(cost) <= 0
                       }
                     >
                       Next
@@ -515,7 +646,7 @@ const SMSPricing = () => {
                           ? "border-red-400 focus:ring-red-200"
                           : "border-gray-300 focus:ring-orange-300"
                       }`}
-                      placeholder="+254 7XX XXX XXX"
+                      placeholder="07XX XXX XXX"
                     />
                     {paymentError && (
                       <p className="text-red-600 text-sm mt-2">{paymentError}</p>
@@ -526,7 +657,7 @@ const SMSPricing = () => {
                     <label className="block text-gray-700 mb-2">Amount</label>
                     <input
                       type="text"
-                      value={`${cost.toFixed(2)} ksh`}
+                      value={`${toKES(cost)} KES`}
                       readOnly
                       className="w-full p-3 border border-gray-300 rounded-md bg-gray-50"
                     />
@@ -551,6 +682,8 @@ const SMSPricing = () => {
                 </div>
               )}
 
+              {modalType === "processing" && <PaymentProcessingModal />}
+
               {modalType === "contact" && (
                 <ContactForm
                   contextTitle={selectedPackage?.title || "Custom"}
@@ -565,51 +698,104 @@ const SMSPricing = () => {
 
               {modalType === "success" && (
                 <div className="space-y-6 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <span className="text-green-600 text-2xl">✓</span>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-32 h-32 bg-green-500 rounded-full flex items-center justify-center mb-6">
+                      <svg
+                        className="w-20 h-20 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="3"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
                     </div>
+
+                    <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+                      Payment Successful!
+                    </h2>
+                    <p className="text-center text-gray-600 mb-4">
+                      Your payment has been confirmed. You have received:
+                    </p>
+
+                    <ul className="list-disc list-inside mb-12">
+                      <li className="text-gray-700">
+                        <span className="font-medium">{smsUnits.toLocaleString()}</span>{" "}
+                        SMS units on the{" "}
+                        <span className="font-medium">{selectedPackage?.title}</span> plan
+                      </li>
+                    </ul>
+
+                    {paymentInfo?.id && (
+                      <p className="text-sm text-gray-500 mb-4">
+                        Payment ID: <span className="font-mono">{paymentInfo.id}</span>
+                      </p>
+                    )}
+                    {paymentInfo?.status && (
+                      <p className="text-sm text-gray-500 mb-4">
+                        Status: <span className="font-medium">{paymentInfo.status}</span>
+                      </p>
+                    )}
+
+                    <button
+                      className="w-full bg-orange-400 text-white py-3 rounded-md hover:bg-orange-500 transition-colors"
+                      onClick={closeAllModals}
+                    >
+                      Done
+                    </button>
                   </div>
-                  <p className="text-gray-700">
-                    Payment successful! You purchased{" "}
-                    <span className="font-medium">
-                      {smsUnits.toLocaleString()} units
-                    </span>{" "}
-                    on the <span className="font-medium">{selectedPackage?.title}</span> plan for{" "}
-                    <span className="font-medium">{cost.toFixed(2)} ksh</span>.
-                  </p>
-                  <button
-                    className="w-full bg-orange-400 text-white py-3 rounded-md hover:bg-orange-500 transition-colors"
-                    onClick={closeAllModals}
-                  >
-                    Done
-                  </button>
                 </div>
               )}
 
               {modalType === "failure" && (
                 <div className="space-y-6 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                      <span className="text-red-600 text-2xl">!</span>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-32 h-32 bg-red-500 rounded-full flex items-center justify-center mb-6">
+                      <svg
+                        className="w-20 h-20 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="3"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
                     </div>
-                  </div>
-                  <p className="text-gray-700">
-                    Payment failed. Please check your mobile number and try again.
-                  </p>
-                  <div className="flex space-x-4">
-                    <button
-                      className="w-1/2 bg-gray-100 text-gray-800 py-3 rounded-md hover:bg-gray-200 transition-colors"
-                      onClick={closeAllModals}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="w-1/2 bg-orange-400 text-white py-3 rounded-md hover:bg-orange-500 transition-colors"
-                      onClick={() => setModalType("payment")}
-                    >
-                      Try Again
-                    </button>
+
+                    <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+                      Payment Failed
+                    </h2>
+                    <p className="text-center text-gray-600 mb-4">
+                      Payment failed. Please check your mobile number and try again.
+                    </p>
+                    {paymentError && (
+                      <p className="text-sm text-red-600 mb-8">{paymentError}</p>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <button
+                        className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded"
+                        onClick={closeAllModals}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded"
+                        onClick={() => setModalType("payment")}
+                      >
+                        Try Again
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
