@@ -106,7 +106,7 @@ const AllResponses = () => {
       let url = `https://flowbot-1048592730476.europe-west4.run.app/api/v2/session?eq__flow_id=${flowId}`;
       
       // Add pagination parameters
-      url += `&size=${paginationModel.pageSize}&page=${paginationModel.page + 1}`;
+      url += `&size=${paginationModel.pageSize}&page=${paginationModel.page + 1}&orderby=created_at desc`;
 
       // Add search parameters if there are any
       if (Object.keys(searchParams).length > 0) {
