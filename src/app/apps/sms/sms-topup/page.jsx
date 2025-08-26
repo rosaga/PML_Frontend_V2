@@ -4,7 +4,7 @@ import { getToken } from "@/utils/auth";
 import {
   processMpesaSmsPayment,
   toMsisdn,
-  checkPaymentStatus,
+  checkSmsPaymentStatus,
 } from "@/app/api/actions/payments/payments";
 
 function toKES(amount) {
@@ -207,7 +207,7 @@ const SMSPricing = () => {
 
       const pollPaymentStatus = async () => {
         try {
-          const payment = await checkPaymentStatus(orgId, paymentId);
+          const payment = await checkSmsPaymentStatus(orgId, paymentId);
           if (payment.status === "SUCCESS") {
             setPaymentInfo(payment);
             setModalType("success");

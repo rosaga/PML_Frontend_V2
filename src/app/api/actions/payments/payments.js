@@ -3,6 +3,8 @@ import { authHeaders } from "../../utils/headers/headers";
 import apiUrl from "../../utils/apiUtils/apiUrl";
 
 const BASE_PAYMENT_URL = apiUrl.MAKE_PAYMENT;
+const SMS_BASE_PAYMENT_URL = apiUrl.SMS_MAKE_PAYMENT;
+
 
 
 export async function getPayments(
@@ -113,6 +115,23 @@ export async function checkPaymentStatus(org_id, paymentId) {
   }
 }
 
+export async function checkSmsPaymentStatus(org_id, paymentId) {
+  const url = `${SMS_BASE_PAYMENT_URL}/${org_id}?eq__id=${paymentId}`;
+  try {
+    const config = await authHeaders();
+    const res = await axios.get(url, config);
+    const payments = res.data?.data || [];
+    if (payments.length === 0) {
+      throw new Error("Payment not found");
+    }
+    return payments[0];
+  } catch (err) {
+    console.error("Error checking payment status:", err);
+    throw new Error("Failed to check payment status");
+  }
+}
+
+
 export async function processPaidPackageRequest(
   org_id,
   phoneNumber,
@@ -166,6 +185,25 @@ export function toMsisdn(input) {
   return digits;
 }
 
+export async function makeSmsPayment(org_id, payload) {
+  const url = `${SMS_BASE_PAYMENT_URL}/${org_id}`;
+  try {
+    const config = await authHeaders();
+    const res = await axios.post(url, payload, config);
+    if (res.status === 200 && res.data) {
+      console.log("Payment initiated:", res.data);
+      return res.data;
+    }
+    throw new Error("Unexpected response from payment API");
+  } catch (err) {
+    console.error("Payment initiation failed:", err);
+    if (err.response?.data) {
+      return { errors: { _error: err.response.data.error || "Payment initiation failed." } };
+    }
+    return { errors: { _error: "Network error. Please try again." } };
+  }
+}
+
 export async function processMpesaSmsPayment(
   org_id,
   {
@@ -175,21 +213,21 @@ export async function processMpesaSmsPayment(
     packageCode,
   }
 ) {
-  if (!org_id)           throw new Error("Organization ID missing.");
-  if (!units || units <= 0) throw new Error("Units must be greater than 0.");
+  if (!org_id)               throw new Error("Organization ID missing.");
+  if (!units || units <= 0)  throw new Error("Units must be greater than 0.");
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0.");
-  if (!phoneNumber)      throw new Error("Phone number is required.");
+  if (!phoneNumber)          throw new Error("Phone number is required.");
 
   const msisdn = toMsisdn(phoneNumber);
   const payload = {
-    units: Number(units),
-    amount: Number(amount),
+    units:   Number(units),
+    amount:  Number(amount),
     msisdn,
     package: packageCode || "BUILD_PACKAGE",
-    service: "SMS"
+    service: "SMS",
   };
 
-  return makePayment(org_id, payload);
+  return makeSmsPayment(org_id, payload);
 }
 
 
