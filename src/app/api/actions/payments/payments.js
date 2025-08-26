@@ -34,6 +34,33 @@ export async function getPayments(
   }
 }
 
+export async function getSmsPayments(
+  org_id,
+  page               = 1,
+  perPage            = 10,
+  extraSearchParams  = {},
+) {
+  const searchParams = {
+    page: page.toString(),
+    per_page: perPage.toString(),
+    order_by: 'created_at',
+    order: 'desc',
+    ...extraSearchParams,
+  };
+
+  const query = new URLSearchParams(searchParams).toString();
+  const url = `${SMS_BASE_PAYMENT_URL}/${org_id}?${query}`;
+
+  try {
+    const config = await authHeaders();
+    const res    = await axios.get(url, config);
+    return { data: res.data.data, count: res.data.count };
+  } catch (err) {
+    console.error("Error fetching payments:", err);
+    return { errors: { _error: "Failed to fetch payments" } };
+  }
+}
+
 export async function makePayment(org_id, payload) {
   const url = `${BASE_PAYMENT_URL}/${org_id}`;
   try {
