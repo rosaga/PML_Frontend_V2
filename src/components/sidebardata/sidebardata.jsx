@@ -128,6 +128,13 @@ const SidebarData = () => {
       label: "Account",
       className: "account",
     },
+    {
+      href: "/apps/data/developer",
+      src: "/images/users.svg",
+      alt: "Developer",
+      label: "Developer",
+      className: "developer",
+    },
     /* ---- SETTINGS ---------------------------------------------------- */
     {
       href: "/apps/data/settings",

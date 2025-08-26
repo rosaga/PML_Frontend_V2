@@ -181,7 +181,10 @@ export default function APIDocs() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="p-4 sm:ml-64 h-screen ">
+      <div className="flex flex-col h-full">
+        <div className="flex flex-col">
+          <div className="p-4">
       <Head>
         <title>API Documentation | Your App</title>
         <meta name="description" content="Interactive API documentation and testing playground" />
@@ -516,6 +519,9 @@ export default function APIDocs() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+    </div>
       </div>
     </div>
   );
