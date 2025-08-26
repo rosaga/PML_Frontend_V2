@@ -148,11 +148,13 @@ const SidebarData = () => {
         },
       ],
     },
+    { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
+
   ];
 
   /* Add SuperAdmin-only links under Settings */
   if (hasRole(token, "SuperAdmin")) {
-    links[links.length - 1].subLinks.push(
+    links[links.length - 2].subLinks.push(
       {
         href: "/apps/data/manageSenderId",
         label: "Manage Sender Ids",
