@@ -15,10 +15,10 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<Highcharts.Chart | null>(null);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-let org_id = null;
+  let org_id = null;
   if (typeof window !== "undefined") {
     org_id = localStorage.getItem("selectedAccountId");
   }
@@ -38,7 +38,7 @@ let org_id = null;
       }
 
       return res;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stats:', error);
       if (error.response) {
         return {
@@ -88,6 +88,7 @@ let org_id = null;
     }
   };
 
+  // Fetch data from API
   const fetchData = async () => {
     if (!org_id) {
       setError('Organization ID not found');
@@ -106,7 +107,7 @@ let org_id = null;
       } else {
         setData(result);
       }
-    } catch (err) {
+    } catch (err: any) {
       setError('Failed to fetch data');
       console.error('Fetch error:', err);
     } finally {
@@ -114,20 +115,21 @@ let org_id = null;
     }
   };
 
+  // Process API data for chart - using actual API response structure
   const processApiData = () => {
     if (!data || !data.stats || data.stats.length === 0) {
       return generateFallbackData();
     }
 
     const apiData = data.stats;
-    let categories = [];
-    let recipients = [];
-    let dataConsumed = [];
+    let categories: string[] = [];
+    let recipients: number[] = [];
+    let dataConsumed: number[] = [];
 
     if (!selectedYear) {
       // All Years view - group by year
-      const yearGroups = {};
-      apiData.forEach(item => {
+      const yearGroups: { [key: string]: { recipients: number; dataConsumed: number } } = {};
+      apiData.forEach((item: any) => {
         const date = new Date(item.period);
         const year = date.getFullYear().toString();
         if (!yearGroups[year]) {
@@ -142,7 +144,7 @@ let org_id = null;
       dataConsumed = categories.map(year => yearGroups[year].dataConsumed);
     } else if (selectedYear && !selectedMonth) {
       // Specific year view - show months based on actual data
-      const monthGroups = {};
+      const monthGroups: { [key: number]: { name: string; recipients: number; dataConsumed: number } } = {};
       const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
@@ -154,7 +156,7 @@ let org_id = null;
       });
 
       // Fill in actual data
-      apiData.forEach(item => {
+      apiData.forEach((item: any) => {
         const date = new Date(item.period);
         const monthIndex = date.getMonth();
         monthGroups[monthIndex].recipients += item.customer_reach || 0;
@@ -171,13 +173,13 @@ let org_id = null;
       const daysInMonth = new Date(year, month, 0).getDate();
       
       // Initialize all days to 0
-      const dayGroups = {};
+      const dayGroups: { [key: number]: { recipients: number; dataConsumed: number } } = {};
       for (let day = 1; day <= daysInMonth; day++) {
         dayGroups[day] = { recipients: 0, dataConsumed: 0 };
       }
 
       // Fill in actual data
-      apiData.forEach(item => {
+      apiData.forEach((item: any) => {
         const date = new Date(item.period);
         const dayOfMonth = date.getDate();
         if (dayGroups[dayOfMonth]) {
@@ -240,6 +242,7 @@ let org_id = null;
 
     const chartData = processApiData();
     
+    // Destroy existing chart
     if (chartInstance.current) {
       chartInstance.current.destroy();
       chartInstance.current = null;
@@ -275,7 +278,7 @@ let org_id = null;
           style: {
             color: '#6B7280'
           },
-          rotation: selectedMonth ? -45 : 0 
+          rotation: selectedMonth ? -45 : 0 // Rotate labels for daily view
         }
       },
       yAxis: [{
@@ -470,7 +473,8 @@ let org_id = null;
     return monthNames[parseInt(month) - 1] || '';
   };
 
-      useEffect(() => {
+  // Fetch data when filters change
+  useEffect(() => {
     fetchData();
   }, [selectedYear, selectedMonth]);
 
