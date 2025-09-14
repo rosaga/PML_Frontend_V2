@@ -145,8 +145,6 @@ const CampaignsTable = () => {
             <p className="mt-4 font-medium text-lg">All Campaigns</p>
             <div className="md:ml-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
-            {isScheduleModelOpen && <ScheduleCampaignModal closeScheduleCampaignModal={closeScheduleCampaignModal} />}
-             
               <PeakButton
                 buttonText="Create Campaign"
                 icon={AddIcon}
