@@ -11,15 +11,18 @@ export default function APIDocs() {
   const [authToken, setAuthToken] = useState('');
   const [manualToken, setManualToken] = useState('');
   const [orgId, setOrgId] = useState('58045135-f272-4879-be0f-2559d836fdba');
+  const [senderId, setSenderId] = useState(1);
   
-  // Define your base URL
-  const baseUrl = 'https://peakdata-1048592730476.europe-west4.run.app';
+  const smsBaseUrl = "https://messaging-peak-1048592730476.europe-west4.run.app";
+  const dataBaseUrl = "https://peakdata-1048592730476.europe-west4.run.app";
+
 
   // Sample API endpoints data - replace with your actual endpoints
   const apiEndpoints = [
-    {
+  {
       id: 'login',
       method: 'POST',
+      base: 'data',
       path: '{{base_url}}/public/login',
       description: 'Authenticate user and receive access token',
       parameters: [
@@ -31,26 +34,10 @@ export default function APIDocs() {
   "password": "Test@1234"
 }`
     },
-    {
-      id: 'reward',
-      method: 'POST',
-      path: '{{base_url}}/api/v2/organization/{{org_id}}/reward',
-      description: 'Send reward to customer (requires authentication token)',
-      requiresAuth: true,
-      parameters: [
-        { name: 'bundle_amount', type: 'string', required: true, description: 'Amount of reward to send' },
-        { name: 'msisdn', type: 'string', required: true, description: 'Customer phone number' },
-        { name: 'request_id', type: 'string', required: true, description: 'Unique request identifier' }
-      ],
-      exampleBody: `{
-  "bundle_amount": "20",
-  "msisdn": "0112253855",
-  "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"
-}`
-    },
-    {
+  {
       id: 'accounts',
       method: 'GET',
+      base: 'data',
       path: '{{base_url}}/api/v2/organization',
       description: 'Retrieve a list of the organizations accounts',
       requiresAuth: true,
@@ -59,26 +46,32 @@ export default function APIDocs() {
         { name: 'offset', type: 'number', required: false, description: 'Number of accounts to skip' }
       ]
     },
-    // {
-    //   id: 'user-create',
-    //   method: 'POST',
-    //   path: '{{base_url}}/api/users',
-    //   description: 'Create a new user',
-    //   parameters: [
-    //     { name: 'name', type: 'string', required: true, description: 'User name' },
-    //     { name: 'email', type: 'string', required: true, description: 'User email' }
-    //   ]
-    // },
-    // {
-    //   id: 'user',
-    //   method: 'GET',
-    //   path: '{{base_url}}/api/users/[id]',
-    //   description: 'Retrieve a specific user',
-    //   parameters: [
-    //     { name: 'id', type: 'string', required: true, description: 'User ID' }
-    //   ]
-    // }
-  ];
+  {
+      id: 'sms',
+      method: 'POST',
+      base: 'sms',
+      path: '{{base_url}}/api/v1/message/{{sender_id}}/user/send',
+      description: 'Send sms to customer (requires authentication token)',
+      requiresAuth: true,
+      parameters: [
+        { name: 'destination', type: 'string', required: true, description: 'The recipients phone number' },
+        { name: 'content', type: 'string', required: true, description: 'The content of the message' },
+        { name: 'requestid', type: 'string', required: true, description: 'Unique request identifier' },
+        { name: 'organization_id', type: 'string', required: true, description: 'The id of your organization' },
+        { name: 'channel', type: 'string', required: true, description: 'This can be SENDERNAME or SHORTCODE' },
+        { name: 'scheduled', type: 'string', required: true, description: 'Time you want sms sent' }
+      ],
+      exampleBody: `{
+    "channel": "SENDERNAME",
+    "content": "Test",
+    "destination": "254711438911",
+    "organization_id": "58045135-f272-4879-be0f-2559d836fdba",
+    "requestid": "5ed69e5c-5afe-4fac-9c2f-5567ca245a56",
+    "scheduled": "2025-09-13T09:35:37.602Z"
+}`
+    },
+];
+
 
   // Update request body when endpoint changes
   useEffect(() => {
@@ -92,11 +85,15 @@ export default function APIDocs() {
   }, [selectedEndpoint]);
 
   // Function to replace placeholders with actual values
-  const resolvePath = (path) => {
-    return path
-      .replace('{{base_url}}', baseUrl)
-      .replace('{{org_id}}', orgId);
-  };
+  const resolvePath = (path, base) => {
+  const baseUrl =
+    base === "data" ? dataBaseUrl : smsBaseUrl;
+  return path
+    .replace("{{base_url}}", baseUrl)
+    .replace("{{org_id}}", orgId)
+    .replace("{{sender_id}}", senderId);
+};
+
 
   // Function to display path without base URL for UI
   const displayPath = (path) => {
@@ -139,7 +136,7 @@ export default function APIDocs() {
       }
 
       // Resolve the path with the actual base URL and org ID
-      const url = resolvePath(selectedEndpoint.path);
+      const url = resolvePath(selectedEndpoint.path, selectedEndpoint.base);
       
       const res = await fetch(url, options);
       const data = await res.json();
@@ -192,12 +189,12 @@ export default function APIDocs() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">API Documentation</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">SMS API Documentation</h1>
           <p className="text-lg text-gray-600">
             Explore and test our API endpoints directly from your browser
           </p>
           <div className="mt-2 text-sm text-gray-500">
-            Base URL: <code className="px-2 py-1 bg-gray-100 rounded">{baseUrl}</code>
+            Base URL: <code className="px-2 py-1 bg-gray-100 rounded">{smsBaseUrl}</code>
           </div>
         </div>
 
@@ -391,14 +388,14 @@ export default function APIDocs() {
                         <div className="flex justify-between items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium">
                           <span>Terminal command</span>
                           <button 
-                            onClick={() => copyToClipboard(`curl --location --request POST '${resolvePath(selectedEndpoint.path)}' \\\n--header 'Content-Type: application/json' \\\n--data-raw '{\n  "username":"siderravictor@gmail.com",\n  "password":"Test@1234"\n}'`)}
+                            onClick={() => copyToClipboard(`curl --location --request POST '${resolvePath(selectedEndpoint.path, selectedEndpoint.base)}' \\\n--header 'Content-Type: application/json' \\\n--data-raw '{\n  "username":"siderravictor@gmail.com",\n  "password":"Test@1234"\n}'`)}
                             className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded"
                           >
                             Copy
                           </button>
                         </div>
                         <pre className="p-4 text-green-400 bg-gray-800 overflow-auto text-sm">
-{`curl --location --request POST '${resolvePath(selectedEndpoint.path)}' \\
+{`curl --location --request POST '${resolvePath(selectedEndpoint.path, selectedEndpoint.base)}' \\
 --header 'Content-Type: application/json' \\
 --data-raw '{
   "username":"siderravictor@gmail.com",
@@ -409,30 +406,34 @@ export default function APIDocs() {
                     </div>
                   )}
 
-                  {/* cURL Example for reward endpoint */}
-                  {selectedEndpoint.id === 'reward' && (
+                  {/* cURL Example for sms endpoint */}
+                  {selectedEndpoint.id === 'sms' && (
                     <div className="mt-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-2">cURL Example</h3>
                       <div className="bg-gray-800 rounded-md overflow-hidden">
                         <div className="flex justify-between items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium">
                           <span>Terminal command</span>
                           <button 
-                            onClick={() => copyToClipboard(`curl --location --request POST '${resolvePath(selectedEndpoint.path)}' \\\n--header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}' \\\n--header 'Content-Type: application/json' \\\n--data-raw '{\n  "bundle_amount": "10",\n  "msisdn": "0112253855",\n  "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"\n}'`)}
+                            onClick={() => copyToClipboard(`curl --location --request POST '${resolvePath(selectedEndpoint.path, selectedEndpoint.base)}' \\\n--header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}' \\\n--header 'Content-Type: application/json' \\\n--data-raw '{\n  "scheduled": "2025-09-13T09:35:37.602Z",\n  "content": "Test Docs",\n  "organization_id": "58045135-f272-4879-be0f-2559d836fdba",\n  "channel": "SENDERNAME",\n  "destination": "254711438911",\n  "requestid": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"\n}'`)}
                             className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded"
                           >
                             Copy
                           </button>
                         </div>
                         <pre className="p-4 text-green-400 bg-gray-800 overflow-auto text-sm">
-{`curl --location --request POST '${resolvePath(selectedEndpoint.path)}' \\
+{`curl --location --request POST '${resolvePath(selectedEndpoint.path, selectedEndpoint.base)}' \\
 --header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}' \\
 --header 'Content-Type: application.json' \\
 --data-raw '{
-  "bundle_amount": "10",
-  "msisdn": "0112253855",
-  "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"
+  "channel": "SENDERNAME",
+  "content": "Test",
+  "destination": "254711438911",
+  "organization_id": "58045135-f272-4879-be0f-2559d836fdba",
+  "requestid": "5ed69e5c-5afe-4fac-9c2f-5567ca245a56",
+  "scheduled": "2025-09-13T09:35:37.602Z"
 }'`}
-                        </pre>
+</pre>
+
                       </div>
                     </div>
                   )}
