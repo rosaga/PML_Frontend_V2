@@ -1,15 +1,17 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { getToken } from "../../utils/auth";
 import { GetGroups, GetAllGroups } from "@/app/api/actions/group/group";
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
-import { format, parseISO } from "date-fns";
 import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
-
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
 import CircularProgress from "@mui/material/CircularProgress";
+import MaterialUIPickers from "../../components/utils/timePicker";
 import Box from "@mui/material/Box";
+import dayjs from "dayjs";
 
 const CreateCampaignModal = ({ closeModal }) => {
   let token = getToken();
@@ -24,6 +26,9 @@ const CreateCampaignModal = ({ closeModal }) => {
   const [message, setMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [schedule, setSchedule] = useState(false);
+  const [repeatInterval, setRepeatInterval] = useState("");
+  const [repeatCount, setRepeatCount] = useState(0);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -31,6 +36,14 @@ const CreateCampaignModal = ({ closeModal }) => {
   if (typeof window !== "undefined") {
     org_id = localStorage.getItem("selectedAccountId");
   }
+
+   const currentDateTime = dayjs();
+    const [value, setValue] = useState(currentDateTime);
+    const handleDateTimeChange = (newValue) => {
+      setValue(newValue);
+    };
+
+  
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -65,6 +78,10 @@ const CreateCampaignModal = ({ closeModal }) => {
     }
   }
 
+   const handleSwitchChange = (event) => {
+    setSchedule(event.target.checked);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
@@ -75,10 +92,12 @@ const CreateCampaignModal = ({ closeModal }) => {
       group_id: parseInt(selectedGroup),
       bundle: selectedBundle,
       description: description,
-      // content: message,
+      scheduled: value,
       content_message: message,
       sender_id: parseInt(selectedSenderName),
       slogan: "5",
+      repeat_count: schedule ? repeatCount : 0,
+      repeat_interval: schedule ? repeatInterval : ""
     };
     const res = await CreateCampaign(formData)
       .then((res) => {
@@ -168,18 +187,6 @@ const CreateCampaignModal = ({ closeModal }) => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Create Campaign
                 </h3>
-                {/* <button
-                  type="button"
-                  className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                >
-                  + Schedule Campaign
-                </button> */}
-                <button
-                  type="button"
-                  className="end-2.5 bg-transparent text-orange-400 border-[1.5px] border-orange-400 rounded-lg text-sm w-52 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                >
-                  + New Campaign
-                </button>
               </div>
               <div className="p-4 md:p-5">
                 <form className="space-y-2" onSubmit={handleSubmit}>
@@ -307,6 +314,74 @@ const CreateCampaignModal = ({ closeModal }) => {
                     </div>
                   ) : null}
 
+                  <FormGroup>
+                                    <FormControlLabel
+                                      control={
+                                        <Switch
+                                          checked={schedule}
+                                          onChange={handleSwitchChange}
+                                        />
+                                      }
+                                      label="*Turn on to send scheduled Campaign*"
+                                    />
+                                  </FormGroup>
+                  
+                                  {schedule && (
+                                    <div className="my-4">
+                                      <MaterialUIPickers
+                                        value={value}
+                                        onChange={handleDateTimeChange}
+                                      />
+                                    </div>
+                                  )}
+                  
+                                  {schedule && (
+                                    <>
+                                      <div className="flex space-x-4 mt-4">
+                                        <div className="flex-1">
+                                          <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                            Repeat Interval
+                                          </label>
+                                          <select
+                                            value={repeatInterval}
+                                            onChange={(e) => setRepeatInterval(e.target.value)}
+                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                                          >
+                                            <option value="">Select Interval</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                          </select>
+                                        </div>
+                  
+                                        <div className="flex-1">
+                                          <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                            Repeat Count
+                                          </label>
+                                          <input
+                                            type="number"
+                                            value={repeatCount}
+                                            onChange={(e) => {
+                                              const val = parseInt(e.target.value) || 0;
+                  
+                                              if (repeatInterval === "daily" && val > 30) {
+                                                toast.error("Daily repeats cannot exceed 30");
+                                                return;
+                                              }
+                                              if (repeatInterval === "weekly" && val > 4) {
+                                                toast.error("Weekly repeats cannot exceed 4");
+                                                return;
+                                              }
+                  
+                                              setRepeatCount(val);
+                                            }}
+                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                                            min="0"
+                                          />
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                  
                   <div className="flex space-x-2">
                     <button
                       type="button"

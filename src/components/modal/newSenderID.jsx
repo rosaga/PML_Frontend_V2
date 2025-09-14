@@ -19,8 +19,8 @@ const NewSenderID = ({ closeModal }) => {
   const [errorMessage, setErrorMessage] = useState("");
 
   function handleDownloadTemplate() {
-    const fileUrl = "/pdf/Sender_ID_request_letter.pdf"; 
-    saveAs(fileUrl, "Sender_ID_request_letter.pdf"); 
+    const fileUrl = "/pdf/Sender_ID_request_letter.docx"; 
+    saveAs(fileUrl, "Sender_ID_request_letter.docx"); 
 }
 
   function convertToCsv(data) {
