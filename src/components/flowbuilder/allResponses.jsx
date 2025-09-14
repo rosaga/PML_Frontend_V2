@@ -11,7 +11,6 @@ import axios from "axios";
 import { MoreVertical } from 'lucide-react';
 import RequestUnitsModal from "../modal/requestUnits";
 import ResponseDetailsModal from "../modal/responseDetails";
-import ScheduleCampaignModal from "../modal/scheduleCampaign";
 import { getToken } from "@/utils/auth";
 import { GetCampaigns } from "@/app/api/actions/campaigns/campaigns";
 
