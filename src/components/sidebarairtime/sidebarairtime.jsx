@@ -75,7 +75,7 @@ const SidebarAirtime = () => {
     { href: "/apps/airtime/airtime-rewards", src: "/images/vector.svg", alt: "Airtime Rewards", label: "Airtime Rewards", className: "airtime-rewards" },
     { href: "/apps/airtime/airtime-balance", src: "/images/dataunits.svg", alt: "Airtime Balance", label: "Airtime Balance", className: "airtime-balance" },
     { href: "/apps/airtime/contacts", src: "/images/users.svg", alt: "Contacts", label: "Users", className: "contacts" },
-    // { href: "/apps/data/flowbuilder", src: "/images/flowbuillder.svg", alt: "Flow Builder", label: "Flow Builder", className: "Flow Builder" },
+    { href: "/apps/airtime/developer", src: "/images/flowbuillder.svg", alt: "Developer", label: "Developer", className: "Developer" },
     // { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
     {
       href: "/apps/data/settings",
