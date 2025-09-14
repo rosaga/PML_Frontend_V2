@@ -12,7 +12,9 @@ export async function CreateCampaign(formValues) {
         content: formValues.content,
         description: formValues.description,
         slogan: formValues.slogan,
-        scheduled: formValues.schedule?formValues.schedule:null,
+        scheduled: formValues.scheduled,
+        repeat_count: formValues.repeat_count,
+        repeat_interval: formValues.repeat_interval
     }
     
     const createCampaignUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/campaign`;
