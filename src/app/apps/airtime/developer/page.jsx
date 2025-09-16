@@ -34,19 +34,19 @@ export default function APIDocs() {
     {
       id: 'reward',
       method: 'POST',
-      path: '{{base_url}}/api/v2/organization/{{org_id}}/reward',
+      path: '{{base_url}}/api/v2/organization/{{org_id}}/airtime',
       description: 'Send reward to customer (requires authentication token)',
       requiresAuth: true,
       parameters: [
-        { name: 'bundle_amount', type: 'string', required: true, description: 'Amount of reward to send' },
+        { name: 'airtime_amount', type: 'string', required: true, description: 'Amount to send' },
         { name: 'msisdn', type: 'string', required: true, description: 'Customer phone number' },
         { name: 'request_id', type: 'string', required: true, description: 'Unique request identifier' }
       ],
       exampleBody: `{
-  "bundle_amount": "20",
-  "msisdn": "0112253855",
-  "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"
-}`
+      "airtime_amount": "20",
+      "msisdn": "254711438911",
+      "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"
+    }`
     },
     {
       id: 'accounts',
@@ -192,7 +192,7 @@ export default function APIDocs() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">API Documentation</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Airtime API Documentation</h1>
           <p className="text-lg text-gray-600">
             Explore and test our API endpoints directly from your browser
           </p>
@@ -417,7 +417,7 @@ export default function APIDocs() {
                         <div className="flex justify-between items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium">
                           <span>Terminal command</span>
                           <button 
-                            onClick={() => copyToClipboard(`curl --location --request POST '${resolvePath(selectedEndpoint.path)}' \\\n--header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}' \\\n--header 'Content-Type: application/json' \\\n--data-raw '{\n  "bundle_amount": "10",\n  "msisdn": "0112253855",\n  "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"\n}'`)}
+                            onClick={() => copyToClipboard(`curl --location --request POST '${resolvePath(selectedEndpoint.path)}' \\\n--header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}' \\\n--header 'Content-Type: application/json' \\\n--data-raw '{\n  "airtime_amount": "20",\n  "msisdn": "254711438911",\n  "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"\n}'`)}
                             className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded"
                           >
                             Copy
@@ -428,8 +428,8 @@ export default function APIDocs() {
 --header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}' \\
 --header 'Content-Type: application.json' \\
 --data-raw '{
-  "bundle_amount": "10",
-  "msisdn": "0112253855",
+  "airtime_amount": "20",
+  "msisdn": "25471114389111",
   "request_id": "ccfe95d2-1eca-476d-90a1-099eb2fe1a89"
 }'`}
                         </pre>

@@ -11,7 +11,6 @@ import { format,parseISO } from "date-fns";
 import axios from "axios";
 import RequestUnitsModal from "../modal/requestUnits";
 import CreateCampaignModal from "../modal/createCampaign"
-import ScheduleCampaignModal from "../modal/scheduleCampaign";
 import CampaignDetails from "./campaignDetails";
 import { getToken } from "@/utils/auth";
 import { GetCampaigns } from "@/app/api/actions/campaigns/campaigns";
@@ -146,25 +145,13 @@ const CampaignsTable = () => {
             <p className="mt-4 font-medium text-lg">All Campaigns</p>
             <div className="md:ml-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <PeakSearch filterOptions={filterOptions} selectedFilter="" onSearch={handleSearch} onClearSearch={handleClearSearch}/>
-            {isScheduleModelOpen && <ScheduleCampaignModal closeScheduleCampaignModal={closeScheduleCampaignModal} />}
-              <PeakButton
-                buttonText="Schedule Campaign"
-                icon={AddIcon}
-                className="bg-orange-400 text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-                onClick={openScheduleCampaignModal}
-              />
               <PeakButton
                 buttonText="Create Campaign"
                 icon={AddIcon}
                 className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
                 onClick={openModal}
               />
-              {/* <PeakButton
-                buttonText="Export"
-                icon={IosShareIcon}
-                className="rounded-[2px] border-2 text-sm px-2 py-1 shadow-sm outline-none"
-                onClick={openModal}
-              /> */}
+   
             </div>
           </div>
 

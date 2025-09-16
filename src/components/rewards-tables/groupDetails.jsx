@@ -252,12 +252,7 @@ const GroupContactDetails = ({ groupID, groupName }) => {
         <p className="mt-4 font-medium text-lg">Group Details {groupName && `- ${groupName}`}</p>
         <div className="md:ml-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
           <PeakSearch filterOptions={filterOptions} selectedFilter="" />
-          <PeakButton
-            buttonText="Create New Group"
-            icon={AddIcon}
-            className="bg-[#090A29] text-gray-100 text-sm rounded-[2px] px-2 shadow-sm outline-none"
-            onClick={openModal}
-          />
+
           <PeakButton
             buttonText="Add Contact"
             icon={IosShareIcon}
