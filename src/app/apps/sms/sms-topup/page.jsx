@@ -7,6 +7,9 @@ import {
   checkSmsPaymentStatus,
 } from "@/app/api/actions/payments/payments";
 
+import emailjs from "@emailjs/browser";
+
+
 function toKES(amount) {
   if (!Number.isFinite(amount)) return 0;
   return Math.ceil(amount);
@@ -48,7 +51,7 @@ const SMSPricing = () => {
       buttonText: "Select Package",
       buttonAction: "select",
       rate: 0.65,
-      minUnits: 1,
+      minUnits: 10000,
       maxUnits: 99000,
       minAmount: 6500,
     },
@@ -61,7 +64,7 @@ const SMSPricing = () => {
       buttonText: "Select Package",
       buttonAction: "select",
       rate: 0.50,
-      minUnits: 10,
+      minUnits: 100000,
       maxUnits: 299000,
       minAmount: 50000,
     },
@@ -74,7 +77,7 @@ const SMSPricing = () => {
       buttonText: "Select Package",
       buttonAction: "select",
       rate: 0.45,
-      minUnits: 10,
+      minUnits: 300001,
       maxUnits: 999000,
       minAmount: 135000,
     },
@@ -87,7 +90,7 @@ const SMSPricing = () => {
       buttonText: "Select Package",
       buttonAction: "select",
       rate: 0.25,
-      minUnits: 10,
+      minUnits: 1000000,
       maxUnits: 10000000,
       minAmount: 250000,
     },
@@ -135,7 +138,7 @@ const SMSPricing = () => {
 
   const handleSmsUnitsChange = (e) => {
     const raw = e.target.value;
-    const units = Math.max(0, parseInt(raw || "0", 10));
+    const units = Math.max(0, parseInt(raw || "", 10));
     setSmsUnits(units);
 
     const { valid, reason } = validateUnits(selectedPackage, units);
@@ -252,10 +255,45 @@ const SMSPricing = () => {
     setPaymentInfo(null);
   };
 
-  const handleContactSubmit = (payload) => {
-    console.log("Contact sales form submitted:", payload);
-    setShowModal(false);
+  const handleContactSubmit = async (payload) => {
+    const nowNairobi = new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" });
+
+    const templateParams = {
+      name: payload.name || payload.company || "Peak Mobile Lead",
+      title: "Request Custom Quote — SMS Units",
+      time: nowNairobi,
+      message: [
+        `Name: ${payload.name || "-"}`,
+        `Email: ${payload.email || "-"}`,
+        `Phone: ${payload.phone || "-"}`,
+        `Company: ${payload.company || "-"}`,
+        `Estimated Monthly SMS Volume: ${payload.estimatedVolume || "-"}`,
+        `Source: ${payload.source || "Custom Tab"}`,
+        "",
+        "Message:",
+        payload.message || "(no message)"
+      ].join("\n"),
+
+      reply_to: payload.email,
+      to_email: "support@peakmobile.co.ke",
+    };
+
+    try {
+      await emailjs.send(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID_SMS,
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_SMS,
+        templateParams,
+        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY_SMS
+      );
+
+      setShowModal(false);
+      alert("Your request has been sent. Our team will contact you shortly.");
+    } catch (err) {
+      console.error("EmailJS error:", err);
+      alert("Sorry—couldn’t submit the form. Please try again.");
+    }
   };
+
 
   const PaymentProcessingModal = () => (
     <div className="space-y-6 text-center">
@@ -361,7 +399,7 @@ const SMSPricing = () => {
             name="estimatedVolume"
             value={form.estimatedVolume}
             onChange={handleChange}
-            min="0"
+            min=""
             className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-300"
             placeholder="e.g. 600,000"
           />
@@ -428,61 +466,64 @@ const SMSPricing = () => {
 
       {/* Packages Tab Content */}
       {activeTab === "packages" && (
-        <div className="max-w-7xl justify-center mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 justify-center">
-            {pricingPackages.map((pkg) => (
-              <div
-                key={pkg.id}
-                className="border border-gray-200 rounded-lg p-4 flex flex-col items-center"
-              >
-                {/* Package Title */}
-                <h2 className="text-lg font-semibold text-gray-800 mb-2 text-center">
-                  {pkg.title}
-                </h2>
+        <div className="max-w-7xl mx-auto">
+  <div className="grid grid-cols-2 gap-4 w-fit mx-auto justify-items-center">
+    {pricingPackages.map((pkg) => (
+      <div
+        key={pkg.id}
+        className="border border-gray-200 rounded-lg p-4 flex flex-col items-center justify-between w-72 h-72"
+      >
+        {/* Package Title */}
+        <h2 className="text-lg font-semibold text-gray-800 text-center">
+          {pkg.title}
+        </h2>
 
-                {/* Paper Plane Icon */}
-                <div className="mb-4 text-orange-400">
-                  <svg
-                    width="32"
-                    height="32"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 2L11 13"></path>
-                    <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
-                  </svg>
-                </div>
-
-                {/* Package Details */}
-                <h3 className="text-base font-medium text-gray-700 mb-1 text-center">
-                  {pkg.range}
-                </h3>
-                <p className="text-sm text-gray-600 mb-2 text-center">{pkg.price}</p>
-                {pkg.minAmount && (
-                  <p className="text-xs text-gray-500 mb-4 text-center">
-                    Min: Ksh {pkg.minAmount.toLocaleString()}
-                  </p>
-                )}
-
-                {/* Action Button */}
-                <button
-                  className={`w-full py-2 text-sm rounded-md ${
-                    pkg.buttonAction === "select"
-                      ? "bg-orange-100 text-[#F58426]"
-                      : "bg-orange-100 text-[#F58426]"
-                  } font-medium hover:opacity-90 transition-opacity`}
-                  onClick={() => handleButtonClick(pkg.buttonAction, pkg.id)}
-                >
-                  {pkg.buttonText}
-                </button>
-              </div>
-            ))}
-          </div>
+        {/* Paper Plane Icon */}
+        <div className="text-orange-400">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M22 2L11 13"></path>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+          </svg>
         </div>
+
+        {/* Package Details */}
+        <div className="text-center">
+          <h3 className="text-base font-medium text-gray-700 mb-1">
+            {pkg.range}
+          </h3>
+          <p className="text-sm text-gray-600 mb-2">{pkg.price}</p>
+          {pkg.minAmount && (
+            <p className="text-xs text-gray-500">
+              Min: Ksh {pkg.minAmount.toLocaleString()}
+            </p>
+          )}
+        </div>
+
+        {/* Action Button */}
+        <button
+          className={`w-full py-2 text-sm rounded-md ${
+            pkg.buttonAction === "select"
+              ? "bg-orange-100 text-[#F58426]"
+              : "bg-orange-100 text-[#F58426]"
+          } font-medium hover:opacity-90 transition-opacity`}
+          onClick={() => handleButtonClick(pkg.buttonAction, pkg.id)}
+        >
+          {pkg.buttonText}
+        </button>
+      </div>
+    ))}
+  </div>
+</div>
+
       )}
 
       {/* Custom Tab Content */}
