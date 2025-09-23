@@ -306,25 +306,42 @@ const SendBulkModal = ({ closeModal }) => {
                   </select>
                 </div>
 
-                <div>
-                <label htmlFor="content" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between">
-                  <span>Type your message here</span>
-                  <span className={`${charCount >= 140 ? "text-red-500" : "text-gray-500"}`}>
-                    {charCount}/160
-                  </span>
-                </label>
-                  <textarea
-                    name="content"
-                    id="content"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="Hello ^FIRSTNAME^ ^LASTNAME^ from the county of ^COUNTY^. Receive this sms to your mobile number - ^PHONENUMBER^."
-                    onChange={handleChange}
-                    value={state.content}
-                    maxLength="160"
-                    rows="4"
-                    required
-                  />
+                <div className="flex justify-between mb-2">
+                  <label
+                    htmlFor="content"
+                    className="block text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Type your message here
+                  </label>
+                  <button
+                    type="button"
+                    className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
+                    onClick={() => {
+                      const textarea = document.getElementById("content");
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const text = state.content;
+                      const newText =
+                        text.substring(0, start) + "{{.}}" + text.substring(end);
+                      handleChange({ target: { name: "content", value: newText } });
+                    }}
+                  >
+                   Insert Attribute
+                  </button>
                 </div>
+
+                <textarea
+                  name="content"
+                  id="content"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  placeholder="Hello {{.}}!"
+                  onChange={handleChange}
+                  value={state.content}
+                  maxLength="160"
+                  rows="4"
+                  required
+                />
+
 
                 <FormGroup>
                   <FormControlLabel
