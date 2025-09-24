@@ -26,6 +26,8 @@ const Dashboard = () => {
   const [totalPending, setTotalPending] = useState('');
   const [totalBalance, setTotalBalance] = useState(0);
 
+  // Initialize with current date values
+  const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
@@ -137,8 +139,6 @@ const Dashboard = () => {
   const monthOptions = generateMonthOptions();
   const dayOptions = generateDayOptions();
 
-  
-
   const getSmsBalance = () => {
     if (org_id) {
       messageBalanceAction({ org_id })
@@ -148,7 +148,6 @@ const Dashboard = () => {
           } else {
             console.log("Balance is", res)
             setTotalBalance(res.data.balance);
-            
             setLoading(false);
           }
         })
@@ -162,43 +161,73 @@ const Dashboard = () => {
 
   const getMessageCounts = () => {
     if (org_id) {
-      messageCountsAction({ org_id, selectedMonth, selectedYear, selectedDay })
+      setTotalMessages(0);
+      setTotalSuccess(0);
+      setTotalPending(0);
+      
+      const filterParams = {
+        org_id,
+        selectedYear: selectedYear || undefined,
+        selectedMonth: selectedMonth || undefined,
+        selectedDay: selectedDay || undefined
+      };
+
+      console.log("Sending filter params:", filterParams); 
+
+      messageCountsAction(filterParams)
         .then((res) => {
+          console.log("API Response:", res);
+          
           if (res.errors) {
             console.log("AN ERROR HAS OCCURED");
+            setTotalMessages(0);
+            setTotalSuccess(0);
+            setTotalPending(0);
           } else {
-            // Set total message count
-            setTotalMessages(res.data.TotalMessageCount);
+            const responseData = res.data || {};
+            
+            const totalCount = responseData.TotalMessageCount || 0;
+            setTotalMessages(totalCount);
   
-            // Initialize success and failed counts
             let successCount = 0;
             let pendingCount = 0;
   
-            // Loop through the StatusCounts and calculate success/failed totals
-            res.data.StatusCounts.forEach((status) => {
-              if (status.StatusDescription === "Recieved Pending Confirmation" || status.StatusDescription === "SUCCESS" || status.StatusDescription === "DeliveredToTerminal"
-                || status.StatusDescription === "Accepted for processing"
-              ) {
-                successCount += status.MessageCount;
-              } else{
-                pendingCount += status.MessageCount;
-              }
-            });
+            if (responseData.StatusCounts && Array.isArray(responseData.StatusCounts)) {
+              responseData.StatusCounts.forEach((status) => {
+                if (status.StatusDescription === "Recieved Pending Confirmation" || 
+                    status.StatusDescription === "SUCCESS" || 
+                    status.StatusDescription === "DeliveredToTerminal" ||
+                    status.StatusDescription === "Accepted for processing"
+                ) {
+                  successCount += status.MessageCount || 0;
+                } else {
+                  pendingCount += status.MessageCount || 0;
+                }
+              });
+            }
   
-            // Set the state for total success and total failed
             setTotalSuccess(successCount);
             setTotalPending(pendingCount);
-  
-            setLoading(false);
           }
+          
+          setLoading(false);
         })
         .catch((err) => {
-          console.log(err);
+          console.log("Catch block error:", err);
+          setTotalMessages(0);
+          setTotalSuccess(0);
+          setTotalPending(0);
+          setLoading(false);
         });
     } else {
       console.log("org_id is null or undefined. Skipping API call.");
+      setTotalMessages(0);
+      setTotalSuccess(0);
+      setTotalPending(0);
+      setLoading(false);
     }
   };
+
   const getMessages = () => {
     if (org_id) {
       messagesAction({ org_id, page, limit })
@@ -212,19 +241,44 @@ const Dashboard = () => {
         })
         .catch((err) => {
           console.log(err);
+          setLoading(false);
         });
     } else {
       console.log("org_id is null or undefined. Skipping API call.");
     }
   };
 
+  const handleYearChange = (year) => {
+    setSelectedYear(year);
+    setTotalMessages(0);
+    setTotalSuccess(0);
+    setTotalPending(0);
+    setLoading(true);
+  };
+
+  const handleMonthChange = (month) => {
+    setSelectedMonth(month);
+    setTotalMessages(0);
+    setTotalSuccess(0);
+    setTotalPending(0);
+    setLoading(true);
+  };
+
+  const handleDayChange = (day) => {
+    setSelectedDay(day);
+    setTotalMessages(0);
+    setTotalSuccess(0);
+    setTotalPending(0);
+    setLoading(true);
+  };
+
   useEffect(() => {
-    getMessages();
-    getMessageCounts();
-    getSmsBalance();
-  }, [selectedMonth, selectedYear, selectedDay]);
-
-
+    if (org_id) {
+      getMessages();
+      getMessageCounts();
+      getSmsBalance();
+    }
+  }, [org_id, selectedMonth, selectedYear, selectedDay]);
 
   return (
     <div className="flex flex-col sm:flex-row">
@@ -233,11 +287,14 @@ const Dashboard = () => {
           <div className="flex flex-col h-full">
             <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
               <div>
+                <label htmlFor="yearFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Year
+                </label>
                 <select
                   id="yearFilter"
                   value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="p-2 border rounded"
+                  onChange={(e) => handleYearChange(e.target.value)}
+                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {yearOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -247,11 +304,14 @@ const Dashboard = () => {
                 </select>
               </div>
               <div>
+                <label htmlFor="monthFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Month
+                </label>
                 <select
                   id="monthFilter"
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="p-2 border rounded"
+                  onChange={(e) => handleMonthChange(e.target.value)}
+                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {monthOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -261,11 +321,14 @@ const Dashboard = () => {
                 </select>
               </div>
               <div>
+                <label htmlFor="dayFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Day
+                </label>
                 <select
                   id="dayFilter"
                   value={selectedDay}
-                  onChange={(e) => setSelectedDay(e.target.value)}
-                  className="p-2 border rounded"
+                  onChange={(e) => handleDayChange(e.target.value)}
+                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {dayOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -275,17 +338,32 @@ const Dashboard = () => {
                 </select>
               </div>
             </div>
+            
+            {loading && (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="ml-2">Loading...</span>
+              </div>
+            )}
+
             <div className="border-[1.5px] rounded-3xl">
               <div className="p-8">
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
                 <div className="flex items-center justify-between">
                   <p className="m-1 text-md">SMS Summary</p>
+                  {(selectedYear || selectedMonth || selectedDay) && (
+                    <p className="text-sm text-gray-600">
+                      Filtered by: {selectedYear && `Year ${selectedYear}`}
+                      {selectedMonth && ` Month ${selectedMonth}`}
+                      {selectedDay && ` Day ${selectedDay}`}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
-                    <div className="text-gray-500">Total Success</div>
+                    <div className="text-gray-500">Total Messages</div>
                     <div>
                       <span>
                         <Image
@@ -296,13 +374,13 @@ const Dashboard = () => {
                           src="/images/Icon-0.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
-                          alt="Recipients reached"
+                          alt="Total messages"
                           priority
                         />
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{totalMessages ? totalMessages : 0}</div>
+                  <div className="text-2xl font-bold">{totalMessages || 0}</div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
@@ -317,13 +395,13 @@ const Dashboard = () => {
                           src="/images/Icon-1.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
-                          alt="Recipients reached"
+                          alt="Total delivered"
                           priority
                         />
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{totalSuccess ? totalSuccess : 0}</div>
+                  <div className="text-2xl font-bold">{totalSuccess || 0}</div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
@@ -338,13 +416,13 @@ const Dashboard = () => {
                           src="/images/Icon-1.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
-                          alt="Recipients reached"
+                          alt="Total failed"
                           priority
                         />
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{totalPending ? totalPending : 0}</div>
+                  <div className="text-2xl font-bold">{totalPending || 0}</div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <div className="flex justify-between items-center mb-4">
@@ -359,16 +437,17 @@ const Dashboard = () => {
                           src="/images/Icon-3.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
-                          alt="Recipients reached"
+                          alt="SMS balance"
                           priority
                         />
                       </span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold">{totalBalance ? totalBalance : 0}</div>
+                  <div className="text-2xl font-bold">{totalBalance || 0}</div>
                 </div>
               </div>
             </div>
+            
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
                 <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
                   <p className="mt-2 font-medium text-lg">Recent Messages</p>
@@ -383,14 +462,13 @@ const Dashboard = () => {
                       onPaginationModelChange={setPaginationModel}
                       pagination
                       paginationMode="client"
-                      getRowId={(row) => row.message_id || row.destination || Math.random().toString()} // Add this line
+                      getRowId={(row) => row.message_id || row.destination || Math.random().toString()}
                       sx={{
                         "&.MuiDataGrid-root": {
                           border: "none",
                         },
                       }}
                     />
-
                     </div>
                   </div>
                 </div>
