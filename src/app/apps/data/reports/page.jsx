@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
 import TrendsVisualization from '@/components/dashboard/TrendsVisualization';
+import UtilizationVisualization from '@/components/dashboard/UtilizationVisualization';
+import EfficiencyVisualization from '@/components/dashboard/EfficiencyVisualization';
+import FinancialVisualization from '@/components/dashboard/FinancialVisualization';
 
 const Reports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
@@ -47,7 +50,7 @@ const Reports = () => {
     setSelectedReport(null);
   };
 
-  // If a report is selected, show the report content
+  // Consumer Report
   if (selectedReport === 'consumer') {
     return (
       <div className="p-4 sm:ml-64 h-screen">
@@ -122,14 +125,8 @@ const Reports = () => {
     );
   }
 
-  // For other reports (utilization, efficiency, financial) - show coming soon page
-  if (selectedReport) {
-    const reportTitles = {
-      'utilization': 'Utilization Rate Report',
-      'efficiency': 'Efficiency Report', 
-      'financial': 'Financial Report'
-    };
-
+  // Utilization Rate Report
+  if (selectedReport === 'utilization') {
     return (
       <div className="p-4 sm:ml-64 h-screen">
         <div className="flex flex-col h-full">
@@ -145,28 +142,206 @@ const Reports = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <p className="mt-4 font-medium text-lg">{reportTitles[selectedReport]}</p>
+                  <p className="mt-4 font-medium text-2xl">Utilization Rate Report</p>
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center h-screen text-center p-6">
-                <h1 className="text-4xl font-bold mb-4">🛠️ Oops! 🚧</h1>
-                <p className="text-xl mb-4">
-                  We are busy brewing up something awesome here!
-                </p>
-                <img
-                  src="https://via.placeholder.com/400x300?text=Under+Construction"
-                  alt="Under Construction!"
-                  className="mb-4"
-                />
-                <p className="text-lg text-gray-700 mb-2">
-                  Our developers are working like elves on double espresso. Please
-                  check back soon!
-                </p>
-                <p className="text-lg text-gray-700">
-                  In the meantime, feel free to enjoy this placeholder text and
-                  imagine the possibilities!
-                </p>
+              {/* Filter section */}
+              <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
+                <div>
+                  <label htmlFor="yearFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Year
+                  </label>
+                  <select
+                    id="yearFilter"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {yearOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="monthFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Month
+                  </label>
+                  <select
+                    id="monthFilter"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {monthOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Utilization Visualization */}
+              <div className="flex flex-col">
+                <div className="p-4 shadow-md rounded-lg">
+                  <UtilizationVisualization 
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Efficiency Report
+  if (selectedReport === 'efficiency') {
+    return (
+      <div className="p-4 sm:ml-64 h-screen">
+        <div className="flex flex-col h-full">
+          <div className="flex flex-col">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <button
+                    onClick={handleBackToReports}
+                    className="mr-4 p-2 text-[#FF9800] hover:bg-gray-100 rounded-full"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <p className="mt-4 font-medium text-2xl">Efficiency Report</p>
+                </div>
+              </div>
+
+              {/* Filter section */}
+              <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
+                <div>
+                  <label htmlFor="yearFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Year
+                  </label>
+                  <select
+                    id="yearFilter"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {yearOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="monthFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Month
+                  </label>
+                  <select
+                    id="monthFilter"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {monthOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Efficiency Visualization */}
+              <div className="flex flex-col">
+                <div className="p-4 shadow-md rounded-lg">
+                  <EfficiencyVisualization 
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Financial Report
+  if (selectedReport === 'financial') {
+    return (
+      <div className="p-4 sm:ml-64 h-screen">
+        <div className="flex flex-col h-full">
+          <div className="flex flex-col">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <button
+                    onClick={handleBackToReports}
+                    className="mr-4 p-2 text-[#FF9800] hover:bg-gray-100 rounded-full"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <p className="mt-4 font-medium text-2xl">Financial Report</p>
+                </div>
+              </div>
+
+              {/* Filter section */}
+              <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
+                <div>
+                  <label htmlFor="yearFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Year
+                  </label>
+                  <select
+                    id="yearFilter"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {yearOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="monthFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Month
+                  </label>
+                  <select
+                    id="monthFilter"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {monthOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Financial Visualization */}
+              <div className="flex flex-col">
+                <div className="p-4 shadow-md rounded-lg">
+                  <FinancialVisualization 
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -350,4 +525,4 @@ const Reports = () => {
   );
 };
 
-export default Reports;
+export default Reports

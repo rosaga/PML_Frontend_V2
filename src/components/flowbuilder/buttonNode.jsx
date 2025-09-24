@@ -199,7 +199,7 @@ const ButtonNode = ({ data, isConnectable }) => {
             size="small"
             startIcon={<AddIcon />}
           >
-            Add {nodeType === 'route' ? 'Button' : 'Option'}
+            Add option(s)
           </Button>
         </div>
         
