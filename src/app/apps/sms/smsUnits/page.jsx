@@ -8,6 +8,7 @@ import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
 import { GetRecharges } from "@/app/api/actions/senderId/senderId";
 import { GetAccounts } from "@/app/api/actions/accounts/accounts";
+import { GetAllOrgUnits } from "@/app/api/actions/senderId/senderId";
 import RequestSmsUnitsModal from "../../../../components/modal/requestSmsUnits";
 import ProvisionSmsUnitsModal from "../../../../components/modal/autoprovUnits";
 import { hasRole } from "../../../../utils/decodeToken";
@@ -15,7 +16,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { grey, green } from "@mui/material/colors";
-import apiUrl from "../../../api/utils/apiUtils/apiUrl";
+import apiUrl from "@/app/api/utils/apiUtils/apiUrl";
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 import { format } from "date-fns";
@@ -61,22 +62,22 @@ const Recharges = () => {
     }
   };
 
-  const buildAccountsMap = (accountsList) => {
+  const buildAccountsMap = (list) => {
     const map = {};
-    (accountsList || []).forEach(acc => {
+    (list || []).forEach(item => {
       const key =
-        acc?.application_id ??
-        acc?.app_id ??
-        acc?.id ??
-        acc?.applicationId ??
-        acc?.appId;
+        item?.application_id ??
+        item?.app_id ??
+        item?.id ??
+        item?.applicationId ??
+        item?.appId;
 
       const name =
-        acc?.name ??
-        acc?.application_name ??
-        acc?.account_name ??
-        acc?.display_name ??
-        acc?.org_name ??
+        item?.name ??
+        item?.application_name ??
+        item?.account_name ??
+        item?.display_name ??
+        item?.org_name ??
         key;
 
       if (key) map[key] = name;
@@ -84,30 +85,75 @@ const Recharges = () => {
     return map;
   };
 
-  const getData = async () => {
+  const fetchOrgDirectory = async () => {
     try {
-      setLoading(true);
+      const orgsRes = await GetAllOrgUnits();
+      if (orgsRes?.data && Array.isArray(orgsRes.data) && orgsRes.data.length) {
+        return orgsRes.data;
+      }
+    } catch (e) {
+    }
+    const accountsRes = await GetAccounts();
+    return accountsRes?.data || [];
+  };
 
-      const [rechargesRes, accountsRes] = await Promise.all([
-        GetRecharges(org_id),
-        GetAccounts()
-      ]);
+  const fetchAllRechargesForAdmin = async () => {
+    const orgList = await fetchOrgDirectory();
+    if (!orgList.length) return [];
 
-      const accountsList = accountsRes?.data || [];
-      const accountsMap = buildAccountsMap(accountsList);
+    const accountsMap = buildAccountsMap(orgList);
 
-      // Handle recharges
-      if (rechargesRes?.errors) {
-        console.log("AN ERROR HAS OCCURRED");
-        setRecharges([]);
-      } else {
-        const data = rechargesRes?.data || [];
-        const enriched = data.map(r => ({
+    const appIds = Object.keys(accountsMap);
+
+    const results = await Promise.allSettled(
+      appIds.map(id => GetRecharges(id, 1, 1000))
+    );
+
+    const merged = [];
+    results.forEach((res, idx) => {
+      if (res.status === "fulfilled" && res.value?.data) {
+        const rows = res.value.data.map(r => ({
           ...r,
           account_name: accountsMap[r?.application_id] || r?.application_id
         }));
-        setRecharges(enriched);
+        merged.push(...rows);
       }
+    });
+
+    merged.sort((a, b) => {
+      const da = new Date(a?.createdat || 0).getTime();
+      const db = new Date(b?.createdat || 0).getTime();
+      if (!isNaN(db - da) && db !== da) return db - da;
+      return (b?.id || 0) - (a?.id || 0);
+    });
+
+    return merged;
+  };
+
+  const fetchRechargesForOrg = async (org_id_param) => {
+    const [rechargesRes, accountsRes] = await Promise.all([
+      GetRecharges(org_id_param),
+      GetAccounts()
+    ]);
+
+    const accountsMap = buildAccountsMap(accountsRes?.data || []);
+    const data = rechargesRes?.data || [];
+    return data.map(r => ({
+      ...r,
+      account_name: accountsMap[r?.application_id] || r?.application_id
+    }));
+  };
+
+  const getData = async () => {
+    try {
+      setLoading(true);
+      const isSuper = hasRole(token, "SuperAdmin");
+
+      const rows = isSuper
+        ? await fetchAllRechargesForAdmin()
+        : await fetchRechargesForOrg(org_id);
+
+      setRecharges(rows);
     } catch (err) {
       console.log(err);
       toast.error("Failed to load data");
@@ -125,9 +171,9 @@ const Recharges = () => {
     { field: "id", headerName: "ID", flex: 1 },
 
     { field: "account_name", headerName: "Account", flex: 1, minWidth: 200 },
+
     { field: "package", headerName: "Package", flex: 1 },
     { field: "units", headerName: "Units", flex: 1 },
-    { field: "expireson", headerName: "Expiry", flex: 1 },
 
     {
       field: "createdat",
@@ -169,8 +215,6 @@ const Recharges = () => {
       minWidth: 150,
       renderCell: (params) => {
         const { status_code } = params.row;
-
-        // Only SuperAdmin can approve
         const userHasSuperAdminRole = hasRole(token, "SuperAdmin");
         if (!userHasSuperAdminRole) return null;
 
