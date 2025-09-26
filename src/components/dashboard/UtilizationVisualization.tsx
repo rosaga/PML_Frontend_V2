@@ -174,15 +174,17 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
         shadow: true,
         useHTML: true,
         formatter: function() {
-          const point = this.point as any;
-          const percentage = ((point.y / total) * 100).toFixed(1);
+          const value = this.y as number;
+          const name = this.key as string;
+          const percentage = this.percentage?.toFixed(1) || '0.0';
+          
           return `
             <div style="padding: 8px;">
               <div style="font-weight: 600; margin-bottom: 8px; color: #374151;">
-                ${point.name}
+                ${name}
               </div>
               <div style="color: #374151;">
-                <strong>${Highcharts.numberFormat(point.y, 0)} MB</strong> (${percentage}%)
+                <strong>${Highcharts.numberFormat(value, 0)} MB</strong> (${percentage}%)
               </div>
             </div>
           `;
