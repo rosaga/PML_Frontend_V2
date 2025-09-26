@@ -30,22 +30,13 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
 
     try {
       const config = await authHeaders();
-      // For now, we'll simulate API call and return placeholder data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // TODO: Replace with actual API call when backend is ready
-      // const res = await axios.get(efficiencyUrl, config);
-      
-      // Generate mock data based on the selected filters
       const mockData = generateMockEfficiencyData(granularity, startDate, endDate);
       
-      const mockResponse = {
-        efficiency: mockData,
-        status: 200
+      return {
+        efficiency: mockData
       };
-
-      console.log("Efficiency API Response (Mock):", mockResponse.efficiency);
-      return mockResponse;
 
     } catch (error: any) {
       console.error('Error fetching efficiency data:', error);

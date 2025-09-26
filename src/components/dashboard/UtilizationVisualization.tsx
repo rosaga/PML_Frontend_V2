@@ -102,7 +102,7 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
       const { granularity, startDate, endDate } = getDateParams();
       const result = await getUtilizationData(org_id, granularity, startDate, endDate);
 
-      if (result.errors) {
+      if ('errors' in result && result.errors) {
         setError(result.errors._error);
       } else {
         setData(result);

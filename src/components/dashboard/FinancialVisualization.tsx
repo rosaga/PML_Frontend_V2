@@ -35,22 +35,13 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
 
     try {
       const config = await authHeaders();
-      // For now, we'll simulate API call and return placeholder data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // TODO: Replace with actual API call when backend is ready
-      // const res = await axios.get(financialUrl, config);
-      
-      // Generate mock financial data
       const mockData = generateMockFinancialData();
       
-      const mockResponse = {
-        financial: mockData,
-        status: 200
+      return {
+        financial: mockData
       };
-
-      console.log("Financial API Response (Mock):", mockResponse.financial);
-      return mockResponse;
 
     } catch (error: any) {
       console.error('Error fetching financial data:', error);
