@@ -4,8 +4,7 @@ import apiUrl from "../../utils/apiUtils/apiUrl";
 
 const BASE_PAYMENT_URL = apiUrl.MAKE_PAYMENT;
 const SMS_BASE_PAYMENT_URL = apiUrl.SMS_MAKE_PAYMENT;
-
-
+const AIRTIME_PAYMENT_URL = apiUrl.AIRTIME_PAYMENT;
 
 export async function getPayments(
   org_id,
@@ -255,6 +254,180 @@ export async function processMpesaSmsPayment(
   };
 
   return makeSmsPayment(org_id, payload);
+}
+
+export async function initiateAirtimePayment(amount, phoneNumber) {
+  if (!amount || amount <= 0) {
+    throw new Error("Amount must be greater than 0");
+  }
+  if (!phoneNumber) {
+    throw new Error("Phone number is required");
+  }
+
+  const msisdn = formatMSISDN(phoneNumber);
+
+  const payload = {
+    amount: Number(amount),
+    msisdn: msisdn
+  };
+
+  try {
+    const response = await axios.post(AIRTIME_PAYMENT_URL, payload);
+    
+    if (response.status === 200 && response.data) {
+      console.log("Airtime payment initiated:", response.data);
+      return {
+        success: true,
+        data: response.data,
+        payment: response.data.payment,
+        message: response.data.message
+      };
+    }
+    
+    throw new Error("Unexpected response from payment API");
+  } catch (err) {
+    console.error("Airtime payment initiation failed:", err);
+    
+    if (err.response?.data) {
+      return {
+        success: false,
+        errors: {
+          _error: err.response.data.error || "Payment initiation failed."
+        }
+      };
+    }
+    
+    return {
+      success: false,
+      errors: {
+        _error: "Network error. Please try again."
+      }
+    };
+  }
+}
+
+export async function getAirtimePayments(msisdn = null) {
+  try {
+    let url = AIRTIME_PAYMENT_URL;
+    
+    if (msisdn) {
+      const formattedMsisdn = formatMSISDN(msisdn);
+      url += `?msisdn=${formattedMsisdn}`;
+    }
+
+    const response = await axios.get(url);
+    
+    if (response.status === 200 && response.data) {
+      return {
+        success: true,
+        data: response.data.data || [],
+        count: response.data.count || 0
+      };
+    }
+    
+    throw new Error("Failed to fetch payments");
+  } catch (err) {
+    console.error("Error fetching airtime payments:", err);
+    return {
+      success: false,
+      errors: {
+        _error: "Failed to fetch payment history"
+      }
+    };
+  }
+}
+
+export async function checkAirtimePaymentStatus(requestId) {
+  try {
+    const response = await axios.get(AIRTIME_PAYMENT_URL);
+    
+    if (response.status === 200 && response.data) {
+      const payments = response.data.data || [];
+      const payment = payments.find(p => p.request_id === requestId);
+      
+      if (payment) {
+        return {
+          success: true,
+          data: payment,
+          status: payment.status
+        };
+      }
+      
+      return {
+        success: false,
+        errors: {
+          _error: "Payment not found"
+        }
+      };
+    }
+    
+    throw new Error("Failed to check payment status");
+  } catch (err) {
+    console.error("Error checking payment status:", err);
+    return {
+      success: false,
+      errors: {
+        _error: "Failed to check payment status"
+      }
+    };
+  }
+}
+
+export function formatMSISDN(input) {
+  if (!input) return "";
+  
+  const digits = String(input).replace(/[^\d]/g, "");
+
+  if (digits.startsWith("254") && digits.length === 12) {
+    return digits;
+  }
+  
+  if (digits.startsWith("0") && digits.length === 10) {
+    return `254${digits.slice(1)}`;
+  }
+  
+  if (digits.length === 9 && !digits.startsWith("0")) {
+    return `254${digits}`;
+  }
+  
+  if (digits.startsWith("254")) {
+    return digits;
+  }
+
+  if (digits.startsWith("7") && digits.length === 9) {
+    return `254${digits}`;
+  }
+
+  return digits;
+}
+
+export async function pollPaymentStatus(requestId, maxAttempts = 30, interval = 2000) {
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    const result = await checkAirtimePaymentStatus(requestId);
+    
+    if (result.success && result.data) {
+      const status = result.data.status;
+      
+      if (status !== "PENDING") {
+        return result;
+      }
+    }
+    
+    attempts++;
+    
+    if (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+  }
+  
+  return {
+    success: false,
+    errors: {
+      _error: "Payment status check timed out. Please check your payment history."
+    }
+  };
 }
 
 
