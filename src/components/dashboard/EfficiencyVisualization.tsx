@@ -23,75 +23,35 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
     org_id = localStorage.getItem("selectedAccountId");
   }
 
-  // API function to get efficiency data (placeholder for now)
+  // API function to get efficiency data
   const getEfficiencyData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const efficiencyUrl = `${apiUrl}/organization/${orgId}/efficiency?granularity=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    const efficiencyUrl = `${apiUrl}/organization/${orgId}/efficiency-report?group=${granularity}&start_date=${startDate}&end_date=${endDate}`;
 
     try {
       const config = await authHeaders();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockData = generateMockEfficiencyData(granularity, startDate, endDate);
-      
-      return {
-        efficiency: mockData
-      };
+      const res = await axios.get(efficiencyUrl, config);
 
+      if (res.data && res.status === 200) {
+        return res.data;
+      }
+
+      return res;
     } catch (error: any) {
       console.error('Error fetching efficiency data:', error);
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The efficiency data could not be retrieved.',
+          },
+        };
+      }
       return {
         errors: {
-          _error: 'The efficiency data could not be retrieved.',
+          _error: 'Network error. Please try again.',
         },
       };
     }
-  };
-
-  // Generate mock efficiency data
-  const generateMockEfficiencyData = (granularity: string, startDate: string, endDate: string) => {
-    const data = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    if (granularity === 'monthly') {
-      if (!selectedYear) {
-        // Yearly view - show 2 years
-        for (let year = start.getFullYear(); year <= end.getFullYear(); year++) {
-          data.push({
-            period: `${year}-01-01`,
-            successful_dispatches: Math.floor(Math.random() * 5000) + 3000,
-            failed_dispatches: Math.floor(Math.random() * 800) + 200
-          });
-        }
-      } else {
-        // Monthly view for specific year
-        for (let month = 0; month < 12; month++) {
-          const date = new Date(parseInt(selectedYear), month, 1);
-          data.push({
-            period: date.toISOString().split('T')[0],
-            successful_dispatches: Math.floor(Math.random() * 800) + 400,
-            failed_dispatches: Math.floor(Math.random() * 100) + 20
-          });
-        }
-      }
-    } else {
-      // Daily view for specific month
-      const year = parseInt(selectedYear);
-      const month = parseInt(selectedMonth) - 1;
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        data.push({
-          period: date.toISOString().split('T')[0],
-          successful_dispatches: Math.floor(Math.random() * 50) + 20,
-          failed_dispatches: Math.floor(Math.random() * 10) + 1
-        });
-      }
-    }
-    
-    return data;
   };
 
   // Generate date ranges and granularity based on filters
@@ -153,11 +113,11 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
 
   // Process API data for chart
   const processApiData = () => {
-    if (!data || !data.efficiency || data.efficiency.length === 0) {
+    if (!data || !data.graph || data.graph.length === 0) {
       return generateFallbackData();
     }
 
-    const apiData = data.efficiency;
+    const apiData = data.graph;
     let categories: string[] = [];
     let successful: number[] = [];
     let failed: number[] = [];
@@ -171,8 +131,8 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
         if (!yearGroups[year]) {
           yearGroups[year] = { successful: 0, failed: 0 };
         }
-        yearGroups[year].successful += item.successful_dispatches || 0;
-        yearGroups[year].failed += item.failed_dispatches || 0;
+        yearGroups[year].successful += item.successful || 0;
+        yearGroups[year].failed += item.failed || 0;
       });
 
       categories = Object.keys(yearGroups).sort();
@@ -195,8 +155,8 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
       apiData.forEach((item: any) => {
         const date = new Date(item.period);
         const monthIndex = date.getMonth();
-        monthGroups[monthIndex].successful += item.successful_dispatches || 0;
-        monthGroups[monthIndex].failed += item.failed_dispatches || 0;
+        monthGroups[monthIndex].successful += item.successful || 0;
+        monthGroups[monthIndex].failed += item.failed || 0;
       });
 
       categories = monthNames;
@@ -219,8 +179,8 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
         const date = new Date(item.period);
         const dayOfMonth = date.getDate();
         if (dayGroups[dayOfMonth]) {
-          dayGroups[dayOfMonth].successful += item.successful_dispatches || 0;
-          dayGroups[dayOfMonth].failed += item.failed_dispatches || 0;
+          dayGroups[dayOfMonth].successful += item.successful || 0;
+          dayGroups[dayOfMonth].failed += item.failed || 0;
         }
       });
 
@@ -404,16 +364,20 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
       series: [{
         name: 'Successful Dispatches',
         type: 'column',
-        data: chartData.successful,
-        color: '#F58426', // Orange for success
+        data: chartData.successful.map((value, index) => ({
+          y: value,
+          color: value === 0 ? 'rgba(245, 132, 38, 0.3)' : '#F58426'
+        })),
         dataLabels: {
           enabled: false
         }
       }, {
         name: 'Failed Dispatches',
         type: 'column',
-        data: chartData.failed,
-        color: '#EF4444', // Red for failure
+        data: chartData.failed.map((value, index) => ({
+          y: value,
+          color: value === 0 ? 'rgba(239, 68, 68, 0.3)' : '#EF4444'
+        })),
         dataLabels: {
           enabled: false
         }
@@ -466,19 +430,22 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
     return monthNames[parseInt(month) - 1] || '';
   };
 
-  // Calculate summary statistics
+  // Calculate summary statistics from report data
   const getSummaryStats = () => {
-    const chartData = processApiData();
-    const totalSuccessful = chartData.successful.reduce((sum, val) => sum + val, 0);
-    const totalFailed = chartData.failed.reduce((sum, val) => sum + val, 0);
-    const totalDispatches = totalSuccessful + totalFailed;
-    const successRate = totalDispatches > 0 ? ((totalSuccessful / totalDispatches) * 100) : 0;
+    if (!data || !data.report) {
+      return {
+        totalSuccessful: 0,
+        totalFailed: 0,
+        totalDispatches: 0,
+        successRate: 0
+      };
+    }
 
     return {
-      totalSuccessful,
-      totalFailed,
-      totalDispatches,
-      successRate
+      totalSuccessful: data.report.successful || 0,
+      totalFailed: data.report.failed || 0,
+      totalDispatches: data.report.total || 0,
+      successRate: data.report.success_rate || 0
     };
   };
 

@@ -23,36 +23,33 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
     org_id = localStorage.getItem("selectedAccountId");
   }
 
-  // API function to get utilization data (placeholder for now)
+  // API function to get utilization data
   const getUtilizationData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const utilizationUrl = `${apiUrl}/organization/${orgId}/utilization?granularity=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    const utilizationUrl = `${apiUrl}/organization/${orgId}/utilization-report?group=${granularity}&start_date=${startDate}&end_date=${endDate}`;
 
     try {
       const config = await authHeaders();
-      // For now, we'll simulate API call and return placeholder data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
-      
-      // TODO: Replace with actual API call when backend is ready
-      // const res = await axios.get(utilizationUrl, config);
-      
-      // Placeholder response structure
-      const mockResponse = {
-        data: {
-          total_dispatched: 75000, // MB
-          total_balance: 25000,    // MB
-        },
-        status: 200
-      };
+      const res = await axios.get(utilizationUrl, config);
 
-      console.log("Utilization API Response (Mock):", mockResponse.data);
-      return mockResponse.data;
+      if (res.data && res.status === 200) {
+        console.log("Utilization API Response:", res.data);
+        return res.data;
+      }
 
+      return res;
     } catch (error: any) {
       console.error('Error fetching utilization data:', error);
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The utilization data could not be retrieved.',
+          },
+        };
+      }
       return {
         errors: {
-          _error: 'The utilization data could not be retrieved.',
+          _error: 'Network error. Please try again.',
         },
       };
     }
@@ -102,7 +99,7 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
       const { granularity, startDate, endDate } = getDateParams();
       const result = await getUtilizationData(org_id, granularity, startDate, endDate);
 
-      if ('errors' in result && result.errors) {
+      if (result.errors) {
         setError(result.errors._error);
       } else {
         setData(result);
@@ -118,7 +115,6 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
   // Process API data for pie chart
   const processApiData = () => {
     if (!data) {
-      // Fallback data
       return {
         dispatched: 0,
         balance: 0
@@ -126,8 +122,8 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
     }
 
     return {
-      dispatched: data.total_dispatched || 0,
-      balance: data.total_balance || 0
+      dispatched: data.report.total_dispatched || data.dispatched || 0,
+      balance: data.report.total_balance || data.balance || 0
     };
   };
 
@@ -142,6 +138,9 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
       chartInstance.current.destroy();
       chartInstance.current = null;
     }
+
+    // Show message if no data
+    const hasData = total > 0;
 
     const options: Highcharts.Options = {
       chart: {
@@ -161,10 +160,10 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
         }
       },
       subtitle: {
-        text: getSubtitleText(),
+        text: hasData ? getSubtitleText() : 'No data available for selected period',
         style: {
           fontSize: '14px',
-          color: '#6B7280'
+          color: hasData ? '#6B7280' : '#EF4444'
         }
       },
       tooltip: {
@@ -177,6 +176,19 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
           const value = this.y as number;
           const name = this.key as string;
           const percentage = this.percentage?.toFixed(1) || '0.0';
+          
+          if (value === 0) {
+            return `
+              <div style="padding: 8px;">
+                <div style="font-weight: 600; margin-bottom: 8px; color: #374151;">
+                  ${name}
+                </div>
+                <div style="color: #6B7280; font-style: italic;">
+                  No data available
+                </div>
+              </div>
+            `;
+          }
           
           return `
             <div style="padding: 8px;">
@@ -195,7 +207,7 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
           allowPointSelect: true,
           cursor: 'pointer',
           dataLabels: {
-            enabled: true,
+            enabled: hasData,
             format: '<b>{point.name}</b><br>{point.percentage:.1f}%',
             style: {
               fontSize: '14px',
@@ -205,15 +217,20 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
           },
           showInLegend: true,
           size: '80%',
-          innerSize: '40%', // Creates a donut chart
+          innerSize: '40%',
           borderWidth: 2,
-          borderColor: '#ffffff'
+          borderColor: '#ffffff',
+          states: {
+            inactive: {
+              opacity: 1
+            }
+          }
         }
       },
       series: [{
         name: 'Utilization',
         type: 'pie',
-        data: [
+        data: hasData ? [
           {
             name: 'Data Dispatched',
             y: chartData.dispatched,
@@ -224,6 +241,13 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
             name: 'Data Balance',
             y: chartData.balance,
             color: '#3B82F6',
+            sliced: false
+          }
+        ] : [
+          {
+            name: 'No Data',
+            y: 1,
+            color: '#E5E7EB',
             sliced: false
           }
         ]
