@@ -33,7 +33,6 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
       const res = await axios.get(statsUrl, config);
 
       if (res.data && res.status === 200) {
-        console.log("Stats API Response:", res.data);
         return res.data;
       }
 

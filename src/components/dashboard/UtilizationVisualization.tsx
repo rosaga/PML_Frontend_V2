@@ -33,7 +33,6 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
       const res = await axios.get(utilizationUrl, config);
 
       if (res.data && res.status === 200) {
-        console.log("Utilization API Response:", res.data);
         return res.data;
       }
 

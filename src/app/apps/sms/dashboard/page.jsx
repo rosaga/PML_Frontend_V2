@@ -176,7 +176,6 @@ const Dashboard = () => {
 
       messageCountsAction(filterParams)
         .then((res) => {
-          console.log("API Response:", res);
           
           if (res.errors) {
             console.log("AN ERROR HAS OCCURED");

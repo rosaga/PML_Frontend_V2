@@ -186,7 +186,6 @@ const Dashboard = () => {
         return;
       }
       if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
-        console.error("Unexpected API response:", response);
         setRows([]);
         setTotal(0);
         setLoading(false);
