@@ -1,9 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { getToken } from "../../utils/auth";
-import { GetGroups, GetAllGroups } from "@/app/api/actions/group/group";
-import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
-import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
+import { GetAllGroups } from "@/app/api/actions/group/group";
+import { GetBalance } from "@/app/api/actions/reward/reward";
+import { CreateAirtimeCampaign } from "@/app/api/actions/campaigns/campaigns";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -20,7 +20,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
   const [senderName, setSenderName] = useState([]);
   const [campaignName, setCampaignName] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedBundle, setSelectedBundle] = useState("");
+  const [selectedAmount, setSelectedAmount] = useState("");
   const [selectedSenderName, setSelectedSenderName] = useState("");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
@@ -29,7 +29,6 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
   const [schedule, setSchedule] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState("");
   const [repeatCount, setRepeatCount] = useState(0);
-
   const [submitting, setSubmitting] = useState(false);
 
   let org_id = null;
@@ -37,13 +36,11 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
     org_id = localStorage.getItem("selectedAccountId");
   }
 
-   const currentDateTime = dayjs();
-    const [value, setValue] = useState(currentDateTime);
-    const handleDateTimeChange = (newValue) => {
-      setValue(newValue);
-    };
-
-  
+  const currentDateTime = dayjs();
+  const [value, setValue] = useState(currentDateTime);
+  const handleDateTimeChange = (newValue) => {
+    setValue(newValue);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -51,88 +48,101 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
         closeModal();
       }
     };
-
     window.addEventListener("click", handleClickOutside);
-
     return () => {
       window.removeEventListener("click", handleClickOutside);
     };
   }, [closeModal]);
 
   useEffect(() => {
-    fetchBalanceandGroups();
+    fetchBalanceAndGroups();
   }, []);
 
-  async function fetchBalanceandGroups() {
-    const balanceData = await GetBalance(org_id);
-    if (balanceData) {
-      setBundles(balanceData.data.data);
+  async function fetchBalanceAndGroups() {
+    try {
+      const balanceData = await GetBalance(org_id);
+      if (balanceData) {
+        setBundles(balanceData.data?.data || []);
+      }
+    } catch (e) {
+      console.warn("Failed to load balance", e);
     }
-    const groupData = await GetAllGroups(org_id);
-    if (groupData) {
-      setGroups(groupData.data.data);
+    try {
+      const groupData = await GetAllGroups(org_id);
+      if (groupData) {
+        setGroups(groupData.data?.data || []);
+      }
+    } catch (e) {
+      console.warn("Failed to load groups", e);
     }
-    const senderIdData = await GetActiveSenderId(org_id);
-    if (senderIdData) {
-      setSenderName(senderIdData.data);
+    try {
+      const senderIdData = await GetActiveSenderId(org_id);
+      if (senderIdData) {
+        setSenderName(senderIdData.data || []);
+      }
+    } catch (e) {
+      console.warn("Failed to load sender IDs", e);
     }
   }
 
-   const handleSwitchChange = (event) => {
+  const handleSwitchChange = (event) => {
     setSchedule(event.target.checked);
   };
 
   const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setErrorMessage("");
+    setSuccessMessage("");
 
-    alert("You have created an Airtime Campaign");
-    // event.preventDefault();
-    // setSubmitting(true);
+    try {
+      const orgId = org_id;
+      const airtime_amount = Number(selectedAmount || 0);
 
-    // const formData = {
-    //   org_id: org_id,
-    //   name: campaignName,
-    //   group_id: parseInt(selectedGroup),
-    //   bundle: selectedBundle,
-    //   description: description,
-    //   scheduled: value,
-    //   content_message: message,
-    //   sender_id: parseInt(selectedSenderName),
-    //   slogan: "5",
-    //   repeat_count: schedule ? repeatCount : 0,
-    //   repeat_interval: schedule ? repeatInterval : ""
-    // };
-    // const res = await CreateCampaign(formData)
-    //   .then((res) => {
-    //     if (res.status === 202) {
-    //       setSuccessMessage(`Data has been dispatched successfully under campaign`);
-    //       setErrorMessage("");
-    //     } else {
-    //       setErrorMessage("Failed to create Campaign. Please try again.");
-    //       setCampaignName("");
-    //       setSelectedGroup("");
-    //       setSelectedBundle("");
-    //       setMessage("");
-    //     }
-    //   })
-    //   .catch((error) => {
-    //     console.log("Error:", error);
-    //     setErrorMessage("Failed to create Campaign. Please try again.");
-    //     if (error.response && error.response.status === 400) {
-    //       console.log("Error:", error);
-    //       setErrorMessage("Sorry, you have insufficient units");
-    //       setCampaignName("");
-    //       setSelectedGroup("");
-    //       setSelectedBundle("");
-    //       setMessage("");
-    //     } else {
-    //       setErrorMessage(`Failed to send reward: ${error.message}`);
-    //     }
-    //   })
-    //   .finally(() => {
-    //     setSubmitting(false);
-    //   });
+      if (!airtime_amount || airtime_amount <= 0) {
+        setErrorMessage("Please select a valid airtime amount.");
+        setSubmitting(false);
+        return;
+      }
 
-    // return res;
+      const payload = {
+        org_id: orgId,
+        name: campaignName,
+        group_id: parseInt(selectedGroup, 10),
+        airtime_amount,
+        description,
+        content_message: message,
+        sender_id: selectedSenderName ? parseInt(selectedSenderName, 10) : undefined,
+      };
+
+      if (schedule) {
+        payload.scheduled = dayjs(value).toISOString();
+        payload.repeat_count = repeatCount || 0;
+        payload.repeat_interval = repeatInterval || "";
+      }
+
+      const res = await CreateAirtimeCampaign(payload);
+
+      if (res && (res.status === 202 || res.status === 200)) {
+        setSuccessMessage("Airtime campaign created.");
+        setCampaignName("");
+        setSelectedGroup("");
+        setSelectedAmount("");
+        setMessage("");
+        setSchedule(false);
+        setRepeatInterval("");
+        setRepeatCount(0);
+      } else {
+        const msg =
+          (res && (res.data?.errors || res.data?.error)) ||
+          "Failed to create Airtime Campaign.";
+        setErrorMessage(typeof msg === "string" ? msg : "Failed to create Airtime Campaign.");
+      }
+    } catch (err) {
+      setErrorMessage("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -210,6 +220,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       required
                     />
                   </div>
+
                   <div className="mb-4">
                     <label
                       htmlFor="description"
@@ -250,47 +261,48 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                         </option>
                       ))}
                     </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Note: Contacts in this group should be stored in E.164 format (e.g. +2547XXXXXXX) to avoid operator rejections.
+                    </p>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                      Airtime Amount (KES)
+                    </label>
+                    <select
+                      id="airtime_amount"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                      value={selectedAmount}
+                      onChange={(e) => setSelectedAmount(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Amount</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="150">150</option>
+                      <option value="200">200</option>
+                      <option value="500">500</option>
+                      <option value="1000">1000</option>
+                    </select>
                   </div>
 
                   <div className="mb-4">
                     <label
-                      htmlFor="bundle"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
-                      Select Bundle
-                    </label>
-                    <select
-                      name="bundle"
-                      id="bundle"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                      value={selectedBundle}
-                      onChange={(e) => setSelectedBundle(e.target.value)}
-                    >
-                      <option value="">Select Bundle</option>
-                        <option>20 Ksh</option>
-                        <option>50 Ksh</option>
-                        <option>100 Ksh</option>
-                        <option>150 Ksh</option>
-                        <option>200 Ksh</option>
-                        <option>500 Ksh</option>
-                        <option>1000 Ksh</option>
-                    </select>
-                  </div>
-                  <div className="mb-4">
-                    <label
-                      htmlFor="bundle"
+                      htmlFor="sender_id"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Select Sender Name
                     </label>
                     <select
-                      name="bundle"
-                      id="bundle"
+                      name="sender_id"
+                      id="sender_id"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                       value={selectedSenderName}
                       onChange={(e) => setSelectedSenderName(e.target.value)}
                     >
-                      <option value="">Select SenderName</option>
+                      <option value="">Select Sender Name</option>
                       {senderName?.map((senderid) => (
                         <option key={senderid.service_id} value={senderid.service_id}>
                           {senderid.sendername}
@@ -319,73 +331,73 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                   ) : null}
 
                   <FormGroup>
-                                    <FormControlLabel
-                                      control={
-                                        <Switch
-                                          checked={schedule}
-                                          onChange={handleSwitchChange}
-                                        />
-                                      }
-                                      label="*Turn on to send scheduled Campaign*"
-                                    />
-                                  </FormGroup>
-                  
-                                  {schedule && (
-                                    <div className="my-4">
-                                      <MaterialUIPickers
-                                        value={value}
-                                        onChange={handleDateTimeChange}
-                                      />
-                                    </div>
-                                  )}
-                  
-                                  {schedule && (
-                                    <>
-                                      <div className="flex space-x-4 mt-4">
-                                        <div className="flex-1">
-                                          <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                            Repeat Interval
-                                          </label>
-                                          <select
-                                            value={repeatInterval}
-                                            onChange={(e) => setRepeatInterval(e.target.value)}
-                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                                          >
-                                            <option value="">Select Interval</option>
-                                            <option value="daily">Daily</option>
-                                            <option value="weekly">Weekly</option>
-                                          </select>
-                                        </div>
-                  
-                                        <div className="flex-1">
-                                          <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                            Repeat Count
-                                          </label>
-                                          <input
-                                            type="number"
-                                            value={repeatCount}
-                                            onChange={(e) => {
-                                              const val = parseInt(e.target.value) || 0;
-                  
-                                              if (repeatInterval === "daily" && val > 30) {
-                                                toast.error("Daily repeats cannot exceed 30");
-                                                return;
-                                              }
-                                              if (repeatInterval === "weekly" && val > 4) {
-                                                toast.error("Weekly repeats cannot exceed 4");
-                                                return;
-                                              }
-                  
-                                              setRepeatCount(val);
-                                            }}
-                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                                            min="0"
-                                          />
-                                        </div>
-                                      </div>
-                                    </>
-                                  )}
-                  
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={schedule}
+                          onChange={handleSwitchChange}
+                        />
+                      }
+                      label="*Turn on to send scheduled Campaign*"
+                    />
+                  </FormGroup>
+
+                  {schedule && (
+                    <div className="my-4">
+                      <MaterialUIPickers
+                        value={value}
+                        onChange={handleDateTimeChange}
+                      />
+                    </div>
+                  )}
+
+                  {schedule && (
+                    <>
+                      <div className="flex space-x-4 mt-4">
+                        <div className="flex-1">
+                          <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Repeat Interval
+                          </label>
+                          <select
+                            value={repeatInterval}
+                            onChange={(e) => setRepeatInterval(e.target.value)}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          >
+                            <option value="">Select Interval</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                          </select>
+                        </div>
+
+                        <div className="flex-1">
+                          <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Repeat Count
+                          </label>
+                          <input
+                            type="number"
+                            value={repeatCount}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10) || 0;
+                              if (repeatInterval === "daily" && val > 30) {
+                                setErrorMessage("Daily repeats cannot exceed 30.");
+                                return;
+                              }
+                              if (repeatInterval === "weekly" && val > 4) {
+                                setErrorMessage("Weekly repeats cannot exceed 4.");
+                                return;
+                              }
+                              setErrorMessage("");
+                              setRepeatCount(val);
+                            }}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            min="0"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   <div className="flex space-x-2">
                     <button
                       type="button"

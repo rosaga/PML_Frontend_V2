@@ -117,3 +117,48 @@ export async function CreateVouchers(formValues) {
       };
     }
   }
+
+export async function CreateAirtimeVouchers(formValues) {
+  const body = {
+    total: formValues.total,
+    request_id: formValues.request_id,
+    bundle_size: formValues.bundle_size,
+    service: "AIRTIME",
+  };
+
+  const url = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/reward/voucher`;
+  try {
+    const config = await authHeaders();
+    config.headers = { ...(config.headers || {}), 'Content-Type': 'application/json' };
+
+    const res = await axios.post(url, body, config);
+    return res;
+  } catch (error) {
+    if (error.response) {
+      return { errors: { _error: error.response.data?.errors || 'The voucher could not be returned.' } };
+    }
+    return { errors: { _error: 'Network error. Please try again.' } };
+  }
+}
+
+export async function GetAirtimeVouchers(org_id, page, pageSize, searchParams) {
+  let url = `${apiUrl.GET_CONTACTS}/${org_id}/reward/voucher?orderby=created_at DESC&eq__service=AIRTIME`;
+  if (page) url += `&page=${page}`;
+  if (pageSize) url += `&size=${pageSize}`;
+  if (searchParams) {
+    const qs = new URLSearchParams(searchParams).toString();
+    url += `&${qs}`;
+  }
+
+  try {
+    const config = await authHeaders();
+    config.headers = { ...(config.headers || {}), 'Content-Type': 'application/json' };
+    const res = await axios.get(url, config);
+    return res;
+  } catch (error) {
+    if (error.response) {
+      return { errors: { _error: 'The vouchers could not be returned.' } };
+    }
+    return { errors: { _error: 'Network error. Please try again.' } };
+  }
+}
