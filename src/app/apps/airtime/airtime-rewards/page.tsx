@@ -20,10 +20,13 @@ const AirtimeRewards = () => {
   useEffect(() => {
     if (tab === 'Rewards') {
       setActive('airtime-dispatch'); 
-      setChildActive('rewards');
+      setChildActive('airtime-rewards');
     } else if (tab === 'Campaign') {
       setActive('airtime-dispatch');
-      setChildActive('campaigns');
+      setChildActive('airtime-campaigns');
+    } else if (tab === 'Vouchers') {
+      setActive('airtime-dispatch');
+      setChildActive('airtime-vouchers')
     }
   }, [tab]);
 
@@ -67,7 +70,7 @@ const AirtimeRewards = () => {
                   <div
                     onClick={() => {
                       setActive("airtime-dispatch");
-                      setChildActive("rewards");
+                      setChildActive("airtime-rewards");
                     }}
                     className={`flex-1 flex justify-center text-center mb-2 sm:mb-0 sm:ml-2 ${
                       active === "airtime-dispatch"
@@ -128,9 +131,9 @@ const AirtimeRewards = () => {
                     <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
                       <div className="m-2 flex-1">
                         <span
-                          onClick={() => setChildActive("rewards")}
+                          onClick={() => setChildActive("airtime-rewards")}
                           className={`${
-                            childActive === "rewards"
+                            childActive === "airtime-rewards"
                               ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
                               : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
                           }`}
@@ -140,9 +143,9 @@ const AirtimeRewards = () => {
                       </div>
                       <div className="m-2 flex-1">
                         <span
-                          onClick={() => setChildActive("campaigns")}
+                          onClick={() => setChildActive("airtime-campaigns")}
                           className={`${
-                            childActive === "campaigns"
+                            childActive === "airtime-campaigns"
                               ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
                               : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
                           }`}
@@ -152,9 +155,9 @@ const AirtimeRewards = () => {
                       </div>
                       <div className="m-2 flex-1">
                         <span
-                          onClick={() => setChildActive("vouchers")}
+                          onClick={() => setChildActive("airtime-vouchers")}
                           className={`${
-                            childActive === "vouchers"
+                            childActive === "airtime-vouchers"
                               ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
                               : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
                           }`}
@@ -165,9 +168,9 @@ const AirtimeRewards = () => {
                     </div>
 
                     {/* <Suspense fallback={<div>Loading Airtime Dispatch...</div>}> */}
-                      {childActive === "rewards" && <AirtimeRewardsTable />}
-                      {childActive === "campaigns" && <AirtimeCampaignsTable />}
-                      {childActive === "vouchers" && <AirtimeVouchersTable />}
+                      {childActive === "airtime-rewards" && <AirtimeRewardsTable />}
+                      {childActive === "airtime-campaigns" && <AirtimeCampaignsTable />}
+                      {childActive === "airtime-vouchers" && <AirtimeVouchersTable />}
                     {/* </Suspense> */}
                   </>
                 )}

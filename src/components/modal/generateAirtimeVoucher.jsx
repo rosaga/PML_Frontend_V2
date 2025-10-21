@@ -1,82 +1,76 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { GetBalance } from "@/app/api/actions/reward/reward";
-import { CreateVouchers } from "@/app/api/actions/vouchers/vouchers";
-import * as XLSX from 'xlsx';
+import { CreateAirtimeVouchers } from "@/app/api/actions/vouchers/vouchers";
+import * as XLSX from "xlsx";
 
 const GenerateAirtimeVoucherModal = ({ closeModal }) => {
-  const [bundles, setBundles] = useState([]);
   const [selectedBundle, setSelectedBundle] = useState("");
   const [voucherNumber, setVoucherNumber] = useState("");
-  const { v4: uuidv4 } = require('uuid');
+  const { v4: uuidv4 } = require("uuid");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
-  }
-
-  async function getBundles() {
-    const balanceData = await GetBalance(org_id);
-    if (balanceData) {
-      setBundles(balanceData.data.data);
-    }
+  if (typeof window !== "undefined") {
+    org_id = localStorage.getItem("selectedAccountId");
   }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (event.target.id === "authentication-modal") {
-        closeModal();
-      }
+      if (event.target.id === "authentication-modal") closeModal();
     };
-
     window.addEventListener("click", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-    };
+    return () => window.removeEventListener("click", handleClickOutside);
   }, [closeModal]);
 
-  useEffect(() => {
-    getBundles();
-  }, []);
-
   const handleSubmit = async (e) => {
-    alert("Airtime Voucher Successfully Generated")
-    // e.preventDefault();
+    e.preventDefault();
 
-    // const newReward = {
-    //   org_id: org_id,
-    //   total: parseInt(voucherNumber),
-    //   request_id: uuidv4(),
-    //   bundle_size: selectedBundle,
-    // };
+    if (!org_id) return setErrorMessage("No organization selected.");
+    if (!selectedBundle) return setErrorMessage("Please select an airtime amount.");
+    if (!voucherNumber || Number(voucherNumber) <= 0)
+      return setErrorMessage("Please enter a valid number of vouchers.");
 
-    // try {
-    //   const res = await CreateVouchers(newReward);
-    //   if (res.status === 201) {
-    //     setSuccessMessage(`The Airtime Voucher has been created and downloaded successfully.`);
-    //     exportToExcel(res.data);
-    //     setErrorMessage("");
-    //   } else {
-    //     setErrorMessage("Failed to create Vouchers. Please try again.");
-    //   }
-    // } catch (error) {
-    //   if (error.response && error.response.status === 400) {
-    //     setErrorMessage("Insufficient units. Please top up to proceed");
-    //   }else {
-    //     setErrorMessage(`Failed to create Vouchers. Please try again. ${error.message}`);
-    //   }
-    //   setSuccessMessage("");
-    // }
+    setSubmitting(true);
+    setErrorMessage("");
+
+    const payload = {
+      org_id,
+      total: parseInt(voucherNumber, 10),
+      request_id: uuidv4(),
+      bundle_size: String(selectedBundle),
+      service: "AIRTIME",
+    };
+
+    try {
+      const res = await CreateAirtimeVouchers(payload);
+      if (res?.status === 201) {
+        setSuccessMessage("The Airtime Vouchers have been created and downloaded successfully.");
+        exportToExcel(res.data);
+      } else if (res?.errors?._error) {
+        setErrorMessage(res.errors._error);
+      } else {
+        setErrorMessage("Failed to create vouchers. Please try again.");
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 400) {
+        setErrorMessage("Insufficient units. Please top up to proceed.");
+      } else {
+        setErrorMessage(`Failed to create vouchers. Please try again. ${error.message}`);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const exportToExcel = (voucherData) => {
-    const worksheet = XLSX.utils.json_to_sheet(voucherData.map(v => ({
-      Voucher_Code: v.voucher_code,
-      Message: "To Redeem send this voucher code " + v.voucher_code + " to 24995"
-    })));
+    const worksheet = XLSX.utils.json_to_sheet(
+      voucherData.map((v) => ({
+        Voucher_Code: v.voucher_code,
+        Message: `To Redeem send this voucher code ${v.voucher_code} to 24995`,
+      }))
+    );
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Vouchers");
     XLSX.writeFile(workbook, "vouchers_" + new Date().toISOString() + ".xlsx");
@@ -99,12 +93,8 @@ const GenerateAirtimeVoucherModal = ({ closeModal }) => {
           <div className="p-4 md:p-5">
             {successMessage ? (
               <div className="p-4 text-center">
-                <div className="mb-4 text-2xl font-semibold text-green-500">
-                  Success!
-                </div>
-                <div className="mb-4 text-gray-900 dark:text-white">
-                  {successMessage}
-                </div>
+                <div className="mb-4 text-2xl font-semibold text-green-500">Success!</div>
+                <div className="mb-4 text-gray-900 dark:text-white">{successMessage}</div>
                 <button
                   onClick={() => {
                     setSuccessMessage("");
@@ -115,25 +105,18 @@ const GenerateAirtimeVoucherModal = ({ closeModal }) => {
                   OK
                 </button>
               </div>
-              ) : errorMessage ? (
-                <div className="p-4 text-center">
-                <div className="mb-4 text-2xl font-semibold text-red-500">
-                  Oops!
-                </div>
-                <div className="mb-4 text-gray-900 dark:text-white">
-                  {errorMessage}
-                </div>
+            ) : errorMessage ? (
+              <div className="p-4 text-center">
+                <div className="mb-4 text-2xl font-semibold text-red-500">Oops!</div>
+                <div className="mb-4 text-gray-900 dark:text-white">{errorMessage}</div>
                 <button
-                  onClick={() => {
-                    setErrorMessage("");
-                  }}
+                  onClick={() => setErrorMessage("")}
                   className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
                   OK
                 </button>
               </div>
-            )
-            : (
+            ) : (
               <form className="space-y-2" onSubmit={handleSubmit}>
                 <div>
                   <label
@@ -166,14 +149,13 @@ const GenerateAirtimeVoucherModal = ({ closeModal }) => {
                     onChange={(e) => setSelectedBundle(e.target.value)}
                     required
                   >
-                    <option value="">Selected Bundle</option>
+                    <option value="">Selected Airtime Amount</option>
                     <option value="20">20 Ksh</option>
                     <option value="50">50 Ksh</option>
                     <option value="100">100 Ksh</option>
                     <option value="200">200 Ksh</option>
                     <option value="500">500 Ksh</option>
                     <option value="1000">1000 Ksh</option>
-                   
                   </select>
                 </div>
                 <div className="flex space-x-2">
@@ -181,14 +163,16 @@ const GenerateAirtimeVoucherModal = ({ closeModal }) => {
                     type="button"
                     className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                     onClick={closeModal}
+                    disabled={submitting}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                    className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800 disabled:opacity-60"
+                    disabled={submitting}
                   >
-                    Submit
+                    {submitting ? "Submitting..." : "Submit"}
                   </button>
                 </div>
               </form>
