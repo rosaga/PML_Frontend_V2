@@ -19,6 +19,10 @@ const SenderId = () => {
   if (typeof window !== "undefined") {
     org_id = localStorage.getItem("selectedAccountId");
     token = getToken();
+    // if user has "SuperAdmin" role, override org_id
+    if (token && hasRole(token, "SuperAdmin")) {
+      org_id = "admin";
+    }
   }
 
   const [isModalOpen, setIsModalOpen] = useState(false);

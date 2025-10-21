@@ -6,7 +6,7 @@ import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel, GridToolbar } fr
 import AddIcon from '@mui/icons-material/Add';
 import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
-import { GetSenderId, approveSenderID, GetAllOrgUnits } from "@/app/api/actions/senderId/senderId";
+import { GetAllOrgUnits } from "@/app/api/actions/senderId/senderId";
 import AssignSenderID from "../../../../components/modal/assignSenderID"
 import { hasRole } from "../../../../utils/decodeToken"
 import EditIcon from '@mui/icons-material/Edit';
@@ -75,15 +75,6 @@ const ManageSenderId = () => {
       });
   }
   const handleAssignment = (row) => {
-    // const response = await approveSenderID(id);
-    // console.log('response',response);
-    // if (response.status === 202) {
-    //   toast.success("APPROVE SUCCESS!!!");
-    //   setIsApproved(true);
-    // } else {
-    //   toast.error("APPROVE FAILED");
-    //   setIsApproved(true);
-    // }
     setIsModalOpen(true);
     setOrgUnitId(row.id);
     setOrg_unit_name(row.name);
