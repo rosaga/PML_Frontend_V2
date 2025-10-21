@@ -6,7 +6,7 @@ import { DataGrid, GridRowsProp, GridColDef, GridValidRowModel, GridToolbar } fr
 import AddIcon from "@mui/icons-material/Add";
 import PeakButton from "../../../../components/button/button";
 import { getToken } from "@/utils/auth";
-import { GetSenderId, approveSenderID, GetAllOrgUnits } from "@/app/api/actions/senderId/senderId";
+import { GetAllOrgUnits } from "@/app/api/actions/senderId/senderId";
 import ProvisionUnitsModal from "../../../../components/modal/provisionUnits";
 import { hasRole } from "../../../../utils/decodeToken";
 import EditIcon from "@mui/icons-material/Edit";
