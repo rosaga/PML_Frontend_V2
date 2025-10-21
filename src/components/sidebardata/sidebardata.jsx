@@ -128,13 +128,6 @@ const SidebarData = () => {
       label: "Account",
       className: "account",
     },
-    {
-      href: "/apps/data/developer",
-      src: "/images/users.svg",
-      alt: "Developer",
-      label: "Developer",
-      className: "developer",
-    },
     /* ---- SETTINGS ---------------------------------------------------- */
     {
       href: "/apps/data/settings",
@@ -152,6 +145,11 @@ const SidebarData = () => {
           href: "/apps/data/threshold",
           label: "Notification Threshold",
           className: "notification-threshold",
+        },
+        {
+          href: "/apps/data/developer",
+          label: "Developer",
+          className: "developer",
         },
       ],
     },
