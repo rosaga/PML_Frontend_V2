@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { initiateAirtimePayment, formatMSISDN } from "@/app/api/actions/payments/payments";
+import { initiateAirtimePayment, formatMSISDN, pollPaymentStatus } from "@/app/api/actions/payments/payments";
 
 const AirtimeTopupPage = () => {
+
+    const org_id =
+    typeof window !== "undefined"
+      ? localStorage.getItem("selectedAccountId")
+      : null;
+
   const [currentStep, setCurrentStep] = useState(1);
   const [airtimeAmount, setAirtimeAmount] = useState("");
   const [selectedPackage, setSelectedPackage] = useState("");
@@ -28,11 +34,11 @@ const AirtimeTopupPage = () => {
     if (isNaN(numAmount)) return { discount: 0, percentage: 0, total: 0 };
 
     let percentage = 0;
-    if (numAmount >= 1 && numAmount <= 100000) {
+    if (numAmount >= 1 && numAmount <= 10) {
       percentage = 3;
-    } else if (numAmount >= 101000 && numAmount <= 250000) {
+    } else if (numAmount >= 11 && numAmount <= 25) {
       percentage = 4;
-    } else if (numAmount >= 251000) {
+    } else if (numAmount >= 25) {
       percentage = 5;
     }
 
@@ -52,12 +58,12 @@ const AirtimeTopupPage = () => {
       setAmountError("Please enter a valid amount");
       return false;
     }
-    if (numAmount < 1000) {
-      setAmountError("Minimum amount is KES 1,000");
+    if (numAmount < 1) {
+      setAmountError("Minimum amount is KES 1");
       return false;
     }
-    if (numAmount > 100000) {
-      setAmountError("Maximum amount is KES 100,000");
+    if (numAmount > 10) {
+      setAmountError("Maximum amount is KES 10");
       return false;
     }
     setAmountError("");
@@ -70,12 +76,12 @@ const AirtimeTopupPage = () => {
       setAmountError("Please enter a valid amount");
       return false;
     }
-    if (numAmount < 101000) {
-      setAmountError("Minimum amount is KES 101,000");
+    if (numAmount < 11) {
+      setAmountError("Minimum amount is KES 11");
       return false;
     }
-    if (numAmount > 250000) {
-      setAmountError("Maximum amount is KES 250,000");
+    if (numAmount > 25) {
+      setAmountError("Maximum amount is KES 25");
       return false;
     }
     setAmountError("");
@@ -125,82 +131,52 @@ const AirtimeTopupPage = () => {
     return /^2547\d{8}$/.test(msisdn);
   };
 
-  const handlePayment = async () => {
-    setPaymentError("");
+const handlePayment = async () => {
+  setPaymentError("");
 
-    if (!isValidPhone(phoneNumber)) {
-      setPaymentError("Please enter a valid Kenyan mobile number (e.g. 0712345678).");
+  const msisdn = formatMSISDN(phoneNumber);
+  if (!/^2547\d{8}$/.test(msisdn)) {
+    setPaymentError("Please enter a valid Kenyan mobile number (e.g. 0712345678).");
+    return;
+  }
+  if (totalCost <= 0) {
+    setPaymentError("Amount is invalid. Please review your amount.");
+    return;
+  }
+
+  try {
+    setIsPaying(true);
+    setModalType("processing");
+    setShowModal(true);
+
+    const result = await initiateAirtimePayment(org_id, totalCost, phoneNumber);
+    if (!result.success) {
+      setPaymentError(result.errors?._error || "Payment initiation failed");
+      setModalType("failure");
+      setIsPaying(false);
       return;
     }
-    if (totalCost <= 0) {
-      setPaymentError("Amount is invalid. Please review your amount.");
-      return;
-    }
 
-    try {
-      setIsPaying(true);
-      setModalType("processing");
-      setShowModal(true);
+    const checkoutRequestId = result.payment?.request_id;
+    setRequestId(checkoutRequestId);
 
-      const result = await initiateAirtimePayment(totalCost, phoneNumber);
-
-      if (!result.success) {
-        setPaymentError(result.errors?._error || "Payment initiation failed");
-        setModalType("failure");
-        setIsPaying(false);
-        return;
-      }
-
-      const checkoutRequestId = result.payment?.request_id;
-      setRequestId(checkoutRequestId);
-      setPaymentError("");
-
-      const maxAttempts = 30;
-      let attempts = 0;
-
-      const pollPaymentStatus = async () => {
-        try {
-          const statusResponse = await fetch(
-            `https://loyalty-1048592730476.europe-west4.run.app/public/payment`
-          );
-          const data = await statusResponse.json();
-          const payments = data.data || [];
-          const payment = payments.find(p => p.request_id === checkoutRequestId);
-
-          if (payment?.status === "SUCCESS") {
-            setPaymentInfo(payment);
-            setModalType("success");
-            setIsPaying(false);
-            return;
-          }
-          if (payment?.status === "FAILED") {
-            throw new Error(payment.status_desc || "Payment failed");
-          }
-          
-          attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(pollPaymentStatus, 3000);
-          } else {
-            throw new Error("Payment timeout. Please check your M-Pesa messages.");
-          }
-        } catch (err) {
-          setPaymentError(err.message ?? "Failed to verify payment status");
-          setModalType("failure");
-          setPaymentInfo(null);
-          setIsPaying(false);
-        }
-      };
-
-      setTimeout(pollPaymentStatus, 5000);
-
-    } catch (err) {
-      console.error("Payment error:", err);
-      setPaymentError(err?.message || "Payment failed.");
+    const pollRes = await pollPaymentStatus(org_id, checkoutRequestId, 30, 3000);
+    if (pollRes.success && pollRes.data?.status === "SUCCESS") {
+      setPaymentInfo(pollRes.data);
+      setModalType("success");
+    } else {
+      setPaymentError(pollRes.errors?._error || "Payment failed");
       setModalType("failure");
       setPaymentInfo(null);
-      setIsPaying(false);
     }
-  };
+  } catch (err) {
+    setPaymentError(err?.message || "Payment failed.");
+    setModalType("failure");
+    setPaymentInfo(null);
+  } finally {
+    setIsPaying(false);
+  }
+};
 
   const closeAllModals = () => {
     setShowModal(false);
@@ -225,7 +201,7 @@ const AirtimeTopupPage = () => {
   };
 
   const handleExit = () => {
-    alert("Redirecting to dashboard...");
+    closeAllModals();
   };
 
   const handleEnterpriseSubmit = () => {
