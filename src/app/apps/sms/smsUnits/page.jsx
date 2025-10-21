@@ -27,6 +27,10 @@ const Recharges = () => {
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
     token = getToken();
+    // if user has "SuperAdmin" role, override org_id
+    if (token && hasRole(token, "SuperAdmin")) {
+      org_id = "admin";
+    }
   }
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,109 +66,23 @@ const Recharges = () => {
     }
   };
 
-  const buildAccountsMap = (list) => {
-    const map = {};
-    (list || []).forEach(item => {
-      const key =
-        item?.application_id ??
-        item?.app_id ??
-        item?.id ??
-        item?.applicationId ??
-        item?.appId;
-
-      const name =
-        item?.name ??
-        item?.application_name ??
-        item?.account_name ??
-        item?.display_name ??
-        item?.org_name ??
-        key;
-
-      if (key) map[key] = name;
-    });
-    return map;
-  };
-
-  const fetchOrgDirectory = async () => {
-    try {
-      const orgsRes = await GetAllOrgUnits();
-      if (orgsRes?.data && Array.isArray(orgsRes.data) && orgsRes.data.length) {
-        return orgsRes.data;
+   const getRecharges = async () => {
+      try {
+        const res = await GetRecharges(org_id);
+        if (res.errors) {
+          setLoading;
+          console.log("AN ERROR HAS OCCURRED");
+        } else {
+          setLoading(false);
+          setRecharges(res.data);
+        }
+      } catch (err) {
+        console.log(err);
       }
-    } catch (e) {
-    }
-    const accountsRes = await GetAccounts();
-    return accountsRes?.data || [];
-  };
-
-  const fetchAllRechargesForAdmin = async () => {
-    const orgList = await fetchOrgDirectory();
-    if (!orgList.length) return [];
-
-    const accountsMap = buildAccountsMap(orgList);
-
-    const appIds = Object.keys(accountsMap);
-
-    const results = await Promise.allSettled(
-      appIds.map(id => GetRecharges(id, 1, 1000))
-    );
-
-    const merged = [];
-    results.forEach((res, idx) => {
-      if (res.status === "fulfilled" && res.value?.data) {
-        const rows = res.value.data.map(r => ({
-          ...r,
-          account_name: accountsMap[r?.application_id] || r?.application_id
-        }));
-        merged.push(...rows);
-      }
-    });
-
-    merged.sort((a, b) => {
-      const da = new Date(a?.createdat || 0).getTime();
-      const db = new Date(b?.createdat || 0).getTime();
-      if (!isNaN(db - da) && db !== da) return db - da;
-      return (b?.id || 0) - (a?.id || 0);
-    });
-
-    return merged;
-  };
-
-  const fetchRechargesForOrg = async (org_id_param) => {
-    const [rechargesRes, accountsRes] = await Promise.all([
-      GetRecharges(org_id_param),
-      GetAccounts()
-    ]);
-
-    const accountsMap = buildAccountsMap(accountsRes?.data || []);
-    const data = rechargesRes?.data || [];
-    return data.map(r => ({
-      ...r,
-      account_name: accountsMap[r?.application_id] || r?.application_id
-    }));
-  };
-
-  const getData = async () => {
-    try {
-      setLoading(true);
-      const isSuper = hasRole(token, "SuperAdmin");
-
-      const rows = isSuper
-        ? await fetchAllRechargesForAdmin()
-        : await fetchRechargesForOrg(org_id);
-
-      setRecharges(rows);
-    } catch (err) {
-      console.log(err);
-      toast.error("Failed to load data");
-      setRecharges([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   useEffect(() => {
-    getData();
+    getRecharges();
   }, [isModalOpen, isModalOpen1, isApproved]);
 
   const columns = [
