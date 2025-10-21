@@ -51,6 +51,7 @@ const SidebarSms = () => {
       subLinks: [
         { href: "/apps/sms/senderId", label: "Sender ID", className: "sender-id" },
         { href: "/apps/sms/smsUnits", label: "SMS Units", className: "notification-threshold" },
+        { href: "/apps/sms/developer", label: "Developer", className: "developer" },
       ]
     },
   ];
