@@ -261,9 +261,6 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                         </option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Note: Contacts in this group should be stored in E.164 format (e.g. +2547XXXXXXX) to avoid operator rejections.
-                    </p>
                   </div>
 
                   <div className="mb-4">
@@ -330,7 +327,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                     </div>
                   ) : null}
 
-                  <FormGroup>
+                  {/* <FormGroup>
                     <FormControlLabel
                       control={
                         <Switch
@@ -340,7 +337,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       }
                       label="*Turn on to send scheduled Campaign*"
                     />
-                  </FormGroup>
+                  </FormGroup> */}
 
                   {schedule && (
                     <div className="my-4">
