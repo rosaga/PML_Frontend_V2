@@ -12,14 +12,8 @@ const AirtimeTopupPage = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [airtimeAmount, setAirtimeAmount] = useState("");
-  const [selectedPackage, setSelectedPackage] = useState("");
   const [totalCost, setTotalCost] = useState(0);
-  const [discount, setDiscount] = useState(0);
-  const [discountPercentage, setDiscountPercentage] = useState(0);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [showGrowthForm, setShowGrowthForm] = useState(false);
-  const [industry, setIndustry] = useState("");
-  const [useCase, setUseCase] = useState("");
   const [amountError, setAmountError] = useState("");
   
   const [showModal, setShowModal] = useState(false);
@@ -29,30 +23,7 @@ const AirtimeTopupPage = () => {
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [requestId, setRequestId] = useState("");
 
-  const calculateDiscount = (amount) => {
-    const numAmount = parseInt(amount);
-    if (isNaN(numAmount)) return { discount: 0, percentage: 0, total: 0 };
-
-    let percentage = 0;
-    if (numAmount >= 1 && numAmount <= 10) {
-      percentage = 3;
-    } else if (numAmount >= 11 && numAmount <= 25) {
-      percentage = 4;
-    } else if (numAmount >= 25) {
-      percentage = 5;
-    }
-
-    const discountAmount = (numAmount * percentage) / 100;
-    const totalAmount = numAmount - discountAmount;
-
-    return {
-      discount: discountAmount,
-      percentage: percentage,
-      total: totalAmount
-    };
-  };
-
-  const validateStarterAmount = (amount) => {
+  const validateAmount = (amount) => {
     const numAmount = parseInt(amount);
     if (isNaN(numAmount) || amount === "") {
       setAmountError("Please enter a valid amount");
@@ -62,40 +33,8 @@ const AirtimeTopupPage = () => {
       setAmountError("Minimum amount is KES 1");
       return false;
     }
-    if (numAmount > 10) {
-      setAmountError("Maximum amount is KES 10");
-      return false;
-    }
-    setAmountError("");
-    return true;
-  };
-
-  const validateGrowthAmount = (amount) => {
-    const numAmount = parseInt(amount);
-    if (isNaN(numAmount) || amount === "") {
-      setAmountError("Please enter a valid amount");
-      return false;
-    }
-    if (numAmount < 11) {
-      setAmountError("Minimum amount is KES 11");
-      return false;
-    }
-    if (numAmount > 25) {
-      setAmountError("Maximum amount is KES 25");
-      return false;
-    }
-    setAmountError("");
-    return true;
-  };
-
-  const validateEnterpriseAmount = (amount) => {
-    const numAmount = parseInt(amount);
-    if (isNaN(numAmount) || amount === "") {
-      setAmountError("Please enter a valid amount");
-      return false;
-    }
-    if (numAmount < 251000) {
-      setAmountError("Minimum amount is KES 251,000");
+    if (numAmount > 250000) {
+      setAmountError("Maximum amount is KES 250,000");
       return false;
     }
     setAmountError("");
@@ -103,21 +42,10 @@ const AirtimeTopupPage = () => {
   };
 
   const handleProceedFromAmount = () => {
-    let isValid = false;
-    
-    if (selectedPackage === "Starter") {
-      isValid = validateStarterAmount(airtimeAmount);
-    } else if (selectedPackage === "Growth") {
-      isValid = validateGrowthAmount(airtimeAmount);
-    } else if (selectedPackage === "Enterprise") {
-      isValid = validateEnterpriseAmount(airtimeAmount);
-    }
+    let isValid = validateAmount(airtimeAmount);
 
     if (isValid) {
-      const { discount: discountAmount, percentage, total } = calculateDiscount(airtimeAmount);
-      setDiscount(discountAmount);
-      setDiscountPercentage(percentage);
-      setTotalCost(total);
+      setTotalCost(airtimeAmount);
       setCurrentStep(3);
     }
   };
@@ -131,52 +59,52 @@ const AirtimeTopupPage = () => {
     return /^2547\d{8}$/.test(msisdn);
   };
 
-const handlePayment = async () => {
-  setPaymentError("");
+  const handlePayment = async () => {
+    setPaymentError("");
 
-  const msisdn = formatMSISDN(phoneNumber);
-  if (!/^2547\d{8}$/.test(msisdn)) {
-    setPaymentError("Please enter a valid Kenyan mobile number (e.g. 0712345678).");
-    return;
-  }
-  if (totalCost <= 0) {
-    setPaymentError("Amount is invalid. Please review your amount.");
-    return;
-  }
-
-  try {
-    setIsPaying(true);
-    setModalType("processing");
-    setShowModal(true);
-
-    const result = await initiateAirtimePayment(org_id, totalCost, phoneNumber);
-    if (!result.success) {
-      setPaymentError(result.errors?._error || "Payment initiation failed");
-      setModalType("failure");
-      setIsPaying(false);
+    const msisdn = formatMSISDN(phoneNumber);
+    if (!/^2547\d{8}$/.test(msisdn)) {
+      setPaymentError("Please enter a valid Kenyan mobile number (e.g. 0712345678).");
+      return;
+    }
+    if (totalCost <= 0) {
+      setPaymentError("Amount is invalid. Please review your amount.");
       return;
     }
 
-    const checkoutRequestId = result.payment?.request_id;
-    setRequestId(checkoutRequestId);
+    try {
+      setIsPaying(true);
+      setModalType("processing");
+      setShowModal(true);
 
-    const pollRes = await pollPaymentStatus(org_id, checkoutRequestId, 30, 3000);
-    if (pollRes.success && pollRes.data?.status === "SUCCESS") {
-      setPaymentInfo(pollRes.data);
-      setModalType("success");
-    } else {
-      setPaymentError(pollRes.errors?._error || "Payment failed");
+      const result = await initiateAirtimePayment(org_id, totalCost, phoneNumber);
+      if (!result.success) {
+        setPaymentError(result.errors?._error || "Payment initiation failed");
+        setModalType("failure");
+        setIsPaying(false);
+        return;
+      }
+
+      const checkoutRequestId = result.payment?.request_id;
+      setRequestId(checkoutRequestId);
+
+      const pollRes = await pollPaymentStatus(org_id, checkoutRequestId, 30, 3000);
+      if (pollRes.success && pollRes.data?.status === "SUCCESS") {
+        setPaymentInfo(pollRes.data);
+        setModalType("success");
+      } else {
+        setPaymentError(pollRes.errors?._error || "Payment failed");
+        setModalType("failure");
+        setPaymentInfo(null);
+      }
+    } catch (err) {
+      setPaymentError(err?.message || "Payment failed.");
       setModalType("failure");
       setPaymentInfo(null);
+    } finally {
+      setIsPaying(false);
     }
-  } catch (err) {
-    setPaymentError(err?.message || "Payment failed.");
-    setModalType("failure");
-    setPaymentInfo(null);
-  } finally {
-    setIsPaying(false);
-  }
-};
+  };
 
   const closeAllModals = () => {
     setShowModal(false);
@@ -190,26 +118,14 @@ const handlePayment = async () => {
     closeAllModals();
     setCurrentStep(1);
     setAirtimeAmount("");
-    setSelectedPackage("");
     setTotalCost(0);
-    setDiscount(0);
-    setDiscountPercentage(0);
     setPhoneNumber("");
     setAmountError("");
     setRequestId("");
-    setShowGrowthForm(false);
   };
 
   const handleExit = () => {
     closeAllModals();
-  };
-
-  const handleEnterpriseSubmit = () => {
-    alert("Enterprise request submitted! Our team will contact you shortly.");
-    setShowGrowthForm(false);
-    setCurrentStep(1);
-    setIndustry("");
-    setUseCase("");
   };
 
   const PaymentProcessingModal = () => (
@@ -241,188 +157,33 @@ const handlePayment = async () => {
         Top up your Airtime in 3 Easy Steps
       </h1>
 
-      {!showGrowthForm && (
-        <div className="flex items-center justify-center mb-12">
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                currentStep >= 1 ? "bg-gray-500" : "bg-gray-300"
-              }`}
-            >
-              1
-            </div>
-            <span className="ml-3 mr-5 text-gray-700">Select A Package</span>
-            <span className="mx-3 text-gray-400">&#10095;</span>
+      <div className="flex items-center justify-center mb-12">
+        <div className="flex items-center">
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+              currentStep >= 1 ? "bg-gray-500" : "bg-gray-300"
+            }`}
+          >
+            1
           </div>
+          <span className="ml-3 mr-5 text-gray-700">Enter Amount</span>
+          <span className="mx-3 text-gray-400">&#10095;</span>
+        </div>
 
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                currentStep >= 2 ? "bg-gray-500" : "bg-gray-300"
-              }`}
-            >
-              2
-            </div>
-            <span className="ml-3 mr-5 text-gray-700">Enter Amount</span>
-            <span className="mx-3 text-gray-400">&#10095;</span>
+        <div className="flex items-center">
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+              currentStep === 3 ? "bg-orange-400" : "bg-gray-300"
+            }`}
+          >
+            3
           </div>
-
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                currentStep === 3 ? "bg-orange-400" : "bg-gray-300"
-              }`}
-            >
-              3
-            </div>
-            <span className="ml-3 text-gray-700">Review & Pay</span>
-          </div>
+          <span className="ml-3 text-gray-700">Review & Pay</span>
         </div>
-      )}
-
-{currentStep === 1 && !showGrowthForm && (
-  <div className="mx-auto max-w-6xl px-4">
-    {/* Responsive 1→2→3 column grid */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-      {/* Starter Package */}
-      <div className="border border-gray-200 rounded-lg p-6 flex flex-col items-center gap-5 w-full min-h-[30rem]">
-        <h2 className="text-lg font-semibold text-gray-800 text-center tracking-wide">
-          STARTER PACKAGE
-        </h2>
-
-        <div className="text-orange-400">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-            <line x1="12" y1="18" x2="12.01" y2="18"></line>
-          </svg>
-        </div>
-
-        <p className="text-sm text-gray-600 text-center px-2 leading-relaxed">
-          For small businesses just getting started with Rewards
-        </p>
-
-        <div className="text-center leading-relaxed">
-          <p className="text-sm text-gray-500">From Ksh</p>
-          <h3 className="text-3xl font-bold text-orange-400">1,000</h3>
-          <p className="text-sm text-green-600 font-semibold mt-1">3% Discount</p>
-        </div>
-
-        <div className="text-center space-y-2">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            Disburse Airtime via Self Service Platform or API
-          </p>
-          <p className="text-sm text-gray-600 leading-relaxed">500 Free SMS</p>
-        </div>
-
-        <button
-          className="w-full py-2 text-sm rounded-md bg-orange-100 text-[#F58426] font-medium hover:opacity-90 transition-opacity mt-auto"
-          onClick={() => {
-            setSelectedPackage("Starter");
-            setCurrentStep(2);
-          }}
-        >
-          Top up Now
-        </button>
       </div>
 
-      {/* Growth Package */}
-      <div className="border border-gray-200 rounded-lg p-6 flex flex-col items-center gap-5 w-full min-h-[30rem]">
-        <h2 className="text-lg font-semibold text-gray-800 text-center tracking-wide">
-          GROWTH PACKAGE
-        </h2>
-
-        <div className="text-orange-400">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-            <line x1="12" y1="18" x2="12.01" y2="18"></line>
-          </svg>
-        </div>
-
-        <p className="text-sm text-gray-600 text-center px-2 leading-relaxed">
-          For growing businesses looking to increase customer loyalty
-        </p>
-
-        <div className="text-center leading-relaxed">
-          <p className="text-sm text-gray-500">From Ksh</p>
-          <h3 className="text-3xl font-bold text-orange-400">101,000</h3>
-          <p className="text-sm text-green-600 font-semibold mt-1">4% Discount</p>
-        </div>
-
-        <div className="text-center space-y-2">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            Disburse Airtime via Self Service Platform or API
-          </p>
-          <p className="text-sm text-gray-600 leading-relaxed">2,000 Free SMS</p>
-        </div>
-
-        <button
-          className="w-full py-2 text-sm rounded-md bg-orange-100 text-[#F58426] font-medium hover:opacity-90 transition-opacity mt-auto"
-          onClick={() => {
-            setSelectedPackage("Growth");
-            setCurrentStep(2);
-          }}
-        >
-          Top up Now
-        </button>
-      </div>
-
-      {/* Enterprise Package */}
-      <div className="border border-gray-200 rounded-lg p-6 flex flex-col items-center gap-5 w-full min-h-[30rem]">
-        <h2 className="text-lg font-semibold text-gray-800 text-center tracking-wide">
-          ENTERPRISE PACKAGE
-        </h2>
-
-        <div className="text-orange-400">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-            <line x1="12" y1="18" x2="12.01" y2="18"></line>
-          </svg>
-        </div>
-
-        <p className="text-sm text-gray-600 text-center px-2 leading-relaxed">
-          For large organizations with high-volume reward needs
-        </p>
-
-        <div className="text-center leading-relaxed">
-          <p className="text-sm text-gray-500">From Ksh</p>
-          <h3 className="text-3xl font-bold text-orange-400">251,000</h3>
-          <p className="text-sm text-green-600 font-semibold mt-1">5% Discount</p>
-        </div>
-
-        <div className="text-center space-y-2">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            Custom solutions and dedicated support
-          </p>
-          <p className="text-sm text-gray-600 leading-relaxed">5,000 Free SMS</p>
-        </div>
-
-        <button
-          className="w-full py-2 text-sm rounded-md bg-orange-100 text-[#F58426] font-medium hover:opacity-90 transition-opacity mt-auto"
-          onClick={() => {
-            setSelectedPackage("Enterprise");
-            setShowGrowthForm(true);
-          }}
-        >
-          Request Quote
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
-      {currentStep === 2 && !showGrowthForm && (
-        <div className="border rounded-lg p-8 mb-12 mx-auto max-w-3xl">
-          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-            Enter Airtime Amount
-          </h2>
-          
-          <p className="text-gray-600 mb-6">
-            {selectedPackage === "Starter" 
-              ? "Enter the amount you want to top up (KES 1,000 - 100,000) - 3% discount applied"
-              : "Enter the amount you want to top up (KES 101,000 - 250,000) - 4% discount applied"}
-          </p>
-          
+      {currentStep === 1 && (
+        <div className="mx-auto max-w-6xl px-4">
           <div className="mb-6">
             <label className="block text-gray-600 mb-2 font-semibold">
               Amount (KES)
@@ -435,7 +196,7 @@ const handlePayment = async () => {
                 setAmountError("");
               }}
               className="block w-full bg-white border border-gray-300 rounded py-3 px-4 text-lg leading-tight focus:outline-none focus:border-orange-400"
-              placeholder={selectedPackage === "Starter" ? "1000" : "101000"}
+              placeholder="Enter amount (KES 1 - 250,000)"
             />
             {amountError && (
               <p className="text-red-500 text-sm mt-2">{amountError}</p>
@@ -444,21 +205,17 @@ const handlePayment = async () => {
 
           <div className="bg-gray-100 rounded-lg p-4 mb-6">
             <p className="text-gray-600 text-sm mb-1">
-              <strong>Minimum:</strong> KES {selectedPackage === "Starter" ? "1,000" : "101,000"}
+              <strong>Minimum:</strong> KES 1
             </p>
             <p className="text-gray-600 text-sm mb-1">
-              <strong>Maximum:</strong> KES {selectedPackage === "Starter" ? "100,000" : "250,000"}
-            </p>
-            <p className="text-green-600 text-sm font-semibold">
-              <strong>Discount:</strong> {selectedPackage === "Starter" ? "3%" : "4%"}
+              <strong>Maximum:</strong> KES 250,000
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => {
                 setCurrentStep(1);
-                setSelectedPackage("");
                 setAirtimeAmount("");
                 setAmountError("");
               }}
@@ -476,23 +233,15 @@ const handlePayment = async () => {
         </div>
       )}
 
-      {currentStep === 3 && !showGrowthForm && (
+      {currentStep === 3 && (
         <div className="border rounded-lg p-8 mb-12 mx-auto max-w-3xl">
           <h2 className="text-2xl font-semibold text-gray-700 mb-4">
             Review & Payment
           </h2>
-          
-          <p className="text-gray-600 mb-6">
-            Please confirm your order details and enter your phone number to complete payment.
-          </p>
-          
+
           <div className="border rounded-lg p-6 mb-8">
-            <h3 className="text-xl font-semibold text-gray-700 mb-4">
-              {selectedPackage} Package
-            </h3>
-            
-            <h4 className="text-gray-600 mb-3">Airtime Details</h4>
-            
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Airtime Details</h3>
+
             <div className="flex items-start mb-4">
               <div className="text-orange-400 mr-6">
                 <svg
@@ -514,12 +263,7 @@ const handlePayment = async () => {
                   <span>Airtime Top-up</span>
                   <span>KES {parseInt(airtimeAmount).toLocaleString()}</span>
                 </div>
-                
-                <div className="flex justify-between mb-3 text-green-600">
-                  <span>Discount ({discountPercentage}%)</span>
-                  <span>- KES {discount.toLocaleString()}</span>
-                </div>
-                
+
                 <div className="border-t pt-3 mt-3 font-bold flex justify-between text-orange-500">
                   <span>Total</span>
                   <span>KES {totalCost.toLocaleString()}</span>
@@ -527,14 +271,11 @@ const handlePayment = async () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mb-8">
             <label className="block text-gray-600 mb-2 font-semibold">
               Enter Phone Number
             </label>
-            <p className="text-gray-500 text-sm mb-2">
-              You will receive a payment prompt on your phone to complete the transaction
-            </p>
             <input
               type="text"
               value={phoneNumber}
@@ -550,14 +291,12 @@ const handlePayment = async () => {
               <p className="text-red-500 text-sm mt-2">{paymentError}</p>
             )}
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => {
                 setCurrentStep(2);
                 setTotalCost(0);
-                setDiscount(0);
-                setDiscountPercentage(0);
                 setPaymentError("");
               }}
               className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded"
@@ -571,62 +310,6 @@ const handlePayment = async () => {
               disabled={isPaying}
             >
               {isPaying ? "Processing..." : "Pay Now"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showGrowthForm && (
-        <div className="border rounded-lg p-8 mb-12 mx-auto max-w-3xl">
-          <h2 className="text-2xl font-semibold text-gray-600 mb-2">
-            Request Airtime: Enterprise Package
-          </h2>
-          <p className="text-gray-500 mb-6">
-            Get 5% Discount From Ksh 251,000+
-          </p>
-          
-          <div className="mb-6">
-            <label className="block text-gray-600 mb-2 font-semibold">
-              Industry
-            </label>
-            <input
-              type="text"
-              value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
-              className="block w-full bg-white border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:border-orange-400"
-              placeholder="e.g., ICT, Finance, Retail"
-            />
-          </div>
-          
-          <div className="mb-8">
-            <label className="block text-gray-600 mb-2 font-semibold">
-              What is your primary use case?
-            </label>
-            <textarea
-              value={useCase}
-              onChange={(e) => setUseCase(e.target.value)}
-              className="block w-full bg-white border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:border-orange-400 h-32"
-              placeholder="Describe your use case and expected monthly volume"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => {
-                setShowGrowthForm(false);
-                setSelectedPackage("");
-                setIndustry("");
-                setUseCase("");
-              }}
-              className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded"
-            >
-              Back
-            </button>
-            <button
-              onClick={handleEnterpriseSubmit}
-              className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded"
-            >
-              Submit Request
             </button>
           </div>
         </div>
@@ -648,11 +331,6 @@ const handlePayment = async () => {
                   {modalType === "success" && "Payment Successful!"}
                   {modalType === "failure" && "Payment Failed"}
                 </h3>
-                {modalType === "processing" && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    Amount: <span className="font-medium">KES {totalCost.toLocaleString()}</span>
-                  </p>
-                )}
               </div>
               {modalType !== "processing" && (
                 <button
@@ -697,9 +375,6 @@ const handlePayment = async () => {
                     </p>
                     <p className="text-center text-gray-600 mb-4">
                       Your Airtime Top Up of <span className="font-semibold">KES {totalCost.toLocaleString()}</span> is Underway.
-                    </p>
-                    <p className="text-center text-green-600 mb-4">
-                      You saved <span className="font-semibold">KES {discount.toLocaleString()}</span> ({discountPercentage}% discount)
                     </p>
                     <p className="text-center text-gray-600 mb-12">
                       Please confirm within 5 Minutes
