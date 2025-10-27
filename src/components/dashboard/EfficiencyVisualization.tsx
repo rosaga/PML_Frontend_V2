@@ -3,12 +3,12 @@ import Highcharts from 'highcharts';
 import { authHeaders } from '../../app/api/utils/headers/headers';
 import axios from 'axios';
 
-interface TrendsVisualizationProps {
+interface EfficiencyVisualizationProps {
   selectedYear: string;
   selectedMonth: string;
 }
 
-const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
+const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
   selectedYear,
   selectedMonth
 }) => {
@@ -23,14 +23,14 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
     org_id = localStorage.getItem("selectedAccountId");
   }
 
-  // API function to get stats data
-  const getStatsData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
+  // API function to get efficiency data
+  const getEfficiencyData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const statsUrl = `${apiUrl}/organization/${orgId}/stats?granularity=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    const efficiencyUrl = `${apiUrl}/organization/${orgId}/efficiency-report?group=${granularity}&start_date=${startDate}&end_date=${endDate}`;
 
     try {
       const config = await authHeaders();
-      const res = await axios.get(statsUrl, config);
+      const res = await axios.get(efficiencyUrl, config);
 
       if (res.data && res.status === 200) {
         return res.data;
@@ -38,11 +38,11 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
 
       return res;
     } catch (error: any) {
-      console.error('Error fetching stats:', error);
+      console.error('Error fetching efficiency data:', error);
       if (error.response) {
         return {
           errors: {
-            _error: 'The stats data could not be retrieved.',
+            _error: 'The efficiency data could not be retrieved.',
           },
         };
       }
@@ -60,21 +60,18 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
     const currentYear = currentDate.getFullYear();
     
     if (!selectedYear) {
-      // All Years - show yearly data (last 2 years)
       return {
         granularity: 'monthly',
         startDate: `${currentYear - 1}-01-01`,
         endDate: `${currentYear}-12-31`
       };
     } else if (selectedYear && !selectedMonth) {
-      // Specific year - show monthly data
       return {
         granularity: 'monthly',
         startDate: `${selectedYear}-01-01`,
         endDate: `${selectedYear}-12-31`
       };
     } else {
-      // Specific month - show daily data
       const year = selectedYear;
       const month = selectedMonth.padStart(2, '0');
       const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
@@ -99,7 +96,7 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
 
     try {
       const { granularity, startDate, endDate } = getDateParams();
-      const result = await getStatsData(org_id, granularity, startDate, endDate);
+      const result = await getEfficiencyData(org_id, granularity, startDate, endDate);
 
       if (result.errors) {
         setError(result.errors._error);
@@ -107,43 +104,43 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         setData(result);
       }
     } catch (err: any) {
-      setError('Failed to fetch data');
+      setError('Failed to fetch efficiency data');
       console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Process API data for chart - using actual API response structure
+  // Process API data for chart
   const processApiData = () => {
-    if (!data || !data.stats || data.stats.length === 0) {
+    if (!data || !data.graph || data.graph.length === 0) {
       return generateFallbackData();
     }
 
-    const apiData = data.stats;
+    const apiData = data.graph;
     let categories: string[] = [];
-    let recipients: number[] = [];
-    let dataConsumed: number[] = [];
+    let successful: number[] = [];
+    let failed: number[] = [];
 
     if (!selectedYear) {
       // All Years view - group by year
-      const yearGroups: { [key: string]: { recipients: number; dataConsumed: number } } = {};
+      const yearGroups: { [key: string]: { successful: number; failed: number } } = {};
       apiData.forEach((item: any) => {
         const date = new Date(item.period);
         const year = date.getFullYear().toString();
         if (!yearGroups[year]) {
-          yearGroups[year] = { recipients: 0, dataConsumed: 0 };
+          yearGroups[year] = { successful: 0, failed: 0 };
         }
-        yearGroups[year].recipients += item.customer_reach || 0;
-        yearGroups[year].dataConsumed += item.total_bundle || 0;
+        yearGroups[year].successful += item.successful || 0;
+        yearGroups[year].failed += item.failed || 0;
       });
 
       categories = Object.keys(yearGroups).sort();
-      recipients = categories.map(year => yearGroups[year].recipients);
-      dataConsumed = categories.map(year => yearGroups[year].dataConsumed);
+      successful = categories.map(year => yearGroups[year].successful);
+      failed = categories.map(year => yearGroups[year].failed);
     } else if (selectedYear && !selectedMonth) {
-      // Specific year view - show months based on actual data
-      const monthGroups: { [key: number]: { name: string; recipients: number; dataConsumed: number } } = {};
+      // Specific year view - show months
+      const monthGroups: { [key: number]: { name: string; successful: number; failed: number } } = {};
       const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
@@ -151,30 +148,30 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
 
       // Initialize all months to 0
       monthNames.forEach((monthName, index) => {
-        monthGroups[index] = { name: monthName, recipients: 0, dataConsumed: 0 };
+        monthGroups[index] = { name: monthName, successful: 0, failed: 0 };
       });
 
       // Fill in actual data
       apiData.forEach((item: any) => {
         const date = new Date(item.period);
         const monthIndex = date.getMonth();
-        monthGroups[monthIndex].recipients += item.customer_reach || 0;
-        monthGroups[monthIndex].dataConsumed += item.total_bundle || 0;
+        monthGroups[monthIndex].successful += item.successful || 0;
+        monthGroups[monthIndex].failed += item.failed || 0;
       });
 
       categories = monthNames;
-      recipients = categories.map((_, index) => monthGroups[index].recipients);
-      dataConsumed = categories.map((_, index) => monthGroups[index].dataConsumed);
+      successful = categories.map((_, index) => monthGroups[index].successful);
+      failed = categories.map((_, index) => monthGroups[index].failed);
     } else {
-      // Daily view for specific month - show actual dates
+      // Daily view for specific month
       const year = parseInt(selectedYear);
       const month = parseInt(selectedMonth);
       const daysInMonth = new Date(year, month, 0).getDate();
       
       // Initialize all days to 0
-      const dayGroups: { [key: number]: { recipients: number; dataConsumed: number } } = {};
+      const dayGroups: { [key: number]: { successful: number; failed: number } } = {};
       for (let day = 1; day <= daysInMonth; day++) {
-        dayGroups[day] = { recipients: 0, dataConsumed: 0 };
+        dayGroups[day] = { successful: 0, failed: 0 };
       }
 
       // Fill in actual data
@@ -182,28 +179,28 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         const date = new Date(item.period);
         const dayOfMonth = date.getDate();
         if (dayGroups[dayOfMonth]) {
-          dayGroups[dayOfMonth].recipients += item.customer_reach || 0;
-          dayGroups[dayOfMonth].dataConsumed += item.total_bundle || 0;
+          dayGroups[dayOfMonth].successful += item.successful || 0;
+          dayGroups[dayOfMonth].failed += item.failed || 0;
         }
       });
 
       // Create readable date categories
       categories = [];
-      recipients = [];
-      dataConsumed = [];
+      successful = [];
+      failed = [];
       
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${getMonthName(selectedMonth)} ${day}`;
         categories.push(dateStr);
-        recipients.push(dayGroups[day].recipients);
-        dataConsumed.push(dayGroups[day].dataConsumed);
+        successful.push(dayGroups[day].successful);
+        failed.push(dayGroups[day].failed);
       }
     }
 
     return {
       categories,
-      recipients,
-      dataConsumed
+      successful,
+      failed
     };
   };
 
@@ -213,8 +210,8 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
       const years = ['2024', '2025'];
       return {
         categories: years,
-        recipients: [0, 0],
-        dataConsumed: [0, 0]
+        successful: [0, 0],
+        failed: [0, 0]
       };
     } else if (selectedYear && !selectedMonth) {
       const months = [
@@ -223,15 +220,15 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
       ];
       return {
         categories: months,
-        recipients: new Array(12).fill(0),
-        dataConsumed: new Array(12).fill(0)
+        successful: new Array(12).fill(0),
+        failed: new Array(12).fill(0)
       };
     } else {
       const days = Array.from({length: 30}, (_, i) => `${getMonthName(selectedMonth)} ${i + 1}`);
       return {
         categories: days,
-        recipients: new Array(30).fill(0),
-        dataConsumed: new Array(30).fill(0)
+        successful: new Array(30).fill(0),
+        failed: new Array(30).fill(0)
       };
     }
   };
@@ -256,7 +253,7 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         }
       },
       title: {
-        text: 'Customer Reach vs Total Bundle',
+        text: 'Dispatch Efficiency Analysis',
         style: {
           fontSize: '18px',
           fontWeight: '600',
@@ -277,44 +274,27 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
           style: {
             color: '#6B7280'
           },
-          rotation: selectedMonth ? -45 : 0 // Rotate labels for daily view
+          rotation: selectedMonth ? -45 : 0
         }
       },
-      yAxis: [{
+      yAxis: {
         min: 0,
         title: {
-          text: 'Customer Reach',
+          text: 'Number of Dispatches',
           style: {
-            color: '#F58426',
+            color: '#374151',
             fontWeight: '600'
           }
         },
         labels: {
           style: {
-            color: '#F58426'
+            color: '#6B7280'
           },
           formatter: function() {
             return Highcharts.numberFormat(this.value as number, 0);
           }
         }
-      }, {
-        title: {
-          text: 'Total Bundle (MB)',
-          style: {
-            color: '#3B82F6',
-            fontWeight: '600'
-          }
-        },
-        labels: {
-          style: {
-            color: '#3B82F6'
-          },
-          formatter: function() {
-            return Highcharts.numberFormat(this.value as number, 0);
-          }
-        },
-        opposite: true
-      }],
+      },
       tooltip: {
         shared: true,
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -340,29 +320,26 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
           tooltip += `</div>`;
           
           if (points.length === 0 || points.every(p => (p.y as number) === 0)) {
-            tooltip += `<div style="color: #6B7280; font-style: italic;">No data available for this period</div>`;
+            tooltip += `<div style="color: #6B7280; font-style: italic;">No dispatch data available for this period</div>`;
           } else {
+            const successful = points.find(p => p.series.name === 'Successful Dispatches')?.y || 0;
+            const failed = points.find(p => p.series.name === 'Failed Dispatches')?.y || 0;
+            const total = successful + failed;
+            const successRate = total > 0 ? ((successful / total) * 100).toFixed(1) : '0';
+            
             points.forEach(point => {
               const color = point.series.color;
               const value = point.y as number;
               
-              if (value === 0) {
-                const seriesName = point.series.name;
-                tooltip += `<div style="margin: 4px 0; display: flex; align-items: center;">`;
-                tooltip += `<span style="display: inline-block; width: 12px; height: 12px; background-color: ${color}; border-radius: 2px; margin-right: 8px; opacity: 0.3;"></span>`;
-                tooltip += `<span style="color: #6B7280; font-style: italic;">${seriesName}: No data</span>`;
-                tooltip += `</div>`;
-              } else {
-                const formattedValue = point.series.name.includes('Bundle') 
-                  ? `${Highcharts.numberFormat(value, 0)} MB`
-                  : Highcharts.numberFormat(value, 0);
-                
-                tooltip += `<div style="margin: 4px 0; display: flex; align-items: center;">`;
-                tooltip += `<span style="display: inline-block; width: 12px; height: 12px; background-color: ${color}; border-radius: 2px; margin-right: 8px;"></span>`;
-                tooltip += `<span style="color: #374151;">${point.series.name}: <strong>${formattedValue}</strong></span>`;
-                tooltip += `</div>`;
-              }
+              tooltip += `<div style="margin: 4px 0; display: flex; align-items: center;">`;
+              tooltip += `<span style="display: inline-block; width: 12px; height: 12px; background-color: ${color}; border-radius: 2px; margin-right: 8px;"></span>`;
+              tooltip += `<span style="color: #374151;">${point.series.name}: <strong>${Highcharts.numberFormat(value, 0)}</strong></span>`;
+              tooltip += `</div>`;
             });
+            
+            tooltip += `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #E5E7EB;">`;
+            tooltip += `<span style="color: #374151; font-weight: 600;">Success Rate: ${successRate}%</span>`;
+            tooltip += `</div>`;
           }
           
           tooltip += `</div>`;
@@ -373,15 +350,8 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         column: {
           pointPadding: 0.2,
           borderWidth: 0,
-          borderRadius: 4
-        },
-        line: {
-          marker: {
-            radius: 5,
-            lineWidth: 2,
-            lineColor: '#3B82F6'
-          },
-          connectNulls: false
+          borderRadius: 4,
+          groupPadding: 0.1
         },
         series: {
           states: {
@@ -392,34 +362,22 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         }
       },
       series: [{
-        name: 'Customer Reach',
+        name: 'Successful Dispatches',
         type: 'column',
-        yAxis: 0,
-        data: chartData.recipients.map((value, index) => ({
+        data: chartData.successful.map((value, index) => ({
           y: value,
-          color: value === 0 ? 'rgba(245, 132, 38, 0.3)' : '#F58426' 
+          color: value === 0 ? 'rgba(245, 132, 38, 0.3)' : '#F58426'
         })),
         dataLabels: {
           enabled: false
         }
       }, {
-        name: 'Total Bundle',
-        type: 'line',
-        yAxis: 1,
-        data: chartData.dataConsumed.map((value, index) => ({
-          y: value === 0 ? null : value, 
+        name: 'Failed Dispatches',
+        type: 'column',
+        data: chartData.failed.map((value, index) => ({
+          y: value,
+          color: value === 0 ? 'rgba(239, 68, 68, 0.3)' : '#EF4444'
         })),
-        color: '#3B82F6',
-        marker: {
-          fillColor: '#3B82F6',
-          lineWidth: 2,
-          lineColor: '#ffffff',
-          states: {
-            hover: {
-              fillColor: '#2563EB'
-            }
-          }
-        },
         dataLabels: {
           enabled: false
         }
@@ -459,9 +417,9 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
   };
 
   const getSubtitleText = () => {
-    if (!selectedYear) return 'Yearly Overview';
-    if (selectedYear && !selectedMonth) return `Monthly Breakdown for ${selectedYear}`;
-    return `Daily Breakdown for ${getMonthName(selectedMonth)} ${selectedYear}`;
+    if (!selectedYear) return 'Yearly Efficiency Overview';
+    if (selectedYear && !selectedMonth) return `Monthly Efficiency for ${selectedYear}`;
+    return `Daily Efficiency for ${getMonthName(selectedMonth)} ${selectedYear}`;
   };
 
   const getMonthName = (month: string) => {
@@ -470,6 +428,25 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return monthNames[parseInt(month) - 1] || '';
+  };
+
+  // Calculate summary statistics from report data
+  const getSummaryStats = () => {
+    if (!data || !data.report) {
+      return {
+        totalSuccessful: 0,
+        totalFailed: 0,
+        totalDispatches: 0,
+        successRate: 0
+      };
+    }
+
+    return {
+      totalSuccessful: data.report.successful || 0,
+      totalFailed: data.report.failed || 0,
+      totalDispatches: data.report.total || 0,
+      successRate: data.report.success_rate || 0
+    };
   };
 
   // Fetch data when filters change
@@ -499,7 +476,7 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
       {loading && (
         <div className="flex justify-center items-center h-96">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF9800]"></div>
-          <span className="ml-3 text-gray-600">Loading chart data...</span>
+          <span className="ml-3 text-gray-600">Loading efficiency data...</span>
         </div>
       )}
       
@@ -525,8 +502,38 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
           suppressHydrationWarning={true}
         />
       )}
+
+      {/* Summary Cards */}
+      {!loading && !error && data && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <div className="text-sm text-[#F58426] font-medium">Successful</div>
+            <div className="text-2xl font-bold text-[#F58426]">
+              {Highcharts.numberFormat(getSummaryStats().totalSuccessful, 0)}
+            </div>
+          </div>
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="text-sm text-red-600 font-medium">Failed</div>
+            <div className="text-2xl font-bold text-red-700">
+              {Highcharts.numberFormat(getSummaryStats().totalFailed, 0)}
+            </div>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="text-sm text-gray-600 font-medium">Total Dispatches</div>
+            <div className="text-2xl font-bold text-gray-700">
+              {Highcharts.numberFormat(getSummaryStats().totalDispatches, 0)}
+            </div>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="text-sm text-blue-600 font-medium">Success Rate</div>
+            <div className="text-2xl font-bold text-blue-700">
+              {getSummaryStats().successRate.toFixed(1)}%
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default TrendsVisualization;
+export default EfficiencyVisualization;

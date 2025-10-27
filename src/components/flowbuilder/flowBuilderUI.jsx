@@ -336,34 +336,42 @@ const createSortedNodeList = () => {
   return regularNodes;
 };
 
-const findRouteEndNodes = () => {
-  const routeEndNodes = [];
-  
-  nodes.forEach(node => {
-    if (node.data.inputType === "Buttons" && node.data.nodeType === 'route') {
-      // For each button in the route node, check if it has outgoing connections
-      const buttonOptions = node.data.buttonOptions || [];
-      let hasAnyButtonConnections = false;
-      
-      for (let i = 0; i < buttonOptions.length; i++) {
-        const hasButtonConnection = edges.some(edge => 
-          edge.source === node.id && edge.sourceHandle === `button-${i}`
-        );
-        if (hasButtonConnection) {
-          hasAnyButtonConnections = true;
-          break;
+  const findRouteEndNodes = () => {
+    const endNodes = [];
+    
+    nodes.forEach(node => {
+      if (node.data.inputType === "Buttons" && 
+          (node.data.nodeType === 'route' || node.data.nodeType === 'list')) {
+        
+        const buttonOptions = node.data.buttonOptions || [];
+        let hasAnyConnections = false;
+        
+        if (node.data.nodeType === 'route') {
+          // Check button-specific connections for route nodes
+          for (let i = 0; i < buttonOptions.length; i++) {
+            const hasButtonConnection = edges.some(edge => 
+              edge.source === node.id && edge.sourceHandle === `button-${i}`
+            );
+            if (hasButtonConnection) {
+              hasAnyConnections = true;
+              break;
+            }
+          }
+        } else if (node.data.nodeType === 'list') {
+          // Check list-output connection for list nodes
+          hasAnyConnections = edges.some(edge => 
+            edge.source === node.id && edge.sourceHandle === 'list-output'
+          );
+        }
+        
+        if (!hasAnyConnections) {
+          endNodes.push(node.id);
         }
       }
-      
-      // If none of the buttons have connections, this is an end route node
-      if (!hasAnyButtonConnections) {
-        routeEndNodes.push(node.id);
-      }
-    }
-  });
-  
-  return routeEndNodes;
-};
+    });
+    
+    return endNodes;
+  };
 
 const routeEndNodes = React.useMemo(() => {
   return findRouteEndNodes();

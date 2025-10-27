@@ -143,7 +143,6 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
             selectedSenderId: newReward.sender_id,
             newSms: newSmsPayload,
           });
-          console.log("SMS API response:", smsRes);
         }
       } else {
         setErrorMessage("An error occurred. Please try again.");

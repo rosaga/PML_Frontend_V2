@@ -5,8 +5,6 @@ import apiUrl from "../../utils/apiUtils/apiUrl";
 const BASE_PAYMENT_URL = apiUrl.MAKE_PAYMENT;
 const SMS_BASE_PAYMENT_URL = apiUrl.SMS_MAKE_PAYMENT;
 
-
-
 export async function getPayments(
   org_id,
   page               = 1,
@@ -256,5 +254,111 @@ export async function processMpesaSmsPayment(
 
   return makeSmsPayment(org_id, payload);
 }
+
+
+export function formatMSISDN(input) {
+  if (!input) return "";
+  
+  const digits = String(input).replace(/[^\d]/g, "");
+
+  if (digits.startsWith("254") && digits.length === 12) {
+    return digits;
+  }
+  
+  if (digits.startsWith("0") && digits.length === 10) {
+    return `254${digits.slice(1)}`;
+  }
+  
+  if (digits.length === 9 && !digits.startsWith("0")) {
+    return `254${digits}`;
+  }
+  
+  if (digits.startsWith("254")) {
+    return digits;
+  }
+
+  if (digits.startsWith("7") && digits.length === 9) {
+    return `254${digits}`;
+  }
+
+  return digits;
+}
+
+export async function initiateAirtimePayment(org_id, amount, phoneNumber) {
+  if (!org_id) throw new Error("Organization ID missing.");
+  if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
+  if (!phoneNumber) throw new Error("Phone number is required");
+
+  const MSISDN = formatMSISDN(phoneNumber);
+  const payload = { Amount: Number(amount), MSISDN };
+
+  const url = `${BASE_PAYMENT_URL}/${org_id}/airtime`;
+  const config = await authHeaders();
+
+  try {
+    const res = await axios.post(url, payload, config);
+    return {
+      success: true,
+      data: res.data,
+      payment: res.data.payment,
+      message: res.data.message,
+    };
+  } catch (err) {
+    const msg = err.response?.data?.error || "Payment initiation failed.";
+    return { success: false, errors: { _error: msg } };
+  }
+}
+
+export async function getAirtimePayments(org_id, msisdn) {
+  if (!org_id) throw new Error("Organization ID missing.");
+
+  const params = new URLSearchParams({
+    order_by: "created_at",
+    order: "desc",
+    eq__service: "AIRTIME",
+  });
+
+  if (msisdn) params.set("eq__msisdn", formatMSISDN(msisdn));
+
+  const url = `${BASE_PAYMENT_URL}/${org_id}?${params.toString()}`;
+  const config = await authHeaders();
+
+  try {
+    const res = await axios.get(url, config);
+    return { success: true, data: res.data.data || [], count: res.data.count || 0 };
+  } catch (err) {
+    return { success: false, errors: { _error: "Failed to fetch payment history" } };
+  }
+}
+
+export async function checkAirtimePaymentStatus(org_id, requestId) {
+  if (!org_id) throw new Error("Organization ID missing.");
+  const url = `${BASE_PAYMENT_URL}/${org_id}?eq__request_id=${encodeURIComponent(requestId)}`;
+  const config = await authHeaders();
+
+  try {
+    const res = await axios.get(url, config);
+    const payments = res.data?.data || [];
+    const payment = payments[0];
+    if (!payment) return { success: false, errors: { _error: "Payment not found" } };
+    return { success: true, data: payment, status: payment.status };
+  } catch (err) {
+    return { success: false, errors: { _error: "Failed to check payment status" } };
+  }
+}
+
+export async function pollPaymentStatus(org_id, requestId, maxAttempts = 30, interval = 2000) {
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    const res = await checkAirtimePaymentStatus(org_id, requestId);
+    if (res.success && res.data && res.data.status !== "PENDING") return res;
+    attempts++;
+    if (attempts < maxAttempts) {
+      await new Promise(r => setTimeout(r, interval));
+    }
+  }
+  return { success: false, errors: { _error: "Payment status check timed out. Please check your M-Pesa messages." } };
+}
+
 
 

@@ -40,7 +40,6 @@ const SidebarSms = () => {
     { href: '/apps/sms/dashboard', src: '/images/dashboard.svg', alt: 'Dashboard', label: 'Dashboard' },
     { href: '/apps/sms/contacts', src: '/images/vector.svg', alt: 'Contacts', label: 'Contacts' },
     { href: '/apps/sms/messages', src: '/images/users.svg', alt: 'Messages', label: 'Message' },
-    { href: '/apps/sms/developer', src: '/images/vector.svg', alt: 'Developer', label: 'Developer' },
     { href: '/apps/sms/transactions', src: '/images/dataunits.svg', alt: 'Transactions', label: 'Transactions' },
     {
       href: "/apps/sms/settings",
@@ -51,6 +50,7 @@ const SidebarSms = () => {
       subLinks: [
         { href: "/apps/sms/senderId", label: "Sender ID", className: "sender-id" },
         { href: "/apps/sms/smsUnits", label: "SMS Units", className: "notification-threshold" },
+        { href: "/apps/sms/developer", label: "Developer", className: "developer" },
       ]
     },
   ];

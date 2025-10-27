@@ -155,3 +155,63 @@ export async function CreateCampaign(formValues) {
       };
     }
   }
+
+  export async function CreateAirtimeCampaign(formValues) {
+  const payload = {
+    name: formValues.name,
+    group_id: formValues.group_id,
+    airtime_amount: formValues.airtime_amount,
+    description: formValues.description,
+    content_message: formValues.content_message,
+    sender_id: formValues.sender_id,
+  };
+
+  if (formValues.scheduled) payload.scheduled = formValues.scheduled;
+  if (formValues.repeat_count !== undefined) payload.repeat_count = formValues.repeat_count;
+  if (formValues.repeat_interval !== undefined) payload.repeat_interval = formValues.repeat_interval;
+
+  const url = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/airtime/campaign`;
+
+  try {
+    const config = await authHeaders();
+    const res = await axios.post(url, payload, config);
+    return res;
+  } catch (error) {
+    if (error.response) return error.response;
+    throw error;
+  }
+}
+
+export async function GetAirtimeCampaigns(org_id, page, pageSize, searchParams) {
+  let url = `${apiUrl.GET_CONTACTS}/${org_id}/airtime/campaign?orderby=created_at DESC`;
+  if (page) url += `&page=${page}`;
+  if (pageSize) url += `&size=${pageSize}`;
+  if (searchParams) url += `&${new URLSearchParams(searchParams).toString()}`;
+
+  try {
+    const config = await authHeaders();
+    const res = await axios.get(url, config);
+    return res;
+  } catch (error) {
+    if (error.response) return error.response;
+    throw error;
+  }
+}
+
+export async function GetAirtimeCampaignDetails(org_id, campaign_id, page, pageSize) {
+  let url;
+  if (page || pageSize) {
+    url = `${apiUrl.GET_CONTACTS}/${org_id}/airtime/reward?orderby=created_at DESC&eq__campaign_id=${campaign_id}&size=${pageSize}&page=${page}`;
+  } else {
+    url = `${apiUrl.GET_CONTACTS}/${org_id}/airtime/reward?eq__campaign_id=${campaign_id}`;
+  }
+
+  try {
+    const config = await authHeaders();
+    const res = await axios.get(url, config);
+    return res;
+  } catch (error) {
+    if (error.response) return error.response;
+    throw error;
+  }
+}

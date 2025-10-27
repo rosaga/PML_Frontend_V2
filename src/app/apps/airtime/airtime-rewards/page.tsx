@@ -1,12 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RecipientsTable from "../../../../components/rewards-tables/recipients";
 import GroupsTable from "../../../../components/rewards-tables/groups";
 import AirtimeRewardsTable from "../../../../components/airtime-rewards/airtimeRewards";
-import CampaignsTable from "../../../../components/rewards-tables/campaigns";
-import VouchersTable from "../../../../components/rewards-tables/vouchers";
+import AirtimeCampaignsTable from "../../../../components/airtime-rewards/airtimeCampaigns"
+import AirtimeVouchersTable from "../../../../components/airtime-rewards/airtimeVouchers";
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 
 const AirtimeRewards = () => {
   const [active, setActive] = useState("recipients");
@@ -14,131 +15,169 @@ const AirtimeRewards = () => {
   const [childActive, setChildActive] = useState("recipients");
   let tab = searchParams.get('tab');
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     if (tab === 'Rewards') {
       setActive('airtime-dispatch'); 
-      setChildActive('rewards');
+      setChildActive('airtime-rewards');
     } else if (tab === 'Campaign') {
       setActive('airtime-dispatch');
-      setChildActive('campaigns');
+      setChildActive('airtime-campaigns');
+    } else if (tab === 'Vouchers') {
+      setActive('airtime-dispatch');
+      setChildActive('airtime-vouchers')
     }
   }, [tab]);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   return (
     <div className="p-4 sm:ml-64 h-screen">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
-        <div className="flex flex-col h-full">
-          <div className="flex flex-col">
-            <div className="p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full rounded-lg bg-[#F1F2F3]">
-                <div
-                  onClick={() => {
-                    setActive("recipients");
-                    setChildActive("recipients");
-                  }}
-                  className={`flex-1 flex justify-center text-center mb-2 sm:mb-0 sm:mr-2 ${
-                    active === "recipients"
-                      ? "bg-[#090A29] rounded-md cursor-pointer"
-                      : "bg-white rounded-md cursor-pointer"
-                  }`}
-                >
-                  <span
-                    className={`${
+        {loading ? (
+          <Box className="flex justify-center items-center h-full">
+            <CircularProgress style={{ color: "#E88A17" }} />
+          </Box>
+        ) : (
+          <div className="flex flex-col h-full">
+            <div className="flex flex-col">
+              <div className="p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full rounded-lg bg-[#F1F2F3]">
+                  <div
+                    onClick={() => {
+                      setActive("recipients");
+                      setChildActive("recipients");
+                    }}
+                    className={`flex-1 flex justify-center text-center mb-2 sm:mb-0 sm:mr-2 ${
                       active === "recipients"
-                        ? "text-white bg-[#090A29] py-2 rounded"
-                        : "text-[#E88A17] py-2"
+                        ? "bg-[#090A29] rounded-md cursor-pointer"
+                        : "bg-white rounded-md cursor-pointer"
                     }`}
                   >
-                    Recipients
-                  </span>
-                </div>
-                <div
-                  onClick={() => {
-                    setActive("airtime-dispatch");
-                    setChildActive("rewards");
-                  }}
-                  className={`flex-1 flex justify-center text-center mb-2 sm:mb-0 sm:ml-2 ${
-                    active === "airtime-dispatch"
-                      ? "bg-[#090A29] rounded-md cursor-pointer"
-                      : "bg-white rounded-md cursor-pointer"
-                  }`}
-                >
-                  <span
-                    className={`${
+                    <span
+                      className={`${
+                        active === "recipients"
+                          ? "text-white bg-[#090A29] py-2 rounded"
+                          : "text-[#E88A17] py-2"
+                      }`}
+                    >
+                      Recipients
+                    </span>
+                  </div>
+                  <div
+                    onClick={() => {
+                      setActive("airtime-dispatch");
+                      setChildActive("airtime-rewards");
+                    }}
+                    className={`flex-1 flex justify-center text-center mb-2 sm:mb-0 sm:ml-2 ${
                       active === "airtime-dispatch"
-                        ? "text-white bg-[#090A29] py-2 rounded"
-                        : "text-[#E88A17] py-2"
+                        ? "bg-[#090A29] rounded-md cursor-pointer"
+                        : "bg-white rounded-md cursor-pointer"
                     }`}
                   >
-                    Airtime Dispatch
-                  </span>
+                    <span
+                      className={`${
+                        active === "airtime-dispatch"
+                          ? "text-white bg-[#090A29] py-2 rounded"
+                          : "text-[#E88A17] py-2"
+                      }`}
+                    >
+                      Airtime Dispatch
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {active === "recipients" && (
-                <>
-                  <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
-                    {/* <div className="m-2 flex-1">
-                      <span
-                        onClick={() => setChildActive("recipients")}
-                        className={`flex-1 flex justify-center text-center ${
-                          childActive === "recipients"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                        }`}
-                      >
-                        Recipients
-                      </span>
+                {active === "recipients" && (
+                  <>
+                    <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
+                      <div className="m-2 flex-1">
+                        <span
+                          onClick={() => setChildActive("recipients")}
+                          className={`flex-1 flex justify-center text-center ${
+                            childActive === "recipients"
+                              ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                              : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                          }`}
+                        >
+                          Recipients
+                        </span>
+                      </div>
+                      <div className="m-2 flex-1">
+                        <span
+                          onClick={() => setChildActive("groups")}
+                          className={`flex-1 flex justify-center text-center ${
+                            childActive === "groups"
+                              ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                              : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                          }`}
+                        >
+                          Groups
+                        </span>
+                      </div>
                     </div>
-                    <div className="m-2 flex-1">
-                      <span
-                        onClick={() => setChildActive("groups")}
-                        className={`flex-1 flex justify-center text-center ${
-                          childActive === "groups"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                        }`}
-                      >
-                        Groups
-                      </span>
-                    </div>  */}
-                  </div>
 
-                  {/* <Suspense fallback={<div>Loading Recipients...</div>}> */}
-                    {childActive === "recipients" && <RecipientsTable />}
-                    {/* {childActive === "groups" && <GroupsTable />} */}
-                  {/* </Suspense> */}
-                </>
-              )}
+                    {/* <Suspense fallback={<div>Loading Recipients...</div>}> */}
+                      {childActive === "recipients" && <RecipientsTable />}
+                      {childActive === "groups" && <GroupsTable />}
+                    {/* </Suspense> */}
+                  </>
+                )}
 
-              {active === "airtime-dispatch" && (
-                <>
-                  <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
-                    {/* <div className="m-2 flex-1">
-                      <span
-                        onClick={() => setChildActive("rewards")}
-                        className={`${
-                          childActive === "rewards"
-                            ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                            : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
-                        }`}
-                      >
-                        Rewards
-                      </span>
-                    </div> */}
-                   
-                  </div>
+                {active === "airtime-dispatch" && (
+                  <>
+                    <div className="flex flex-col sm:flex-row rounded-lg mt-2 border-[1.5px] mb-2">
+                      <div className="m-2 flex-1">
+                        <span
+                          onClick={() => setChildActive("airtime-rewards")}
+                          className={`${
+                            childActive === "airtime-rewards"
+                              ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                              : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                          }`}
+                        >
+                          Rewards
+                        </span>
+                      </div>
+                      <div className="m-2 flex-1">
+                        <span
+                          onClick={() => setChildActive("airtime-campaigns")}
+                          className={`${
+                            childActive === "airtime-campaigns"
+                              ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                              : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                          }`}
+                        >
+                          Campaigns
+                        </span>
+                      </div>
+                      <div className="m-2 flex-1">
+                        <span
+                          onClick={() => setChildActive("airtime-vouchers")}
+                          className={`${
+                            childActive === "airtime-vouchers"
+                              ? "text-[#E88A17] bg-white border-[1.5px] border-[#E88A17] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                              : "bg-[#F1F2F3] py-1 px-4 sm:px-8 rounded cursor-pointer"
+                          }`}
+                        >
+                          Vouchers
+                        </span>
+                      </div>
+                    </div>
 
-                  {/* <Suspense fallback={<div>Loading Airtime Dispatch...</div>}> */}
-                    {childActive === "rewards" && <AirtimeRewardsTable />}
-                    {childActive === "campaigns" && <CampaignsTable />}
-                    {childActive === "vouchers" && <VouchersTable />}
-                  {/* </Suspense> */}
-                </>
-              )}
+                    {/* <Suspense fallback={<div>Loading Airtime Dispatch...</div>}> */}
+                      {childActive === "airtime-rewards" && <AirtimeRewardsTable />}
+                      {childActive === "airtime-campaigns" && <AirtimeCampaignsTable />}
+                      {childActive === "airtime-vouchers" && <AirtimeVouchersTable />}
+                    {/* </Suspense> */}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

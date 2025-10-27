@@ -75,7 +75,6 @@ const SidebarAirtime = () => {
     { href: "/apps/airtime/airtime-rewards", src: "/images/vector.svg", alt: "Airtime Rewards", label: "Airtime Rewards", className: "airtime-rewards" },
     { href: "/apps/airtime/airtime-balance", src: "/images/dataunits.svg", alt: "Airtime Balance", label: "Airtime Balance", className: "airtime-balance" },
     { href: "/apps/airtime/contacts", src: "/images/users.svg", alt: "Contacts", label: "Users", className: "contacts" },
-    { href: "/apps/airtime/developer", src: "/images/flowbuillder.svg", alt: "Developer", label: "Developer", className: "Developer" },
     // { href: "/apps/data/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
     {
       href: "/apps/data/settings",
@@ -85,7 +84,7 @@ const SidebarAirtime = () => {
       className: "settings",
       subLinks: [
         { href: "/apps/airtime/senderId", label: "Sender ID", className: "sender-id" },
-
+        { href: "/apps/airtime/developer", label: "Developer", className: "developer" },
         //{ href: "/apps/data/manageSenderId", label: "Manage Sender Ids", className: "notification-threshold" },
       ]
     },
@@ -159,10 +158,10 @@ const SidebarAirtime = () => {
 
       <aside
         id="logo-sidebar"
-        className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0 shadow-lg`}
+        className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0 shadow-lg flex flex-col`}
         aria-label="Sidebar"
       >
-        <div className="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+        <div className="flex-1 px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
           <img
             src="/images/peaklogo.png"
             className="h-30 me-24 sm:h-24"
@@ -221,7 +220,17 @@ const SidebarAirtime = () => {
               </li>
             ))}
           </ul>
-          
+        </div>
+        
+        {/* Top up Button */}
+        <div className="px-3 pb-4 bg-gray-50 dark:bg-gray-800">
+          <div
+            className="bg-[#F58426] text-white py-2 px-5 rounded-lg flex items-center justify-center cursor-pointer w-full gap-2"
+            onClick={() => router.push("/apps/airtime/airtime-topup")}
+          >
+            <img src="/images/topup.png" alt="Top Up" className="w-5 h-15" />
+            <span className="text-sm font-medium">Top Up</span>
+          </div>
         </div>
       </aside>
         <Modal
