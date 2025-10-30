@@ -337,7 +337,7 @@ const SendBulkModal = ({ closeModal }) => {
                   placeholder="Hello {{.}}!"
                   onChange={handleChange}
                   value={state.content}
-                  maxLength="160"
+                  maxLength="480"
                   rows="4"
                   required
                 />

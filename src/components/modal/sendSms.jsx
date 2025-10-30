@@ -221,8 +221,8 @@ const SendSmsModal = ({ closeModal }) => {
                 <div>
                 <label htmlFor="content" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between">
                   <span>Type your message here</span>
-                  <span className={`${charCount >= 140 ? "text-red-500" : "text-gray-500"}`}>
-                    {charCount}/160
+                  <span className={`${charCount >= 460 ? "text-red-500" : "text-gray-500"}`}>
+                    {charCount}/480
                   </span>
                 </label>
                   <textarea
@@ -232,7 +232,7 @@ const SendSmsModal = ({ closeModal }) => {
                     placeholder="Hello Jane Doe from the county of Nairobi. Receive this sms to your mobile number - 0711223344."
                     onChange={handleChange}
                     value={state.content}
-                    maxLength="160"
+                    maxLength="480"
                     rows="4"
                     required
                   />
