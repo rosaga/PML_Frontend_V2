@@ -171,7 +171,7 @@ export default function SMSFaqs() {
         </AccordionSummary>
         <AccordionDetails>
           <Typography>
-          A standard SMS contains 160 characters. If your message exceeds this limit, it will be split into multiple messages and charged accordingly.
+          A standard SMS contains 160 characters. If your message exceeds this limit, it will be be charged per every 160 characters.
           </Typography>
         </AccordionDetails>
       </Accordion>
