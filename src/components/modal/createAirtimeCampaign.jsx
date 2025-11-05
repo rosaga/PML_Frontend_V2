@@ -318,7 +318,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       htmlFor="sender_id"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Select Sender Name (Optional - for SMS)
+                      Select Sender Name
                     </label>
                     <select
                       name="sender_id"
@@ -364,7 +364,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                           onChange={handleSwitchChange}
                         />
                       }
-                      label="Schedule Campaign for Later"
+                      label="Schedule Campaign"
                     />
                   </FormGroup>
 
