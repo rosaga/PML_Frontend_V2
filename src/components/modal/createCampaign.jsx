@@ -90,15 +90,16 @@ const CreateCampaignModal = ({ closeModal }) => {
       org_id: org_id,
       name: campaignName,
       group_id: parseInt(selectedGroup),
-      bundle: selectedBundle,
+      bundle_size: selectedBundle,
       description: description,
-      scheduled: value,
+      scheduled: schedule ? value.toISOString() : new Date().toISOString(),
       content_message: message,
       sender_id: parseInt(selectedSenderName),
       slogan: "5",
       repeat_count: schedule ? repeatCount : 0,
       repeat_interval: schedule ? repeatInterval : ""
     };
+
     const res = await CreateCampaign(formData)
       .then((res) => {
         if (res.status === 202) {

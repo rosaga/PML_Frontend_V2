@@ -89,61 +89,89 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
     setSchedule(event.target.checked);
   };
 
+  const validateForm = () => {
+    if (!campaignName.trim()) {
+      setErrorMessage("Campaign name is required.");
+      return false;
+    }
+    if (!selectedGroup) {
+      setErrorMessage("Please select a group.");
+      return false;
+    }
+    if (!selectedAmount || parseFloat(selectedAmount) <= 0) {
+      setErrorMessage("Please select a valid airtime amount.");
+      return false;
+    }
+    if (schedule) {
+      const scheduledTime = dayjs(value);
+      if (!scheduledTime.isValid() || scheduledTime.isBefore(dayjs())) {
+        setErrorMessage("Please select a future date and time.");
+        return false;
+      }
+      if (repeatInterval && repeatCount > 0) {
+        if (repeatInterval === "daily" && repeatCount > 30) {
+          setErrorMessage("Daily repeats cannot exceed 30.");
+          return false;
+        }
+        if (repeatInterval === "weekly" && repeatCount > 4) {
+          setErrorMessage("Weekly repeats cannot exceed 4.");
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+  event.preventDefault();
+  setSubmitting(true);
 
-    try {
-      const orgId = org_id;
-      const airtime_amount = Number(selectedAmount || 0);
+  const formData = {
+    org_id: org_id,
+    name: campaignName,
+    group_id: parseInt(selectedGroup),
+    airtime_amount: parseFloat(selectedAmount),
+    // description: description,
+    scheduled: schedule ? value.toISOString() : new Date().toISOString(),
+    content_message: message,
+    sender_id: parseInt(selectedSenderName) || 0,
+    repeat_count: schedule ? repeatCount : 0,
+    repeat_interval: schedule ? repeatInterval : ""
+  };
 
-      if (!airtime_amount || airtime_amount <= 0) {
-        setErrorMessage("Please select a valid airtime amount.");
-        setSubmitting(false);
-        return;
-      }
-
-      const payload = {
-        org_id: orgId,
-        name: campaignName,
-        group_id: parseInt(selectedGroup, 10),
-        airtime_amount,
-        description,
-        content_message: message,
-        sender_id: selectedSenderName ? parseInt(selectedSenderName, 10) : undefined,
-      };
-
-      if (schedule) {
-        payload.scheduled = dayjs(value).toISOString();
-        payload.repeat_count = repeatCount || 0;
-        payload.repeat_interval = repeatInterval || "";
-      }
-
-      const res = await CreateAirtimeCampaign(payload);
-
-      if (res && (res.status === 202 || res.status === 200)) {
-        setSuccessMessage("Airtime campaign created.");
+  const res = await CreateAirtimeCampaign(formData)
+    .then((res) => {
+      if (res.status === 202) {
+        setSuccessMessage(`Airtime has been dispatched successfully under campaign`);
+        setErrorMessage("");
+      } else {
+        setErrorMessage("Failed to create Airtime Campaign. Please try again.");
         setCampaignName("");
         setSelectedGroup("");
         setSelectedAmount("");
         setMessage("");
-        setSchedule(false);
-        setRepeatInterval("");
-        setRepeatCount(0);
-      } else {
-        const msg =
-          (res && (res.data?.errors || res.data?.error)) ||
-          "Failed to create Airtime Campaign.";
-        setErrorMessage(typeof msg === "string" ? msg : "Failed to create Airtime Campaign.");
       }
-    } catch (err) {
-      setErrorMessage("Network error. Please try again.");
-    } finally {
+    })
+    .catch((error) => {
+      console.log("Error:", error);
+      setErrorMessage("Failed to create Airtime Campaign. Please try again.");
+      if (error.response && error.response.status === 400) {
+        console.log("Error:", error);
+        setErrorMessage("Sorry, you have insufficient airtime balance");
+        setCampaignName("");
+        setSelectedGroup("");
+        setSelectedAmount("");
+        setMessage("");
+      } else {
+        setErrorMessage(`Failed to create campaign: ${error.message}`);
+      }
+    })
+    .finally(() => {
       setSubmitting(false);
-    }
-  };
+    });
+
+  return res;
+};
 
   return (
     <div
@@ -177,7 +205,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
               <div className="mb-4 text-2xl font-semibold text-red-500">
                 Oops!
               </div>
-              <div className="mb-4 text-gray-900 dark:text-white">
+              <div className="mb-4 text-gray-900 dark:text-white whitespace-pre-wrap">
                 {errorMessage}
               </div>
               <button
@@ -207,7 +235,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       htmlFor="name"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Campaign Name
+                      Campaign Name *
                     </label>
                     <input
                       type="text"
@@ -244,7 +272,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       htmlFor="group"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Select Group
+                      Select Group *
                     </label>
                     <select
                       name="group"
@@ -257,7 +285,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       <option value="">Select Group</option>
                       {groups.map((group) => (
                         <option key={group.id} value={group.id}>
-                          {group.name} ({group.contact_count})
+                          {group.name} ({group.contact_count} contacts)
                         </option>
                       ))}
                     </select>
@@ -265,7 +293,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
 
                   <div className="mb-4">
                     <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                      Airtime Amount (KES)
+                      Airtime Amount (KES) *
                     </label>
                     <select
                       id="airtime_amount"
@@ -290,7 +318,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       htmlFor="sender_id"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Select Sender Name
+                      Select Sender Name (Optional - for SMS)
                     </label>
                     <select
                       name="sender_id"
@@ -308,7 +336,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                     </select>
                   </div>
 
-                  {selectedSenderName ? (
+                  {selectedSenderName && (
                     <div className="mb-4">
                       <label
                         htmlFor="content"
@@ -319,15 +347,16 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                       <textarea
                         name="content"
                         id="content"
+                        rows="3"
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="Enter Message"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                       />
                     </div>
-                  ) : null}
+                  )}
 
-                  {/* <FormGroup>
+                  <FormGroup>
                     <FormControlLabel
                       control={
                         <Switch
@@ -335,21 +364,22 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                           onChange={handleSwitchChange}
                         />
                       }
-                      label="*Turn on to send scheduled Campaign*"
+                      label="Schedule Campaign for Later"
                     />
-                  </FormGroup> */}
-
-                  {schedule && (
-                    <div className="my-4">
-                      <MaterialUIPickers
-                        value={value}
-                        onChange={handleDateTimeChange}
-                      />
-                    </div>
-                  )}
+                  </FormGroup>
 
                   {schedule && (
                     <>
+                      <div className="my-4">
+                        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                          Schedule Date & Time *
+                        </label>
+                        <MaterialUIPickers
+                          value={value}
+                          onChange={handleDateTimeChange}
+                        />
+                      </div>
+
                       <div className="flex space-x-4 mt-4">
                         <div className="flex-1">
                           <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -360,7 +390,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                             onChange={(e) => setRepeatInterval(e.target.value)}
                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                           >
-                            <option value="">Select Interval</option>
+                            <option value="">No Repeat</option>
                             <option value="daily">Daily</option>
                             <option value="weekly">Weekly</option>
                             <option value="monthly">Monthly</option>
@@ -376,38 +406,37 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
                             value={repeatCount}
                             onChange={(e) => {
                               const val = parseInt(e.target.value, 10) || 0;
-                              if (repeatInterval === "daily" && val > 30) {
-                                setErrorMessage("Daily repeats cannot exceed 30.");
-                                return;
-                              }
-                              if (repeatInterval === "weekly" && val > 4) {
-                                setErrorMessage("Weekly repeats cannot exceed 4.");
-                                return;
-                              }
-                              setErrorMessage("");
                               setRepeatCount(val);
                             }}
                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             min="0"
+                            max={repeatInterval === "daily" ? 30 : repeatInterval === "weekly" ? 4 : 12}
                           />
+                          {repeatInterval === "daily" && (
+                            <p className="text-xs text-gray-500 mt-1">Max: 30 days</p>
+                          )}
+                          {repeatInterval === "weekly" && (
+                            <p className="text-xs text-gray-500 mt-1">Max: 4 weeks</p>
+                          )}
                         </div>
                       </div>
                     </>
                   )}
 
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 pt-4">
                     <button
                       type="button"
-                      className="w-full text-white bg-gray-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                      className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                       onClick={closeModal}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                      disabled={submitting}
+                      className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Submit
+                      {submitting ? "Submitting..." : schedule ? "Schedule Campaign" : "Create Campaign"}
                     </button>
                   </div>
                 </form>
