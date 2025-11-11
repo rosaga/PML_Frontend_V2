@@ -50,7 +50,7 @@ const MiniApp = () => {
           router.push('/apps/sms/dashboard');
           break;
         case 'flowbot':
-          router.push('/apps/flowbot/flowbuilder');;
+          router.push('/apps/flowbot/dashboard');;
           break;
         default:
           break;

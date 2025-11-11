@@ -227,23 +227,11 @@ const Dashboard = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
                 <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
-                  <p className="mt-2 font-medium text-lg">Flow Balance</p>
-                  <div className="mt-4">
-                    <div style={{ height: 350, width: "100%" }}>
-                      <DataGrid
-                        rows={rows}
-                        columns={columns}
-                        paginationModel={paginationModel}
-                        onPaginationModelChange={setPaginationModel}
-                        sx={{
-                          "&.MuiDataGrid-root": {
-                            border: "none",
-                          },
-                        }}
-                      />
+                  <p className="mt-2 font-medium text-lg">Recent Contacts</p>
+                    <div className="mt-4">
+                      <RecipientDashboard />
                     </div>
                   </div>
-                </div>
                 <div className="flex flex-col gap-4 col-span-1">
                   <div onClick={handleHelp} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
                     <span>
@@ -280,27 +268,7 @@ const Dashboard = () => {
                 </div>
               </div>
             <div className="flex flex-col">
-              <div className="p-4 shadow-md rounded-lg">
-                <div className="flex items-center justify-between">
-                  <p className="mt-4 font-medium text-lg">Recent Contacts</p>
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/Expand.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Expand"
-                      priority
-                    />
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <RecipientDashboard />
-                </div>
-              </div>
+
               {/* <div className="p-4 shadow-md rounded-lg mt-4">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Groups</p>
@@ -322,7 +290,7 @@ const Dashboard = () => {
                   <GroupDashboard />
                 </div>
               </div> */}
-              <div className="p-4 shadow-md rounded-lg mt-4 mb-4">
+              {/* <div className="p-4 shadow-md rounded-lg mt-4 mb-4">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Responses</p>
                   <span>
@@ -342,7 +310,7 @@ const Dashboard = () => {
                 <div className="mt-4">
                   <RecentCampaigns />
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
