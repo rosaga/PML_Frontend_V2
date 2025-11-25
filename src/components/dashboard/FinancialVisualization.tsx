@@ -13,9 +13,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
   selectedMonth
 }) => {
   const costPerUserChartRef = useRef<HTMLDivElement>(null);
-  const costPerRewardChartRef = useRef<HTMLDivElement>(null);
   const costPerUserChartInstance = useRef<Highcharts.Chart | null>(null);
-  const costPerRewardChartInstance = useRef<Highcharts.Chart | null>(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,68 +23,56 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     org_id = localStorage.getItem("selectedAccountId");
   }
 
-  // Data products available
-  const dataProducts = ['10MB', '20MB', '100MB', '200MB', '500MB', '1GB', '5GB', '10GB'];
-
-  // API function to get financial data (placeholder for now)
-  const getFinancialData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
+  // API function to get financial data from cost-efficiency endpoint
+  const getFinancialData = async (
+    orgId: string,
+    group: string,
+    startDate: string,
+    endDate: string
+  ) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const financialUrl = `${apiUrl}/organization/${orgId}/financial?granularity=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    const financialUrl = `${apiUrl}/organization/${orgId}/cost-efficiency?start_date=${startDate}&end_date=${endDate}&group=${group}`;
 
     try {
       const config = await authHeaders();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockData = generateMockFinancialData();
-      
-      return {
-        financial: mockData
-      };
+      const res = await axios.get(financialUrl, config);
 
+      if (res.data && res.status === 200) {
+        return res.data;
+      }
+
+      return res;
     } catch (error: any) {
       console.error('Error fetching financial data:', error);
+      if (error.response) {
+        return {
+          errors: {
+            _error: 'The financial data could not be retrieved.',
+          },
+        };
+      }
       return {
         errors: {
-          _error: 'The financial data could not be retrieved.',
+          _error: 'Network error. Please try again.',
         },
       };
     }
   };
 
-  // Generate mock financial data
-  const generateMockFinancialData = () => {
-    const costPerUser: { [key: string]: number } = {};
-    const costPerReward: { [key: string]: number } = {};
-
-    // Generate random costs for each data product (in KSh)
-    dataProducts.forEach(product => {
-      // Average cost per user for each product (in KSh)
-      costPerUser[product] = Math.random() * 500 + 100; // Between KSh 100-600
-      
-      // Average cost per reward for each product
-      costPerReward[product] = Math.random() * 200 + 50; // Between KSh 50-250
-    });
-
-    return {
-      cost_per_user: costPerUser,
-      cost_per_reward: costPerReward
-    };
-  };
-
-  // Generate date ranges and granularity based on filters
+  // Generate date ranges and group parameter based on filters
   const getDateParams = () => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     
     if (!selectedYear) {
       return {
-        granularity: 'monthly',
+        group: 'yearly',
         startDate: `${currentYear - 1}-01-01`,
         endDate: `${currentYear}-12-31`
       };
     } else if (selectedYear && !selectedMonth) {
       return {
-        granularity: 'monthly',
+        group: 'monthly',
         startDate: `${selectedYear}-01-01`,
         endDate: `${selectedYear}-12-31`
       };
@@ -96,7 +82,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
       const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
       
       return {
-        granularity: 'daily',
+        group: 'daily',
         startDate: `${year}-${month}-01`,
         endDate: `${year}-${month}-${lastDay.toString().padStart(2, '0')}`
       };
@@ -114,8 +100,8 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     setError(null);
 
     try {
-      const { granularity, startDate, endDate } = getDateParams();
-      const result = await getFinancialData(org_id, granularity, startDate, endDate);
+      const { group, startDate, endDate } = getDateParams();
+      const result = await getFinancialData(org_id, group, startDate, endDate);
 
       if (result.errors) {
         setError(result.errors._error);
@@ -130,25 +116,32 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     }
   };
 
-  // Process API data for charts
+  // Process API data for charts - extract cost per user from graph data
   const processApiData = () => {
-    if (!data || !data.financial) {
+    if (!data || !data.graph || data.graph.length === 0) {
       return {
-        costPerUser: dataProducts.map(() => 0),
-        costPerReward: dataProducts.map(() => 0)
+        costPerUser: [],
+        periods: [],
+        avgCostPerUser: 0
       };
     }
 
-    const costPerUser = dataProducts.map(product => 
-      data.financial.cost_per_user[product] || 0
-    );
-    const costPerReward = dataProducts.map(product => 
-      data.financial.cost_per_reward[product] || 0
-    );
+    // Get data from the graph array
+    const graphData = data.graph;
+    
+    // Extract cost per user data across periods
+    const costPerUserData = graphData.map((item: any) => item.avg_cost_per_user || 0);
+    
+    // Get period labels (years, months, or dates)
+    const periods = graphData.map((item: any) => item.period || '');
+
+    // Calculate overall average if we have report summary
+    const avgCostPerUser = data.report?.avg_cost_per_user || 0;
 
     return {
-      costPerUser,
-      costPerReward
+      costPerUser: costPerUserData,
+      periods: periods,
+      avgCostPerUser: avgCostPerUser
     };
   };
 
@@ -187,15 +180,16 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
         }
       },
       xAxis: {
-        categories: dataProducts,
+        categories: chartData.periods.length > 0 ? chartData.periods : ['No Data'],
         crosshair: true,
         labels: {
           style: {
             color: '#6B7280'
-          }
+          },
+          rotation: selectedMonth ? -45 : 0
         },
         title: {
-          text: 'Data Products',
+          text: selectedYear && selectedMonth ? 'Date' : selectedYear ? 'Month' : 'Year',
           style: {
             color: '#374151',
             fontWeight: '600'
@@ -228,12 +222,12 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
         useHTML: true,
         formatter: function() {
           const value = this.y as number;
-          const product = dataProducts[this.x as number];
+          const period = chartData.periods[this.x as number];
           
           return `
             <div style="padding: 8px;">
               <div style="font-weight: 600; margin-bottom: 8px; color: #374151;">
-                ${product} Data Product
+                Period: ${period}
               </div>
               <div style="color: #374151;">
                 Average Cost per User: <strong>KSh ${Highcharts.numberFormat(value, 2)}</strong>
@@ -254,7 +248,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
         name: 'Cost per User',
         type: 'column',
         data: chartData.costPerUser,
-        color: '#3B82F6', // Blue for Cost per User
+        color: '#3B82F6',
         dataLabels: {
           enabled: false
         }
@@ -268,124 +262,6 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     };
 
     costPerUserChartInstance.current = Highcharts.chart(costPerUserChartRef.current, options);
-  };
-
-  const createCostPerRewardChart = () => {
-    if (!costPerRewardChartRef.current || typeof window === 'undefined') return;
-
-    const chartData = processApiData();
-    
-    // Destroy existing chart
-    if (costPerRewardChartInstance.current) {
-      costPerRewardChartInstance.current.destroy();
-      costPerRewardChartInstance.current = null;
-    }
-
-    const options: Highcharts.Options = {
-      chart: {
-        type: 'column',
-        backgroundColor: 'transparent',
-        style: {
-          fontFamily: 'inherit'
-        }
-      },
-      title: {
-        text: 'Average Cost per Reward',
-        style: {
-          fontSize: '18px',
-          fontWeight: '600',
-          color: '#374151'
-        }
-      },
-      subtitle: {
-        text: getSubtitleText(),
-        style: {
-          fontSize: '14px',
-          color: '#6B7280'
-        }
-      },
-      xAxis: {
-        categories: dataProducts,
-        crosshair: true,
-        labels: {
-          style: {
-            color: '#6B7280'
-          }
-        },
-        title: {
-          text: 'Data Products',
-          style: {
-            color: '#374151',
-            fontWeight: '600'
-          }
-        }
-      },
-      yAxis: {
-        min: 0,
-        title: {
-          text: 'Cost (KSh)',
-          style: {
-            color: '#374151',
-            fontWeight: '600'
-          }
-        },
-        labels: {
-          style: {
-            color: '#6B7280'
-          },
-          formatter: function() {
-            return 'KSh ' + Highcharts.numberFormat(this.value as number, 2);
-          }
-        }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#E5E7EB',
-        borderRadius: 8,
-        shadow: true,
-        useHTML: true,
-        formatter: function() {
-          const value = this.y as number;
-          const product = dataProducts[this.x as number];
-          
-          return `
-            <div style="padding: 8px;">
-              <div style="font-weight: 600; margin-bottom: 8px; color: #374151;">
-                ${product} Data Product
-              </div>
-              <div style="color: #374151;">
-                Average Cost per Reward: <strong>KSh ${Highcharts.numberFormat(value, 2)}</strong>
-              </div>
-            </div>
-          `;
-        }
-      },
-      plotOptions: {
-        column: {
-          pointPadding: 0.2,
-          borderWidth: 0,
-          borderRadius: 4,
-          colorByPoint: false
-        }
-      },
-      series: [{
-        name: 'Cost per Reward',
-        type: 'column',
-        data: chartData.costPerReward,
-        color: '#F58426', // Orange for Cost per Reward
-        dataLabels: {
-          enabled: false
-        }
-      }],
-      credits: {
-        enabled: false
-      },
-      legend: {
-        enabled: false
-      }
-    };
-
-    costPerRewardChartInstance.current = Highcharts.chart(costPerRewardChartRef.current, options);
   };
 
   const getSubtitleText = () => {
@@ -402,24 +278,24 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     return monthNames[parseInt(month) - 1] || '';
   };
 
-  // Calculate summary statistics
   const getSummaryStats = () => {
-    const chartData = processApiData();
-    const totalCostPerUser = chartData.costPerUser.reduce((sum, val) => sum + val, 0);
-    const avgCostPerUser = totalCostPerUser / dataProducts.length;
-    const totalCostPerReward = chartData.costPerReward.reduce((sum, val) => sum + val, 0);
-    const avgCostPerReward = totalCostPerReward / dataProducts.length;
-    
-    const highestCostUserProduct = dataProducts[chartData.costPerUser.indexOf(Math.max(...chartData.costPerUser))];
-    const lowestCostUserProduct = dataProducts[chartData.costPerUser.indexOf(Math.min(...chartData.costPerUser))];
+    // Use report summary if available
+    if (data?.report) {
+      return {
+        avgCostPerUser: data.report.avg_cost_per_user || 0,
+        totalCost: data.report.total_cost || 0,
+        uniqueUsers: data.report.unique_users || 0,
+        totalRewards: data.report.total_rewards || 0,
+        avgCostPerReward: data.report.avg_cost_per_reward || 0
+      };
+    }
 
     return {
-      avgCostPerUser,
-      avgCostPerReward,
-      highestCostUserProduct,
-      lowestCostUserProduct,
-      totalCostPerUser,
-      totalCostPerReward
+      avgCostPerUser: 0,
+      totalCost: 0,
+      uniqueUsers: 0,
+      totalRewards: 0,
+      avgCostPerReward: 0
     };
   };
 
@@ -433,7 +309,6 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     if (typeof window !== 'undefined' && !loading) {
       const timer = setTimeout(() => {
         createCostPerUserChart();
-        createCostPerRewardChart();
       }, 100);
 
       return () => {
@@ -441,10 +316,6 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
         if (costPerUserChartInstance.current) {
           costPerUserChartInstance.current.destroy();
           costPerUserChartInstance.current = null;
-        }
-        if (costPerRewardChartInstance.current) {
-          costPerRewardChartInstance.current.destroy();
-          costPerRewardChartInstance.current = null;
         }
       };
     }
@@ -485,21 +356,21 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
               </div>
             </div>
             <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-              <div className="text-sm text-[#F58426] font-medium">Avg Cost/Reward</div>
+              <div className="text-sm text-[#F58426] font-medium">Total Cost</div>
               <div className="text-2xl font-bold text-[#F58426]">
-                KSh {getSummaryStats().avgCostPerReward.toFixed(2)}
+                KSh {getSummaryStats().totalCost.toFixed(2)}
               </div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="text-sm text-gray-600 font-medium">Lowest Cost Product</div>
-              <div className="text-2xl font-bold text-gray-700">
-                {getSummaryStats().lowestCostUserProduct}
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-sm text-green-600 font-medium">Unique Users</div>
+              <div className="text-2xl font-bold text-green-700">
+                {getSummaryStats().uniqueUsers}
               </div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="text-sm text-gray-600 font-medium">Highest Cost Product</div>
-              <div className="text-2xl font-bold text-gray-700">
-                {getSummaryStats().highestCostUserProduct}
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <div className="text-sm text-purple-600 font-medium">Total Rewards</div>
+              <div className="text-2xl font-bold text-purple-700">
+                {getSummaryStats().totalRewards}
               </div>
             </div>
           </div>
@@ -508,15 +379,6 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
           <div className="border-[1.5px] rounded-3xl p-6 mb-4">
             <div 
               ref={costPerUserChartRef} 
-              style={{ height: '400px', width: '100%' }}
-              suppressHydrationWarning={true}
-            />
-          </div>
-
-          {/* Cost per Reward Chart */}
-          <div className="border-[1.5px] rounded-3xl p-6 mb-4">
-            <div 
-              ref={costPerRewardChartRef} 
               style={{ height: '400px', width: '100%' }}
               suppressHydrationWarning={true}
             />
