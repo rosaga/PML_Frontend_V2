@@ -92,7 +92,7 @@ const SendBulkModal = ({ closeModal }) => {
       service_id: parseInt(selectedSenderId),
       requestid: randomUuid,
       content: formattedContent,
-      scheduled: value,
+      scheduled: schedule ? value : null,
       channel: selectedChannel,
       organization_id: org_id,
       repeat_count: schedule ? repeatCount : 0,
