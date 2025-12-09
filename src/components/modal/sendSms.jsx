@@ -76,17 +76,15 @@ const SendSmsModal = ({ closeModal }) => {
       destination: state.destination,
       content: formattedContent,
       requestid: randomUuid,
-      scheduled: value,
+      scheduled: schedule ? value : null,
       channel: selectedChannel,
       organization_id: org_id,
     };
 
     const res = sendSms({ selectedSenderId, newSms }).then((res) => {
       if (res.status === 202) {
-        // closeModal()
         toast.success("SMS SENT SUCCESSFULLY!!!");
       } else {
-        // closeModal()
         toast.error("SEND SMS FAILED")
       }
       setIsButtonClicked(false);
