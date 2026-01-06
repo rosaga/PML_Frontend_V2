@@ -313,6 +313,7 @@ const SendBulkModal = ({ closeModal }) => {
                   >
                     Type your message here
                   </label>
+                  <span>
                   <button
                     type="button"
                     className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
@@ -328,6 +329,10 @@ const SendBulkModal = ({ closeModal }) => {
                   >
                    Insert Attribute
                   </button>
+                  <span className={`${charCount >= 460 ? "text-red-500 px-2 py-1" : "text-gray-500 px-2 py-1"}`}>
+                    {charCount}/480
+                  </span>
+                  </span>
                 </div>
 
                 <textarea
