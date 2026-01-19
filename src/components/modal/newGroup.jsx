@@ -6,8 +6,10 @@ import { saveAs } from "file-saver";
 import { contactsUpload } from "@/app/api/actions/contact/contact";
 import { ToastContainer, toast } from "react-toastify";
 
-const CSV_CHECKER_ORIGIN = "https://csv-checker.netlify.app/";
-const CSV_CHECKER_URL = "https://csv-checker.netlify.app/";
+const CSV_CHECKER_URL =
+  process.env.NEXT_PUBLIC_CSV_CHECKER_URL || "https://csv-checker.netlify.app/";
+
+const CSV_CHECKER_ORIGIN = new URL(CSV_CHECKER_URL).origin;
 
 const NewGroupModal = ({ closeModal }) => {
   const router = useRouter();
@@ -63,6 +65,18 @@ const NewGroupModal = ({ closeModal }) => {
       toast.error("CSV Checker didn’t respond. Please try again.");
       readyTimeoutRef.current = null;
     }, 12000);
+
+    window.setTimeout(() => {
+      try {
+        const iframeWin = checkerIframeRef.current?.contentWindow;
+        if (!iframeWin) return;
+
+        iframeWin.postMessage(
+          { type: "CSV_PARENT_INIT", parentOrigin: window.location.origin },
+          CSV_CHECKER_ORIGIN
+        );
+      } catch (_) {}
+    }, 50);
   };
 
   useEffect(() => {
@@ -90,7 +104,7 @@ const NewGroupModal = ({ closeModal }) => {
             {
               type: "CSV_FILE_BUFFER",
               name: file.name,
-              mime: file.type || "text/csv",
+              mime: "text/csv",
               buffer,
               parentOrigin: window.location.origin,
             },
@@ -104,11 +118,16 @@ const NewGroupModal = ({ closeModal }) => {
 
       if (data.type === "CSV_CHECKER_FINISH" && data.buffer) {
         try {
-          const cleanedFile = new File(
-            [data.buffer],
-            data.name || csvFileRef.current?.name || "contacts.cleaned.csv",
-            { type: data.mime || "text/csv" }
-          );
+          const rawName =
+            data.name || csvFileRef.current?.name || "contacts.cleaned.csv";
+
+          const safeName = rawName.toLowerCase().endsWith(".csv")
+            ? rawName
+            : `${rawName}.csv`;
+
+          const cleanedFile = new File([data.buffer], safeName, {
+            type: "text/csv",
+          });
 
           setCsvFile(cleanedFile);
 
@@ -138,7 +157,9 @@ const NewGroupModal = ({ closeModal }) => {
       Object.keys(templateData[0]).join(","),
       ...templateData.map((row) => Object.values(row).join(",")),
     ];
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
     saveAs(blob, "contact_template.csv");
   };
 
@@ -148,7 +169,8 @@ const NewGroupModal = ({ closeModal }) => {
       reader.onload = (event) => {
         const text = String(event.target.result || "");
         const lines = text.split("\n");
-        const normalizeHeader = (h) => h.trim().replace(/^"|"$/g, "").toLowerCase();
+        const normalizeHeader = (h) =>
+          h.trim().replace(/^"|"$/g, "").toLowerCase();
 
         const headers = lines[0].split(",");
         const mobileIndex = headers.findIndex((h) =>
@@ -198,13 +220,15 @@ const NewGroupModal = ({ closeModal }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
       setErrorMessage("Please select a CSV file");
       setCsvFile(null);
       return;
     }
 
-    setCsvFile(file);
+    const normalized = new File([file], file.name, { type: "text/csv" });
+
+    setCsvFile(normalized);
     setErrorMessage("");
     setShowValidationErrors(false);
     setDuplicates([]);
@@ -397,7 +421,12 @@ const NewGroupModal = ({ closeModal }) => {
                           BETA
                         </span>
 
-                        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
                           <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
                           <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 100-2H5z" />
                         </svg>
@@ -407,7 +436,9 @@ const NewGroupModal = ({ closeModal }) => {
 
                   {showValidationErrors && (
                     <div className="p-4 mt-2 bg-red-50 border border-red-200 rounded-lg">
-                      <h4 className="mb-2 text-sm font-medium text-red-600">Please fix these before uploading:</h4>
+                      <h4 className="mb-2 text-sm font-medium text-red-600">
+                        Please fix these before uploading:
+                      </h4>
 
                       {invalidPhoneNumbers.length > 0 && (
                         <div className="mb-2 text-xs text-red-500">
@@ -418,7 +449,9 @@ const NewGroupModal = ({ closeModal }) => {
                                 Line {item.line}: {item.phone}
                               </li>
                             ))}
-                            {invalidPhoneNumbers.length > 5 && <li>...and {invalidPhoneNumbers.length - 5} more</li>}
+                            {invalidPhoneNumbers.length > 5 && (
+                              <li>...and {invalidPhoneNumbers.length - 5} more</li>
+                            )}
                           </ul>
                         </div>
                       )}
@@ -430,7 +463,9 @@ const NewGroupModal = ({ closeModal }) => {
                             {duplicates.slice(0, 5).map((phone, i) => (
                               <li key={i}>{phone}</li>
                             ))}
-                            {duplicates.length > 5 && <li>...and {duplicates.length - 5} more</li>}
+                            {duplicates.length > 5 && (
+                              <li>...and {duplicates.length - 5} more</li>
+                            )}
                           </ul>
                         </div>
                       )}
@@ -481,14 +516,17 @@ const NewGroupModal = ({ closeModal }) => {
                   id="csv-checker-modal-overlay"
                   className="fixed inset-0 z-[60] flex items-center justify-center w-full h-screen bg-black bg-opacity-50 p-4"
                   onClick={(e) => {
-                    if (e.target.id === "csv-checker-modal-overlay") closeCsvChecker();
+                    if (e.target.id === "csv-checker-modal-overlay")
+                      closeCsvChecker();
                   }}
                 >
                   <div className="relative w-full max-w-5xl max-h-full">
                     <div className="bg-white rounded-lg shadow dark:bg-gray-700 overflow-hidden">
                       <div className="flex items-center justify-between p-4 border-b dark:border-gray-600">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">CSV Checker</h3>
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                            CSV Checker
+                          </h3>
                           <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-600">
                             BETA
                           </span>
@@ -509,6 +547,17 @@ const NewGroupModal = ({ closeModal }) => {
                           src={CSV_CHECKER_URL}
                           className="h-full w-full"
                           title="CSV Checker"
+                          onLoad={() => {
+                            try {
+                              checkerIframeRef.current?.contentWindow?.postMessage(
+                                {
+                                  type: "CSV_PARENT_INIT",
+                                  parentOrigin: window.location.origin,
+                                },
+                                CSV_CHECKER_ORIGIN
+                              );
+                            } catch (_) {}
+                          }}
                         />
                       </div>
                     </div>
