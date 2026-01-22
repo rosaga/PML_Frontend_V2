@@ -32,6 +32,15 @@ const NewGroupModal = ({ closeModal }) => {
 
   const [isCsvCheckerOpen, setIsCsvCheckerOpen] = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingToChecker, setIsSendingToChecker] = useState(false);
+
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
+
+  const progressTimerRef = useRef(null);
+  const progressHasRealUpdatesRef = useRef(false);
+
   const checkerIframeRef = useRef(null);
   const csvFileRef = useRef(null);
   const readyTimeoutRef = useRef(null);
@@ -47,8 +56,50 @@ const NewGroupModal = ({ closeModal }) => {
     }
   }, []);
 
+  const stopSimulatedProgress = useCallback(() => {
+    if (progressTimerRef.current) {
+      window.clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  }, []);
+
+  const startSimulatedProgress = useCallback(
+    (from = 30, to = 95) => {
+      stopSimulatedProgress();
+      progressHasRealUpdatesRef.current = false;
+
+      setUploadProgress((p) => (p < from ? from : p));
+
+      progressTimerRef.current = window.setInterval(() => {
+        setUploadProgress((prev) => {
+          if (progressHasRealUpdatesRef.current) return prev;
+          if (prev >= to) return prev;
+
+          const remaining = to - prev;
+          const step = remaining > 20 ? 2 : remaining > 8 ? 1 : 1;
+          return Math.min(to, prev + step);
+        });
+      }, 450);
+    },
+    [stopSimulatedProgress]
+  );
+
+  const setRealUploadPercent = useCallback(
+    (pct0to100) => {
+      progressHasRealUpdatesRef.current = true;
+      stopSimulatedProgress();
+
+      const clamped = Math.max(0, Math.min(100, Number(pct0to100) || 0));
+
+      const mapped = 30 + Math.round((clamped / 100) * 65);
+      setUploadProgress(Math.max(30, Math.min(95, mapped)));
+    },
+    [stopSimulatedProgress]
+  );
+
   const closeCsvChecker = useCallback(() => {
     clearReadyTimeout();
+    setIsSendingToChecker(false);
     setIsCsvCheckerOpen(false);
   }, [clearReadyTimeout]);
 
@@ -98,6 +149,7 @@ const NewGroupModal = ({ closeModal }) => {
         if (!file) return;
 
         try {
+          setIsSendingToChecker(true);
           const buffer = await file.arrayBuffer();
 
           iframeWin.postMessage(
@@ -113,6 +165,8 @@ const NewGroupModal = ({ closeModal }) => {
           );
         } catch (e) {
           toast.error("Failed to send file to CSV Checker.");
+        } finally {
+          setIsSendingToChecker(false);
         }
       }
 
@@ -130,16 +184,16 @@ const NewGroupModal = ({ closeModal }) => {
           });
 
           setCsvFile(cleanedFile);
-
           setShowValidationErrors(false);
           setDuplicates([]);
           setInvalidPhoneNumbers([]);
 
           toast.success("CSV updated from Checker. You can now click Submit.");
-
           closeCsvChecker();
         } catch (e) {
           toast.error("Failed to receive cleaned CSV from Checker.");
+        } finally {
+          setIsSendingToChecker(false);
         }
       }
     };
@@ -166,49 +220,64 @@ const NewGroupModal = ({ closeModal }) => {
   const validateCsvFile = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
+
+      reader.onprogress = (evt) => {
+        if (!evt.lengthComputable) return;
+        const pct = Math.round((evt.loaded / evt.total) * 30);
+        setUploadProgress((p) => Math.max(p, Math.min(30, pct)));
+        setUploadStage("Reading & validating CSV…");
+      };
+
       reader.onload = (event) => {
-        const text = String(event.target.result || "");
-        const lines = text.split("\n");
-        const normalizeHeader = (h) =>
-          h.trim().replace(/^"|"$/g, "").toLowerCase();
+        try {
+          const text = String(event.target.result || "");
+          const lines = text.split(/\r?\n/);
 
-        const headers = lines[0].split(",");
-        const mobileIndex = headers.findIndex((h) =>
-          ["mobile", "phone", "phonenumber"].includes(normalizeHeader(h))
-        );
+          const normalizeHeader = (h) =>
+            h.trim().replace(/^"|"$/g, "").toLowerCase();
 
-        if (mobileIndex === -1) {
-          reject("CSV file must have a 'mobile' column");
-          return;
-        }
+          const headers = (lines[0] || "").split(",");
+          const mobileIndex = headers.findIndex((h) =>
+            ["mobile", "phone", "phonenumber"].includes(normalizeHeader(h))
+          );
 
-        const dupSet = new Set();
-        const uniqSet = new Set();
-        const invalids = [];
-
-        for (let i = 1; i < lines.length; i++) {
-          if (!lines[i].trim()) continue;
-
-          const cols = lines[i].split(",");
-          const phone = (cols[mobileIndex] || "").trim();
-          const digits = phone.replace(/\D/g, "");
-
-          if (digits.length < 9) {
-            invalids.push({ line: i + 1, phone });
-          } else if (uniqSet.has(phone)) {
-            dupSet.add(phone);
-          } else {
-            uniqSet.add(phone);
+          if (mobileIndex === -1) {
+            reject("CSV file must have a 'mobile' column");
+            return;
           }
-        }
 
-        if (invalids.length || dupSet.size) {
-          setInvalidPhoneNumbers(invalids);
-          setDuplicates([...dupSet]);
-          setShowValidationErrors(true);
-          reject({ invalidPhones: invalids, duplicates: [...dupSet] });
-        } else {
-          resolve(file);
+          const dupSet = new Set();
+          const uniqSet = new Set();
+          const invalids = [];
+
+          for (let i = 1; i < lines.length; i++) {
+            if (!lines[i]?.trim()) continue;
+
+            const cols = lines[i].split(",");
+            const phone = (cols[mobileIndex] || "").trim();
+            const digits = phone.replace(/\D/g, "");
+
+            if (digits.length < 9) {
+              invalids.push({ line: i + 1, phone });
+            } else if (uniqSet.has(phone)) {
+              dupSet.add(phone);
+            } else {
+              uniqSet.add(phone);
+            }
+          }
+
+          setUploadProgress((p) => Math.max(p, 30));
+
+          if (invalids.length || dupSet.size) {
+            setInvalidPhoneNumbers(invalids);
+            setDuplicates([...dupSet]);
+            setShowValidationErrors(true);
+            reject({ invalidPhones: invalids, duplicates: [...dupSet] });
+          } else {
+            resolve(file);
+          }
+        } catch (e) {
+          reject("Error reading the CSV file");
         }
       };
 
@@ -233,10 +302,16 @@ const NewGroupModal = ({ closeModal }) => {
     setShowValidationErrors(false);
     setDuplicates([]);
     setInvalidPhoneNumbers([]);
+
+    setUploadProgress(0);
+    setUploadStage("");
+    stopSimulatedProgress();
+    progressHasRealUpdatesRef.current = false;
   };
 
   const handleGroupCreate = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!groupName.trim()) {
       setErrorMessage("Please enter a group name");
@@ -247,13 +322,31 @@ const NewGroupModal = ({ closeModal }) => {
       return;
     }
 
+    setIsSubmitting(true);
+    setUploadProgress(0);
+    setUploadStage("Starting…");
+    stopSimulatedProgress();
+    progressHasRealUpdatesRef.current = false;
+
     validateCsvFile(csvFile)
       .then(() => {
-        const formValues = { org_id, name: groupName, description, contacts: csvFile };
-        return contactsUpload(formValues);
+        setUploadStage("Uploading contacts…");
+        startSimulatedProgress(30, 95);
+
+        const formValues = {
+          org_id,
+          name: groupName,
+          description,
+          contacts: csvFile,
+        };
+        return contactsUpload(formValues, (pct) => setRealUploadPercent(pct));
       })
       .then((res) => {
-        if (res.status === 201) {
+        stopSimulatedProgress();
+        setUploadStage("Finalizing…");
+        setUploadProgress(100);
+
+        if (res?.status === 201) {
           toast.success("CONTACTS UPLOAD SUCCESS");
           setSuccessMessage("Contacts upload successful");
           setErrorMessage("");
@@ -264,13 +357,26 @@ const NewGroupModal = ({ closeModal }) => {
         }
       })
       .catch((err) => {
-        if (err?.invalidPhones || err?.duplicates) return;
+        stopSimulatedProgress();
+
+        if (err?.invalidPhones || err?.duplicates) {
+          setUploadStage("");
+          setUploadProgress(0);
+          return;
+        }
 
         if (err?.response?.status === 400) {
           setErrorMessage("Wrong file type selected. Please use CSV format.");
         } else {
           setErrorMessage("Contacts upload failed. Please try again.");
         }
+
+        setUploadStage("");
+        setUploadProgress(0);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+        progressHasRealUpdatesRef.current = false;
       });
   };
 
@@ -299,11 +405,11 @@ const NewGroupModal = ({ closeModal }) => {
 
   useEffect(() => {
     const onClick = (e) => {
-      if (e.target.id === "authentication-modal") closeModal();
+      if (e.target.id === "authentication-modal" && !isSubmitting) closeModal();
     };
     window.addEventListener("click", onClick);
     return () => window.removeEventListener("click", onClick);
-  }, [closeModal]);
+  }, [closeModal, isSubmitting]);
 
   return (
     <div
@@ -313,11 +419,64 @@ const NewGroupModal = ({ closeModal }) => {
       className="fixed inset-0 z-50 flex items-center justify-center w-full h-screen bg-black bg-opacity-50"
     >
       <div className="relative w-full max-w-2xl p-4 max-h-full">
-        <div className="bg-white rounded-lg shadow dark:bg-gray-700">
+        <div className="bg-white rounded-lg shadow dark:bg-gray-700 relative">
+          {/* Overlay loader and progress bar */}
+          {isSubmitting && (
+            <div className="absolute inset-0 z-[70] bg-white/80 dark:bg-gray-700/80 flex items-center justify-center p-4">
+              <div className="w-full max-w-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-5 py-4 shadow">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <svg
+                      className="h-5 w-5 animate-spin text-orange-500"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      />
+                    </svg>
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                      {uploadStage || "Working…"}
+                    </div>
+                  </div>
+
+                  <div className="text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+                    {Math.min(100, Math.max(0, uploadProgress))}%
+                  </div>
+                </div>
+
+                <div className="mt-3 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-orange-500 transition-[width] duration-300 ease-out"
+                    style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
+                  />
+                </div>
+
+                <div className="mt-2 text-xs text-gray-500 dark:text-gray-300">
+                  Please don’t close this window while the upload is running.
+                </div>
+              </div>
+            </div>
+          )}
+
           {successMessage ? (
             <div className="p-6 text-center">
-              <h2 className="mb-4 text-2xl font-semibold text-green-500">Success!</h2>
-              <p className="mb-6 text-gray-900 dark:text-white">{successMessage}</p>
+              <h2 className="mb-4 text-2xl font-semibold text-green-500">
+                Success!
+              </h2>
+              <p className="mb-6 text-gray-900 dark:text-white">
+                {successMessage}
+              </p>
               <div className="flex space-x-2">
                 <button
                   onClick={() => {
@@ -332,7 +491,8 @@ const NewGroupModal = ({ closeModal }) => {
                   onClick={goToCampaign}
                   className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-400 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-300"
                 >
-                  Go to {service.charAt(0).toUpperCase() + service.slice(1)} Campaigns
+                  Go to {service.charAt(0).toUpperCase() + service.slice(1)}{" "}
+                  Campaigns
                 </button>
               </div>
             </div>
@@ -350,7 +510,9 @@ const NewGroupModal = ({ closeModal }) => {
           ) : (
             <>
               <div className="flex items-center justify-between p-4 border-b dark:border-gray-600">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">New Group</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  New Group
+                </h3>
 
                 <button
                   onClick={handleDownloadTemplate}
@@ -378,6 +540,7 @@ const NewGroupModal = ({ closeModal }) => {
                       value={groupName}
                       onChange={(e) => setGroupName(e.target.value)}
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
 
@@ -396,6 +559,7 @@ const NewGroupModal = ({ closeModal }) => {
                       className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       onChange={handleFileChange}
                       required
+                      disabled={isSubmitting}
                     />
 
                     <div className="mt-2 flex items-center justify-between">
@@ -406,16 +570,18 @@ const NewGroupModal = ({ closeModal }) => {
                       <button
                         type="button"
                         onClick={handleProceedToCsvChecker}
-                        disabled={!csvFile}
+                        disabled={!csvFile || isSubmitting}
                         className={`inline-flex items-center gap-2 text-sm font-medium
                           ${
-                            csvFile
+                            csvFile && !isSubmitting
                               ? "text-orange-500 hover:text-orange-600"
                               : "text-gray-300 cursor-not-allowed"
                           }
                         `}
                       >
-                        <span className="underline underline-offset-4">Proceed to CSV Checker</span>
+                        <span className="underline underline-offset-4">
+                          Proceed to CSV Checker
+                        </span>
 
                         <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-600">
                           BETA
@@ -450,7 +616,9 @@ const NewGroupModal = ({ closeModal }) => {
                               </li>
                             ))}
                             {invalidPhoneNumbers.length > 5 && (
-                              <li>...and {invalidPhoneNumbers.length - 5} more</li>
+                              <li>
+                                ...and {invalidPhoneNumbers.length - 5} more
+                              </li>
                             )}
                           </ul>
                         </div>
@@ -487,6 +655,7 @@ const NewGroupModal = ({ closeModal }) => {
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
 
@@ -494,16 +663,23 @@ const NewGroupModal = ({ closeModal }) => {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="w-full px-5 py-2.5 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300"
+                      disabled={isSubmitting}
+                      className={`w-full px-5 py-2.5 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300 ${
+                        isSubmitting ? "opacity-60 cursor-not-allowed" : ""
+                      }`}
                     >
                       Cancel
                     </button>
+
                     <button
                       type="button"
                       onClick={handleGroupCreate}
-                      className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-400 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-300"
+                      disabled={isSubmitting}
+                      className={`w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-400 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-300 flex items-center justify-center gap-2 ${
+                        isSubmitting ? "opacity-80 cursor-not-allowed" : ""
+                      }`}
                     >
-                      Submit
+                      {isSubmitting ? "Uploading..." : "Submit"}
                     </button>
                   </div>
                 </form>
@@ -521,7 +697,7 @@ const NewGroupModal = ({ closeModal }) => {
                   }}
                 >
                   <div className="relative w-full max-w-5xl max-h-full">
-                    <div className="bg-white rounded-lg shadow dark:bg-gray-700 overflow-hidden">
+                    <div className="bg-white rounded-lg shadow dark:bg-gray-700 overflow-hidden relative">
                       <div className="flex items-center justify-between p-4 border-b dark:border-gray-600">
                         <div className="flex items-center gap-2">
                           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -530,6 +706,31 @@ const NewGroupModal = ({ closeModal }) => {
                           <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-600">
                             BETA
                           </span>
+
+                          {isSendingToChecker && (
+                            <span className="ml-3 inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-200">
+                              <svg
+                                className="h-4 w-4 animate-spin text-orange-500"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                />
+                              </svg>
+                              Sending file to checker…
+                            </span>
+                          )}
                         </div>
 
                         <button
