@@ -51,18 +51,29 @@ const SendSmsModal = ({ closeModal }) => {
   const [schedule, setSchedule] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
+  const [optOut, setOptOut] = useState(false);
+
+  const optOutText = ". STOP*456*9*5#";
+
+  const handleOptOutChange = (event) => {
+    const checked = event.target.checked;
+    setOptOut(checked);
+    const displayValue = checked ? state.content + optOutText : state.content;
+    setCharCount(displayValue.length);
+  };
 
   const handleChange = (e) => {
     const value = e.target.value;
     const name = e.target.name;
-  
+
     setState((prevState) => ({
       ...prevState,
       [name]: value,
     }));
-  
+
     if (name === "content") {
-      setCharCount(value.length);
+      const displayValue = optOut ? value + optOutText : value;
+      setCharCount(displayValue.length);
     }
   };
 
@@ -72,9 +83,11 @@ const SendSmsModal = ({ closeModal }) => {
     const originalContent = state.content;
     const formattedContent = originalContent.replace(/\n/g, "\\n");
 
+    const appendedContent = optOut ? formattedContent + optOutText : formattedContent;
+
     const newSms = {
       destination: state.destination,
-      content: formattedContent,
+      content: appendedContent,
       requestid: randomUuid,
       scheduled: value,
       channel: selectedChannel,
@@ -87,7 +100,7 @@ const SendSmsModal = ({ closeModal }) => {
         toast.success("SMS SENT SUCCESSFULLY!!!");
       } else {
         // closeModal()
-        toast.error("SEND SMS FAILED")
+        toast.error("SEND SMS FAILED");
       }
       setIsButtonClicked(false);
     });
@@ -113,6 +126,18 @@ const SendSmsModal = ({ closeModal }) => {
   useEffect(() => {
     getAppServices();
   }, [org_id, selectedChannel]);
+
+  const SEGMENT_SIZE = 160;
+  const segments = charCount === 0 ? 1 : Math.ceil(charCount / SEGMENT_SIZE);
+  const segmentCap = segments * SEGMENT_SIZE;
+  const remainingToNextSegment = segmentCap - charCount;
+
+  const counterClass =
+    remainingToNextSegment <= 10
+      ? "text-red-600"
+      : remainingToNextSegment <= 30
+      ? "text-yellow-600"
+      : "text-gray-500";
 
   return (
     <>
@@ -170,7 +195,9 @@ const SendSmsModal = ({ closeModal }) => {
                   >
                     <option value="">Select a channel</option>
                     {channels.map((channel) => (
-                      <option key={channel} value={channel}>{channel}</option>
+                      <option key={channel} value={channel}>
+                        {channel}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -219,12 +246,16 @@ const SendSmsModal = ({ closeModal }) => {
                 </div>
 
                 <div>
-                <label htmlFor="content" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between">
-                  <span>Type your message here</span>
-                  <span className={`${charCount >= 140 ? "text-red-500" : "text-gray-500"}`}>
-                    {charCount}/160
-                  </span>
-                </label>
+                  <label
+                    htmlFor="content"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between"
+                  >
+                    <span>Type your message here</span>
+
+                    <span className={counterClass}>
+                      {charCount}/{segmentCap} ({segments} SMS)
+                    </span>
+                  </label>
                   <textarea
                     name="content"
                     id="content"
@@ -232,22 +263,29 @@ const SendSmsModal = ({ closeModal }) => {
                     placeholder="Hello Jane Doe from the county of Nairobi. Receive this sms to your mobile number - 0711223344."
                     onChange={handleChange}
                     value={state.content}
-                    maxLength="160"
                     rows="4"
                     required
                   />
-                </div>
-                <div>
-
                 </div>
 
                 <FormGroup>
                   <FormControlLabel
                     control={
-                      <Switch
-                        checked={schedule}
-                        onChange={handleSwitchChange}
-                      />
+                      <Switch checked={optOut} onChange={handleOptOutChange} />
+                    }
+                    label="*Turn on to add opt-out message*"
+                    sx={{
+                      "& .MuiFormControlLabel-label": {
+                        fontSize: "12px",
+                      },
+                    }}
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Switch checked={schedule} onChange={handleSwitchChange} />
                     }
                     label="*Turn on to send scheduled Message*"
                   />
@@ -275,9 +313,9 @@ const SendSmsModal = ({ closeModal }) => {
                     type="button"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                     onClick={(e) => {
-                        handleSubmit(e);
-                        setIsButtonClicked(true);
-                      }}
+                      handleSubmit(e);
+                      setIsButtonClicked(true);
+                    }}
                   >
                     {isButtonClicked ? "SENDING..." : "SEND"}
                   </button>
