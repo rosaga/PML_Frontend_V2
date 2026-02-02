@@ -59,7 +59,16 @@ const SendBulkModal = ({ closeModal }) => {
   const [repeatInterval, setRepeatInterval] = useState("");
   const [repeatCount, setRepeatCount] = useState(0);
 
+  const [optOut, setOptOut] = useState(false);
 
+  const optOutText = ". STOP*456*9*5#";
+
+  const handleOptOutChange = (event) => {
+    const checked = event.target.checked;
+    setOptOut(checked);
+    const displayValue = checked ? state.content + optOutText : state.content;
+    setCharCount(displayValue.length);
+  };
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(100);
@@ -74,7 +83,8 @@ const SendBulkModal = ({ closeModal }) => {
     }));
   
     if (name === "content") {
-      setCharCount(value.length);
+      const displayValue = optOut ? value + optOutText : value;
+      setCharCount(displayValue.length);
     }
   };
 
@@ -85,13 +95,15 @@ const SendBulkModal = ({ closeModal }) => {
     const originalContent = state.content
     const formattedContent = originalContent.replace(/\n/g, '\\n');
 
+    const appendedContent = optOut ? formattedContent + optOutText : formattedContent;
+
     const newSms = {
       name: state.name,
       group_id: parseInt(selectedGroup),
       description: state.description,
       service_id: parseInt(selectedSenderId),
       requestid: randomUuid,
-      content: formattedContent,
+      content: appendedContent,
       scheduled: value,
       channel: selectedChannel,
       organization_id: org_id,
@@ -149,6 +161,18 @@ const SendBulkModal = ({ closeModal }) => {
   useEffect(() => {
     getAppServices();
   }, [org_id, selectedChannel]);
+
+  const SEGMENT_SIZE = 160;
+  const segments = charCount === 0 ? 1 : Math.ceil(charCount / SEGMENT_SIZE);
+  const segmentCap = segments * SEGMENT_SIZE;
+  const remainingToNextSegment = segmentCap - charCount;
+
+  const counterClass =
+    remainingToNextSegment <= 10
+      ? "text-red-600"
+      : remainingToNextSegment <= 30
+      ? "text-yellow-600"
+      : "text-gray-500";
 
   return (
     <>
@@ -312,7 +336,11 @@ const SendBulkModal = ({ closeModal }) => {
                     className="block text-sm font-medium text-gray-900 dark:text-white"
                   >
                     Type your message here
+                    <span className={`ml-2 text-xs ${counterClass}`}>
+                      {charCount}/{segmentCap} ({segments} SMS)
+                    </span>
                   </label>
+
                   <button
                     type="button"
                     className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
@@ -326,7 +354,7 @@ const SendBulkModal = ({ closeModal }) => {
                       handleChange({ target: { name: "content", value: newText } });
                     }}
                   >
-                   Insert Attribute
+                    Insert Attribute
                   </button>
                 </div>
 
@@ -337,12 +365,24 @@ const SendBulkModal = ({ closeModal }) => {
                   placeholder="Hello {{.}}!"
                   onChange={handleChange}
                   value={state.content}
-                  maxLength="160"
                   rows="4"
                   required
                 />
 
-
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Switch checked={optOut} onChange={handleOptOutChange} />
+                    }
+                    label="*Turn on to add opt-out message*"
+                    sx={{
+                      "& .MuiFormControlLabel-label": {
+                        fontSize: "12px",
+                      },
+                    }}
+                  />
+                </FormGroup>
+                
                 <FormGroup>
                   <FormControlLabel
                     control={
