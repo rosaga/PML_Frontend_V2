@@ -5,7 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getToken } from "@/utils/auth";
 import { appservicesAction } from "../../app/api/actions/appservices/appservicesAction";
-import { GetGroups } from "../../components/../app/api/actions/group/group"
+import { GetGroups } from "../../components/../app/api/actions/group/group";
 import { broadcastMessages } from "../../app/api/actions/messages/messagesAction";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
@@ -26,12 +26,14 @@ const SendBulkModal = ({ closeModal }) => {
 
   const channels = ["SHORTCODE", "SENDERNAME"];
 
+  const STOP_SUFFIX = ". STOP*456*9*5#";
+  const STOP_LEN = STOP_SUFFIX.length;
+
+  const isPromotional = true;
+
   const currentDateTime = dayjs();
   const [value, setValue] = useState(currentDateTime);
-  // console.log("NEW VALUE!!!!!!!!", value);
-  const handleDateTimeChange = (newValue) => {
-    setValue(newValue);
-  };
+  const handleDateTimeChange = (newValue) => setValue(newValue);
 
   const handleSwitchChange = (event) => {
     setSchedule(event.target.checked);
@@ -42,7 +44,7 @@ const SendBulkModal = ({ closeModal }) => {
     name: "",
     description: "",
     scheduled: "",
-    channel: ""
+    channel: "",
   };
 
   const [state, setState] = React.useState(initialState);
@@ -59,32 +61,20 @@ const SendBulkModal = ({ closeModal }) => {
   const [repeatInterval, setRepeatInterval] = useState("");
   const [repeatCount, setRepeatCount] = useState(0);
 
-  const [optOut, setOptOut] = useState(false);
-
-  const optOutText = ". STOP*456*9*5#";
-
-  const handleOptOutChange = (event) => {
-    const checked = event.target.checked;
-    setOptOut(checked);
-    const displayValue = checked ? state.content + optOutText : state.content;
-    setCharCount(displayValue.length);
-  };
-
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(100);
 
   const handleChange = (e) => {
     const value = e.target.value;
     const name = e.target.name;
-  
+
     setState((prevState) => ({
       ...prevState,
       [name]: value,
     }));
-  
+
     if (name === "content") {
-      const displayValue = optOut ? value + optOutText : value;
-      setCharCount(displayValue.length);
+      setCharCount(value.length);
     }
   };
 
@@ -92,10 +82,8 @@ const SendBulkModal = ({ closeModal }) => {
     e.preventDefault();
     setIsButtonClicked(true);
 
-    const originalContent = state.content
-    const formattedContent = originalContent.replace(/\n/g, '\\n');
-
-    const appendedContent = optOut ? formattedContent + optOutText : formattedContent;
+    const originalContent = state.content;
+    const formattedContent = originalContent.replace(/\n/g, "\\n");
 
     const newSms = {
       name: state.name,
@@ -103,15 +91,15 @@ const SendBulkModal = ({ closeModal }) => {
       description: state.description,
       service_id: parseInt(selectedSenderId),
       requestid: randomUuid,
-      content: appendedContent,
-      scheduled: value,
+      content: formattedContent,
+      scheduled: schedule ? value : null,
       channel: selectedChannel,
       organization_id: org_id,
       repeat_count: schedule ? repeatCount : 0,
-      repeat_interval: schedule ? repeatInterval : ""
-  };
+      repeat_interval: schedule ? repeatInterval : "",
+    };
 
-    const res = broadcastMessages({selectedSenderId,newSms}).then((res) => {
+    const res = broadcastMessages({ selectedSenderId, newSms }).then((res) => {
       setIsButtonClicked(false);
       if (res.status === 200) {
         toast.success("SMS SENT SUCCESSFULLY!!!");
@@ -119,13 +107,14 @@ const SendBulkModal = ({ closeModal }) => {
         toast.error("SEND SMS FAILED");
       }
       setState(initialState);
+      setCharCount(0);
     });
 
     return res;
   };
 
   const getGroups = () => {
-    GetGroups( org_id, page, limit, searchParams )
+    GetGroups(org_id, page, limit, searchParams)
       .then((res) => {
         if (res.errors) {
           console.log("AN ERROR HAS OCCURED");
@@ -134,9 +123,7 @@ const SendBulkModal = ({ closeModal }) => {
           setSelectedGroup(res.data[0]?.group_id || "");
         }
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.log(err));
   };
 
   const getAppServices = () => {
@@ -146,12 +133,9 @@ const SendBulkModal = ({ closeModal }) => {
           console.log("AN ERROR HAS OCCURED");
         } else {
           setAppservices(res.data);
-          // setSelectedSenderId(res.data[0]?.id || "");
         }
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.log(err));
   };
 
   useEffect(() => {
@@ -162,17 +146,9 @@ const SendBulkModal = ({ closeModal }) => {
     getAppServices();
   }, [org_id, selectedChannel]);
 
-  const SEGMENT_SIZE = 160;
-  const segments = charCount === 0 ? 1 : Math.ceil(charCount / SEGMENT_SIZE);
-  const segmentCap = segments * SEGMENT_SIZE;
-  const remainingToNextSegment = segmentCap - charCount;
+  const counterValue = charCount + (isPromotional ? STOP_LEN : 0);
 
-  const counterClass =
-    remainingToNextSegment <= 10
-      ? "text-red-600"
-      : remainingToNextSegment <= 30
-      ? "text-yellow-600"
-      : "text-gray-500";
+  const maxTyped = isPromotional ? 480 - STOP_LEN : 480;
 
   return (
     <>
@@ -212,53 +188,46 @@ const SendBulkModal = ({ closeModal }) => {
                 <span className="sr-only">Close modal</span>
               </button>
             </div>
+
             <div className="p-4 md:p-5">
               <form className="space-y-2" action="#">
-              <div className="flex space-x-4">
+                <div className="flex space-x-4">
                   <div className="flex-1">
-                    <label
-                      htmlFor="bundle"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
-                    Campaign Name*
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                      Campaign Name*
                     </label>
                     <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="Campaign A"
-                    onChange={handleChange}
-                    value={state.name}
-                    required
-                  />
+                      type="text"
+                      name="name"
+                      id="name"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="Campaign A"
+                      onChange={handleChange}
+                      value={state.name}
+                      required
+                    />
                   </div>
 
                   <div className="flex-1">
-                    <label
-                      htmlFor="bundle"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
-                    Campaign Description*
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                      Campaign Description*
                     </label>
                     <input
-                    type="text"
-                    name="description"
-                    id="description"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                    placeholder="Marketing campaign for Product A"
-                    onChange={handleChange}
-                    value={state.description}
-                    required
-                  />
+                      type="text"
+                      name="description"
+                      id="description"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      placeholder="Marketing campaign for Product A"
+                      onChange={handleChange}
+                      value={state.description}
+                      required
+                    />
                   </div>
                 </div>
+
                 <div className="flex space-x-4">
                   <div className="flex-1">
-                    <label
-                      htmlFor="bundle"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                       Select Channel
                     </label>
                     <select
@@ -278,10 +247,7 @@ const SendBulkModal = ({ closeModal }) => {
                   </div>
 
                   <div className="flex-1">
-                    <label
-                      htmlFor="bundle"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                       Select Group
                     </label>
                     <select
@@ -293,10 +259,7 @@ const SendBulkModal = ({ closeModal }) => {
                     >
                       <option value="">Select Group</option>
                       {groups.map((group) => (
-                        <option
-                          key={group.id}
-                          value={group.id}
-                        >
+                        <option key={group.id} value={group.id}>
                           {group.name}
                         </option>
                       ))}
@@ -305,10 +268,7 @@ const SendBulkModal = ({ closeModal }) => {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="bundle"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
+                  <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                     Select Sender Id
                   </label>
                   <select
@@ -320,10 +280,7 @@ const SendBulkModal = ({ closeModal }) => {
                   >
                     <option value="">Select sender id</option>
                     {appservices.map((appservice) => (
-                      <option
-                        key={appservice.id}
-                        value={appservice.id}
-                      >
+                      <option key={appservice.id} value={appservice.id}>
                         {appservice.sendername}
                       </option>
                     ))}
@@ -336,27 +293,39 @@ const SendBulkModal = ({ closeModal }) => {
                     className="block text-sm font-medium text-gray-900 dark:text-white"
                   >
                     Type your message here
-                    <span className={`ml-2 text-xs ${counterClass}`}>
-                      {charCount}/{segmentCap} ({segments} SMS)
-                    </span>
                   </label>
 
-                  <button
-                    type="button"
-                    className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
-                    onClick={() => {
-                      const textarea = document.getElementById("content");
-                      const start = textarea.selectionStart;
-                      const end = textarea.selectionEnd;
-                      const text = state.content;
-                      const newText =
-                        text.substring(0, start) + "{{.}}" + text.substring(end);
-                      handleChange({ target: { name: "content", value: newText } });
-                    }}
-                  >
-                    Insert Attribute
-                  </button>
+                  <span>
+                    <button
+                      type="button"
+                      className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
+                      onClick={() => {
+                        const textarea = document.getElementById("content");
+                        const start = textarea.selectionStart;
+                        const end = textarea.selectionEnd;
+                        const text = state.content;
+                        const newText =
+                          text.substring(0, start) + "{{.}}" + text.substring(end);
+                        handleChange({ target: { name: "content", value: newText } });
+                      }}
+                    >
+                      Insert Attribute
+                    </button>
+
+                    <span
+                      className={`${
+                        counterValue >= 460 ? "text-red-500 px-2 py-1" : "text-gray-500 px-2 py-1"
+                      }`}
+                    >
+                      {counterValue}/480
+                    </span>
+                  </span>
                 </div>
+
+                <p className="text-xs text-gray-500 mb-2">
+                  Promotional messages will automatically append{" "}
+                  <span className="font-mono">{STOP_SUFFIX}</span>.
+                </p>
 
                 <textarea
                   name="content"
@@ -365,42 +334,21 @@ const SendBulkModal = ({ closeModal }) => {
                   placeholder="Hello {{.}}!"
                   onChange={handleChange}
                   value={state.content}
+                  maxLength={maxTyped}
                   rows="4"
                   required
                 />
 
                 <FormGroup>
                   <FormControlLabel
-                    control={
-                      <Switch checked={optOut} onChange={handleOptOutChange} />
-                    }
-                    label="*Turn on to add opt-out message*"
-                    sx={{
-                      "& .MuiFormControlLabel-label": {
-                        fontSize: "12px",
-                      },
-                    }}
-                  />
-                </FormGroup>
-                
-                <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={schedule}
-                        onChange={handleSwitchChange}
-                      />
-                    }
+                    control={<Switch checked={schedule} onChange={handleSwitchChange} />}
                     label="*Turn on to send scheduled Message*"
                   />
                 </FormGroup>
 
                 {schedule && (
                   <div className="my-4">
-                    <MaterialUIPickers
-                      value={value}
-                      onChange={handleDateTimeChange}
-                    />
+                    <MaterialUIPickers value={value} onChange={handleDateTimeChange} />
                   </div>
                 )}
 
@@ -450,7 +398,6 @@ const SendBulkModal = ({ closeModal }) => {
                     </div>
                   </>
                 )}
-
 
                 <div className="flex space-x-2 mt-4">
                   <button
