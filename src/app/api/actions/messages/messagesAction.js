@@ -145,7 +145,7 @@ export async function messageBalanceAction(formValues) {
 }
 
 export async function broadcastMessages(formValues) {
-    const broadcastUrl = `${apiUrl.BROADCAST_MESSAGE}/${formValues.selectedSenderId}/broadcast/send`;
+    const broadcastUrl = `${apiUrl.BROADCAST_MESSAGE_TEST}/${formValues.selectedSenderId}/broadcast/send`;
     try {
         const config = await authHeaders();
   
@@ -178,7 +178,7 @@ export async function broadcastMessages(formValues) {
 }
 
 export async function sendSms(formValues) {
-    const sendSms = `${apiUrl.SEND_SMS}/${formValues.selectedSenderId}/user/send`;
+    const sendSms = `${apiUrl.SEND_SMS_TEST}/${formValues.selectedSenderId}/user/send`;
     try {
         const config = await authHeaders();
   

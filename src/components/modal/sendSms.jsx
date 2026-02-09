@@ -25,9 +25,15 @@ const SendSmsModal = ({ closeModal }) => {
 
   const channels = ["SHORTCODE", "SENDERNAME"];
 
+
+  const STOP_SUFFIX = ". STOP*456*9*5#";
+  const STOP_LEN = STOP_SUFFIX.length;
+
+  const isPromotional = true;
+
   const currentDateTime = dayjs();
   const [value, setValue] = useState(currentDateTime);
-  // console.log("NEW VALUE!!!!!!!!", value);
+
   const handleDateTimeChange = (newValue) => {
     setValue(newValue);
   };
@@ -51,17 +57,6 @@ const SendSmsModal = ({ closeModal }) => {
   const [schedule, setSchedule] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
-  const [optOut, setOptOut] = useState(false);
-
-  const optOutText = ". STOP*456*9*5#";
-
-  const handleOptOutChange = (event) => {
-    const checked = event.target.checked;
-    setOptOut(checked);
-    const displayValue = checked ? state.content + optOutText : state.content;
-    setCharCount(displayValue.length);
-  };
-
   const handleChange = (e) => {
     const value = e.target.value;
     const name = e.target.name;
@@ -72,8 +67,7 @@ const SendSmsModal = ({ closeModal }) => {
     }));
 
     if (name === "content") {
-      const displayValue = optOut ? value + optOutText : value;
-      setCharCount(displayValue.length);
+      setCharCount(value.length);
     }
   };
 
@@ -83,27 +77,24 @@ const SendSmsModal = ({ closeModal }) => {
     const originalContent = state.content;
     const formattedContent = originalContent.replace(/\n/g, "\\n");
 
-    const appendedContent = optOut ? formattedContent + optOutText : formattedContent;
-
     const newSms = {
       destination: state.destination,
-      content: appendedContent,
+      content: formattedContent,
       requestid: randomUuid,
-      scheduled: value,
+      scheduled: schedule ? value : null,
       channel: selectedChannel,
       organization_id: org_id,
     };
 
     const res = sendSms({ selectedSenderId, newSms }).then((res) => {
       if (res.status === 202) {
-        // closeModal()
         toast.success("SMS SENT SUCCESSFULLY!!!");
       } else {
-        // closeModal()
         toast.error("SEND SMS FAILED");
       }
       setIsButtonClicked(false);
     });
+
     setState(initialState);
     return res;
   };
@@ -127,17 +118,9 @@ const SendSmsModal = ({ closeModal }) => {
     getAppServices();
   }, [org_id, selectedChannel]);
 
-  const SEGMENT_SIZE = 160;
-  const segments = charCount === 0 ? 1 : Math.ceil(charCount / SEGMENT_SIZE);
-  const segmentCap = segments * SEGMENT_SIZE;
-  const remainingToNextSegment = segmentCap - charCount;
+  const counterValue = charCount + (isPromotional ? STOP_LEN : 0);
 
-  const counterClass =
-    remainingToNextSegment <= 10
-      ? "text-red-600"
-      : remainingToNextSegment <= 30
-      ? "text-yellow-600"
-      : "text-gray-500";
+  const maxTyped = isPromotional ? 480 - STOP_LEN : 480;
 
   return (
     <>
@@ -177,6 +160,7 @@ const SendSmsModal = ({ closeModal }) => {
                 <span className="sr-only">Close modal</span>
               </button>
             </div>
+
             <div className="p-4 md:p-5">
               <form className="space-y-2" action="#">
                 <div>
@@ -201,6 +185,7 @@ const SendSmsModal = ({ closeModal }) => {
                     ))}
                   </select>
                 </div>
+
                 <div>
                   <label
                     htmlFor="bundle"
@@ -217,15 +202,13 @@ const SendSmsModal = ({ closeModal }) => {
                   >
                     <option value="">Select sender id</option>
                     {appservices.map((appservice) => (
-                      <option
-                        key={appservice.service_id}
-                        value={appservice.service_id}
-                      >
+                      <option key={appservice.service_id} value={appservice.service_id}>
                         {appservice.sendername}
                       </option>
                     ))}
                   </select>
                 </div>
+
                 <div>
                   <label
                     htmlFor="destination"
@@ -251,11 +234,16 @@ const SendSmsModal = ({ closeModal }) => {
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between"
                   >
                     <span>Type your message here</span>
-
-                    <span className={counterClass}>
-                      {charCount}/{segmentCap} ({segments} SMS)
+                    <span className={`${counterValue >= 460 ? "text-red-500" : "text-gray-500"}`}>
+                      {counterValue}/480
                     </span>
                   </label>
+
+                  <p className="text-xs text-gray-500 mb-2">
+                    Promotional messages will automatically append{" "}
+                    <span className="font-mono">{STOP_SUFFIX}</span>.
+                  </p>
+
                   <textarea
                     name="content"
                     id="content"
@@ -263,6 +251,7 @@ const SendSmsModal = ({ closeModal }) => {
                     placeholder="Hello Jane Doe from the county of Nairobi. Receive this sms to your mobile number - 0711223344."
                     onChange={handleChange}
                     value={state.content}
+                    maxLength={maxTyped}
                     rows="4"
                     required
                   />
@@ -270,32 +259,14 @@ const SendSmsModal = ({ closeModal }) => {
 
                 <FormGroup>
                   <FormControlLabel
-                    control={
-                      <Switch checked={optOut} onChange={handleOptOutChange} />
-                    }
-                    label="*Turn on to add opt-out message*"
-                    sx={{
-                      "& .MuiFormControlLabel-label": {
-                        fontSize: "12px",
-                      },
-                    }}
-                  />
-                </FormGroup>
-
-                <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Switch checked={schedule} onChange={handleSwitchChange} />
-                    }
+                    control={<Switch checked={schedule} onChange={handleSwitchChange} />}
                     label="*Turn on to send scheduled Message*"
                   />
                 </FormGroup>
+
                 {schedule ? (
                   <div className="my-4">
-                    <MaterialUIPickers
-                      value={value}
-                      onChange={handleDateTimeChange}
-                    />
+                    <MaterialUIPickers value={value} onChange={handleDateTimeChange} />
                   </div>
                 ) : (
                   <></>

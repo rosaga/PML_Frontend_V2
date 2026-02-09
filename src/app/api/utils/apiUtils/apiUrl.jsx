@@ -26,5 +26,8 @@ export default {
     REQUEST_OTP: `${process.env.NEXT_PUBLIC_BASE_URL}/public/request/otp`,
     MAKE_PAYMENT: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/payment`,
     SMS_MAKE_PAYMENT: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v2/payment`,
-    
+    SEND_SMS_TEST: `${process.env.NEXT_PUBLIC_TEST_BACKEND_URL}/api/v1/message`,
+    BROADCAST_MESSAGE_TEST: `${process.env.NEXT_PUBLIC_TEST_BACKEND_URL}/api/v2/message`,
+
+
 };
