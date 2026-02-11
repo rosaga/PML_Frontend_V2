@@ -26,7 +26,7 @@ const SendSmsModal = ({ closeModal }) => {
   const channels = ["SHORTCODE", "SENDERNAME"];
 
 
-  const STOP_SUFFIX = ". STOP*456*9*5#";
+  const STOP_SUFFIX = " STOP*456*9*5#";
   const STOP_LEN = STOP_SUFFIX.length;
 
   const isPromotional = true;
