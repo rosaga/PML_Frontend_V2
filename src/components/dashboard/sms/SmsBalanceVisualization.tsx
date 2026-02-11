@@ -8,21 +8,28 @@ import { authHeaders } from "@/app/api/utils/headers/headers";
 
 interface SmsUtilizationVisualizationProps {
   selectedYear: string;
-  selectedMonth: string; 
+  selectedMonth: string;
   serviceId?: string;
 }
 
 type GraphPoint = {
-  period: string;
-  total_dispatched: number;
+  period: string;     // "YYYY" | "YYYY-MM" | "YYYY-MM-DD"
+  recharged: number;  // present in API but NOT drawn
+  consumed: number;   // bar
+  balance: number;    // line
 };
 
 type Report = {
-  total_sms_all_time: number;
-  total_dispatched: number;
-  total_balance: number;
-  utilization_rate: number;
-  remaining_rate: number;
+  consumed_all_time: number;
+  consumed_in_range: number;
+
+  recharged_all_time: number;
+  recharged_in_range: number;
+
+  balance_current: number;
+
+  utilization_rate: number; // %
+  remaining_rate: number;   // %
 };
 
 type ApiResponse = {
@@ -32,7 +39,6 @@ type ApiResponse = {
 };
 
 const nf = new Intl.NumberFormat("en-US");
-const pf = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 });
 
 export default function SmsUtilizationVisualization({
   selectedYear,
@@ -46,16 +52,29 @@ export default function SmsUtilizationVisualization({
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  let org_id: string | null = null;
-  if (typeof window !== "undefined") {
-    org_id = localStorage.getItem("selectedAccountId");
-  }
+  const monthNames = useMemo(
+    () => [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ],
+    []
+  );
+
+  const getMonthName = (m: string) => {
+    const idx = parseInt(m, 10) - 1;
+    return monthNames[idx] ?? m;
+  };
+
+  const orgId = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("selectedAccountId") || "";
+  }, []);
 
   const apiUrlBase =
     process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "https://messaging-staging-1048592730476.europe-west4.run.app/api/v1";
+    "https://messaging-peak-1048592730476.europe-west4.run.app/api/v1";
 
-  const getDateParams = useMemo(() => {
+  const dateParams = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
 
@@ -87,7 +106,7 @@ export default function SmsUtilizationVisualization({
   }, [selectedYear, selectedMonth]);
 
   const fetchData = async () => {
-    if (!org_id) {
+    if (!orgId) {
       setError("Organization ID not found in localStorage (selectedAccountId)");
       return;
     }
@@ -96,10 +115,10 @@ export default function SmsUtilizationVisualization({
     setError(null);
 
     try {
-      const { group, startDate, endDate } = getDateParams;
+      const { group, startDate, endDate } = dateParams;
 
       const url =
-        `${apiUrlBase}/organization/${org_id}/sms-utilization-report` +
+        `${apiUrlBase}/organization/${orgId}/sms-utilization-report` +
         `?group=${group}&start_date=${startDate}&end_date=${endDate}&service_id=${serviceId}`;
 
       const config = await authHeaders();
@@ -108,40 +127,136 @@ export default function SmsUtilizationVisualization({
       setData(res.data);
     } catch (e: any) {
       console.error(e);
-      setError(e?.response?.data?.error || e?.message || "Failed to load SMS utilization report");
+      setError(
+        e?.response?.data?.error ||
+          e?.message ||
+          "Failed to load SMS utilization report"
+      );
       setData(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const processed = useMemo(() => {
-    const r = data?.report;
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedMonth, serviceId, orgId]);
 
-    const dispatched = r?.total_dispatched ?? 0;
-    const balance = r?.total_balance ?? 0;
+  // Build categories + consumed + balance, carry-forward balance for missing periods
+  const chartPayload = useMemo(() => {
+    const group = dateParams.group;
+    const graph = data?.graph ?? [];
 
-    const total = dispatched + balance;
+    let categories: string[] = [];
+    let consumed: number[] = [];
+    let balance: number[] = [];
 
-    const utilizationRate = total > 0 ? dispatched / total : 0;
-    const remainingRate = total > 0 ? balance / total : 0;
+    if (group === "yearly") {
+      const years = Array.from(new Set(graph.map((g) => g.period))).sort();
+      categories = years;
 
-    return {
-      dispatched,
-      balance,
-      total,
-      utilizationRate,
-      remainingRate,
-      utilizationRatePct: r?.utilization_rate ?? utilizationRate * 100,
-      remainingRatePct: r?.remaining_rate ?? remainingRate * 100,
-    };
-  }, [data]);
+      consumed = new Array(categories.length).fill(0);
+      balance = new Array(categories.length).fill(0);
+
+      const idx: Record<string, number> = {};
+      categories.forEach((c, i) => (idx[c] = i));
+
+      const hasBal = new Array(categories.length).fill(false);
+
+      graph.forEach((g) => {
+        const i = idx[g.period];
+        if (i === undefined) return;
+        consumed[i] = Number(g.consumed ?? 0);
+        balance[i] = Number(g.balance ?? 0);
+        hasBal[i] = true;
+      });
+
+      let last = 0;
+      for (let i = 0; i < balance.length; i++) {
+        if (!hasBal[i]) balance[i] = last;
+        last = balance[i];
+      }
+    }
+
+    if (group === "monthly") {
+      categories = monthNames;
+
+      consumed = new Array(12).fill(0);
+      balance = new Array(12).fill(0);
+      const hasBal = new Array(12).fill(false);
+
+      graph.forEach((g) => {
+        const parts = (g.period || "").split("-");
+        if (parts.length !== 2) return;
+        const mIdx = parseInt(parts[1], 10) - 1;
+        if (mIdx < 0 || mIdx > 11) return;
+
+        consumed[mIdx] = Number(g.consumed ?? 0);
+        balance[mIdx] = Number(g.balance ?? 0);
+        hasBal[mIdx] = true;
+      });
+
+      let last = 0;
+      for (let i = 0; i < 12; i++) {
+        if (!hasBal[i]) balance[i] = last;
+        last = balance[i];
+      }
+    }
+
+    if (group === "daily") {
+      const year = parseInt(selectedYear || "0", 10);
+      const month = parseInt(selectedMonth || "0", 10);
+      const daysInMonth = new Date(year, month, 0).getDate();
+
+      categories = Array.from(
+        { length: daysInMonth },
+        (_, i) => `${getMonthName(selectedMonth)} ${i + 1}`
+      );
+
+      consumed = new Array(daysInMonth).fill(0);
+      balance = new Array(daysInMonth).fill(0);
+      const hasBal = new Array(daysInMonth).fill(false);
+
+      graph.forEach((g) => {
+        const parts = (g.period || "").split("-");
+        if (parts.length !== 3) return;
+        const day = parseInt(parts[2], 10);
+        if (day < 1 || day > daysInMonth) return;
+
+        const i = day - 1;
+        consumed[i] = Number(g.consumed ?? 0);
+        balance[i] = Number(g.balance ?? 0);
+        hasBal[i] = true;
+      });
+
+      let last = 0;
+      for (let i = 0; i < daysInMonth; i++) {
+        if (!hasBal[i]) balance[i] = last;
+        last = balance[i];
+      }
+    }
+
+    return { categories, consumed, balance, group };
+  }, [data, dateParams.group, monthNames, selectedYear, selectedMonth]);
 
   const subtitle = useMemo(() => {
-    if (!selectedYear) return "Overall Utilization (Yearly View)";
-    if (selectedYear && !selectedMonth) return `Overall Utilization (${selectedYear})`;
-    return `Overall Utilization (${selectedYear}-${selectedMonth.padStart(2, "0")})`;
+    if (!selectedYear) return "Consumed vs Balance (Yearly)";
+    if (selectedYear && !selectedMonth) return `Consumed vs Balance (${selectedYear})`;
+    return `Consumed vs Balance (${selectedYear}-${selectedMonth.padStart(2, "0")})`;
   }, [selectedYear, selectedMonth]);
+
+  // cards: recharge shown here only
+  const summary = useMemo(() => {
+    const r = data?.report;
+    return {
+      rechargedInRange: Number(r?.recharged_in_range ?? 0),
+      consumedInRange: Number(r?.consumed_in_range ?? 0),
+      balanceCurrent: Number(r?.balance_current ?? 0),
+      utilizationRatePct: Number(r?.utilization_rate ?? 0),
+      remainingRatePct: Number(r?.remaining_rate ?? 0),
+    };
+  }, [data]);
 
   const createChart = () => {
     if (!chartRef.current || typeof window === "undefined") return;
@@ -151,56 +266,78 @@ export default function SmsUtilizationVisualization({
       chartInstance.current = null;
     }
 
-    const dispatched = processed.dispatched;
-    const balance = processed.balance;
+    const { categories, consumed, balance } = chartPayload;
 
     const options: Highcharts.Options = {
       chart: {
-        type: "pie",
         backgroundColor: "transparent",
         style: { fontFamily: "inherit" },
       },
       title: {
-        text: "SMS Utilization Overview",
+        text: "SMS Utilization (Consumed vs Balance)",
         style: { fontSize: "18px", fontWeight: "600", color: "#374151" },
       },
       subtitle: {
         text: subtitle,
         style: { fontSize: "14px", color: "#6B7280" },
       },
+      xAxis: {
+        categories,
+        crosshair: true,
+        labels: {
+          style: { color: "#6B7280" },
+          rotation: dateParams.group === "daily" ? -45 : 0,
+        },
+      },
+      yAxis: [
+        {
+          title: {
+            text: "SMS Units",
+            style: { color: "#374151", fontWeight: "600" },
+          },
+          labels: {
+            style: { color: "#6B7280" },
+            formatter: function (this: any) {
+              return Highcharts.numberFormat(Number(this.value ?? 0), 0);
+            },
+          },
+        },
+      ],
       tooltip: {
+        shared: true,
         useHTML: true,
-        backgroundColor: "rgba(255,255,255,0.95)",
+        backgroundColor: "rgba(255,255,255,0.96)",
         borderColor: "#E5E7EB",
         borderRadius: 8,
         shadow: true,
-        formatter: function () {
-            const p = this as unknown as Highcharts.Point;
-            const y = (p.y as number) ?? 0;
-          const pct = (p.percentage as number) ?? 0;
+        formatter: function (this: any) {
+          const idx = Number(this.x ?? 0);
+          const label = categories[idx] ?? "";
+          const pts = (this.points ?? []) as Array<any>;
+
+          const getVal = (name: string) => {
+            const p = pts.find((x) => x?.series?.name === name);
+            return Number(p?.y ?? 0);
+          };
+
+          const c = getVal("Consumed");
+          const b = getVal("Balance");
+
           return `
             <div style="padding:8px;">
-              <div style="font-weight:600;margin-bottom:8px;color:#374151;">${p.name}</div>
-              <div style="color:#374151;">SMS: <strong>${nf.format(y)}</strong></div>
-              <div style="color:#374151;">Share: <strong>${pct.toFixed(1)}%</strong></div>
+              <div style="font-weight:600;margin-bottom:8px;color:#374151;">${label}</div>
+              <div style="color:#374151;">Consumed: <strong>${nf.format(c)}</strong></div>
+              <div style="color:#374151;">Balance: <strong>${nf.format(b)}</strong></div>
             </div>
           `;
         },
       },
       plotOptions: {
-        pie: {
-          innerSize: "55%",
+        column: {
           borderWidth: 0,
-          dataLabels: {
-            enabled: true,
-            distance: 18,
-            formatter: function () {
-                const p = this as unknown as Highcharts.Point;
-                const pct = (p.percentage as number) ?? 0;
-              return `<b>${p.name}</b><br/>${pct.toFixed(1)}%`;
-            },
-            style: { fontSize: "12px", color: "#111827" },
-          },
+          borderRadius: 6,
+          pointPadding: 0.18,
+          groupPadding: 0.12,
         },
         series: {
           states: { inactive: { opacity: 1 } },
@@ -208,12 +345,18 @@ export default function SmsUtilizationVisualization({
       },
       series: [
         {
-          type: "pie",
-          name: "SMS Utilization",
-          data: [
-            { name: "SMS Dispatched", y: dispatched, color: "#F58426" },
-            { name: "SMS Balance", y: balance, color: "#3B82F6" },
-          ],
+          name: "Consumed",
+          type: "column",
+          data: consumed,
+          color: "#F58426",
+        },
+        {
+          name: "Balance",
+          type: "spline",
+          data: balance,
+          color: "#3B82F6",
+          marker: { enabled: false },
+          lineWidth: 3,
         },
       ],
       credits: { enabled: false },
@@ -229,10 +372,6 @@ export default function SmsUtilizationVisualization({
   };
 
   useEffect(() => {
-    fetchData();
-  }, [selectedYear, selectedMonth, serviceId]);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
     if (loading) return;
 
@@ -244,7 +383,16 @@ export default function SmsUtilizationVisualization({
         chartInstance.current = null;
       }
     };
-  }, [loading, processed.dispatched, processed.balance, subtitle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, subtitle, chartPayload.categories, chartPayload.consumed, chartPayload.balance]);
+
+  const noData =
+    !loading &&
+    !error &&
+    data &&
+    (chartPayload.categories.length === 0 ||
+      (chartPayload.consumed.every((v) => v === 0) &&
+        chartPayload.balance.every((v) => v === 0)));
 
   return (
     <div className="border-[1.5px] rounded-3xl p-6 mb-4 bg-white">
@@ -272,41 +420,47 @@ export default function SmsUtilizationVisualization({
 
       {!loading && !error && (
         <>
-          <div ref={chartRef} style={{ height: "420px", width: "100%" }} suppressHydrationWarning />
+          <div
+            ref={chartRef}
+            style={{ height: "420px", width: "100%" }}
+            suppressHydrationWarning
+          />
 
-          {/* Summary Cards */}
+          {/* Summary Cards (Recharge only here) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-sm text-green-700 font-medium">Recharged (Selected Period)</div>
+              <div className="text-2xl font-bold text-green-800">
+                {nf.format(summary.rechargedInRange)}
+              </div>
+            </div>
+
             <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-              <div className="text-sm text-[#F58426] font-medium">SMS Dispatched</div>
+              <div className="text-sm text-[#F58426] font-medium">Consumed (Selected Period)</div>
               <div className="text-2xl font-bold text-[#F58426]">
-                {nf.format(processed.dispatched)} SMS
+                {nf.format(summary.consumedInRange)}
               </div>
               <div className="text-xs text-[#F58426] mt-1">
-                Utilization: {processed.utilizationRatePct.toFixed(1)}%
+                Utilization: {summary.utilizationRatePct.toFixed(1)}%
               </div>
             </div>
 
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="text-sm text-blue-600 font-medium">SMS Balance</div>
-              <div className="text-2xl font-bold text-blue-700">
-                {nf.format(processed.balance)} SMS
+              <div className="text-sm text-blue-700 font-medium">Current Balance</div>
+              <div className="text-2xl font-bold text-blue-800">
+                {nf.format(summary.balanceCurrent)}
               </div>
               <div className="text-xs text-blue-700 mt-1">
-                Remaining: {processed.remainingRatePct.toFixed(1)}%
+                Remaining: {summary.remainingRatePct.toFixed(1)}%
               </div>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="text-sm text-gray-600 font-medium">Total SMS Available</div>
-              <div className="text-2xl font-bold text-gray-700">
-                {nf.format(processed.total)} SMS
-              </div>
-            </div>
+           
           </div>
         </>
       )}
 
-      {!loading && !error && data && processed.total === 0 && (
+      {noData && (
         <Alert severity="info" className="mt-4">
           No utilization data available for this period.
         </Alert>
