@@ -46,7 +46,7 @@ const SmsConsumptionVisualization: React.FC<SmsConsumptionVisualizationProps> = 
 
   const apiUrlBase =
     process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "https://messaging-staging-1048592730476.europe-west4.run.app/api/v1";
+    "https://messaging-peak-1048592730476.europe-west4.run.app/api/v1";
 
   const monthNames = useMemo(
     () => [
@@ -338,7 +338,7 @@ const SmsConsumptionVisualization: React.FC<SmsConsumptionVisualizationProps> = 
           />
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
               <div className="text-sm text-[#F58426] font-medium">Total Unique Reached</div>
               <div className="text-2xl font-bold text-[#F58426]">
@@ -346,12 +346,7 @@ const SmsConsumptionVisualization: React.FC<SmsConsumptionVisualizationProps> = 
               </div>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="text-sm text-gray-600 font-medium">Bars</div>
-              <div className="text-2xl font-bold text-gray-700">
-                {nf.format(processed.values.length)}
-              </div>
-            </div>
+            
 
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <div className="text-sm text-blue-600 font-medium">Max Reached (Single Bar)</div>

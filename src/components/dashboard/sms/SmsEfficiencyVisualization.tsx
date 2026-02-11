@@ -108,7 +108,7 @@ const SmsEfficiencyVisualization: React.FC<SmsEfficiencyVisualizationProps> = ({
 
   const API_BASE = useMemo(() => {
 
-    return process.env.NEXT_PUBLIC_SMS_API_URL || "https://messaging-staging-1048592730476.europe-west4.run.app/api/v1";
+    return process.env.NEXT_PUBLIC_SMS_API_URL || "https://messaging-peak-1048592730476.europe-west4.run.app/api/v1";
   }, []);
 
   const getDateParams = () => {
