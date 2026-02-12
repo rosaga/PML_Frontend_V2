@@ -53,6 +53,8 @@ const SidebarSms = () => {
         { href: "/apps/sms/developer", label: "Developer", className: "developer" },
       ]
     },
+    { href: "/apps/sms/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
+
   ];
 
   return (

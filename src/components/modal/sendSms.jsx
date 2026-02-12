@@ -25,9 +25,15 @@ const SendSmsModal = ({ closeModal }) => {
 
   const channels = ["SHORTCODE", "SENDERNAME"];
 
+
+  const STOP_SUFFIX = " STOP*456*9*5#";
+  const STOP_LEN = STOP_SUFFIX.length;
+
+  const isPromotional = true;
+
   const currentDateTime = dayjs();
   const [value, setValue] = useState(currentDateTime);
-  // console.log("NEW VALUE!!!!!!!!", value);
+
   const handleDateTimeChange = (newValue) => {
     setValue(newValue);
   };
@@ -51,16 +57,15 @@ const SendSmsModal = ({ closeModal }) => {
   const [schedule, setSchedule] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
-
   const handleChange = (e) => {
     const value = e.target.value;
     const name = e.target.name;
-  
+
     setState((prevState) => ({
       ...prevState,
       [name]: value,
     }));
-  
+
     if (name === "content") {
       setCharCount(value.length);
     }
@@ -85,10 +90,11 @@ const SendSmsModal = ({ closeModal }) => {
       if (res.status === 202) {
         toast.success("SMS SENT SUCCESSFULLY!!!");
       } else {
-        toast.error("SEND SMS FAILED")
+        toast.error("SEND SMS FAILED");
       }
       setIsButtonClicked(false);
     });
+
     setState(initialState);
     return res;
   };
@@ -111,6 +117,10 @@ const SendSmsModal = ({ closeModal }) => {
   useEffect(() => {
     getAppServices();
   }, [org_id, selectedChannel]);
+
+  const counterValue = charCount + (isPromotional ? STOP_LEN : 0);
+
+  const maxTyped = isPromotional ? 480 - STOP_LEN : 480;
 
   return (
     <>
@@ -150,6 +160,7 @@ const SendSmsModal = ({ closeModal }) => {
                 <span className="sr-only">Close modal</span>
               </button>
             </div>
+
             <div className="p-4 md:p-5">
               <form className="space-y-2" action="#">
                 <div>
@@ -168,10 +179,13 @@ const SendSmsModal = ({ closeModal }) => {
                   >
                     <option value="">Select a channel</option>
                     {channels.map((channel) => (
-                      <option key={channel} value={channel}>{channel}</option>
+                      <option key={channel} value={channel}>
+                        {channel}
+                      </option>
                     ))}
                   </select>
                 </div>
+
                 <div>
                   <label
                     htmlFor="bundle"
@@ -188,15 +202,13 @@ const SendSmsModal = ({ closeModal }) => {
                   >
                     <option value="">Select sender id</option>
                     {appservices.map((appservice) => (
-                      <option
-                        key={appservice.service_id}
-                        value={appservice.service_id}
-                      >
+                      <option key={appservice.service_id} value={appservice.service_id}>
                         {appservice.sendername}
                       </option>
                     ))}
                   </select>
                 </div>
+
                 <div>
                   <label
                     htmlFor="destination"
@@ -217,12 +229,21 @@ const SendSmsModal = ({ closeModal }) => {
                 </div>
 
                 <div>
-                <label htmlFor="content" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between">
-                  <span>Type your message here</span>
-                  <span className={`${charCount >= 460 ? "text-red-500" : "text-gray-500"}`}>
-                    {charCount}/480
-                  </span>
-                </label>
+                  <label
+                    htmlFor="content"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex justify-between"
+                  >
+                    <span>Type your message here</span>
+                    <span className={`${counterValue >= 460 ? "text-red-500" : "text-gray-500"}`}>
+                      {counterValue}/480
+                    </span>
+                  </label>
+
+                  <p className="text-xs text-gray-500 mb-2">
+                    Promotional messages will automatically append{" "}
+                    <span className="font-mono">{STOP_SUFFIX}</span>.
+                  </p>
+
                   <textarea
                     name="content"
                     id="content"
@@ -230,32 +251,22 @@ const SendSmsModal = ({ closeModal }) => {
                     placeholder="Hello Jane Doe from the county of Nairobi. Receive this sms to your mobile number - 0711223344."
                     onChange={handleChange}
                     value={state.content}
-                    maxLength="480"
+                    maxLength={maxTyped}
                     rows="4"
                     required
                   />
                 </div>
-                <div>
-
-                </div>
 
                 <FormGroup>
                   <FormControlLabel
-                    control={
-                      <Switch
-                        checked={schedule}
-                        onChange={handleSwitchChange}
-                      />
-                    }
+                    control={<Switch checked={schedule} onChange={handleSwitchChange} />}
                     label="*Turn on to send scheduled Message*"
                   />
                 </FormGroup>
+
                 {schedule ? (
                   <div className="my-4">
-                    <MaterialUIPickers
-                      value={value}
-                      onChange={handleDateTimeChange}
-                    />
+                    <MaterialUIPickers value={value} onChange={handleDateTimeChange} />
                   </div>
                 ) : (
                   <></>
@@ -273,9 +284,9 @@ const SendSmsModal = ({ closeModal }) => {
                     type="button"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                     onClick={(e) => {
-                        handleSubmit(e);
-                        setIsButtonClicked(true);
-                      }}
+                      handleSubmit(e);
+                      setIsButtonClicked(true);
+                    }}
                   >
                     {isButtonClicked ? "SENDING..." : "SEND"}
                   </button>
