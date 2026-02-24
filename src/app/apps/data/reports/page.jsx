@@ -10,6 +10,7 @@ const Reports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedBundleType, setSelectedBundleType] = useState("");
 
   const generateYearOptions = () => {
     const options = [{ value: "", label: "All Years" }];
@@ -35,8 +36,26 @@ const Reports = () => {
     return options;
   };
 
+  const generateBundleTypeOptions = () => {
+    const options = [{ value: "", label: "All Bundle Types" }];
+    const bundleTypes = [
+      { value: "5", label: "5MB" },
+      { value: "10", label: "10MB" },
+      { value: "20", label: "20MB" },
+      { value: "100", label: "100MB" },
+      { value: "200", label: "200MB" },
+      { value: "500", label: "500MB" },
+      { value: "1000", label: "1GB" }
+    ];
+    bundleTypes.forEach((type) => {
+      options.push(type);
+    });
+    return options;
+  };
+
   const yearOptions = generateYearOptions();
   const monthOptions = generateMonthOptions();
+  const bundleTypeOptions = generateBundleTypeOptions();
 
   const handleReportSelect = (report) => {
     if (selectedReport) return;
@@ -67,7 +86,7 @@ const Reports = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <p className="mt-4 font-medium text-2xl">Consumer Report</p>
+                  <p className="mt-4 font-medium text-2xl">Consumption Report</p>
                 </div>
               </div>
 
@@ -107,6 +126,23 @@ const Reports = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label htmlFor="bundleTypeFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bundle Type
+                  </label>
+                  <select
+                    id="bundleTypeFilter"
+                    value={selectedBundleType}
+                    onChange={(e) => setSelectedBundleType(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {bundleTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Trends Visualization */}
@@ -115,6 +151,7 @@ const Reports = () => {
                   <TrendsVisualization 
                     selectedYear={selectedYear}
                     selectedMonth={selectedMonth}
+                    selectedBundleType={selectedBundleType}
                   />
                 </div>
               </div>
@@ -182,6 +219,23 @@ const Reports = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label htmlFor="bundleTypeFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bundle Type
+                  </label>
+                  <select
+                    id="bundleTypeFilter"
+                    value={selectedBundleType}
+                    onChange={(e) => setSelectedBundleType(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {bundleTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Utilization Visualization */}
@@ -190,6 +244,7 @@ const Reports = () => {
                   <UtilizationVisualization 
                     selectedYear={selectedYear}
                     selectedMonth={selectedMonth}
+                    selectedBundleType={selectedBundleType}
                   />
                 </div>
               </div>
@@ -257,6 +312,23 @@ const Reports = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label htmlFor="bundleTypeFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bundle Type
+                  </label>
+                  <select
+                    id="bundleTypeFilter"
+                    value={selectedBundleType}
+                    onChange={(e) => setSelectedBundleType(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {bundleTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Efficiency Visualization */}
@@ -265,6 +337,7 @@ const Reports = () => {
                   <EfficiencyVisualization 
                     selectedYear={selectedYear}
                     selectedMonth={selectedMonth}
+                    selectedBundleType={selectedBundleType}
                   />
                 </div>
               </div>
@@ -332,6 +405,23 @@ const Reports = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label htmlFor="bundleTypeFilter" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bundle Type
+                  </label>
+                  <select
+                    id="bundleTypeFilter"
+                    value={selectedBundleType}
+                    onChange={(e) => setSelectedBundleType(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    {bundleTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Financial Visualization */}
@@ -340,6 +430,7 @@ const Reports = () => {
                   <FinancialVisualization 
                     selectedYear={selectedYear}
                     selectedMonth={selectedMonth}
+                    selectedBundleType={selectedBundleType}
                   />
                 </div>
               </div>

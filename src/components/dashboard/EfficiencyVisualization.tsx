@@ -6,11 +6,13 @@ import axios from 'axios';
 interface EfficiencyVisualizationProps {
   selectedYear: string;
   selectedMonth: string;
+  selectedBundleType: string;
 }
 
 const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
   selectedYear,
-  selectedMonth
+  selectedMonth,
+  selectedBundleType
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<Highcharts.Chart | null>(null);
@@ -24,9 +26,18 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
   }
 
   // API function to get efficiency data
-  const getEfficiencyData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
+  const getEfficiencyData = async (orgId: string, granularity: string, startDate: string, endDate: string, bundleAmount?: string) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const efficiencyUrl = `${apiUrl}/organization/${orgId}/efficiency-report?group=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    let efficiencyUrl = `${apiUrl}/organization/${orgId}/efficiency-report?group=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    
+    // Add bundle_amount parameter only if a specific bundle type is selected
+    if (bundleAmount && bundleAmount !== '') {
+      if (bundleAmount === '1000') {
+        efficiencyUrl += `&bundle_amount=1000&bundle_amount=1024`; // Send both for 1GB
+      } else {
+        efficiencyUrl += `&bundle_amount=${bundleAmount}`;
+      }
+    }
 
     try {
       const config = await authHeaders();
@@ -62,7 +73,7 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
     if (!selectedYear) {
       return {
         granularity: 'monthly',
-        startDate: `${currentYear - 1}-01-01`,
+        startDate: '2024-01-01',
         endDate: `${currentYear}-12-31`
       };
     } else if (selectedYear && !selectedMonth) {
@@ -96,7 +107,7 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
 
     try {
       const { granularity, startDate, endDate } = getDateParams();
-      const result = await getEfficiencyData(org_id, granularity, startDate, endDate);
+      const result = await getEfficiencyData(org_id, granularity, startDate, endDate, selectedBundleType);
 
       if (result.errors) {
         setError(result.errors._error);
@@ -364,22 +375,36 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
       series: [{
         name: 'Successful Dispatches',
         type: 'column',
+        color: '#F58426',
         data: chartData.successful.map((value, index) => ({
           y: value,
           color: value === 0 ? 'rgba(245, 132, 38, 0.3)' : '#F58426'
         })),
         dataLabels: {
-          enabled: false
+          enabled: true,
+          format: '{point.y:,.0f}',
+          style: {
+            fontSize: '11px',
+            fontWeight: 'bold',
+            color: '#374151'
+          }
         }
       }, {
         name: 'Failed Dispatches',
         type: 'column',
+        color: '#EF4444',
         data: chartData.failed.map((value, index) => ({
           y: value,
           color: value === 0 ? 'rgba(239, 68, 68, 0.3)' : '#EF4444'
         })),
         dataLabels: {
-          enabled: false
+          enabled: true,
+          format: '{point.y:,.0f}',
+          style: {
+            fontSize: '11px',
+            fontWeight: 'bold',
+            color: '#374151'
+          }
         }
       }],
       credits: {
@@ -449,10 +474,32 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
     };
   };
 
+  // Download chart as SVG
+  const downloadGraph = () => {
+    if (!chartInstance.current) return;
+
+    const svgElement = chartInstance.current.container.querySelector('svg');
+    if (!svgElement) {
+      alert('Unable to export chart');
+      return;
+    }
+
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `efficiency-report-${new Date().toISOString().split('T')[0]}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Fetch data when filters change
   useEffect(() => {
     fetchData();
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, selectedBundleType]);
 
   // Create chart when data changes
   useEffect(() => {
@@ -496,11 +543,23 @@ const EfficiencyVisualization: React.FC<EfficiencyVisualizationProps> = ({
       )}
 
       {!loading && !error && (
-        <div 
-          ref={chartRef} 
-          style={{ height: '400px', width: '100%' }}
-          suppressHydrationWarning={true}
-        />
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-700">Dispatch Efficiency</h3>
+            <button
+              onClick={downloadGraph}
+              className="px-3 py-2 bg-[#FF9800] text-white rounded-lg hover:bg-[#F57C00] transition-colors text-sm font-medium"
+              title="Download chart as SVG"
+            >
+              📥 Download Graph
+            </button>
+          </div>
+          <div 
+            ref={chartRef} 
+            style={{ height: '400px', width: '100%' }}
+            suppressHydrationWarning={true}
+          />
+        </div>
       )}
 
       {/* Summary Cards */}

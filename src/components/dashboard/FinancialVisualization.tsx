@@ -6,11 +6,13 @@ import axios from 'axios';
 interface FinancialVisualizationProps {
   selectedYear: string;
   selectedMonth: string;
+  selectedBundleType: string;
 }
 
 const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
   selectedYear,
-  selectedMonth
+  selectedMonth,
+  selectedBundleType
 }) => {
   const costPerUserChartRef = useRef<HTMLDivElement>(null);
   const costPerUserChartInstance = useRef<Highcharts.Chart | null>(null);
@@ -28,10 +30,20 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     orgId: string,
     group: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    bundleAmount?: string
   ) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const financialUrl = `${apiUrl}/organization/${orgId}/cost-efficiency?start_date=${startDate}&end_date=${endDate}&group=${group}`;
+    let financialUrl = `${apiUrl}/organization/${orgId}/cost-efficiency?start_date=${startDate}&end_date=${endDate}&group=${group}`;
+    
+    // Add bundle_amount parameter only if a specific bundle type is selected
+    if (bundleAmount && bundleAmount !== '') {
+      if (bundleAmount === '1000') {
+        financialUrl += `&bundle_amount=1000&bundle_amount=1024`; // Send both for 1GB
+      } else {
+        financialUrl += `&bundle_amount=${bundleAmount}`;
+      }
+    }
 
     try {
       const config = await authHeaders();
@@ -65,9 +77,10 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     const currentYear = currentDate.getFullYear();
     
     if (!selectedYear) {
+      // All Years - show data from 2024 onwards
       return {
         group: 'yearly',
-        startDate: `${currentYear - 1}-01-01`,
+        startDate: '2024-01-01',
         endDate: `${currentYear}-12-31`
       };
     } else if (selectedYear && !selectedMonth) {
@@ -101,7 +114,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
 
     try {
       const { group, startDate, endDate } = getDateParams();
-      const result = await getFinancialData(org_id, group, startDate, endDate);
+      const result = await getFinancialData(org_id, group, startDate, endDate, selectedBundleType);
 
       if (result.errors) {
         setError(result.errors._error);
@@ -116,7 +129,6 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     }
   };
 
-  // Process API data for charts - extract cost per user from graph data
   const processApiData = () => {
     if (!data || !data.graph || data.graph.length === 0) {
       return {
@@ -250,7 +262,13 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
         data: chartData.costPerUser,
         color: '#3B82F6',
         dataLabels: {
-          enabled: false
+          enabled: true,
+          format: 'KSh {point.y:,.2f}',
+          style: {
+            fontSize: '11px',
+            fontWeight: 'bold',
+            color: '#374151'
+          }
         }
       }],
       credits: {
@@ -299,10 +317,32 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
     };
   };
 
+  // Download chart as SVG
+  const downloadGraph = () => {
+    if (!costPerUserChartInstance.current) return;
+
+    const svgElement = costPerUserChartInstance.current.container.querySelector('svg');
+    if (!svgElement) {
+      alert('Unable to export chart');
+      return;
+    }
+
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `financial-report-${new Date().toISOString().split('T')[0]}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Fetch data when filters change
   useEffect(() => {
     fetchData();
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, selectedBundleType]);
 
   // Create charts when data changes
   useEffect(() => {
@@ -377,6 +417,16 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({
 
           {/* Cost per User Chart */}
           <div className="border-[1.5px] rounded-3xl p-6 mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-700">Financial Overview</h3>
+              <button
+                onClick={downloadGraph}
+                className="px-3 py-2 bg-[#FF9800] text-white rounded-lg hover:bg-[#F57C00] transition-colors text-sm font-medium"
+                title="Download chart as SVG"
+              >
+                📥 Download Graph
+              </button>
+            </div>
             <div 
               ref={costPerUserChartRef} 
               style={{ height: '400px', width: '100%' }}

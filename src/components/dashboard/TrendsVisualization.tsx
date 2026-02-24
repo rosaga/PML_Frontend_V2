@@ -6,17 +6,20 @@ import axios from 'axios';
 interface TrendsVisualizationProps {
   selectedYear: string;
   selectedMonth: string;
+  selectedBundleType: string;
 }
 
 const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
   selectedYear,
-  selectedMonth
+  selectedMonth,
+  selectedBundleType
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<Highcharts.Chart | null>(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'graph' | 'table'>('graph');
 
   let org_id = null;
   if (typeof window !== "undefined") {
@@ -24,9 +27,18 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
   }
 
   // API function to get stats data
-  const getStatsData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
+  const getStatsData = async (orgId: string, granularity: string, startDate: string, endDate: string, bundleAmount?: string) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const statsUrl = `${apiUrl}/organization/${orgId}/stats?granularity=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    let statsUrl = `${apiUrl}/organization/${orgId}/stats?granularity=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    
+    // Add bundle_amount parameter only if a specific bundle type is selected
+    if (bundleAmount && bundleAmount !== '') {
+      if (bundleAmount === '1000') {
+        statsUrl += `&bundle_amount=1000&bundle_amount=1024`; // Send both for 1GB
+      } else {
+        statsUrl += `&bundle_amount=${bundleAmount}`;
+      }
+    }
 
     try {
       const config = await authHeaders();
@@ -60,10 +72,10 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
     const currentYear = currentDate.getFullYear();
     
     if (!selectedYear) {
-      // All Years - show yearly data (last 2 years)
+      // All Years - show data from 2024 onwards
       return {
         granularity: 'monthly',
-        startDate: `${currentYear - 1}-01-01`,
+        startDate: '2024-01-01',
         endDate: `${currentYear}-12-31`
       };
     } else if (selectedYear && !selectedMonth) {
@@ -99,7 +111,7 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
 
     try {
       const { granularity, startDate, endDate } = getDateParams();
-      const result = await getStatsData(org_id, granularity, startDate, endDate);
+      const result = await getStatsData(org_id, granularity, startDate, endDate, selectedBundleType);
 
       if (result.errors) {
         setError(result.errors._error);
@@ -256,7 +268,7 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         }
       },
       title: {
-        text: 'Customer Reach vs Total Bundle',
+        text: 'Customer Reach vs Total Bundles Consumed',
         style: {
           fontSize: '18px',
           fontWeight: '600',
@@ -395,21 +407,28 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         name: 'Customer Reach',
         type: 'column',
         yAxis: 0,
+        color: '#F58426',
         data: chartData.recipients.map((value, index) => ({
           y: value,
           color: value === 0 ? 'rgba(245, 132, 38, 0.3)' : '#F58426' 
         })),
         dataLabels: {
-          enabled: false
+          enabled: true,
+          format: '{point.y:,.0f}',
+          style: {
+            fontSize: '11px',
+            fontWeight: 'bold',
+            color: '#374151'
+          }
         }
       }, {
         name: 'Total Bundle',
         type: 'line',
         yAxis: 1,
+        color: '#3B82F6',
         data: chartData.dataConsumed.map((value, index) => ({
           y: value === 0 ? null : value, 
         })),
-        color: '#3B82F6',
         marker: {
           fillColor: '#3B82F6',
           lineWidth: 2,
@@ -421,7 +440,13 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
           }
         },
         dataLabels: {
-          enabled: false
+          enabled: true,
+          format: '{point.y:,.2f}',
+          style: {
+            fontSize: '11px',
+            fontWeight: 'bold',
+            color: '#374151'
+          }
         }
       }],
       credits: {
@@ -472,10 +497,21 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
     return monthNames[parseInt(month) - 1] || '';
   };
 
+  // Get ordinal suffix for days (1st, 2nd, 3rd, etc.)
+  const getOrdinalDay = (day: number): string => {
+    if (day > 3 && day < 21) return `${day}th`;
+    switch (day % 10) {
+      case 1: return `${day}st`;
+      case 2: return `${day}nd`;
+      case 3: return `${day}rd`;
+      default: return `${day}th`;
+    }
+  };
+
   // Fetch data when filters change
   useEffect(() => {
     fetchData();
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, selectedBundleType]);
 
   // Create chart when data changes
   useEffect(() => {
@@ -494,12 +530,343 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
     }
   }, [data, loading, selectedYear, selectedMonth]);
 
+  // Recreate chart when switching back to graph view
+  useEffect(() => {
+    if (viewMode === 'graph' && typeof window !== 'undefined' && !loading && data) {
+      const timer = setTimeout(() => {
+        createChart();
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode]);
+
+  // Generate dummy consumption table data based on filters
+  const generateConsumptionTableData = () => {
+    const bundleTypes = ['5MB', '10MB', '20MB', '100MB', '200MB', '500MB', '1GB'];
+    const tableData: Array<{ period: string; bundleType: string; amountConsumed: number }> = [];
+    
+    if (!selectedYear) {
+      // All Years - yearly periods
+      const years = ['2023', '2024', '2025'];
+      years.forEach(year => {
+        bundleTypes.forEach(bundle => {
+          if (Math.random() > 0.3) { // 70% chance to have data
+            tableData.push({
+              period: year,
+              bundleType: bundle,
+              amountConsumed: Math.floor(Math.random() * 1000) + 100
+            });
+          }
+        });
+      });
+    } else if (selectedYear && !selectedMonth) {
+      // Specific year - monthly periods
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+      monthNames.forEach(month => {
+        bundleTypes.forEach(bundle => {
+          if (Math.random() > 0.3) { // 70% chance to have data
+            tableData.push({
+              period: month,
+              bundleType: bundle,
+              amountConsumed: Math.floor(Math.random() * 800) + 50
+            });
+          }
+        });
+      });
+    } else {
+      // Specific month - daily periods
+      const lastDay = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate();
+      for (let day = 1; day <= lastDay; day++) {
+        bundleTypes.forEach(bundle => {
+          if (Math.random() > 0.4) { // 60% chance to have data
+            tableData.push({
+              period: getOrdinalDay(day),
+              bundleType: bundle,
+              amountConsumed: Math.floor(Math.random() * 500) + 20
+            });
+          }
+        });
+      }
+    }
+    
+    return tableData;
+  };
+
+  // Create consumption table with live API data
+  const renderConsumptionTable = () => {
+    // Don't show table if "All Bundle Types" is selected
+    if (!selectedBundleType || selectedBundleType === '') {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          Please select a specific bundle type to view the consumption table.
+        </div>
+      );
+    }
+
+    // Use actual API data instead of dummy data
+    if (!data || !data.stats || data.stats.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          No consumption data available for the selected filters.
+        </div>
+      );
+    }
+
+    const bundleAmounts = data.meta?.bundle_amount || [];
+    const getBundleLabel = (amount: string) => {
+      if (amount === '1024') return '1GB (1024)';
+      if (amount === '1000') return '1GB (1000)';
+      return `${amount}MB`;
+    };
+
+    // Convert API data to table format - simple 1:1 matching for selected bundle type
+    const tableData: Array<{ period: string; bundleType: string; amountConsumed: number }> = [];
+    
+    data.stats.forEach((stat: any) => {
+      const date = new Date(stat.period);
+      let periodLabel = '';
+
+      if (!selectedYear) {
+        // Yearly view - show year
+        periodLabel = date.getFullYear().toString();
+      } else if (selectedYear && !selectedMonth) {
+        // Monthly view - show month name
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'];
+        periodLabel = monthNames[date.getMonth()];
+      } else {
+        // Daily view - show day with ordinal suffix
+        periodLabel = getOrdinalDay(date.getDate());
+      }
+
+      // Create row for selected bundle type(s)
+      bundleAmounts.forEach((bundleAmount: string) => {
+        tableData.push({
+          period: periodLabel,
+          bundleType: getBundleLabel(bundleAmount),
+          amountConsumed: stat.total_bundle
+        });
+      });
+    });
+
+    if (tableData.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          No consumption data available for the selected filters.
+        </div>
+      );
+    }
+
+    // Group data by period
+    const groupedByPeriod: { [key: string]: Array<{ bundleType: string; amountConsumed: number }> } = {};
+    tableData.forEach(item => {
+      if (!groupedByPeriod[item.period]) {
+        groupedByPeriod[item.period] = [];
+      }
+      groupedByPeriod[item.period].push({
+        bundleType: item.bundleType,
+        amountConsumed: item.amountConsumed
+      });
+    });
+
+    // Calculate total for each period
+    const periodTotals: { [key: string]: number } = {};
+    Object.keys(groupedByPeriod).forEach(period => {
+      periodTotals[period] = groupedByPeriod[period].reduce((sum, item) => sum + item.amountConsumed, 0);
+    });
+
+    const periods = Object.keys(groupedByPeriod);
+    let rowIndex = 0;
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-700">Period</th>
+              <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-700">Bundle Type</th>
+              <th className="border border-gray-300 px-4 py-2 text-right font-semibold text-gray-700">Amount Consumed (MB)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {periods.map((period, periodIndex) => {
+              const bundlesInPeriod = groupedByPeriod[period];
+              const rowCount = bundlesInPeriod.length;
+              const startRow = rowIndex;
+              
+              return bundlesInPeriod.map((item, bundleIndex) => {
+                const isFirstInPeriod = bundleIndex === 0;
+                const showPeriodCell = isFirstInPeriod;
+                rowIndex++;
+
+                return (
+                  <tr key={`${period}-${item.bundleType}-${bundleIndex}`} className={bundleIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {showPeriodCell && (
+                      <td 
+                        rowSpan={rowCount + 1} 
+                        className="border border-gray-300 px-4 py-2 font-medium text-gray-800 align-middle"
+                      >
+                        {period}
+                      </td>
+                    )}
+                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                      {item.bundleType}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-right text-gray-700">
+                      {item.amountConsumed.toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              }).concat(
+                // Add total row for the period
+                <tr key={`${period}-total`} className="bg-orange-50 font-semibold">
+                  <td colSpan={2} className="border border-gray-300 px-4 py-2 text-right text-gray-800">
+                    Period Total:
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2 text-right text-[#FF9800] font-bold">
+                    {periodTotals[period].toLocaleString()}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Download graph as SVG
+  const downloadGraph = () => {
+    if (chartInstance.current && chartInstance.current.container) {
+      try {
+        // Get SVG element from the chart container
+        const svgElement = chartInstance.current.container.querySelector('svg');
+        if (!svgElement) {
+          throw new Error('SVG element not found');
+        }
+        
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        const filename = `consumption-report-${new Date().getTime()}`;
+        
+        // Create download link
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString));
+        element.setAttribute('download', `${filename}.svg`);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      } catch (error) {
+        console.error('Error downloading graph:', error);
+        alert('Failed to download graph');
+      }
+    }
+  };
+
+  // Download table as CSV
+  const downloadTableAsCSV = () => {
+    if (!selectedBundleType || selectedBundleType === '') {
+      alert('Please select a specific bundle type to download the table');
+      return;
+    }
+
+    const bundleAmounts = data.meta?.bundle_amount || [];
+    const getBundleLabel = (amount: string) => {
+      if (amount === '1024') return '1GB (1024)';
+      if (amount === '1000') return '1GB (1000)';
+      return `${amount}MB`;
+    };
+
+    // Generate table data
+    let csv = 'Period,Bundle Type,Amount Consumed (MB)\n';
+    
+    data.stats.forEach((stat: any) => {
+      const date = new Date(stat.period);
+      let periodLabel = '';
+
+      if (!selectedYear) {
+        periodLabel = date.getFullYear().toString();
+      } else if (selectedYear && !selectedMonth) {
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'];
+        periodLabel = monthNames[date.getMonth()];
+      } else {
+        periodLabel = getOrdinalDay(date.getDate());
+      }
+
+      bundleAmounts.forEach((bundleAmount: string) => {
+        csv += `"${periodLabel}","${getBundleLabel(bundleAmount)}","${stat.total_bundle}"\n`;
+      });
+    });
+
+    // Download CSV
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+    element.setAttribute('download', `consumption-table-${new Date().getTime()}.csv`);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <div className="border-[1.5px] rounded-3xl p-6 mb-4">
+      {/* Toggle and Download Buttons */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewMode('graph')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              viewMode === 'graph'
+                ? 'bg-[#FF9800] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            📊 Graph
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              viewMode === 'table'
+                ? 'bg-[#FF9800] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            📋 Table
+          </button>
+        </div>
+
+        {/* Download Buttons */}
+        {!loading && !error && (
+          <div className="flex items-center gap-2">
+            {viewMode === 'graph' && (
+              <button
+                onClick={downloadGraph}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all"
+                title="Download graph as PNG"
+              >
+                ⬇️ Download Graph
+              </button>
+            )}
+            {viewMode === 'table' && (
+              <button
+                onClick={downloadTableAsCSV}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all"
+                title="Download table as CSV"
+              >
+                ⬇️ Download Table
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {loading && (
         <div className="flex justify-center items-center h-96">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF9800]"></div>
-          <span className="ml-3 text-gray-600">Loading chart data...</span>
+          <span className="ml-3 text-gray-600">Loading data...</span>
         </div>
       )}
       
@@ -518,12 +885,18 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
         </div>
       )}
 
-      {!loading && !error && (
+      {!loading && !error && viewMode === 'graph' && (
         <div 
           ref={chartRef} 
           style={{ height: '400px', width: '100%' }}
           suppressHydrationWarning={true}
         />
+      )}
+
+      {!loading && !error && viewMode === 'table' && (
+        <div className="mt-4">
+          {renderConsumptionTable()}
+        </div>
       )}
     </div>
   );
