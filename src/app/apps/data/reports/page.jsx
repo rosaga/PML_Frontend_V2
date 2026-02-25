@@ -42,6 +42,7 @@ const Reports = () => {
       { value: "5", label: "5MB" },
       { value: "10", label: "10MB" },
       { value: "20", label: "20MB" },
+      { value: "50", label: "50MB" },
       { value: "100", label: "100MB" },
       { value: "200", label: "200MB" },
       { value: "500", label: "500MB" },
