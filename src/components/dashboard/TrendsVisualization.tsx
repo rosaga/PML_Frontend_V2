@@ -541,58 +541,6 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
     }
   }, [viewMode]);
 
-  // Generate dummy consumption table data based on filters
-  const generateConsumptionTableData = () => {
-    const bundleTypes = ['5MB', '10MB', '20MB', '100MB', '200MB', '500MB', '1GB'];
-    const tableData: Array<{ period: string; bundleType: string; amountConsumed: number }> = [];
-    
-    if (!selectedYear) {
-      // All Years - yearly periods
-      const years = ['2023', '2024', '2025'];
-      years.forEach(year => {
-        bundleTypes.forEach(bundle => {
-          if (Math.random() > 0.3) { // 70% chance to have data
-            tableData.push({
-              period: year,
-              bundleType: bundle,
-              amountConsumed: Math.floor(Math.random() * 1000) + 100
-            });
-          }
-        });
-      });
-    } else if (selectedYear && !selectedMonth) {
-      // Specific year - monthly periods
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'];
-      monthNames.forEach(month => {
-        bundleTypes.forEach(bundle => {
-          if (Math.random() > 0.3) { // 70% chance to have data
-            tableData.push({
-              period: month,
-              bundleType: bundle,
-              amountConsumed: Math.floor(Math.random() * 800) + 50
-            });
-          }
-        });
-      });
-    } else {
-      // Specific month - daily periods
-      const lastDay = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate();
-      for (let day = 1; day <= lastDay; day++) {
-        bundleTypes.forEach(bundle => {
-          if (Math.random() > 0.4) { // 60% chance to have data
-            tableData.push({
-              period: getOrdinalDay(day),
-              bundleType: bundle,
-              amountConsumed: Math.floor(Math.random() * 500) + 20
-            });
-          }
-        });
-      }
-    }
-    
-    return tableData;
-  };
 
   // Create consumption table with live API data
   const renderConsumptionTable = () => {
@@ -605,7 +553,6 @@ const TrendsVisualization: React.FC<TrendsVisualizationProps> = ({
       );
     }
 
-    // Use actual API data instead of dummy data
     if (!data || !data.stats || data.stats.length === 0) {
       return (
         <div className="text-center py-8 text-gray-500">
