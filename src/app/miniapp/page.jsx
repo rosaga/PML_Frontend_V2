@@ -215,7 +215,7 @@ const MiniApp = () => {
               window.location.href = `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${encoded}`;
             }}
             className={`cursor-pointer transition duration-300 transform ${
-              selectedOption && selectedOption !== 'flowbot'
+              selectedOption && selectedOption !== 'whatsapp'
                 ? 'opacity-50 pointer-events-none'
                 : 'hover:border-[#FF9800] hover:scale-105'
             }`}
