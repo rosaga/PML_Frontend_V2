@@ -207,6 +207,40 @@ const MiniApp = () => {
               </Box>
             </CardContent>
           </Card>
+
+          <Card
+            onClick={() => {
+              const orgId = localStorage.getItem("selectedAccountId");
+              const encoded = btoa(orgId); // base64 encode
+              window.location.href = `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${encoded}`;
+            }}
+            className={`cursor-pointer transition duration-300 transform ${
+              selectedOption && selectedOption !== 'flowbot'
+                ? 'opacity-50 pointer-events-none'
+                : 'hover:border-[#FF9800] hover:scale-105'
+            }`}
+            sx={{
+              borderRadius: 1,
+              textAlign: 'center',
+              padding: 2,
+              background: '#4B465C0A',
+              border: '1px solid transparent',
+              boxShadow: 'none',
+            }}
+          >
+            <CardContent>
+              <Box className="flex flex-col items-center justify-center">
+                <img src="images/sms.svg" alt="WhatsApp Icon" className="w-10 h-10 mb-2" />
+                <Typography variant="h6" className="font-semi-bold mt-2">
+                  Bulk Whatsapp
+                </Typography>
+                <Typography variant="body2" style={{ color: '#4B465C' }}>
+                  Create conversations to support & engage your customers
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
     </>
