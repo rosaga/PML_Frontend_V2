@@ -194,13 +194,16 @@ const SendBatchRewardsModal = ({ closeModal }) => {
       return;
     }
 
+    const senderIdParsed = parseInt(selectedSenderName, 10);
+    const senderId = Number.isFinite(senderIdParsed) && senderIdParsed > 0 ? senderIdParsed : null;
+
     const newReward = {
       contacts: contactsFile,
       bundle: selectedBundle,
-      message: message,
-      sender_id: parseInt(selectedSenderName),
       slogan: "5",
       postpay: true,
+      sender_id: senderId,
+      message: message?.trim() || null,
     };
 
     try {
