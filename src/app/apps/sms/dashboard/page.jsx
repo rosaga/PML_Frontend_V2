@@ -319,6 +319,23 @@ const Dashboard = () => {
                   ))}
                 </select>
               </div>
+              <div>
+                <label htmlFor="dayFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Day
+                </label>
+                <select
+                  id="dayFilter"
+                  value={selectedDay}
+                  onChange={(e) => handleDayChange(e.target.value)}
+                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {dayOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             
             {loading && (
