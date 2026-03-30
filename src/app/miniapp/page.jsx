@@ -52,6 +52,9 @@ const MiniApp = () => {
         case 'flowbot':
           router.push('/apps/flowbot/dashboard');;
           break;
+        case 'admin':
+          router.push('/apps/admin/dashboard');
+          break;
         default:
           break;
       }
@@ -238,6 +241,42 @@ const MiniApp = () => {
                   Create conversations to support & engage your customers
                 </Typography>
               </Box>
+            </CardContent>
+          </Card>
+
+          {/* Admin Portal */}
+          <Card
+            onClick={() => handleOptionSelect('admin')}
+            className={`cursor-pointer transition duration-300 transform ${
+              selectedOption && selectedOption !== 'admin'
+                ? 'opacity-50 pointer-events-none'
+                : 'hover:border-[#FF9800] hover:scale-105'
+            }`}
+            sx={{
+              borderRadius: 1,
+              textAlign: 'center',
+              padding: 2,
+              background: '#4B465C0A',
+              border: '1px solid transparent',
+              boxShadow: 'none',
+            }}
+          >
+            <CardContent>
+              {selectedOption === 'admin' ? (
+                <Box className="flex justify-center items-center h-32">
+                  <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+                </Box>
+              ) : (
+                <Box className="flex flex-col items-center justify-center">
+                  <img src="images/settings.svg" alt="Admin Icon" className="w-10 h-10 mb-2" style={{ filter: 'invert(67%) sepia(78%) saturate(1160%) hue-rotate(359deg) brightness(103%) contrast(101%)' }} />
+                  <Typography variant="h6" className="font-semi-bold mt-2">
+                    Admin Portal
+                  </Typography>
+                  <Typography variant="body2" style={{ color: '#4B465C' }}>
+                    Manage your organization and users
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
 
