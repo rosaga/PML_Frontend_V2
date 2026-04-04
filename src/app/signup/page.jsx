@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Card, CardContent, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import GoogleButton from "react-google-button";
@@ -26,6 +26,8 @@ const SignUp = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [orgAvailable, setOrgAvailable] = useState(null);
+  const [checkingOrg, setCheckingOrg] = useState(false);
 
   const validateEmail = (email) => {
     const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
@@ -37,7 +39,13 @@ const SignUp = () => {
 
     if (!firstname) newErrors.firstname = "First name is required";
     if (!lastname) newErrors.lastname = "Last name is required";
-    if (!organization) newErrors.organization = "Organization name is required";
+    if (!organization) {
+      newErrors.organization = "Organization name is required";
+    } else if (orgAvailable === false) {
+      newErrors.organization = "Organization name already exists";
+    } else if (orgAvailable === null) {
+      newErrors.organization = "Please wait while we verify the organization name";
+    }
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!validateEmail(email)) {
@@ -110,6 +118,44 @@ const SignUp = () => {
     router.push("/signin");
   };
 
+  const checkOrganization = async (name) => {
+  if (!name || name.length < 3) {
+    setOrgAvailable(null);
+    return;
+  }
+
+  try {
+    setCheckingOrg(true);
+
+    const res = await axios.get(
+      `https://peakdata-jja4kcvvdq-ez.a.run.app/api/v1/organization/exists?name=${encodeURIComponent(name)}`
+    );
+
+    const exists = res.data.exists;
+
+    if (exists) {
+      setOrgAvailable(false); // name already taken
+    } else {
+      setOrgAvailable(true); // name available
+    }
+
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setCheckingOrg(false);
+  }
+};
+
+useEffect(() => {
+  const delayDebounce = setTimeout(() => {
+    if (organization) {
+      checkOrganization(organization);
+    }
+  }, 600); // wait 600ms after typing
+
+  return () => clearTimeout(delayDebounce);
+}, [organization]);
+
   return (
     <>
       <ToastContainer />
@@ -165,10 +211,27 @@ const SignUp = () => {
                     placeholder="Your Organization Name *"
                     className="w-full bg-[#F1F2F3] p-2.5 rounded-md border-white"
                     value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
+                    onChange={(e) => {
+                      setOrganization(e.target.value);
+                      setErrors({ ...errors, organization: "" });
+                    }}
                   />
                   {errors.organization && <p className="text-red-500 text-xs mb-2">{errors.organization}</p>}
+                  {checkingOrg && (
+                      <p className="text-gray-500 text-xs mb-2">Checking name...</p>
+                    )}
 
+                    {orgAvailable === false && (
+                      <p className="text-red-500 text-xs mb-2">
+                        Organization name already exists
+                      </p>
+                    )}
+
+                    {orgAvailable === true && (
+                      <p className="text-green-500 text-xs mb-2">
+                        Organization name available ✓
+                      </p>
+                    )}
                   <input
                     type="email"
                     placeholder="Your Email *"
@@ -248,6 +311,7 @@ const SignUp = () => {
                   <button
                     className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md"
                     onClick={handleSignup}
+                    disabled={checkingOrg || orgAvailable === false}
                   >
                     {isLoading ? "Please wait..." : "Sign-Up"}
                   </button>
@@ -261,22 +325,6 @@ const SignUp = () => {
                       Login
                     </span>
                   </p>
-
-                  {/* <div className="flex justify-center items-center mt-4 relative">
-                    <span className="line w-1/3 border-t border-gray-300"></span>
-                    <span className="mx-2">Or</span>
-                    <span className="line w-1/3 border-t border-gray-300"></span>
-                  </div>
-
-                  <div className="flex justify-center mt-4">
-                    <GoogleButton
-                      type="dark"
-                      label="Google"
-                      onClick={() => {
-                        console.log("Google button clicked");
-                      }}
-                    />
-                  </div> */}
                 </div>
               </div>
             </CardContent>
