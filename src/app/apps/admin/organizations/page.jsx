@@ -17,95 +17,60 @@ import {
   TextField,
   Button,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
+import { GetAdminOrganizations } from "@/app/api/actions/admin/admin";
 
 const OrganizationsPage = () => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [organizations, setOrganizations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Mock data for organizations
-  const organizationsData = [
-    {
-      id: 1,
-      name: "SunKing",
-      status: "Active",
-      services: ["SMS", "WhatsApp", "Data"],
-      smsBalance: 50000,
-      dataBalance: "500 GB",
-      airtime: 250000,
-      whatsapp: 25000,
-      dateCreated: "2025-01-15",
-    },
-    {
-      id: 2,
-      name: "Cheers Bakery",
-      status: "Active",
-      services: ["SMS", "Airtime"],
-      smsBalance: 120000,
-      dataBalance: "0 GB",
-      airtime: 500000,
-      whatsapp: 0,
-      dateCreated: "2025-02-10",
-    },
-    {
-      id: 3,
-      name: "Stepping Resort",
-      status: "Pending",
-      services: ["SMS", "WhatsApp", "Data", "Airtime"],
-      smsBalance: 15000,
-      dataBalance: "200 GB",
-      airtime: 100000,
-      whatsapp: 10000,
-      dateCreated: "2026-03-01",
-    },
-    {
-      id: 4,
-      name: "Epren Petrol Station",
-      status: "Active",
-      services: ["SMS", "WhatsApp"],
-      smsBalance: 80000,
-      dataBalance: "0 GB",
-      airtime: 0,
-      whatsapp: 40000,
-      dateCreated: "2025-11-22",
-    },
-    {
-      id: 5,
-      name: "FinServe Pro",
-      status: "Suspended",
-      services: ["SMS"],
-      smsBalance: 5000,
-      dataBalance: "0 GB",
-      airtime: 20000,
-      whatsapp: 0,
-      dateCreated: "2024-08-30",
-    },
-  ];
+  useEffect(() => {
+    async function fetchOrganizations() {
+      try {
+        setLoading(true);
 
-  // Filter organizations based on search term
-  const filteredOrganizations = organizationsData.filter((org) =>
-    org.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+        const query = searchTerm
+          ? `search=${encodeURIComponent(searchTerm)}`
+          : "";
+
+        const response = await GetAdminOrganizations(query);
+
+        setOrganizations(response?.data || []);
+      } catch (error) {
+        console.error("Error loading organizations:", error);
+        setOrganizations([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (isClient) {
+      fetchOrganizations();
+    }
+  }, [searchTerm, isClient]);
 
   const handleOrganizationClick = (org) => {
-    router.push(`/apps/admin/organizations/${org.id}`);
+    router.push(`/apps/admin/organizations/${org.external_id}`);
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Active":
+    switch ((status || "").toUpperCase()) {
+      case "ACTIVE":
         return { backgroundColor: "#000000", color: "white" };
-      case "Pending":
+      case "INACTIVE":
         return { backgroundColor: "#E5E7EB", color: "#374151" };
-      case "Suspended":
+      case "SUSPENDED":
         return { backgroundColor: "#FEE2E2", color: "#991B1B" };
       default:
         return { backgroundColor: "#E5E7EB", color: "#374151" };
@@ -116,7 +81,6 @@ const OrganizationsPage = () => {
 
   return (
     <div className="ml-0 md:ml-64 p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
       <div className="mb-6">
         <Typography variant="h4" className="font-bold text-gray-900 mb-2">
           Organizations
@@ -126,7 +90,6 @@ const OrganizationsPage = () => {
         </Typography>
       </div>
 
-      {/* Search and Filters */}
       <Card
         sx={{
           background: "white",
@@ -170,7 +133,6 @@ const OrganizationsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Organizations Table */}
       <Card
         sx={{
           background: "white",
@@ -189,19 +151,10 @@ const OrganizationsPage = () => {
                   Status
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                  Services
+                  Recharge Count
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                  SMS Balance
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                  Data Balance
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                  Airtime
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                  WhatsApp
+                  Last Recharge
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
                   Date Created
@@ -211,75 +164,80 @@ const OrganizationsPage = () => {
                 </TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
-              {filteredOrganizations.map((org) => (
-                <TableRow
-                  key={org.id}
-                  onClick={() => handleOrganizationClick(org)}
-                  sx={{
-                    cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor: "#F9FAFB",
-                    },
-                  }}
-                >
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      className="font-medium"
-                      sx={{ color: "#3B82F6" }}
-                    >
-                      {org.name}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={org.status}
-                      size="small"
-                      sx={getStatusColor(org.status)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1} flexWrap="wrap">
-                      {org.services.map((service, idx) => (
-                        <Chip
-                          key={idx}
-                          label={service}
-                          size="small"
-                          variant="outlined"
-                          sx={{
-                            borderColor: "#E5E7EB",
-                            color: "#6B7280",
-                          }}
-                        />
-                      ))}
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Box py={4}>
+                      <CircularProgress size={28} />
                     </Box>
                   </TableCell>
-                  <TableCell className="text-gray-900 font-medium">
-                    {org.smsBalance.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-gray-900 font-medium">
-                    {org.dataBalance}
-                  </TableCell>
-                  <TableCell className="text-gray-900 font-medium">
-                    {org.airtime.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-gray-900 font-medium">
-                    {org.whatsapp.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-gray-600">
-                    {org.dateCreated}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
+                </TableRow>
+              ) : organizations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No organizations found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                organizations.map((org) => (
+                  <TableRow
+                    key={org.external_id}
+                    onClick={() => handleOrganizationClick(org)}
+                    sx={{
+                      cursor: "pointer",
+                      "&:hover": {
+                        backgroundColor: "#F9FAFB",
+                      },
+                    }}
+                  >
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        className="font-medium"
+                        sx={{ color: "#3B82F6" }}
+                      >
+                        {org.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "#6B7280" }}>
+                        {org.external_id}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={org.status || "UNKNOWN"}
+                        size="small"
+                        sx={getStatusColor(org.status)}
+                      />
+                    </TableCell>
+
+                    <TableCell>{org.recharge_count || 0}</TableCell>
+
+                    <TableCell>
+                      {org.last_recharge_at
+                        ? new Date(org.last_recharge_at).toLocaleDateString()
+                        : "-"}
+                    </TableCell>
+
+                    <TableCell>
+                      {org.created_at
+                        ? new Date(org.created_at).toLocaleDateString()
+                        : "-"}
+                    </TableCell>
+
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

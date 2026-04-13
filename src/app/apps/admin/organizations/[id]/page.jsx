@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -15,130 +15,204 @@ import {
   TableHead,
   TableRow,
   Paper,
-  TextField,
-  Select,
-  MenuItem,
-  IconButton,
   Grid,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import {
+  GetAdminOrganizationProfile,
+  GetAdminOrganizationDataDispatches,
+} from "@/app/api/actions/admin/admin";
+import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
 
 const OrganizationDetailPage = () => {
-  const router = useRouter();
   const params = useParams();
   const [activeTab, setActiveTab] = useState("campaigns");
   const [isClient, setIsClient] = useState(false);
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+
+  const rawOrgId =
+    params?.org_id ??
+    params?.id ??
+    params?.organizationId ??
+    params?.slug ??
+    "";
+
+  const orgId = useMemo(() => {
+    if (!rawOrgId) return "";
+    return Array.isArray(rawOrgId) ? rawOrgId[0] : rawOrgId;
+  }, [rawOrgId]);
+
+  const [profile, setProfile] = useState(null);
+  const [dispatches, setDispatches] = useState([]);
+  const [dispatchMeta, setDispatchMeta] = useState(null);
+
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingDispatches, setLoadingDispatches] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Mock organization data
-  const orgData = {
-    id: "ORG-1",
-    name: "SunKing",
-    status: "Active",
-    verified: true,
-    email: "contact@sunking.com",
-    phone: "+254 701 234 568",
-    location: "Nairobi, Kenya",
-    lastActivity: "2 hours ago",
-    memberSince: "January 15, 2025",
-    balances: {
-      sms: 50000,
-      data: "500 GB",
-      airtime: 250000,
-      whatsapp: 25000,
-    },
-    enabledServices: [
-      "Bulk SMS",
-      "WhatsApp Business",
-      "Bulk Data",
-      "Bulk Airtime",
-      "USSD Flows",
-    ],
+  useEffect(() => {
+    if (!isClient) return;
+
+    if (!orgId) {
+      setError("Organization ID missing from route.");
+      setLoadingProfile(false);
+      return;
+    }
+
+    fetchProfile();
+  }, [isClient, orgId]);
+
+  useEffect(() => {
+    if (!isClient || !orgId || activeTab !== "campaigns") return;
+    fetchDispatches();
+  }, [isClient, orgId, activeTab]);
+
+  async function fetchProfile() {
+    try {
+      setLoadingProfile(true);
+      setError("");
+      const res = await GetAdminOrganizationProfile(orgId);
+      setProfile(res);
+    } catch (err) {
+      console.error("Failed to load organization profile:", err);
+      setError(
+        err?.response?.data?.error || "Failed to load organization profile."
+      );
+    } finally {
+      setLoadingProfile(false);
+    }
+  }
+
+  async function fetchDispatches() {
+    try {
+      setLoadingDispatches(true);
+      const res = await GetAdminOrganizationDataDispatches(
+        orgId,
+        "page=1&page_size=20"
+      );
+      setDispatches(res?.data || []);
+      setDispatchMeta(res?.pagination || null);
+    } catch (err) {
+      console.error("Failed to load dispatches:", err);
+      setDispatches([]);
+    } finally {
+      setLoadingDispatches(false);
+    }
+  }
+
+  const organization = profile?.organization || {};
+  const accounts = Array.isArray(profile?.accounts) ? profile.accounts : [];
+
+  const enabledServices = useMemo(() => {
+    const services = [];
+
+    if (accounts.length > 0 || Number(profile?.total_data_units || 0) > 0) {
+      services.push("Bulk Data");
+    }
+
+    if (Number(profile?.airtime_balance || 0) > 0) {
+      services.push("Bulk Airtime");
+    }
+
+    if (profile?.sms && !profile?.sms?.error) {
+      services.push("Bulk SMS");
+    }
+
+    return services;
+  }, [accounts, profile]);
+
+  const dataModules = useMemo(() => {
+    return accounts.map((account) => ({
+      id: account.id,
+      module: account.module || "-",
+      units: Number(account.units || 0),
+      expires_on: account.expires_on || null,
+      service: (account.service || "DATA").toUpperCase(),
+    }));
+  }, [accounts]);
+
+  const getStatusColor = (status) => {
+    switch ((status || "").toUpperCase()) {
+      case "ACTIVE":
+      case "SUCCESS":
+      case "COMPLETED":
+        return { backgroundColor: "#000000", color: "white" };
+      case "PENDING":
+        return { backgroundColor: "#E5E7EB", color: "#374151" };
+      case "FAILED":
+      case "ERROR":
+      case "INACTIVE":
+        return { backgroundColor: "#FEE2E2", color: "#991B1B" };
+      default:
+        return { backgroundColor: "#E5E7EB", color: "#374151" };
+    }
   };
 
-  // Mock campaigns data
-  const campaignsData = [
-    {
-      id: "CMP-001",
-      service: "SMS",
-      name: "Product Launch",
-      date: "2026-03-09",
-      messagesSent: 15000,
-      status: "Completed",
-    },
-    {
-      id: "CMP-002",
-      service: "WhatsApp",
-      name: "Newsletter",
-      date: "2026-03-08",
-      messagesSent: 8000,
-      status: "Completed",
-    },
-    {
-      id: "CMP-003",
-      service: "Data",
-      name: "Bundle Rewards",
-      date: "2026-03-07",
-      messagesSent: 500,
-      status: "Completed",
-    },
-  ];
+  const formatNumber = (value) => {
+    const num = Number(value || 0);
+    return Number.isFinite(num) ? num.toLocaleString() : "0";
+  };
 
-  // Mock activity log data
-  const activityLogData = [
-    {
-      type: "Balance top-up",
-      description: "Added 100,000 to airtime wallet",
-      timestamp: "2 hours ago",
-    },
-    {
-      type: "Campaign launched",
-      description: "Product Launch SMS campaign sent",
-      timestamp: "5 hours ago",
-    },
-    {
-      type: "Template approved",
-      description: "WhatsApp template approved",
-      timestamp: "1 day ago",
-    },
-  ];
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString();
+  };
 
-  // Mock service rates data
-  const serviceRatesData = [
-    { service: "Bulk SMS", rate: "KES 0.80", unit: "per SMS" },
-    { service: "WhatsApp Business", rate: "KES 1.20", unit: "per message" },
-    { service: "Bulk Data", rate: "KES 5.00", unit: "per GB" },
-  ];
-
-  // Mock service thresholds data
-  const serviceThresholdsData = [
-    { service: "Bulk SMS", threshold: 10000 },
-    { service: "WhatsApp Business", threshold: 5000 },
-    { service: "Bulk Data", threshold: "100 GB" },
-  ];
+  const formatDateTime = (value) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString();
+  };
 
   if (!isClient) return null;
 
   return (
     <div className="ml-0 md:ml-64 p-6 bg-gray-50 min-h-screen">
-      {/* Header Section */}
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={4}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="flex-start"
+        mb={4}
+        gap={2}
+        flexWrap="wrap"
+      >
         <Box>
           <Typography variant="h3" className="font-bold text-gray-900 mb-1">
-            {orgData.name}
+            {loadingProfile ? "Loading..." : organization?.name || "Organization"}
           </Typography>
           <Typography variant="body2" className="text-gray-600">
-            Organization ID: {orgData.id}
+            Organization ID: {orgId || "—"}
           </Typography>
         </Box>
-        <Box display="flex" gap={2}>
+
+        <Box display="flex" gap={2} flexWrap="wrap">
           <Button
             variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={fetchProfile}
+            sx={{
+              color: "#6B7280",
+              borderColor: "#E5E7EB",
+              textTransform: "none",
+            }}
+          >
+            Refresh
+          </Button>
+
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
             sx={{
               color: "#6B7280",
               borderColor: "#E5E7EB",
@@ -147,553 +221,414 @@ const OrganizationDetailPage = () => {
           >
             Edit Profile
           </Button>
+
           <Button
             variant="contained"
+            onClick={() => setIsBalanceModalOpen(true)}
             sx={{
               backgroundColor: "#000000",
               textTransform: "none",
               "&:hover": { backgroundColor: "#1F2937" },
             }}
           >
-            Provision Balance
+            Adjust Balance
           </Button>
         </Box>
       </Box>
 
-      {/* Company Information Card */}
-      <Card
-        sx={{
-          background: "white",
-          borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          marginBottom: 3,
-        }}
-      >
-        <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="start" mb={3}>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 1,
-                  backgroundColor: "#E0E7FF",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <span style={{ fontSize: 24 }}>🏢</span>
-              </Box>
-              <Box>
-                <Typography variant="h6" className="font-semibold">
-                  Company Information
-                </Typography>
-                <Box display="flex" gap={1} mt={1}>
-                  <Chip label={orgData.status} size="small" sx={{ backgroundColor: "#000000", color: "white" }} />
-                  <Chip label="Verified" size="small" sx={{ backgroundColor: "#E5E7EB", color: "#374151" }} />
-                </Box>
-              </Box>
-            </Box>
-            <Box textAlign="right">
-              <Typography variant="caption" className="text-gray-600 font-medium">
-                Member Since
-              </Typography>
-              <Typography variant="body2" className="font-semibold text-gray-900">
-                {orgData.memberSince}
-              </Typography>
-            </Box>
-          </Box>
+      {error ? (
+        <Box mb={3}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      ) : null}
 
-          {/* Contact Information Grid */}
-          <Grid container spacing={2} mt={1}>
-            <Grid item xs={12} md={6}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <span>✉️</span>
-                <Typography variant="body2" className="text-gray-900">
-                  {orgData.email}
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1}>
-                <span>📞</span>
-                <Typography variant="body2" className="text-gray-900">
-                  {orgData.phone}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <span>📍</span>
-                <Typography variant="body2" className="text-gray-900">
-                  {orgData.location}
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1}>
-                <span>⏱️</span>
-                <Typography variant="body2" className="text-gray-900">
-                  Last Activity: {orgData.lastActivity}
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Balance Cards */}
-      <Grid container spacing={3} mb={4}>
-        {[
-          { label: "SMS Balance", value: orgData.balances.sms.toLocaleString(), icon: "📨" },
-          { label: "Data Balance", value: orgData.balances.data, icon: "📦" },
-          { label: "Airtime Balance", value: orgData.balances.airtime.toLocaleString(), icon: "📱" },
-          { label: "WhatsApp Balance", value: orgData.balances.whatsapp.toLocaleString(), icon: "💬" },
-        ].map((item, idx) => (
-          <Grid item xs={12} sm={6} md={3} key={idx}>
-            <Card sx={{ background: "white", borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="start">
-                  <Box>
-                    <Typography variant="caption" className="text-gray-600 font-medium">
-                      {item.label}
-                    </Typography>
-                    <Typography variant="h5" className="font-bold text-gray-900 mt-1">
-                      {item.value}
-                    </Typography>
-                  </Box>
-                  <span style={{ fontSize: 20 }}>{item.icon}</span>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Enabled Services */}
-      <Card
-        sx={{
-          background: "white",
-          borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          marginBottom: 3,
-        }}
-      >
-        <CardContent>
-          <Typography variant="h6" className="font-semibold mb-3">
-            Enabled Services
-          </Typography>
-          <Box display="flex" gap={2} flexWrap="wrap">
-            {orgData.enabledServices.map((service, idx) => (
-              <Chip
-                key={idx}
-                label={service}
-                sx={{
-                  backgroundColor: "#000000",
-                  color: "white",
-                  fontWeight: 500,
-                }}
-              />
-            ))}
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Box display="flex" gap={4} mb={3} borderBottom="1px solid #E5E7EB">
-        {[
-          { id: "campaigns", label: "Campaign History" },
-          { id: "activity", label: "Activity Log" },
-          { id: "settings", label: "Settings" },
-        ].map((tab) => (
-          <Button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+      {loadingProfile ? (
+        <Box display="flex" justifyContent="center" py={8}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          <Card
             sx={{
-              textTransform: "none",
-              color: activeTab === tab.id ? "#1F2937" : "#6B7280",
-              borderBottom: activeTab === tab.id ? "2px solid #000" : "none",
-              fontWeight: activeTab === tab.id ? 600 : 400,
-              fontSize: "1rem",
-              padding: "12px 0",
-              marginBottom: -1,
+              background: "white",
+              borderRadius: 2,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              marginBottom: 3,
             }}
           >
-            {tab.label}
-          </Button>
-        ))}
-      </Box>
+            <CardContent>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="start"
+                mb={3}
+                gap={2}
+                flexWrap="wrap"
+              >
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 1,
+                      backgroundColor: "#E0E7FF",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span style={{ fontSize: 24 }}>🏢</span>
+                  </Box>
 
-      {/* Tab Content */}
-      {activeTab === "campaigns" && (
-        <Card sx={{ background: "white", borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-          <CardContent>
-            <Typography variant="h6" className="font-semibold mb-4">
-              Campaign History
-            </Typography>
-            <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
-                    <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Campaign ID</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Service</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Name</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Date</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Messages Sent</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {campaignsData.map((campaign) => (
-                    <TableRow key={campaign.id}>
-                      <TableCell>
-                        <Typography
-                          component="a"
-                          href="#"
-                          sx={{
-                            color: "#3B82F6",
-                            textDecoration: "none",
-                            fontWeight: 500,
-                            cursor: "pointer",
-                            "&:hover": { textDecoration: "underline" },
-                          }}
-                        >
-                          {campaign.id}
-                        </Typography>
-                      </TableCell>
-                      <TableCell className="text-gray-900">{campaign.service}</TableCell>
-                      <TableCell className="text-gray-900">{campaign.name}</TableCell>
-                      <TableCell className="text-gray-900">{campaign.date}</TableCell>
-                      <TableCell className="text-gray-900">{campaign.messagesSent.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={campaign.status}
-                          size="small"
-                          sx={{ backgroundColor: "#000000", color: "white" }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeTab === "activity" && (
-        <Card sx={{ background: "white", borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-          <CardContent>
-            <Typography variant="h6" className="font-semibold mb-4">
-              Recent Activity
-            </Typography>
-            <Box className="space-y-4">
-              {activityLogData.map((activity, idx) => (
-                <Box
-                  key={idx}
-                  display="flex"
-                  gap={3}
-                  paddingY={2}
-                  borderBottom={idx < activityLogData.length - 1 ? "1px solid #E5E7EB" : "none"}
-                >
                   <Box>
-                    <Box
+                    <Typography variant="h6" className="font-semibold">
+                      Company Information
+                    </Typography>
+                    <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+                      <Chip
+                        label={organization?.status || "Active"}
+                        size="small"
+                        sx={getStatusColor(organization?.status || "ACTIVE")}
+                      />
+                      <Chip
+                        label={`${profile?.contacts_count || 0} Contacts`}
+                        size="small"
+                        sx={{ backgroundColor: "#E5E7EB", color: "#374151" }}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box textAlign="right">
+                  <Typography
+                    variant="caption"
+                    className="text-gray-600 font-medium"
+                  >
+                    Member Since
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    className="font-semibold text-gray-900"
+                  >
+                    {formatDate(organization?.created_at)}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Grid container spacing={2} mt={1}>
+                <Grid item xs={12} md={6}>
+                  <Box display="flex" alignItems="center" gap={1} mb={2}>
+                    <span>✉️</span>
+                    <Typography variant="body2" className="text-gray-900">
+                      {organization?.created_by || "—"}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <span>⏱️</span>
+                    <Typography variant="body2" className="text-gray-900">
+                      Last Updated: {formatDateTime(organization?.updated_at)}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          <Grid container spacing={3} mb={4}>
+            {[
+              {
+                label: "SMS Balance",
+                value: formatNumber(profile?.sms?.balance),
+                icon: "📨",
+              },
+              {
+                label: "Data Balance",
+                value: formatNumber(profile?.total_data_units),
+                icon: "📦",
+              },
+              {
+                label: "Airtime Balance",
+                value: formatNumber(profile?.airtime_balance),
+                icon: "📱",
+              },
+              {
+                label: "Recharge Count",
+                value: formatNumber(profile?.recharge_count),
+                icon: "🔁",
+              },
+            ].map((item, idx) => (
+              <Grid item xs={12} sm={6} md={3} key={idx}>
+                <Card
+                  sx={{
+                    background: "white",
+                    borderRadius: 2,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="start">
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          className="text-gray-600 font-medium"
+                        >
+                          {item.label}
+                        </Typography>
+                        <Typography
+                          variant="h5"
+                          className="font-bold text-gray-900 mt-1"
+                        >
+                          {item.value}
+                        </Typography>
+                      </Box>
+                      <span style={{ fontSize: 20 }}>{item.icon}</span>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+
+          <Card
+            sx={{
+              background: "white",
+              borderRadius: 2,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              marginBottom: 3,
+            }}
+          >
+            <CardContent>
+              <Typography variant="h6" className="font-semibold mb-3">
+                Enabled Services
+              </Typography>
+
+              <Box display="flex" gap={2} flexWrap="wrap">
+                {enabledServices.length > 0 ? (
+                  enabledServices.map((service, idx) => (
+                    <Chip
+                      key={idx}
+                      label={service}
                       sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        backgroundColor: "#3B82F6",
-                        marginTop: 1,
+                        backgroundColor: "#000000",
+                        color: "white",
+                        fontWeight: 500,
                       }}
                     />
+                  ))
+                ) : (
+                  <Typography variant="body2" className="text-gray-600">
+                    No service information available yet.
+                  </Typography>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Box display="flex" gap={4} mb={3} borderBottom="1px solid #E5E7EB">
+            {[
+              { id: "campaigns", label: "Data Dispatch History" },
+              { id: "activity", label: "Data Modules" },
+              { id: "settings", label: "Settings" },
+            ].map((tab) => (
+              <Button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                sx={{
+                  textTransform: "none",
+                  color: activeTab === tab.id ? "#1F2937" : "#6B7280",
+                  borderBottom: activeTab === tab.id ? "2px solid #000" : "none",
+                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  fontSize: "1rem",
+                  padding: "12px 0",
+                  marginBottom: -1,
+                }}
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </Box>
+
+          {activeTab === "campaigns" && (
+            <Card
+              sx={{
+                background: "white",
+                borderRadius: 2,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" className="font-semibold mb-4">
+                  Data Dispatch History
+                </Typography>
+
+                {loadingDispatches ? (
+                  <Box display="flex" justifyContent="center" py={4}>
+                    <CircularProgress size={28} />
                   </Box>
-                  <Box flex={1}>
-                    <Typography variant="body2" className="font-semibold text-gray-900">
-                      {activity.type}
-                    </Typography>
+                ) : (
+                  <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
+                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                            Dispatch ID
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                            MSISDN
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                            Bundle Amount
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                            Status
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                            Date
+                          </TableCell>
+                        </TableRow>
+                      </TableHead>
+
+                      <TableBody>
+                        {dispatches.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} align="center">
+                              No dispatch history found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          dispatches.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{item.id}</TableCell>
+                              <TableCell>{item.msisdn || "—"}</TableCell>
+                              <TableCell>
+                                {item.bundle_amount || item.bundleAmount || "—"}
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={item.status || "—"}
+                                  size="small"
+                                  sx={getStatusColor(item.status)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                {formatDateTime(item.created_at || item.createdAt)}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+
+                {dispatchMeta ? (
+                  <Box mt={2}>
                     <Typography variant="caption" className="text-gray-600">
-                      {activity.description}
-                    </Typography>
-                    <Typography variant="caption" className="text-gray-500 block mt-1">
-                      {activity.timestamp}
+                      Page {dispatchMeta.page} of {dispatchMeta.total_pages || 1}
+                      {" • "}
+                      Total: {dispatchMeta.total_count || 0}
                     </Typography>
                   </Box>
-                </Box>
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-      )}
+                ) : null}
+              </CardContent>
+            </Card>
+          )}
 
-      {activeTab === "settings" && (
-        <Box className="space-y-4">
-          {/* Service Rates */}
-          <Card sx={{ background: "white", borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Box>
-                  <Typography variant="h6" className="font-semibold">
-                    Service Rates
-                  </Typography>
-                  <Typography variant="caption" className="text-gray-600">
-                    Configure pricing rates for each service
-                  </Typography>
-                </Box>
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    backgroundColor: "#000000",
-                    textTransform: "none",
-                    "&:hover": { backgroundColor: "#1F2937" },
-                  }}
-                >
-                  + Add Rate
-                </Button>
-              </Box>
+          {activeTab === "activity" && (
+            <Card
+              sx={{
+                background: "white",
+                borderRadius: 2,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" className="font-semibold mb-4">
+                  Data Modules
+                </Typography>
 
-              <TableContainer component={Paper} sx={{ boxShadow: "none", mb: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Service</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Rate</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Unit</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {serviceRatesData.map((rate, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="text-gray-900 font-medium">{rate.service}</TableCell>
-                        <TableCell className="text-gray-900">{rate.rate}</TableCell>
-                        <TableCell className="text-gray-900">{rate.unit}</TableCell>
-                        <TableCell>
-                          <IconButton size="small">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small">
-                            <DeleteIcon fontSize="small" sx={{ color: "#EF4444" }} />
-                          </IconButton>
+                <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
+                        <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                          Module
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                          Service
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                          Units
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+                          Expiry
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
 
-              <Box className="p-4 bg-gray-50 rounded-lg">
-                <Typography variant="body2" className="font-semibold mb-4">
-                  Configure Service Rate
+                    <TableBody>
+                      {dataModules.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center">
+                            No data balance modules found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        dataModules.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.module}</TableCell>
+                            <TableCell>{item.service}</TableCell>
+                            <TableCell>{formatNumber(item.units)}</TableCell>
+                            <TableCell>{formatDateTime(item.expires_on)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                {profile?.sms?.error ? (
+                  <Box mt={3}>
+                    <Alert severity="warning">
+                      SMS profile could not be loaded: {profile.sms.error}
+                    </Alert>
+                  </Box>
+                ) : null}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "settings" && (
+            <Card
+              sx={{
+                background: "white",
+                borderRadius: 2,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" className="font-semibold mb-2">
+                  Settings
                 </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={3}>
-                    <Typography variant="caption" className="text-gray-700 font-medium block mb-2">
-                      Service
-                    </Typography>
-                    <Select
-                      defaultValue=""
-                      displayEmpty
-                      fullWidth
-                      size="small"
-                      sx={{
-                        backgroundColor: "white",
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: "#E5E7EB",
-                        },
-                      }}
-                    >
-                      <MenuItem value="" disabled>
-                        Select service...
-                      </MenuItem>
-                      <MenuItem value="sms">Bulk SMS</MenuItem>
-                      <MenuItem value="whatsapp">WhatsApp Business</MenuItem>
-                      <MenuItem value="data">Bulk Data</MenuItem>
-                    </Select>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                     <Typography variant="caption" className="text-gray-700 font-medium block mb-2">
-                        Rate
-                    </Typography>
-                    <TextField
-                      placeholder="0.00"
-                      type="number"
-                      size="small"
-                      fullWidth
-                      label="Rate per Unit"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: "white",
-                        },
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <Typography variant="caption" className="text-gray-700 font-medium block mb-2">
-                      Currency
-                    </Typography>
-                    <Select
-                      defaultValue="KES"
-                      fullWidth
-                      size="small"
-                      sx={{
-                        backgroundColor: "white",
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: "#E5E7EB",
-                        },
-                      }}
-                    >
-                      <MenuItem value="KES">KES</MenuItem>
-                      <MenuItem value="USD">USD</MenuItem>
-                      <MenuItem value="EUR">EUR</MenuItem>
-                    </Select>
-                  </Grid>
-                  <Grid item xs={12} display="flex" gap={1} mt={1}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      sx={{
-                        backgroundColor: "#000000",
-                        textTransform: "none",
-                        "&:hover": { backgroundColor: "#1F2937" },
-                      }}
-                    >
-                      Save Rate
-                    </Button>
-                    <Button 
-                      variant="outlined" 
-                      size="small"
-                      sx={{ color: "#6B7280", borderColor: "#E5E7EB", textTransform: "uppercase" }}
-                    >
-                      Cancel
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Service Thresholds */}
-          <Card sx={{ background: "white", borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Box>
-                  <Typography variant="h6" className="font-semibold">
-                    Service Thresholds
-                  </Typography>
-                  <Typography variant="caption" className="text-gray-600">
-                    Set low balance alerts for each service
-                  </Typography>
-                </Box>
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    backgroundColor: "#000000",
-                    textTransform: "none",
-                    "&:hover": { backgroundColor: "#1F2937" },
-                  }}
-                >
-                  + Add Threshold
-                </Button>
-              </Box>
-
-              <TableContainer component={Paper} sx={{ boxShadow: "none", mb: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Service</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Threshold</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {serviceThresholdsData.map((threshold, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="text-gray-900 font-medium">{threshold.service}</TableCell>
-                        <TableCell className="text-gray-900">{threshold.threshold}</TableCell>
-                        <TableCell>
-                          <IconButton size="small">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small">
-                            <DeleteIcon fontSize="small" sx={{ color: "#EF4444" }} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <Box className="p-4 bg-gray-50 rounded-lg">
-                <Typography variant="body2" className="font-semibold mb-4">
-                  Configure Service Threshold
+                <Typography variant="body2" className="text-gray-600">
+                  No backend settings endpoint has been wired here yet.
                 </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" className="text-gray-700 font-medium block mb-2">
-                      Service
-                    </Typography>
-                    <Select
-                      defaultValue=""
-                      displayEmpty
-                      fullWidth
-                      size="small"
-                      sx={{
-                        backgroundColor: "white",
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: "#E5E7EB",
-                        },
-                      }}
-                    >
-                      <MenuItem value="" disabled>
-                        Select service...
-                      </MenuItem>
-                      <MenuItem value="sms">Bulk SMS</MenuItem>
-                      <MenuItem value="whatsapp">WhatsApp Business</MenuItem>
-                      <MenuItem value="data">Bulk Data</MenuItem>
-                    </Select>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" className="text-gray-700 font-medium block mb-2">
-                      Threshold
-                    </Typography>
-                    <TextField
-                      placeholder="e.g., 10,000 or 100 GB"
-                      size="small"
-                      fullWidth
-                      label="Threshold Amount"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: "white",
-                        },
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} display="flex" gap={1} mt={1}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      sx={{
-                        backgroundColor: "#000000",
-                        textTransform: "none",
-                        "&:hover": { backgroundColor: "#1F2937" },
-                      }}
-                    >
-                      Save
-                    </Button>
-                    <Button 
-                      variant="outlined" 
-                      size="small"
-                      sx={{ color: "#6B7280", borderColor: "#E5E7EB", textTransform: "uppercase" }}
-                    >
-                      Cancel
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
-            </CardContent>
-          </Card>
-        </Box>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
+
+      <AdjustBalanceModal
+        open={isBalanceModalOpen}
+        onClose={() => setIsBalanceModalOpen(false)}
+        orgId={orgId}
+        accounts={dataModules}
+        onSuccess={fetchProfile}
+      />
     </div>
   );
 };
