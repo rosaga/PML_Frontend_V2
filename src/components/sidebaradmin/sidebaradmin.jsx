@@ -40,7 +40,7 @@ const SidebarAdmin = () => {
     { href: "/apps/admin/dashboard", src: "/images/dashboard.svg", alt: "Dashboard", label: "Dashboard" },
     { href: "/apps/admin/organizations", src: "/images/Account.svg", alt: "Organizations", label: "Organizations" },
     { href: "/apps/admin/accounts", src: "/images/Account.svg", alt: "Accounts", label: "Accounts & Wallet" },
-    { href: "/apps/admin/provision-units", src: "/images/dataunits.svg", alt: "Provision", label: "Provision Units" },
+    { href: "/apps/admin/provisionUnits", src: "/images/dataunits.svg", alt: "Provision", label: "Provision Units" },
     {
       href: "/apps/admin/services",
       src: "/images/vector.svg",
@@ -48,10 +48,10 @@ const SidebarAdmin = () => {
       label: "Services",
       className: "settings",
       subLinks: [
-        { href: "/apps/admin/services/bulk-sms", label: "Bulk SMS", className: "bulk-sms" },
+        { href: "/apps/admin/services/sms", label: "Bulk SMS", className: "bulk-sms" },
         { href: "/apps/admin/services/bulk-whatsapp", label: "Bulk WhatsApp", className: "bulk-whatsapp" },
-        { href: "/apps/admin/services/bulk-data", label: "Bulk Data", className: "bulk-data" },
-        { href: "/apps/admin/services/bulk-airtime", label: "Bulk Airtime", className: "bulk-airtime" },
+        { href: "/apps/admin/services/data", label: "Bulk Data", className: "bulk-data" },
+        { href: "/apps/admin/services/airtime", label: "Bulk Airtime", className: "bulk-airtime" },
         { href: "/apps/admin/services/ussd-flows", label: "USSD Flows", className: "ussd-flows" },
       ],
     },

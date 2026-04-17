@@ -407,9 +407,9 @@ const AdminDashboard = () => {
                     Recent Service Requests
                   </Typography>
 
-                  <Alert severity="info">
-                    No admin backend route has been wired for recent service requests yet.
-                  </Alert>
+                  {/* <Alert severity="info">
+                    Pending
+                  </Alert> */}
                 </CardContent>
               </Card>
             </Grid>
