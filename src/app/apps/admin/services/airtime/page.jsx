@@ -1,147 +1,14 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-
-const dispatchLogsData = [
-  {
-    id: "AT-7894",
-    organization: "TechCorp Solutions",
-    recipient: "+254701234567",
-    amount: "1,000",
-    status: "Success",
-    provider: "Safaricom",
-    timestamp: "2026-03-09 14:30",
-  },
-  {
-    id: "AT-7893",
-    organization: "RetailMax Ltd",
-    recipient: "+254702345678",
-    amount: "500",
-    status: "Success",
-    provider: "Safaricom",
-    timestamp: "2026-03-09 14:25",
-  },
-  {
-    id: "AT-7892",
-    organization: "HealthPlus Network",
-    recipient: "+254703456789",
-    amount: "2,000",
-    status: "Failed",
-    provider: "Safaricom",
-    timestamp: "2026-03-09 14:20",
-  },
-  {
-    id: "AT-7891",
-    organization: "EduLearn Platform",
-    recipient: "+254704567890",
-    amount: "1,500",
-    status: "Success",
-    provider: "Safaricom",
-    timestamp: "2026-03-09 14:15",
-  },
-];
-
-const walletBalancesData = [
-  {
-    organization: "TechCorp Solutions",
-    currentBalance: "250,000",
-    threshold: "50,000",
-    status: "Healthy",
-  },
-  {
-    organization: "RetailMax Ltd",
-    currentBalance: "500,000",
-    threshold: "100,000",
-    status: "Healthy",
-  },
-  {
-    organization: "HealthPlus Network",
-    currentBalance: "45,000",
-    threshold: "50,000",
-    status: "Low",
-  },
-  {
-    organization: "EduLearn Platform",
-    currentBalance: "180,000",
-    threshold: "75,000",
-    status: "Healthy",
-  },
-];
-
-const scheduledCampaignsData = [
-  {
-    id: "ATC-001",
-    organization: "TechCorp Solutions",
-    name: "Employee Rewards",
-    recipients: "150",
-    totalAmount: "150,000",
-    status: "Completed",
-    date: "2026-03-09",
-  },
-  {
-    id: "ATC-002",
-    organization: "RetailMax Ltd",
-    name: "Customer Incentives",
-    recipients: "300",
-    totalAmount: "150,000",
-    status: "In Progress",
-    date: "2026-03-09",
-  },
-  {
-    id: "ATC-003",
-    organization: "EduLearn Platform",
-    name: "Student Support",
-    recipients: "200",
-    totalAmount: "200,000",
-    status: "Scheduled",
-    date: "2026-03-10",
-  },
-];
-
-const usageData = [
-  {
-    organization: "TechCorp Solutions",
-    airtimeValue: "1,000",
-    unitsDispatched: "1,250",
-    total: "1,250,000",
-  },
-  {
-    organization: "TechCorp Solutions",
-    airtimeValue: "5,000",
-    unitsDispatched: "4,200",
-    total: "21,000,000",
-  },
-  {
-    organization: "HealthPlus Network",
-    airtimeValue: "800",
-    unitsDispatched: "400",
-    total: "320,000",
-  },
-  {
-    organization: "RetailMax Ltd",
-    airtimeValue: "2,100",
-    unitsDispatched: "1,000",
-    total: "2,100,000",
-  },
-  {
-    organization: "EduLearn Platform",
-    airtimeValue: "1,500",
-    unitsDispatched: "1,900",
-    total: "2,850,000",
-  },
-  {
-    organization: "FinServe Corp",
-    airtimeValue: "950",
-    unitsDispatched: "950",
-    total: "902,500",
-  },
-  {
-    organization: "RetailMax Ltd",
-    airtimeValue: "3,200",
-    unitsDispatched: "1,600",
-    total: "5,120,000",
-  },
-];
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  GetAdminBalancesSummary,
+  GetAdminDashboardSummary,
+  GetAdminRechargeRequests,
+  GetAdminOrganizations,
+  GetAdminOrganizationBalances,
+  AutoProvisionAdminBalance,
+} from "@/app/api/actions/admin/admin";
 
 function MetricCard({ title, value, subtitle, icon, iconBg, iconColor }) {
   return (
@@ -228,7 +95,9 @@ function CardShell({
 }
 
 function StatusPill({ value }) {
-  if (value === "Failed" || value === "Low") {
+  const normalized = String(value || "").toUpperCase();
+
+  if (normalized === "FAILED" || normalized === "LOW") {
     return (
       <span className="inline-flex rounded-full bg-rose-600 px-4 py-1.5 text-sm font-semibold text-white">
         {value}
@@ -236,7 +105,7 @@ function StatusPill({ value }) {
     );
   }
 
-  if (value === "In Progress" || value === "Scheduled") {
+  if (normalized === "IN PROGRESS" || normalized === "SCHEDULED") {
     return (
       <span className="inline-flex rounded-full bg-gray-100 px-4 py-1.5 text-sm font-semibold text-gray-800">
         {value}
@@ -251,15 +120,515 @@ function StatusPill({ value }) {
   );
 }
 
+function ModalShell({ open, title, onClose, children }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-200 p-4">
+          <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 14 14">
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+const DEFAULT_TOPUP_FORM = {
+  units: "",
+  amountSpent: "",
+  notes: "",
+};
+
 export default function BulkAirtimeManagementPage() {
+  const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState("dispatchLogs");
+
+  const [balancesSummary, setBalancesSummary] = useState(null);
+  const [dashboardSummary, setDashboardSummary] = useState(null);
+  const [organizations, setOrganizations] = useState([]);
+  const [rechargeRequests, setRechargeRequests] = useState([]);
+  const [airtimeBalanceRows, setAirtimeBalanceRows] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [loadingBalances, setLoadingBalances] = useState(false);
+
+  const [pageError, setPageError] = useState("");
+  const [balancesError, setBalancesError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  const [selectedOrganization, setSelectedOrganization] = useState(null);
+  const [topupForm, setTopupForm] = useState(DEFAULT_TOPUP_FORM);
+  const [modalError, setModalError] = useState("");
+  const [submittingTopup, setSubmittingTopup] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    fetchPageData();
+  }, [isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    if (activeTab !== "organizationBalances") return;
+    if (!organizations.length) return;
+    if (airtimeBalanceRows.length > 0) return;
+
+    fetchOrganizationAirtimeBalances();
+  }, [activeTab, isClient, organizations]);
+
+  async function fetchPageData() {
+    try {
+      setLoading(true);
+      setPageError("");
+      setSuccessMessage("");
+      setBalancesError("");
+
+      const [
+        balancesResult,
+        dashboardResult,
+        rechargeResult,
+        organizationsResult,
+      ] = await Promise.allSettled([
+        GetAdminBalancesSummary(),
+        GetAdminDashboardSummary(),
+        GetAdminRechargeRequests("page=1&page_size=100"),
+        GetAdminOrganizations("limit=200"),
+      ]);
+
+      if (balancesResult.status === "fulfilled") {
+        setBalancesSummary(balancesResult.value?.data || null);
+      } else {
+        setBalancesSummary(null);
+      }
+
+      if (dashboardResult.status === "fulfilled") {
+        setDashboardSummary(dashboardResult.value?.data || null);
+      } else {
+        setDashboardSummary(null);
+      }
+
+      if (rechargeResult.status === "fulfilled") {
+        setRechargeRequests(
+          rechargeResult.value?.data ||
+            rechargeResult.value?.items ||
+            rechargeResult.value?.recharges ||
+            []
+        );
+      } else {
+        setRechargeRequests([]);
+      }
+
+      if (organizationsResult.status === "fulfilled") {
+        setOrganizations(organizationsResult.value?.data || []);
+      } else {
+        setOrganizations([]);
+      }
+
+      if (
+        balancesResult.status === "rejected" &&
+        dashboardResult.status === "rejected" &&
+        rechargeResult.status === "rejected" &&
+        organizationsResult.status === "rejected"
+      ) {
+        setPageError("Failed to load airtime management data.");
+      }
+    } catch (err) {
+      console.error("Failed to load airtime page:", err);
+      setPageError("Failed to load airtime management data.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchOrganizationAirtimeBalances() {
+    try {
+      setLoadingBalances(true);
+      setBalancesError("");
+
+      const results = await Promise.allSettled(
+        organizations.map((org) =>
+          GetAdminOrganizationBalances(org.external_id, "AIRTIME")
+        )
+      );
+
+      const rows = organizations.map((org, index) => {
+        const result = results[index];
+
+        let balance = 0;
+
+        if (result?.status === "fulfilled") {
+          const payload = result.value?.data ?? result.value ?? null;
+
+          if (Array.isArray(payload)) {
+            balance = payload.reduce(
+              (sum, item) => sum + Number(item?.units || item?.balance || 0),
+              0
+            );
+          } else if (Array.isArray(payload?.accounts)) {
+            balance = payload.accounts.reduce(
+              (sum, item) => sum + Number(item?.units || item?.balance || 0),
+              0
+            );
+          } else if (typeof payload?.balance !== "undefined") {
+            balance = Number(payload.balance || 0);
+          } else if (typeof payload?.total_balance !== "undefined") {
+            balance = Number(payload.total_balance || 0);
+          } else if (typeof payload?.units !== "undefined") {
+            balance = Number(payload.units || 0);
+          }
+        }
+
+        return {
+          id: org.external_id,
+          organization: org.name,
+          organizationId: org.external_id,
+          currentBalance: balance,
+          threshold: 0,
+          status: balance <= 0 ? "Low" : "Healthy",
+        };
+      });
+
+      setAirtimeBalanceRows(rows);
+    } catch (err) {
+      console.error("Failed to load organization airtime balances:", err);
+      setAirtimeBalanceRows([]);
+      setBalancesError(
+        err?.response?.data?.error ||
+          "Failed to load organization airtime balances."
+      );
+    } finally {
+      setLoadingBalances(false);
+    }
+  }
+
+  function normalizeService(item) {
+    const raw = String(
+      item?.service ||
+        item?.transaction_type ||
+        item?.type ||
+        item?.module ||
+        item?.package ||
+        ""
+    )
+      .trim()
+      .toUpperCase();
+
+    if (!raw) return "";
+    if (raw.includes("AIRTIME")) return "AIRTIME";
+    if (raw.includes("SMS") || raw.includes("PERSMS")) return "SMS";
+    if (raw.includes("DATA") || raw.includes("GB") || raw.includes("MB"))
+      return "DATA";
+
+    return raw;
+  }
+
+  function getRechargeDate(item) {
+    return (
+      item?.created_at ||
+      item?.createdat ||
+      item?.updated_at ||
+      item?.updatedat ||
+      item?.date ||
+      null
+    );
+  }
+
+  function getRechargeUnits(item) {
+    return Number(item?.units ?? item?.quantity ?? item?.amount ?? 0);
+  }
+
+  function getRechargeCashValue(item) {
+    return Number(
+      item?.amount_spent ??
+        item?.amountSpent ??
+        item?.amount ??
+        item?.cash_value ??
+        item?.cashValue ??
+        item?.cost ??
+        item?.price ??
+        item?.total_amount ??
+        0
+    );
+  }
+
+  function getRechargeStatus(item) {
+    return String(item?.status || item?.status_code || "APPROVED").toUpperCase();
+  }
+
+  function getRechargeAdmin(item) {
+    return item?.created_by || item?.createdby || item?.updated_by || "Admin";
+  }
+
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString();
+  }
+
+  function formatCurrency(value) {
+    return Number(value || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function formatDate(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-CA");
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function openTopupModal(org) {
+    setSelectedOrganization(org);
+    setTopupForm(DEFAULT_TOPUP_FORM);
+    setModalError("");
+    setIsTopUpOpen(true);
+  }
+
+  function closeTopupModal() {
+    if (submittingTopup) return;
+    setSelectedOrganization(null);
+    setTopupForm(DEFAULT_TOPUP_FORM);
+    setModalError("");
+    setIsTopUpOpen(false);
+  }
+
+  async function handleTopupSubmit(e) {
+    e.preventDefault();
+    setModalError("");
+
+    if (!selectedOrganization?.organizationId) {
+      setModalError("Organization is required.");
+      return;
+    }
+
+    const units = Number(topupForm.units);
+    const amountSpent = Number(topupForm.amountSpent);
+
+    if (!Number.isFinite(units) || units <= 0) {
+      setModalError("Units must be greater than zero.");
+      return;
+    }
+
+    if (!Number.isFinite(amountSpent) || amountSpent <= 0) {
+      setModalError("Amount spent must be greater than zero.");
+      return;
+    }
+
+    try {
+      setSubmittingTopup(true);
+
+      await AutoProvisionAdminBalance({
+        org_id: selectedOrganization.organizationId,
+        organization_id: selectedOrganization.organizationId,
+        application_id: selectedOrganization.organizationId,
+        service: "AIRTIME",
+        package: "AIRTIME",
+        units,
+        amount_spent: amountSpent,
+        amount: amountSpent,
+        notes: topupForm.notes?.trim() || "",
+        reason: topupForm.notes?.trim() || "",
+      });
+
+      setSuccessMessage("Airtime provisioned successfully.");
+      closeTopupModal();
+      await fetchPageData();
+      await fetchOrganizationAirtimeBalances();
+    } catch (err) {
+      console.error("Failed to provision airtime:", err);
+      setModalError(
+        err?.response?.data?.error || "Failed to provision airtime."
+      );
+    } finally {
+      setSubmittingTopup(false);
+    }
+  }
+
+  const organizationsByExternalId = useMemo(() => {
+    const map = {};
+    (organizations || []).forEach((org) => {
+      if (org?.external_id) {
+        map[String(org.external_id)] = org;
+      }
+      if (org?.id) {
+        map[String(org.id)] = org;
+      }
+    });
+    return map;
+  }, [organizations]);
+
+  const airtimeRequests = useMemo(() => {
+    return (Array.isArray(rechargeRequests) ? rechargeRequests : []).filter(
+      (item) => normalizeService(item) === "AIRTIME"
+    );
+  }, [rechargeRequests]);
+
+  const topupsTodayCount = useMemo(() => {
+    const today = new Date();
+    return airtimeRequests.filter((item) => {
+      const value = getRechargeDate(item);
+      if (!value) return false;
+      const d = new Date(value);
+      return (
+        !Number.isNaN(d.getTime()) &&
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth() === today.getMonth() &&
+        d.getDate() === today.getDate()
+      );
+    }).length;
+  }, [airtimeRequests]);
+
+  const lowBalanceCount = useMemo(() => {
+    return airtimeBalanceRows.filter((item) => Number(item.currentBalance || 0) <= 0)
+      .length;
+  }, [airtimeBalanceRows]);
+
+  const dispatchRows = useMemo(() => {
+    return airtimeRequests
+      .map((item, index) => {
+        const orgKey =
+          item?.application_id ||
+          item?.organization_external_id ||
+          item?.org_id ||
+          item?.organization_id ||
+          "";
+
+        const org = organizationsByExternalId[String(orgKey)] || null;
+
+        return {
+          id: item?.id || item?.request_id || `AT-${index + 1}`,
+          organization:
+            item?.organization_name ||
+            item?.organization ||
+            org?.name ||
+            orgKey ||
+            "—",
+          recipient: item?.msisdn || item?.recipient || "—",
+          amount: formatNumber(getRechargeUnits(item)),
+          status:
+            getRechargeStatus(item) === "FAILED" ? "Failed" : "Success",
+          provider: item?.provider || item?.network || "—",
+          timestamp: formatDateTime(getRechargeDate(item)),
+        };
+      })
+      .sort((a, b) => {
+        const left = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const right = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return right - left;
+      });
+  }, [airtimeRequests, organizationsByExternalId]);
+
+  const scheduledCampaignRows = useMemo(() => {
+    const grouped = {};
+
+    airtimeRequests.forEach((item, index) => {
+      const orgKey =
+        item?.application_id ||
+        item?.organization_external_id ||
+        item?.org_id ||
+        item?.organization_id ||
+        "";
+
+      const org = organizationsByExternalId[String(orgKey)] || null;
+      const dateOnly = formatDate(getRechargeDate(item));
+      const key = `${orgKey}-${dateOnly}`;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          id: `ATC-${index + 1}`,
+          organization: org?.name || orgKey || "—",
+          name: "Airtime Provision Batch",
+          recipients: 0,
+          totalAmount: 0,
+          status: "Completed",
+          date: dateOnly,
+        };
+      }
+
+      grouped[key].recipients += 1;
+      grouped[key].totalAmount += getRechargeUnits(item);
+
+      if (getRechargeStatus(item) === "FAILED") {
+        grouped[key].status = "Failed";
+      }
+    });
+
+    return Object.values(grouped)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 20);
+  }, [airtimeRequests, organizationsByExternalId]);
+
+  const usageRows = useMemo(() => {
+    const grouped = {};
+
+    airtimeRequests.forEach((item) => {
+      const orgKey =
+        item?.application_id ||
+        item?.organization_external_id ||
+        item?.org_id ||
+        item?.organization_id ||
+        "";
+
+      const org = organizationsByExternalId[String(orgKey)] || null;
+      const label = String(item?.package || item?.module || "AIRTIME");
+      const key = `${orgKey}-${label}`;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          organization: org?.name || orgKey || "—",
+          airtimeValue: label,
+          unitsDispatched: 0,
+          total: 0,
+        };
+      }
+
+      grouped[key].unitsDispatched += getRechargeUnits(item);
+      grouped[key].total += getRechargeCashValue(item);
+    });
+
+    return Object.values(grouped).sort((a, b) => b.total - a.total);
+  }, [airtimeRequests, organizationsByExternalId]);
 
   const metrics = useMemo(
     () => [
       {
-        title: "Airtime Distributed Today",
-        value: "4.2M",
-        subtitle: "↑ 10% from yesterday",
+        title: "Total Airtime Balance",
+        value: formatNumber(balancesSummary?.total_airtime_units),
+        subtitle: "",
         iconBg: "#dbeafe",
         iconColor: "#2563eb",
         icon: (
@@ -275,9 +644,9 @@ export default function BulkAirtimeManagementPage() {
         ),
       },
       {
-        title: "Delivery Success Rate",
-        value: "98.5%",
-        subtitle: "↑ 2% from last week",
+        title: "Active Organizations",
+        value: formatNumber(dashboardSummary?.active_organizations),
+        subtitle: "",
         iconBg: "#dcfce7",
         iconColor: "#16a34a",
         icon: (
@@ -300,8 +669,8 @@ export default function BulkAirtimeManagementPage() {
         ),
       },
       {
-        title: "Scheduled Dispatches",
-        value: "12",
+        title: "Recent Airtime Top Ups",
+        value: formatNumber(topupsTodayCount),
         subtitle: "",
         iconBg: "#f3e8ff",
         iconColor: "#9333ea",
@@ -327,7 +696,7 @@ export default function BulkAirtimeManagementPage() {
       },
       {
         title: "Low Balance Alerts",
-        value: "3",
+        value: formatNumber(lowBalanceCount),
         subtitle: "",
         iconBg: "#fee2e2",
         iconColor: "#ef4444",
@@ -356,319 +725,516 @@ export default function BulkAirtimeManagementPage() {
         ),
       },
     ],
-    []
+    [balancesSummary, dashboardSummary, topupsTodayCount, lowBalanceCount]
   );
+
+  if (!isClient) return null;
 
   return (
     <div className="ml-0 min-h-screen bg-gray-50 p-6 md:ml-64">
       <div className="w-full">
-        <div className="mb-8">
-          <h1 className="text-[34px] font-semibold leading-tight text-gray-900">
-            Bulk Airtime Management
-          </h1>
-          <p className="mt-2 text-[16px] text-gray-600">
-            Manage airtime distribution and wallet balances
-          </p>
-        </div>
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[34px] font-semibold leading-tight text-gray-900">
+              Bulk Airtime Management
+            </h1>
+            <p className="mt-2 text-[16px] text-gray-600">
+              Manage airtime distribution and wallet balances
+            </p>
+          </div>
 
-        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {metrics.map((metric) => (
-            <MetricCard key={metric.title} {...metric} />
-          ))}
-        </div>
-
-        <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        {activeTab === "dispatchLogs" && (
-          <CardShell
-            title="Airtime Dispatch Logs"
-            rightAction={
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  Filter
-                </button>
-
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M7 10L12 15L17 10"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 15V3"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  Export
-                </button>
-              </div>
-            }
+          <button
+            type="button"
+            onClick={fetchPageData}
+            className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
           >
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Transaction ID
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Organization
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Recipient
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Amount
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Status
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Provider
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Timestamp
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dispatchLogsData.map((item) => (
-                    <tr key={item.id}>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
-                        {item.id}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                        {item.organization}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                        {item.recipient}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.amount}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm">
-                        <StatusPill value={item.status} />
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                        {item.provider}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                        {item.timestamp}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            Refresh
+          </button>
+        </div>
+
+        {pageError ? (
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {pageError}
+          </div>
+        ) : null}
+
+        {successMessage ? (
+          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {successMessage}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
+          </div>
+        ) : (
+          <>
+            <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+              {metrics.map((metric) => (
+                <MetricCard key={metric.title} {...metric} />
+              ))}
             </div>
-          </CardShell>
-        )}
 
-        {activeTab === "organizationBalances" && (
-          <CardShell title="Airtime Wallet Balances">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Organization
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Current Balance
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Threshold
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Status
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-right text-sm font-semibold text-gray-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {walletBalancesData.map((item) => (
-                    <tr key={item.organization}>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.organization}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.currentBalance}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                        {item.threshold}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm">
-                        <StatusPill value={item.status} />
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-right text-sm">
-                        <button
-                          type="button"
-                          className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                        >
-                          Top Up
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardShell>
-        )}
+            <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {activeTab === "scheduledCampaigns" && (
-          <CardShell title="Scheduled Airtime Campaigns">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Campaign ID
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Organization
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Name
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Recipients
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Total Amount
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Status
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scheduledCampaignsData.map((item) => (
-                    <tr key={item.id}>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
-                        {item.id}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                        {item.organization}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                        {item.name}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                        {item.recipients}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.totalAmount}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm">
-                        <StatusPill value={item.status} />
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                        {item.date}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardShell>
-        )}
+            {activeTab === "dispatchLogs" && (
+              <CardShell
+                title="Airtime Dispatch Logs"
+                rightAction={
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Filter
+                    </button>
 
-        {activeTab === "usage" && (
-          <CardShell
-            title="Airtime Usage Data"
-            headerClassName="items-center"
-            rightAction={
-              <div className="flex flex-wrap items-center gap-4">
-                <select className="h-12 rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 outline-none focus:border-gray-400">
-                  <option>Last 30 Days</option>
-                  <option>Last 7 Days</option>
-                  <option>This Month</option>
-                </select>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-500">
-                    Total Usage
-                  </p>
-                  <p className="text-[20px] font-semibold leading-none text-gray-900">
-                    33,542,500
-                  </p>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M7 10L12 15L17 10"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M12 15V3"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Export
+                    </button>
+                  </div>
+                }
+              >
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Transaction ID
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Organization
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Recipient
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Amount
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Status
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Provider
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Timestamp
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dispatchRows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={7}
+                            className="px-6 py-10 text-center text-sm text-gray-500"
+                          >
+                            No airtime dispatch logs found
+                          </td>
+                        </tr>
+                      ) : (
+                        dispatchRows.map((item) => (
+                          <tr key={item.id}>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
+                              {item.id}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                              {item.organization}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                              {item.recipient}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {item.amount}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm">
+                              <StatusPill value={item.status} />
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                              {item.provider}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                              {item.timestamp}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            }
-          >
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Organization
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Airtime Value
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Units Dispatched
-                    </th>
-                    <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usageData.map((item, index) => (
-                    <tr key={`${item.organization}-${index}`}>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.organization}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.airtimeValue}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                        {item.unitsDispatched}
-                      </td>
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.total}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardShell>
+              </CardShell>
+            )}
+
+            {activeTab === "organizationBalances" && (
+              <CardShell title="Airtime Wallet Balances">
+                {balancesError ? (
+                  <div className="px-6 py-4 text-sm text-amber-700">
+                    {balancesError}
+                  </div>
+                ) : null}
+
+                {loadingBalances ? (
+                  <div className="flex justify-center py-12">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Organization
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Current Balance
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Threshold
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Status
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-right text-sm font-semibold text-gray-600">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {airtimeBalanceRows.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              className="px-6 py-10 text-center text-sm text-gray-500"
+                            >
+                              No airtime balance rows found
+                            </td>
+                          </tr>
+                        ) : (
+                          airtimeBalanceRows.map((item) => (
+                            <tr key={item.id}>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                                {item.organization}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                                {formatNumber(item.currentBalance)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                                {formatNumber(item.threshold)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm">
+                                <StatusPill value={item.status} />
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-right text-sm">
+                                <button
+                                  type="button"
+                                  onClick={() => openTopupModal(item)}
+                                  className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                                >
+                                  Top Up
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardShell>
+            )}
+
+            {activeTab === "scheduledCampaigns" && (
+              <CardShell title="Scheduled Airtime Campaigns">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Campaign ID
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Organization
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Name
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Recipients
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Total Amount
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Status
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Date
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scheduledCampaignRows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={7}
+                            className="px-6 py-10 text-center text-sm text-gray-500"
+                          >
+                            No recent airtime provision batches found
+                          </td>
+                        </tr>
+                      ) : (
+                        scheduledCampaignRows.map((item) => (
+                          <tr key={item.id}>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
+                              {item.id}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                              {item.organization}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                              {item.name}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                              {formatNumber(item.recipients)}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {formatNumber(item.totalAmount)}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm">
+                              <StatusPill value={item.status} />
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                              {item.date}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardShell>
+            )}
+
+            {activeTab === "usage" && (
+              <CardShell
+                title="Airtime Usage Data"
+                headerClassName="items-center"
+                rightAction={
+                  <div className="flex flex-wrap items-center gap-4">
+                    <select className="h-12 rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 outline-none focus:border-gray-400">
+                      <option>Last 30 Days</option>
+                      <option>Last 7 Days</option>
+                      <option>This Month</option>
+                    </select>
+
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-500">
+                        Total Usage
+                      </p>
+                      <p className="text-[20px] font-semibold leading-none text-gray-900">
+                        {formatCurrency(
+                          usageRows.reduce(
+                            (sum, item) => sum + Number(item.total || 0),
+                            0
+                          )
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                }
+              >
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Organization
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Airtime Value
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Units Dispatched
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usageRows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="px-6 py-10 text-center text-sm text-gray-500"
+                          >
+                            No airtime usage data found
+                          </td>
+                        </tr>
+                      ) : (
+                        usageRows.map((item, index) => (
+                          <tr key={`${item.organization}-${index}`}>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {item.organization}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {item.airtimeValue}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                              {formatNumber(item.unitsDispatched)}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {formatCurrency(item.total)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardShell>
+            )}
+          </>
         )}
+
+        <ModalShell
+          open={isTopUpOpen}
+          title="Top Up Airtime Wallet"
+          onClose={closeTopupModal}
+        >
+          {modalError ? (
+            <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {modalError}
+            </div>
+          ) : null}
+
+          <form onSubmit={handleTopupSubmit} className="space-y-4">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+              <div className="font-semibold text-gray-900">
+                {selectedOrganization?.organization || "—"}
+              </div>
+              <div className="mt-1">
+                Current balance: {formatNumber(selectedOrganization?.currentBalance)} units
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-900">
+                Units
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={topupForm.units}
+                onChange={(e) =>
+                  setTopupForm((prev) => ({
+                    ...prev,
+                    units: e.target.value,
+                  }))
+                }
+                className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
+                placeholder="Enter airtime units"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-900">
+                Amount Spent
+              </label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={topupForm.amountSpent}
+                onChange={(e) =>
+                  setTopupForm((prev) => ({
+                    ...prev,
+                    amountSpent: e.target.value,
+                  }))
+                }
+                className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
+                placeholder="Enter amount spent"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-900">
+                Notes
+              </label>
+              <textarea
+                rows={3}
+                value={topupForm.notes}
+                onChange={(e) =>
+                  setTopupForm((prev) => ({
+                    ...prev,
+                    notes: e.target.value,
+                  }))
+                }
+                className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
+                placeholder="Optional notes"
+              />
+            </div>
+
+            <div className="flex space-x-2 pt-4">
+              <button
+                type="button"
+                onClick={closeTopupModal}
+                disabled={submittingTopup}
+                className="w-full rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={submittingTopup}
+                className={`w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white ${
+                  submittingTopup
+                    ? "cursor-not-allowed bg-gray-400"
+                    : "bg-orange-500 hover:bg-orange-600"
+                }`}
+              >
+                {submittingTopup ? "Provisioning..." : "Top Up"}
+              </button>
+            </div>
+          </form>
+        </ModalShell>
       </div>
     </div>
   );

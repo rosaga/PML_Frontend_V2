@@ -5,8 +5,20 @@ import { useParams } from "next/navigation";
 import {
   GetAdminOrganizationProfile,
   GetAdminOrganizationDataDispatches,
+  GetAdminOrganizationRates,
+  CreateAdminOrganizationRate,
+  UpdateAdminOrganizationRate,
+  DeleteAdminOrganizationRate,
+  GetAdminOrganizationRecharges,
+  GetAdminOrganizationRevenue,
 } from "@/app/api/actions/admin/admin";
 import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
+
+const DEFAULT_RATE_FORM = {
+  service: "",
+  rate: "",
+  currency: "KES",
+};
 
 const OrganizationDetailPage = () => {
   const params = useParams();
@@ -30,10 +42,22 @@ const OrganizationDetailPage = () => {
   const [profile, setProfile] = useState(null);
   const [dispatches, setDispatches] = useState([]);
   const [dispatchMeta, setDispatchMeta] = useState(null);
+  const [recharges, setRecharges] = useState(null);
+  const [revenue, setRevenue] = useState(null);
 
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingDispatches, setLoadingDispatches] = useState(false);
+  const [loadingRecharges, setLoadingRecharges] = useState(false);
+  const [loadingRates, setLoadingRates] = useState(false);
+  const [loadingRevenue, setLoadingRevenue] = useState(false);
+
   const [error, setError] = useState("");
+  const [activityError, setActivityError] = useState("");
+  const [rates, setRates] = useState([]);
+  const [savingRate, setSavingRate] = useState(false);
+  const [ratesError, setRatesError] = useState("");
+  const [editingRateId, setEditingRateId] = useState(null);
+  const [rateForm, setRateForm] = useState(DEFAULT_RATE_FORM);
 
   useEffect(() => {
     setIsClient(true);
@@ -57,17 +81,32 @@ const OrganizationDetailPage = () => {
     fetchDispatches();
   }, [isClient, orgId, activeTab]);
 
+  useEffect(() => {
+    if (!isClient || !orgId) return;
+    if (activeTab !== "activity") return;
+    fetchRecharges();
+  }, [isClient, orgId, activeTab]);
+
+  useEffect(() => {
+    if (!isClient || !orgId) return;
+    if (activeTab !== "settings") return;
+    fetchRates();
+    fetchRevenue();
+  }, [isClient, orgId, activeTab]);
+
   async function fetchProfile() {
     try {
       setLoadingProfile(true);
       setError("");
+
       const res = await GetAdminOrganizationProfile(orgId);
-      setProfile(res);
+      setProfile(res || null);
     } catch (err) {
       console.error("Failed to load organization profile:", err);
       setError(
         err?.response?.data?.error || "Failed to load organization profile."
       );
+      setProfile(null);
     } finally {
       setLoadingProfile(false);
     }
@@ -76,17 +115,142 @@ const OrganizationDetailPage = () => {
   async function fetchDispatches() {
     try {
       setLoadingDispatches(true);
+
       const res = await GetAdminOrganizationDataDispatches(
         orgId,
         "page=1&page_size=20"
       );
+
       setDispatches(res?.data || []);
       setDispatchMeta(res?.pagination || null);
     } catch (err) {
       console.error("Failed to load dispatches:", err);
       setDispatches([]);
+      setDispatchMeta(null);
     } finally {
       setLoadingDispatches(false);
+    }
+  }
+
+  async function fetchRecharges() {
+    try {
+      setLoadingRecharges(true);
+      setActivityError("");
+
+      const res = await GetAdminOrganizationRecharges(orgId);
+      setRecharges(res || null);
+    } catch (err) {
+      console.error("Failed to load organization recharges:", err);
+      setRecharges(null);
+      setActivityError(
+        err?.response?.data?.error || "Failed to load organization activity."
+      );
+    } finally {
+      setLoadingRecharges(false);
+    }
+  }
+
+  async function fetchRates() {
+    try {
+      setLoadingRates(true);
+      setRatesError("");
+
+      const res = await GetAdminOrganizationRates(orgId);
+      setRates(res?.data || []);
+    } catch (err) {
+      console.error("Failed to load organization rates:", err);
+      setRates([]);
+      setRatesError(
+        err?.response?.data?.error || "Failed to load organization rates."
+      );
+    } finally {
+      setLoadingRates(false);
+    }
+  }
+
+  async function fetchRevenue() {
+    try {
+      setLoadingRevenue(true);
+
+      const res = await GetAdminOrganizationRevenue(orgId);
+      setRevenue(res?.data || res || null);
+    } catch (err) {
+      console.error("Failed to load organization revenue:", err);
+      setRevenue(null);
+    } finally {
+      setLoadingRevenue(false);
+    }
+  }
+
+  function resetRateForm() {
+    setEditingRateId(null);
+    setRateForm(DEFAULT_RATE_FORM);
+    setRatesError("");
+  }
+
+  function handleEditRate(row) {
+    setEditingRateId(row.id);
+    setRateForm({
+      service: row.service || "",
+      rate: row.rate ?? "",
+      currency: row.currency || "KES",
+    });
+    setRatesError("");
+  }
+
+  async function handleDeleteRate(row) {
+    const confirmed = window.confirm(
+      `Delete rate for ${row.service_label || row.service}?`
+    );
+    if (!confirmed) return;
+
+    try {
+      setRatesError("");
+      await DeleteAdminOrganizationRate(orgId, row.id);
+      if (editingRateId === row.id) resetRateForm();
+      await Promise.allSettled([fetchRates(), fetchRevenue()]);
+    } catch (err) {
+      console.error("Failed to delete rate:", err);
+      setRatesError(err?.response?.data?.error || "Failed to delete rate.");
+    }
+  }
+
+  async function handleSaveRate() {
+    try {
+      setSavingRate(true);
+      setRatesError("");
+
+      const parsedRate = Number(rateForm.rate);
+
+      if (!rateForm.service) {
+        setRatesError("Please select a service.");
+        return;
+      }
+
+      if (!Number.isFinite(parsedRate) || parsedRate <= 0) {
+        setRatesError("Please enter a valid rate greater than zero.");
+        return;
+      }
+
+      const payload = {
+        service: rateForm.service,
+        rate: parsedRate,
+        currency: rateForm.currency || "KES",
+      };
+
+      if (editingRateId) {
+        await UpdateAdminOrganizationRate(orgId, editingRateId, payload);
+      } else {
+        await CreateAdminOrganizationRate(orgId, payload);
+      }
+
+      resetRateForm();
+      await Promise.allSettled([fetchRates(), fetchRevenue()]);
+    } catch (err) {
+      console.error("Failed to save rate:", err);
+      setRatesError(err?.response?.data?.error || "Failed to save rate.");
+    } finally {
+      setSavingRate(false);
     }
   }
 
@@ -107,94 +271,117 @@ const OrganizationDetailPage = () => {
     const services = [];
 
     if (profile?.sms && !profile?.sms?.error) services.push("Bulk SMS");
-    if (Number(profile?.whatsapp_balance || profile?.whatsapp?.balance || 0) > 0)
-      services.push("WhatsApp Business");
     if (accounts.length > 0 || Number(profile?.total_data_units || 0) > 0)
       services.push("Bulk Data");
     if (Number(profile?.airtime_balance || 0) > 0) services.push("Bulk Airtime");
-    if (organization?.ussd_enabled) services.push("USSD Flows");
 
     return services;
-  }, [accounts, profile, organization]);
+  }, [accounts, profile]);
 
   const serviceRates = useMemo(() => {
-    const rows = [];
+    return (Array.isArray(rates) ? rates : []).map((row) => ({
+      id: row.id,
+      service: row.service,
+      serviceLabel: row.service_label || row.service,
+      rate: row.rate,
+      currency: row.currency || "KES",
+      unit: row.unit || "—",
+      rateDisplay: `${row.currency || "KES"} ${Number(row.rate || 0).toLocaleString(
+        undefined,
+        {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      )}`,
+    }));
+  }, [rates]);
 
-    if (enabledServices.includes("Bulk SMS")) {
-      rows.push({
-        service: "Bulk SMS",
-        rate: "KES 0.80",
-        unit: "per SMS",
-      });
-    }
+  const revenueServices = useMemo(() => {
+    const services = Array.isArray(revenue?.services) ? revenue.services : [];
 
-    if (enabledServices.includes("WhatsApp Business")) {
-      rows.push({
-        service: "WhatsApp Business",
-        rate: "KES 1.20",
-        unit: "per message",
-      });
-    }
-
-    if (enabledServices.includes("Bulk Data")) {
-      rows.push({
-        service: "Bulk Data",
-        rate: "KES 5.00",
-        unit: "per GB",
-      });
-    }
-
-    if (enabledServices.includes("Bulk Airtime")) {
-      rows.push({
-        service: "Bulk Airtime",
-        rate: "KES 1.00",
-        unit: "per unit",
-      });
-    }
-
-    return rows;
-  }, [enabledServices]);
+    return services.map((row) => ({
+      service: row.service,
+      serviceLabel: row.service_label || row.service,
+      revenue: Number(row.revenue || 0),
+      rechargeCount: Number(row.recharge_count || 0),
+      rechargeUnits: Number(row.recharge_units || 0),
+      rate: Number(row.rate || 0),
+      currency: row.currency || revenue?.currency || "KES",
+      unit: row.unit || "—",
+    }));
+  }, [revenue]);
 
   const recentActivity = useMemo(() => {
-    const activities = [];
+    const activityItems = [];
 
-    if (profile?.airtime_balance) {
-      activities.push({
-        title: "Balance top-up",
-        description: `Current airtime wallet balance is ${formatNumber(
-          profile.airtime_balance
-        )}`,
-        time: relativeTime(organization?.updated_at || new Date().toISOString()),
+    const dataRecharges = Array.isArray(recharges?.data_recharges)
+      ? recharges.data_recharges
+      : [];
+
+    const smsRecharges = Array.isArray(recharges?.sms_recharges)
+      ? recharges.sms_recharges
+      : [];
+
+    dataRecharges.forEach((item, index) => {
+      activityItems.push({
+        id: `data-${item?.id || index}`,
+        title: "Data Recharge",
+        description: `${formatNumber(item?.units)} units added`,
+        timeValue: item?.created_at || item?.createdAt,
+        time: relativeTime(item?.created_at || item?.createdAt),
+        status: item?.status || "Approved",
       });
-    }
-
-    if (dispatches?.[0]) {
-      activities.push({
-        title: "Campaign launched",
-        description:
-          dispatches[0]?.bundle_amount || dispatches[0]?.bundleAmount
-            ? `Bundle dispatch of ${
-                dispatches[0]?.bundle_amount || dispatches[0]?.bundleAmount
-              } recorded`
-            : "A recent dispatch was recorded",
-        time: relativeTime(dispatches[0]?.created_at || dispatches[0]?.createdAt),
-      });
-    }
-
-    activities.push({
-      title: "Template approved",
-      description: enabledServices.includes("WhatsApp Business")
-        ? "WhatsApp template approved"
-        : "Organization profile updated",
-      time: relativeTime(organization?.created_at || new Date().toISOString()),
     });
 
-    return activities.slice(0, 3);
-  }, [dispatches, profile, organization, enabledServices]);
+    smsRecharges.forEach((item, index) => {
+      activityItems.push({
+        id: `sms-${item?.id || index}`,
+        title: "SMS Recharge",
+        description: `${formatNumber(item?.units)} SMS units added`,
+        timeValue: item?.createdat || item?.created_at || item?.CreatedAt,
+        time: relativeTime(
+          item?.createdat || item?.created_at || item?.CreatedAt
+        ),
+        status: item?.status_code || item?.status || "Approved",
+      });
+    });
+
+    dispatches.forEach((item, index) => {
+      activityItems.push({
+        id: `dispatch-${item?.id || index}`,
+        title: "Dispatch Recorded",
+        description:
+          item?.bundle_amount || item?.bundleAmount
+            ? `Dispatch of ${item?.bundle_amount || item?.bundleAmount} recorded`
+            : item?.status
+            ? `Dispatch status: ${item.status}`
+            : "A dispatch record was created",
+        timeValue: item?.created_at || item?.createdAt,
+        time: relativeTime(item?.created_at || item?.createdAt),
+        status: item?.status || "Completed",
+      });
+    });
+
+    return activityItems
+      .sort((a, b) => {
+        const timeA = a.timeValue ? new Date(a.timeValue).getTime() : 0;
+        const timeB = b.timeValue ? new Date(b.timeValue).getTime() : 0;
+        return timeB - timeA;
+      })
+      .slice(0, 8);
+  }, [recharges, dispatches]);
 
   function formatNumber(value) {
     const num = Number(value || 0);
     return Number.isFinite(num) ? num.toLocaleString() : "0";
+  }
+
+  function formatCurrency(value, currency = "KES") {
+    const num = Number(value || 0);
+    return `${currency} ${num.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   }
 
   function formatDate(value) {
@@ -230,17 +417,17 @@ const OrganizationDetailPage = () => {
   }
 
   function getStatusPill(status) {
-    const normalized = (status || "").toUpperCase();
+    const normalized = String(status || "").toUpperCase();
 
     if (
-      ["ACTIVE", "SUCCESS", "COMPLETED", "HEALTHY", "VERIFIED"].includes(
+      ["ACTIVE", "SUCCESS", "COMPLETED", "HEALTHY", "VERIFIED", "APPROVED"].includes(
         normalized
       )
     ) {
       return "bg-[#02051d] text-white";
     }
 
-    if (["FAILED", "ERROR", "LOW", "INACTIVE"].includes(normalized)) {
+    if (["FAILED", "ERROR", "LOW", "INACTIVE", "REJECTED"].includes(normalized)) {
       return "bg-rose-600 text-white";
     }
 
@@ -359,29 +546,21 @@ const OrganizationDetailPage = () => {
       ),
     },
     {
-      label: "WhatsApp Balance",
-      value: formatNumber(profile?.whatsapp_balance || profile?.whatsapp?.balance),
+      label: "Messages Sent Today",
+      value: formatNumber(profile?.sms?.messages_sent_today),
       iconBg: "#f3e8ff",
       iconColor: "#9333ea",
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <rect
-            x="4"
-            y="4"
-            width="13"
-            height="16"
-            rx="2"
-            stroke="currentColor"
-            strokeWidth="1.7"
-          />
           <path
-            d="M17 8H20V16H17"
+            d="M4 6.8C4 5.11984 4 4.27976 4.32698 3.63803C4.6146 3.07354 5.07354 2.6146 5.63803 2.32698C6.27976 2 7.11984 2 8.8 2H15.2C16.8802 2 17.7202 2 18.362 2.32698C18.9265 2.6146 19.3854 3.07354 19.673 3.63803C20 4.27976 20 5.11984 20 6.8V12.2C20 13.8802 20 14.7202 19.673 15.362C19.3854 15.9265 18.9265 16.3854 18.362 16.673C17.7202 17 16.8802 17 15.2 17H9L4 21V6.8Z"
             stroke="currentColor"
             strokeWidth="1.7"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
           <path
-            d="M8 8H13"
+            d="M8 7H16M8 11H13"
             stroke="currentColor"
             strokeWidth="1.7"
             strokeLinecap="round"
@@ -409,9 +588,10 @@ const OrganizationDetailPage = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
+              onClick={fetchProfile}
               className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
             >
-              Edit Profile
+              Refresh Profile
             </button>
 
             <button
@@ -516,42 +696,9 @@ const OrganizationDetailPage = () => {
                     <span className="text-[16px]">{getContactEmail()}</span>
                   </div>
 
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M22 16.92V19.92C22.0001 20.1985 21.9419 20.474 21.8293 20.7288C21.7167 20.9836 21.5521 21.2122 21.346 21.4C21.1398 21.5878 20.8969 21.7306 20.6327 21.8192C20.3685 21.9078 20.0886 21.9403 19.811 21.914C16.731 21.579 13.7727 20.5261 11.171 18.84C8.75083 17.3017 6.69829 15.2492 5.16 12.829C3.46782 10.2151 2.41469 7.24117 2.086 4.14603C2.06099 3.86929 2.09417 3.59032 2.18341 3.32718C2.27266 3.06404 2.41598 2.82287 2.60407 2.6175C2.79216 2.41213 3.02098 2.24717 3.27601 2.13352C3.53104 2.01987 3.80708 1.96002 4.086 1.95803H7.086C7.57302 1.95324 8.04517 2.11679 8.424 2.42003C8.80283 2.72327 9.06421 3.14755 9.164 3.62403C9.35091 4.51285 9.63891 5.37747 10.024 6.20003C10.1592 6.48581 10.2128 6.80338 10.1785 7.11817C10.1441 7.43296 10.0232 7.73205 9.829 7.98203L8.559 9.25203C9.98127 11.7534 12.0537 13.8258 14.555 15.248L15.825 13.978C16.075 13.7838 16.3741 13.6629 16.6889 13.6285C17.0037 13.5942 17.3212 13.6478 17.607 13.783C18.4296 14.1681 19.2942 14.4561 20.183 14.643C20.6647 14.7438 21.0938 15.0107 21.3978 15.3966C21.7019 15.7825 21.8614 16.2637 21.849 16.758L22 16.92Z"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>
-                    <span className="text-[16px]">{getPhone()}</span>
-                  </div>
                 </div>
 
                 <div className="space-y-4 md:pl-8">
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M12 21C16 17 19 13.5 19 9.5C19 5.91015 15.866 3 12 3C8.13401 3 5 5.91015 5 9.5C5 13.5 8 17 12 21Z"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                        />
-                        <circle
-                          cx="12"
-                          cy="9.5"
-                          r="2.5"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                        />
-                      </svg>
-                    </span>
-                    <span className="text-[16px]">{getLocation()}</span>
-                  </div>
 
                   <div className="flex items-center gap-3 text-gray-700">
                     <span>
@@ -621,11 +768,7 @@ const OrganizationDetailPage = () => {
                   enabledServices.map((service) => (
                     <span
                       key={service}
-                      className={`inline-flex rounded-full px-4 py-1.5 text-sm font-semibold ${
-                        ["Bulk Airtime", "USSD Flows"].includes(service)
-                          ? "border border-gray-200 bg-white text-gray-900"
-                          : "bg-[#02051d] text-white"
-                      }`}
+                      className="inline-flex rounded-full bg-[#02051d] px-4 py-1.5 text-sm font-semibold text-white"
                     >
                       {service}
                     </span>
@@ -640,7 +783,7 @@ const OrganizationDetailPage = () => {
 
             <div className="mb-8 inline-flex rounded-full bg-gray-200 p-1">
               {[
-                { id: "campaigns", label: "Campaign History" },
+                { id: "campaigns", label: "Dispatch History" },
                 { id: "activity", label: "Activity Log" },
                 { id: "settings", label: "Settings" },
               ].map((tab) => {
@@ -667,7 +810,7 @@ const OrganizationDetailPage = () => {
               <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="border-b border-gray-200 px-6 py-5">
                   <h2 className="text-[22px] font-semibold text-gray-900">
-                    Campaign History
+                    Dispatch History
                   </h2>
                 </div>
 
@@ -681,19 +824,19 @@ const OrganizationDetailPage = () => {
                       <thead>
                         <tr>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Campaign ID
+                            Dispatch ID
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
                             Service
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Name
+                            Description
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
                             Date
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Messages Sent
+                            Volume
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
                             Status
@@ -707,7 +850,7 @@ const OrganizationDetailPage = () => {
                               colSpan={6}
                               className="px-6 py-10 text-center text-sm text-gray-500"
                             >
-                              No campaign history found
+                              No dispatch history found
                             </td>
                           </tr>
                         ) : (
@@ -718,14 +861,14 @@ const OrganizationDetailPage = () => {
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm">
                                 <span className="inline-flex rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-900">
-                                  {(item.service || "SMS").toUpperCase()}
+                                  {(item.service || "DATA").toUpperCase()}
                                 </span>
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
                                 {item.name ||
                                   item.campaign_name ||
                                   item.bundle_amount ||
-                                  "Campaign Dispatch"}
+                                  "Dispatch Record"}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
                                 {formatTableDate(item.created_at || item.createdAt)}
@@ -770,217 +913,472 @@ const OrganizationDetailPage = () => {
                   Recent Activity
                 </h2>
 
-                <div className="mt-8 space-y-6">
-                  {recentActivity.map((item, index) => (
-                    <div
-                      key={`${item.title}-${index}`}
-                      className="rounded-2xl bg-gray-50 px-4 py-5"
-                    >
-                      <div className="flex items-start gap-4">
-                        <span className="mt-2 h-3 w-3 rounded-full bg-blue-600" />
-                        <div>
-                          <p className="text-[16px] font-semibold text-gray-900">
-                            {item.title}
-                          </p>
-                          <p className="mt-1 text-[16px] text-gray-600">
-                            {item.description}
-                          </p>
-                          <p className="mt-2 text-sm text-gray-500">{item.time}</p>
-                        </div>
+                {activityError ? (
+                  <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    {activityError}
+                  </div>
+                ) : null}
+
+                {loadingRecharges ? (
+                  <div className="flex justify-center py-12">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
+                  </div>
+                ) : (
+                  <div className="mt-8 space-y-4">
+                    {recentActivity.length === 0 ? (
+                      <div className="rounded-2xl bg-gray-50 px-4 py-6 text-sm text-gray-500">
+                        No recent activity found
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ) : (
+                      recentActivity.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-2xl bg-gray-50 px-4 py-5"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4">
+                              <span className="mt-2 h-3 w-3 rounded-full bg-blue-600" />
+                              <div>
+                                <p className="text-[16px] font-semibold text-gray-900">
+                                  {item.title}
+                                </p>
+                                <p className="mt-1 text-[16px] text-gray-600">
+                                  {item.description}
+                                </p>
+                                <p className="mt-2 text-sm text-gray-500">
+                                  {item.time}
+                                </p>
+                              </div>
+                            </div>
+
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusPill(
+                                item.status
+                              )}`}
+                            >
+                              {item.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === "settings" && (
-              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-[22px] font-semibold text-gray-900">
-                      Organization Settings
-                    </h2>
+              <div className="space-y-6">
+                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-[22px] font-semibold text-gray-900">
+                        Revenue Summary
+                      </h2>
+                      <p className="mt-1 text-[16px] text-gray-600">
+                        Revenue based on approved recharges and configured rates
+                      </p>
+                    </div>
                   </div>
+
+                  {loadingRevenue ? (
+                    <div className="mt-6 text-sm text-gray-500">Loading revenue...</div>
+                  ) : revenue ? (
+                    <>
+                      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-2xl bg-gray-50 p-4">
+                          <p className="text-sm font-medium text-gray-600">
+                            Total Revenue
+                          </p>
+                          <p className="mt-2 text-[24px] font-semibold text-gray-900">
+                            {formatCurrency(revenue?.total_revenue, revenue?.currency)}
+                          </p>
+                        </div>
+
+                        {revenueServices.slice(0, 3).map((item) => (
+                          <div key={item.service} className="rounded-2xl bg-gray-50 p-4">
+                            <p className="text-sm font-medium text-gray-600">
+                              {item.serviceLabel}
+                            </p>
+                            <p className="mt-2 text-[20px] font-semibold text-gray-900">
+                              {formatCurrency(item.revenue, item.currency)}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {item.rechargeCount} recharge(s) • {formatNumber(item.rechargeUnits)} units
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-6 overflow-x-auto">
+                        <table className="min-w-full">
+                          <thead>
+                            <tr>
+                              <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                                Service
+                              </th>
+                              <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                                Rate
+                              </th>
+                              <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                                Recharge Count
+                              </th>
+                              <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                                Units
+                              </th>
+                              <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                                Revenue
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {revenueServices.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={5}
+                                  className="px-4 py-8 text-center text-sm text-gray-500"
+                                >
+                                  No revenue data available
+                                </td>
+                              </tr>
+                            ) : (
+                              revenueServices.map((row) => (
+                                <tr key={row.service}>
+                                  <td className="border-b border-gray-200 px-4 py-4 text-sm font-semibold text-gray-900">
+                                    {row.serviceLabel}
+                                  </td>
+                                  <td className="border-b border-gray-200 px-4 py-4 text-sm text-gray-600">
+                                    {formatCurrency(row.rate, row.currency)} / {row.unit}
+                                  </td>
+                                  <td className="border-b border-gray-200 px-4 py-4 text-sm text-gray-900">
+                                    {formatNumber(row.rechargeCount)}
+                                  </td>
+                                  <td className="border-b border-gray-200 px-4 py-4 text-sm text-gray-900">
+                                    {formatNumber(row.rechargeUnits)}
+                                  </td>
+                                  <td className="border-b border-gray-200 px-4 py-4 text-sm font-semibold text-gray-900">
+                                    {formatCurrency(row.revenue, row.currency)}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {revenue?.sms_error ? (
+                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                          SMS revenue could not be fully loaded: {revenue.sms_error}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="mt-6 text-sm text-gray-500">
+                      Revenue data not available.
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-10 flex flex-wrap items-start justify-between gap-4">
-                  <div>
+                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-[22px] font-semibold text-gray-900">
+                        Organization Settings
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="mt-10 flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-[18px] font-semibold text-gray-900">
+                        Service Rates
+                      </h3>
+                      <p className="mt-1 text-[16px] text-gray-600">
+                        Configure pricing rates for each service
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={resetRateForm}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#02051d] px-5 py-3 text-sm font-semibold text-white hover:opacity-95"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M12 5V19M5 12H19"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      Add Rate
+                    </button>
+                  </div>
+
+                  {ratesError ? (
+                    <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                      {ratesError}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-6 rounded-2xl bg-gray-50 p-4">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr>
+                            <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                              Service
+                            </th>
+                            <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                              Rate
+                            </th>
+                            <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                              Unit
+                            </th>
+                            <th className="border-b border-gray-200 px-4 py-4 text-right text-sm font-semibold text-gray-600">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loadingRates ? (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="px-4 py-8 text-center text-sm text-gray-500"
+                              >
+                                Loading rates...
+                              </td>
+                            </tr>
+                          ) : serviceRates.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="px-4 py-8 text-center text-sm text-gray-500"
+                              >
+                                No service rates available yet
+                              </td>
+                            </tr>
+                          ) : (
+                            serviceRates.map((row) => (
+                              <tr key={row.id}>
+                                <td className="border-b border-gray-200 px-4 py-5 text-[16px] font-semibold text-gray-900">
+                                  {row.serviceLabel}
+                                </td>
+                                <td className="border-b border-gray-200 px-4 py-5 text-[16px] text-gray-900">
+                                  {row.rateDisplay}
+                                </td>
+                                <td className="border-b border-gray-200 px-4 py-5 text-[16px] text-gray-600">
+                                  {row.unit}
+                                </td>
+                                <td className="border-b border-gray-200 px-4 py-5">
+                                  <div className="flex justify-end gap-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditRate(row)}
+                                      className="text-gray-900 hover:opacity-70"
+                                    >
+                                      <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                      >
+                                        <path
+                                          d="M12 20H21M16.5 3.5C16.8978 3.10218 17.4374 2.87866 18 2.87866C18.5626 2.87866 19.1022 3.10218 19.5 3.5C19.8978 3.89782 20.1213 4.43739 20.1213 5C20.1213 5.56261 19.8978 6.10218 19.5 6.5L7 19L3 20L4 16L16.5 3.5Z"
+                                          stroke="currentColor"
+                                          strokeWidth="1.8"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRate(row)}
+                                      className="text-rose-600 hover:opacity-70"
+                                    >
+                                      <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                      >
+                                        <path
+                                          d="M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
+                                          stroke="currentColor"
+                                          strokeWidth="1.8"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                        <path
+                                          d="M10 11V17M14 11V17"
+                                          stroke="currentColor"
+                                          strokeWidth="1.8"
+                                          strokeLinecap="round"
+                                        />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 rounded-2xl border border-gray-200 p-5">
                     <h3 className="text-[18px] font-semibold text-gray-900">
-                      Service Rates
+                      {editingRateId ? "Edit Service Rate" : "Configure Service Rate"}
                     </h3>
-                    <p className="mt-1 text-[16px] text-gray-600">
-                      Configure pricing rates for each service
-                    </p>
-                  </div>
 
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#02051d] px-5 py-3 text-sm font-semibold text-white hover:opacity-95"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 5V19M5 12H19"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    Add Rate
-                  </button>
+                    <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
+                      <div>
+                        <label className="mb-3 block text-sm font-semibold text-gray-600">
+                          Service
+                        </label>
+                        <select
+                          value={rateForm.service}
+                          onChange={(e) =>
+                            setRateForm((prev) => ({
+                              ...prev,
+                              service: e.target.value,
+                            }))
+                          }
+                          className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 outline-none focus:border-gray-400"
+                        >
+                          <option value="">Select service...</option>
+                          <option value="SMS">Bulk SMS</option>
+                          <option value="DATA">Bulk Data</option>
+                          <option value="AIRTIME">Bulk Airtime</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-3 block text-sm font-semibold text-gray-600">
+                          Rate per Unit
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={rateForm.rate}
+                          onChange={(e) =>
+                            setRateForm((prev) => ({
+                              ...prev,
+                              rate: e.target.value,
+                            }))
+                          }
+                          placeholder="0.00"
+                          className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-3 block text-sm font-semibold text-gray-600">
+                          Currency
+                        </label>
+                        <select
+                          value={rateForm.currency}
+                          onChange={(e) =>
+                            setRateForm((prev) => ({
+                              ...prev,
+                              currency: e.target.value,
+                            }))
+                          }
+                          className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 outline-none focus:border-gray-400"
+                        >
+                          <option value="KES">KES</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSaveRate}
+                        disabled={savingRate}
+                        className="rounded-xl bg-[#02051d] px-5 py-3 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {savingRate
+                          ? editingRateId
+                            ? "Updating..."
+                            : "Saving..."
+                          : editingRateId
+                          ? "Update Rate"
+                          : "Save Rate"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={resetRateForm}
+                        className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-6 rounded-2xl bg-gray-50 p-4">
-                  <div className="overflow-x-auto">
+                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-[22px] font-semibold text-gray-900">
+                    Data Bundle Expiry
+                  </h2>
+                  <p className="mt-1 text-[16px] text-gray-600">
+                    Expiry comes from the organization profile accounts data
+                  </p>
+
+                  <div className="mt-6 overflow-x-auto">
                     <table className="min-w-full">
                       <thead>
                         <tr>
                           <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                            Module
+                          </th>
+                          <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                            Units
+                          </th>
+                          <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
                             Service
                           </th>
                           <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
-                            Rate
-                          </th>
-                          <th className="border-b border-gray-200 px-4 py-4 text-left text-sm font-semibold text-gray-600">
-                            Unit
-                          </th>
-                          <th className="border-b border-gray-200 px-4 py-4 text-right text-sm font-semibold text-gray-600">
-                            Actions
+                            Expires On
                           </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {serviceRates.length === 0 ? (
+                        {dataModules.length === 0 ? (
                           <tr>
                             <td
                               colSpan={4}
                               className="px-4 py-8 text-center text-sm text-gray-500"
                             >
-                              No service rates available yet
+                              No account modules available
                             </td>
                           </tr>
                         ) : (
-                          serviceRates.map((row) => (
-                            <tr key={row.service}>
-                              <td className="border-b border-gray-200 px-4 py-5 text-[16px] font-semibold text-gray-900">
-                                {row.service}
+                          dataModules.map((item) => (
+                            <tr key={item.id}>
+                              <td className="border-b border-gray-200 px-4 py-4 text-sm font-semibold text-gray-900">
+                                {item.module}
                               </td>
-                              <td className="border-b border-gray-200 px-4 py-5 text-[16px] text-gray-900">
-                                {row.rate}
+                              <td className="border-b border-gray-200 px-4 py-4 text-sm text-gray-900">
+                                {formatNumber(item.units)}
                               </td>
-                              <td className="border-b border-gray-200 px-4 py-5 text-[16px] text-gray-600">
-                                {row.unit}
+                              <td className="border-b border-gray-200 px-4 py-4 text-sm text-gray-600">
+                                {item.service}
                               </td>
-                              <td className="border-b border-gray-200 px-4 py-5">
-                                <div className="flex justify-end gap-4">
-                                  <button
-                                    type="button"
-                                    className="text-gray-900 hover:opacity-70"
-                                  >
-                                    <svg
-                                      width="20"
-                                      height="20"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                    >
-                                      <path
-                                        d="M12 20H21M16.5 3.5C16.8978 3.10218 17.4374 2.87866 18 2.87866C18.5626 2.87866 19.1022 3.10218 19.5 3.5C19.8978 3.89782 20.1213 4.43739 20.1213 5C20.1213 5.56261 19.8978 6.10218 19.5 6.5L7 19L3 20L4 16L16.5 3.5Z"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    className="text-rose-600 hover:opacity-70"
-                                  >
-                                    <svg
-                                      width="20"
-                                      height="20"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                    >
-                                      <path
-                                        d="M3 6H5H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                      <path
-                                        d="M10 11V17M14 11V17"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                      />
-                                    </svg>
-                                  </button>
-                                </div>
+                              <td className="border-b border-gray-200 px-4 py-4 text-sm text-gray-600">
+                                {item.expires_on ? formatDate(item.expires_on) : "—"}
                               </td>
                             </tr>
                           ))
                         )}
                       </tbody>
                     </table>
-                  </div>
-                </div>
-
-                <div className="mt-8 rounded-2xl border border-gray-200 p-5">
-                  <h3 className="text-[18px] font-semibold text-gray-900">
-                    Configure Service Rate
-                  </h3>
-
-                  <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
-                    <div>
-                      <label className="mb-3 block text-sm font-semibold text-gray-600">
-                        Service
-                      </label>
-                      <select className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 outline-none focus:border-gray-400">
-                        <option>Select service...</option>
-                        {enabledServices.map((service) => (
-                          <option key={service}>{service}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="mb-3 block text-sm font-semibold text-gray-600">
-                        Rate per Unit
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="0.00"
-                        className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-3 block text-sm font-semibold text-gray-600">
-                        Currency
-                      </label>
-                      <select className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 outline-none focus:border-gray-400">
-                        <option>KES</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="rounded-xl bg-[#02051d] px-5 py-3 text-sm font-semibold text-white hover:opacity-95"
-                    >
-                      Save Rate
-                    </button>
-
-                    <button
-                      type="button"
-                      className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
                   </div>
                 </div>
               </div>
@@ -993,7 +1391,15 @@ const OrganizationDetailPage = () => {
           onClose={() => setIsBalanceModalOpen(false)}
           orgId={orgId}
           accounts={dataModules}
-          onSuccess={fetchProfile}
+          onSuccess={async () => {
+            await fetchProfile();
+            if (activeTab === "settings") {
+              await Promise.allSettled([fetchRates(), fetchRevenue()]);
+            }
+            if (activeTab === "activity") {
+              await fetchRecharges();
+            }
+          }}
         />
       </div>
     </div>

@@ -2,40 +2,23 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  CircularProgress,
-  Alert,
-  Button,
-} from "@mui/material";
-import { useRouter } from "next/navigation";
-import {
   GetAdminDashboardSummary,
+  GetAdminBalancesSummary,
   GetAdminOrganizations,
   GetAdminDataDispatches,
+  GetAdminRechargeRequests,
 } from "@/app/api/actions/admin/admin";
 
-const AdminDashboard = () => {
-  const router = useRouter();
+const DashboardPage = () => {
   const [isClient, setIsClient] = useState(false);
-
   const [summary, setSummary] = useState(null);
+  const [balances, setBalances] = useState(null);
   const [recentOrganizations, setRecentOrganizations] = useState([]);
+  const [recentServiceRequests, setRecentServiceRequests] = useState([]);
   const [failedDispatches, setFailedDispatches] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [serviceRequestsError, setServiceRequestsError] = useState("");
 
   useEffect(() => {
     setIsClient(true);
@@ -43,464 +26,579 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!isClient) return;
-    fetchDashboard();
+    fetchDashboardData();
   }, [isClient]);
 
-  async function fetchDashboard() {
+  async function fetchDashboardData() {
     try {
       setLoading(true);
       setError("");
+      setServiceRequestsError("");
 
-      const [summaryRes, recentOrgsRes, failedDispatchesRes] = await Promise.all([
+      const results = await Promise.allSettled([
         GetAdminDashboardSummary(),
-        GetAdminOrganizations("recent=true&limit=4"),
-        GetAdminDataDispatches("status=FAILED&page=1&page_size=6"),
+        GetAdminBalancesSummary(),
+        GetAdminOrganizations("recent=true&limit=5"),
+        GetAdminRechargeRequests("page=1&page_size=5"),
+        GetAdminDataDispatches("status=FAILED&page=1&page_size=8"),
       ]);
 
-      setSummary(summaryRes?.data || null);
-      setRecentOrganizations(recentOrgsRes?.data || []);
-      setFailedDispatches(failedDispatchesRes?.data || []);
+      const [
+        summaryResult,
+        balancesResult,
+        recentOrgsResult,
+        rechargeRequestsResult,
+        failedDispatchesResult,
+      ] = results;
+
+      const summaryData =
+        summaryResult.status === "fulfilled" ? summaryResult.value?.data || null : null;
+
+      const balancesData =
+        balancesResult.status === "fulfilled" ? balancesResult.value?.data || null : null;
+
+      const recentOrganizationsData =
+        recentOrgsResult.status === "fulfilled" ? recentOrgsResult.value?.data || [] : [];
+
+      const rechargeRequestsData =
+        rechargeRequestsResult.status === "fulfilled"
+          ? rechargeRequestsResult.value?.data ||
+            rechargeRequestsResult.value?.recharges ||
+            rechargeRequestsResult.value?.items ||
+            []
+          : [];
+
+      const failedDispatchesData =
+        failedDispatchesResult.status === "fulfilled"
+          ? failedDispatchesResult.value?.data || []
+          : [];
+
+      setSummary(summaryData);
+      setBalances(balancesData);
+      setRecentOrganizations(recentOrganizationsData);
+      setRecentServiceRequests(rechargeRequestsData);
+      setFailedDispatches(failedDispatchesData);
+
+      const criticalErrors = [];
+
+      if (summaryResult.status === "rejected") {
+        criticalErrors.push(
+          summaryResult.reason?.response?.data?.error ||
+            summaryResult.reason?.message ||
+            "Failed to load dashboard summary"
+        );
+      }
+
+      if (balancesResult.status === "rejected") {
+        criticalErrors.push(
+          balancesResult.reason?.response?.data?.error ||
+            balancesResult.reason?.message ||
+            "Failed to load balances summary"
+        );
+      }
+
+      if (criticalErrors.length > 0) {
+        setError(criticalErrors.join(" | "));
+      }
+
+      if (rechargeRequestsResult.status === "rejected") {
+        setServiceRequestsError(
+          rechargeRequestsResult.reason?.response?.data?.error ||
+            rechargeRequestsResult.reason?.message ||
+            "Failed to load recent service requests"
+        );
+      }
     } catch (err) {
-      console.error("Failed to load admin dashboard:", err);
-      setError(
-        err?.response?.data?.error || "Failed to load dashboard data."
-      );
+      console.error("Failed to load dashboard:", err);
+      setError(err?.response?.data?.error || "Failed to load dashboard data.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString();
+  }
+
+  function formatDecimal(value, digits = 2) {
+    return Number(value || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: digits,
+    });
   }
 
   const metrics = useMemo(() => {
     return [
       {
         label: "Total Organizations",
-        value: Number(summary?.total_organizations || 0).toLocaleString(),
-        helper: "All registered organizations",
-        helperColor: "green",
-        icon: "🏢",
-        color: "#4B7FFF",
+        value: formatNumber(
+          balances?.total_organizations ?? summary?.total_organizations
+        ),
+        subtitle: "All registered organizations",
+        iconBg: "#eef2ff",
+        iconColor: "#9ca3af",
+        icon: (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M3 21H21M5 21V7L12 3L19 7V21M9 10H15M9 14H15"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ),
       },
       {
         label: "Active Organizations",
-        value: Number(summary?.active_organizations || 0).toLocaleString(),
-        helper: "Based on recent approved recharge activity",
-        helperColor: "green",
-        icon: "👤",
-        color: "#A678FF",
+        value: formatNumber(summary?.active_organizations),
+        subtitle: "Based on recent approved recharge activity",
+        iconBg: "#f3e8ff",
+        iconColor: "#9ca3af",
+        icon: (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M20 21C20 17.6863 16.4183 15 12 15C7.58172 15 4 17.6863 4 21M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ),
       },
       {
         label: "Messages Sent Today",
-        value: Number(summary?.messages_sent_today || 0).toLocaleString(),
-        helper: summary?.sms_error ? "SMS service unavailable" : "Total SMS messages sent today",
-        helperColor: summary?.sms_error ? "red" : "green",
-        icon: "💬",
-        color: "#1BC47D",
+        value: formatNumber(summary?.messages_sent_today),
+        subtitle: "Total SMS messages sent today",
+        iconBg: "#dcfce7",
+        iconColor: "#9ca3af",
+        icon: (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M8 10H16M8 14H12M7 19L3 21V6C3 4.89543 3 4 5 4H19C20.1046 4 21 4.89543 21 6V18C21 19.1046 20.1046 20 19 20H8.2C7.77996 20 7.56994 20 7.40901 19.9183C7.26744 19.8464 7.15359 19.7326 7.08165 19.591C7 19.4301 7 19.2201 7 18.8V19Z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ),
       },
       {
-        label: "Data Units",
-        value: Number(summary?.total_data_units || 0).toLocaleString(),
-        helper: "Current total data balance",
-        helperColor: "green",
-        icon: "💾",
-        color: "#FDB022",
+        label: "Data Balance",
+        value: `${formatDecimal(balances?.total_data_gb)} GB`,
+        subtitle: "Total data balance",
+        iconBg: "#fef3c7",
+        iconColor: "#9ca3af",
+        icon: (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 3H18V21H6V3ZM9 7H15M9 11H15M9 15H12"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ),
       },
     ];
-  }, [summary]);
+  }, [summary, balances]);
 
-  const getStatusChip = (status) => {
-    const normalized = (status || "").toUpperCase();
+  const systemHealth = [
+    {
+      title: "Admin Backend",
+      note: error ? "Dashboard data failed to fully load" : "Dashboard data loaded",
+      status: error ? "Degraded" : "Operational",
+    },
+    {
+      title: "SMS Summary Service",
+      note: balances?.sms_error
+        ? `Issue detected: ${balances.sms_error}`
+        : summary?.sms_error
+        ? `Issue detected: ${summary.sms_error}`
+        : "SMS metrics loaded",
+      status:
+        balances?.sms_error || summary?.sms_error ? "Degraded" : "Operational",
+    },
+    {
+      title: "Data Dispatch Service",
+      note:
+        failedDispatches.length > 0
+          ? "Failed dispatch list loaded"
+          : "Dispatch summary loaded",
+      status: "Operational",
+    },
+  ];
 
-    if (normalized === "ACTIVE" || normalized === "COMPLETED" || normalized === "SUCCESS") {
-      return {
-        backgroundColor: "#D1FAE5",
-        color: "#065F46",
-      };
+  function getStatusPill(status) {
+    const normalized = String(status || "").toUpperCase();
+
+    if (
+      ["ACTIVE", "COMPLETED", "SUCCESS", "OPERATIONAL", "APPROVED"].includes(
+        normalized
+      )
+    ) {
+      return "bg-[#02051d] text-white";
     }
 
-    if (normalized === "FAILED" || normalized === "ERROR" || normalized === "INACTIVE") {
-      return {
-        backgroundColor: "#FEE2E2",
-        color: "#991B1B",
-      };
+    if (
+      ["PENDING", "IN PROGRESS", "IN_PROGRESS", "DEGRADED", "PROCESSING"].includes(
+        normalized
+      )
+    ) {
+      return "bg-gray-100 text-gray-800";
     }
 
-    return {
-      backgroundColor: "#FEF3C7",
-      color: "#92400E",
-    };
-  };
+    if (
+      ["FAILED", "ERROR", "INACTIVE", "SUSPENDED", "REJECTED"].includes(normalized)
+    ) {
+      return "bg-rose-100 text-rose-700";
+    }
 
-  const formatDate = (value) => {
+    return "bg-gray-100 text-gray-800";
+  }
+
+  function formatDate(value) {
     if (!value) return "—";
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString();
-  };
+    return d.toLocaleDateString("en-CA");
+  }
 
-  const formatDateTime = (value) => {
+  function formatDateTime(value) {
     if (!value) return "—";
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleString();
-  };
+    return d.toLocaleString("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
-  const handleOrganizationClick = (row) => {
-    if (!row?.external_id) return;
-    router.push(`/apps/admin/organizations/${row.external_id}`);
-  };
+  function getOrganizationName(item) {
+    return (
+      item?.organization_name ||
+      item?.organization ||
+      item?.name ||
+      item?.app_name ||
+      item?.application_id ||
+      "—"
+    );
+  }
+
+  function getServiceName(item) {
+    return (
+      item?.service ||
+      item?.service_name ||
+      item?.package ||
+      item?.module ||
+      "—"
+    );
+  }
+
+  function getRequestStatus(item) {
+    return item?.status || item?.status_code || item?.approval_status || "Pending";
+  }
 
   if (!isClient) return null;
 
   return (
-    <div className="ml-0 md:ml-64 p-6 bg-gray-50 min-h-screen">
-      <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <Typography variant="h4" className="font-bold text-gray-900 mb-2">
-            Dashboard
-          </Typography>
-          <Typography variant="body2" className="text-gray-600">
-            System overview and performance metrics
-          </Typography>
+    <div className="ml-0 min-h-screen bg-gray-50 p-5 md:ml-64">
+      <div className="w-full">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-[30px] font-semibold leading-tight text-gray-900">
+              Dashboard
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              System overview and performance metrics
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchDashboardData}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            Refresh
+          </button>
         </div>
 
-        <Button
-          variant="outlined"
-          onClick={fetchDashboard}
-          sx={{
-            color: "#6B7280",
-            borderColor: "#E5E7EB",
-            textTransform: "none",
-          }}
-        >
-          Refresh
-        </Button>
-      </div>
+        {error ? (
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
 
-      {error ? (
-        <Box mb={3}>
-          <Alert severity="error">{error}</Alert>
-        </Box>
-      ) : null}
+        {balances?.sms_error || summary?.sms_error ? (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            SMS summary could not be fully loaded:{" "}
+            {balances?.sms_error || summary?.sms_error}
+          </div>
+        ) : null}
 
-      {summary?.sms_error ? (
-        <Box mb={3}>
-          <Alert severity="warning">
-            SMS summary could not be fully loaded: {summary.sms_error}
-          </Alert>
-        </Box>
-      ) : null}
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" py={10}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <>
-          <Grid container spacing={3} className="mb-8">
-            {metrics.map((metric, idx) => (
-              <Grid item xs={12} sm={6} md={6} lg={3} key={idx}>
-                <Card
-                  className="hover:shadow-lg transition-shadow"
-                  sx={{
-                    background: "white",
-                    borderRadius: 2,
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                  }}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
+          </div>
+        ) : (
+          <>
+            <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {metrics.map((metric) => (
+                <div
+                  key={metric.label}
+                  className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          className="text-gray-600 font-medium"
-                        >
-                          {metric.label}
-                        </Typography>
-                        <Typography variant="h5" className="font-bold text-gray-900 my-2">
-                          {metric.value}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          className="font-medium"
-                          style={{
-                            color: metric.helperColor === "red" ? "#EF4444" : "#10B981",
-                          }}
-                        >
-                          {metric.helper}
-                        </Typography>
-                      </Box>
-                      <Box
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        width={50}
-                        height={50}
-                        borderRadius="50%"
-                        sx={{
-                          backgroundColor: `${metric.color}20`,
-                        }}
-                      >
-                        <span style={{ fontSize: 24 }}>{metric.icon}</span>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[13px] font-medium text-gray-600">
+                        {metric.label}
+                      </p>
+                      <p className="mt-2 text-[18px] font-semibold leading-none text-gray-900">
+                        {metric.value}
+                      </p>
+                      <p className="mt-4 text-[13px] text-green-600">
+                        {metric.subtitle}
+                      </p>
+                    </div>
 
-          <Grid container spacing={3} className="mb-8">
-            <Grid item xs={12}>
-              <Card
-                sx={{
-                  background: "white",
-                  borderRadius: 2,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
-                <CardContent>
-                  <Typography variant="h6" className="font-semibold mb-4">
-                    System Health
-                  </Typography>
+                    <div
+                      className="flex h-11 w-11 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: metric.iconBg,
+                        color: metric.iconColor,
+                      }}
+                    >
+                      {metric.icon}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                  <Box className="space-y-4">
-                    {[
-                      {
-                        service: "Admin Backend",
-                        status: "Operational",
-                        detail: "Dashboard summary loaded",
-                      },
-                      {
-                        service: "SMS Summary Service",
-                        status: summary?.sms_error ? "Degraded" : "Operational",
-                        detail: summary?.sms_error ? "Could not fetch SMS counts" : "Messages sent today loaded",
-                      },
-                      {
-                        service: "Data Dispatch Service",
-                        status: "Operational",
-                        detail: "Failed dispatch list loaded",
-                      },
-                    ].map((service, idx) => (
-                      <Box
-                        key={idx}
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        paddingY={1}
-                        borderBottom={idx < 2 ? "1px solid #E5E7EB" : "none"}
-                      >
-                        <Box>
-                          <Typography variant="body2" className="font-medium text-gray-900">
-                            {service.service}
-                          </Typography>
-                          <Typography variant="caption" className="text-gray-600">
-                            {service.detail}
-                          </Typography>
-                        </Box>
+            <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="text-[18px] font-semibold text-gray-900">
+                System Health
+              </h2>
 
-                        <Chip
-                          label={service.status}
-                          size="small"
-                          sx={{
-                            backgroundColor:
-                              service.status === "Operational" ? "#D1FAE5" : "#FEF3C7",
-                            color:
-                              service.status === "Operational" ? "#065F46" : "#92400E",
-                            fontWeight: 500,
-                          }}
-                        />
-                      </Box>
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+              <div className="mt-5 divide-y divide-gray-100">
+                {systemHealth.map((item) => (
+                  <div
+                    key={item.title}
+                    className="flex items-center justify-between gap-4 py-4"
+                  >
+                    <div>
+                      <p className="text-[14px] font-medium text-gray-900">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 text-[13px] text-gray-500">
+                        {item.note}
+                      </p>
+                    </div>
 
-          <Grid container spacing={3} className="mb-8">
-            <Grid item xs={12} md={6}>
-              <Card
-                sx={{
-                  background: "white",
-                  borderRadius: 2,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
-                <CardContent>
-                  <Typography variant="h6" className="font-semibold mb-4">
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${getStatusPill(
+                        item.status
+                      )} ${
+                        item.status === "Operational"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : ""
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="border-b border-gray-200 px-4 py-4">
+                  <h2 className="text-[18px] font-semibold text-gray-900">
                     Recent Organizations
-                  </Typography>
+                  </h2>
+                </div>
 
-                  <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
-                    <Table>
-                      <TableHead>
-                        <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
-                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                            Organization
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                            Date Created
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                            Status
-                          </TableCell>
-                        </TableRow>
-                      </TableHead>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Organization
+                        </th>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Date Created
+                        </th>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentOrganizations.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="px-4 py-8 text-center text-sm text-gray-500"
+                          >
+                            No recent organizations found
+                          </td>
+                        </tr>
+                      ) : (
+                        recentOrganizations.slice(0, 4).map((item, index) => (
+                          <tr key={item?.id || item?.external_id || index}>
+                            <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-gray-900">
+                              {item?.name || "—"}
+                            </td>
+                            <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">
+                              {formatDate(item?.created_at)}
+                            </td>
+                            <td className="border-b border-gray-100 px-4 py-4">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${getStatusPill(
+                                  item?.status || "Pending"
+                                )}`}
+                              >
+                                {item?.status || "Pending"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-                      <TableBody>
-                        {recentOrganizations.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={3} align="center">
-                              No organizations found
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          recentOrganizations.map((row) => (
-                            <TableRow
-                              key={row.external_id || row.id}
-                              hover
-                              sx={{ cursor: "pointer" }}
-                              onClick={() => handleOrganizationClick(row)}
-                            >
-                              <TableCell className="text-gray-900 font-medium">
-                                <Box>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {row.name}
-                                  </Typography>
-                                  <Typography variant="caption" sx={{ color: "#6B7280" }}>
-                                    {row.external_id}
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-
-                              <TableCell className="text-gray-600">
-                                {formatDate(row.created_at)}
-                              </TableCell>
-
-                              <TableCell>
-                                <Chip
-                                  label={row.status}
-                                  size="small"
-                                  sx={getStatusChip(row.status)}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Card
-                sx={{
-                  background: "white",
-                  borderRadius: 2,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
-                <CardContent>
-                  <Typography variant="h6" className="font-semibold mb-4">
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="border-b border-gray-200 px-4 py-4">
+                  <h2 className="text-[18px] font-semibold text-gray-900">
                     Recent Service Requests
-                  </Typography>
+                  </h2>
+                </div>
 
-                  {/* <Alert severity="info">
-                    Pending
-                  </Alert> */}
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+                {serviceRequestsError ? (
+                  <div className="px-4 py-4 text-sm text-amber-700">
+                    {serviceRequestsError}
+                  </div>
+                ) : null}
 
-          <Card
-            sx={{
-              background: "white",
-              borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-          >
-            <CardContent>
-              <Typography variant="h6" className="font-semibold mb-4">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Organization
+                        </th>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Service
+                        </th>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentServiceRequests.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="px-4 py-8 text-center text-sm text-gray-500"
+                          >
+                            No recent service requests found
+                          </td>
+                        </tr>
+                      ) : (
+                        recentServiceRequests.slice(0, 4).map((item, index) => (
+                          <tr key={item?.id || item?.request_id || index}>
+                            <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-gray-900">
+                              {getOrganizationName(item)}
+                            </td>
+                            <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">
+                              {getServiceName(item)}
+                            </td>
+                            <td className="border-b border-gray-100 px-4 py-4">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${getStatusPill(
+                                  getRequestStatus(item)
+                                )}`}
+                              >
+                                {getRequestStatus(item)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="text-[18px] font-semibold text-gray-900">
                 Recent Failed Dispatches
-              </Typography>
+              </h2>
 
-              <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                        Organization
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+              <div className="mt-6 overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr>
+                      <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
                         Recipient
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                        Bundle Amount
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                        Status
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
-                        Date
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-
-                  <TableBody>
+                      </th>
+                      <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                        Error Reason
+                      </th>
+                      <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                        Timestamp
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {failedDispatches.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="px-4 py-8 text-center text-sm text-gray-500"
+                        >
                           No failed dispatches found
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ) : (
-                      failedDispatches.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="text-gray-900 font-medium">
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {row.organization_name || "—"}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: "#6B7280" }}>
-                                {row.organization_external_id || ""}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-
-                          <TableCell className="text-gray-900 font-medium">
-                            {row.msisdn || "—"}
-                          </TableCell>
-
-                          <TableCell className="text-gray-600">
-                            {row.bundle_amount || row.bundleAmount || "—"}
-                          </TableCell>
-
-                          <TableCell>
-                            <Chip
-                              label={row.status || "FAILED"}
-                              size="small"
-                              sx={getStatusChip(row.status || "FAILED")}
-                            />
-                          </TableCell>
-
-                          <TableCell className="text-gray-600 text-sm">
-                            {formatDateTime(row.created_at || row.createdAt)}
-                          </TableCell>
-                        </TableRow>
+                      failedDispatches.slice(0, 8).map((item, index) => (
+                        <tr key={item?.id || index}>
+                          <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-gray-900">
+                            {item?.recipient || item?.msisdn || "—"}
+                          </td>
+                          <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-red-600">
+                            {item?.error_reason ||
+                              item?.reason ||
+                              item?.error ||
+                              item?.status ||
+                              "—"}
+                          </td>
+                          <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">
+                            {formatDateTime(item?.timestamp || item?.created_at)}
+                          </td>
+                        </tr>
                       ))
                     )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </>
-      )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
 
-export default AdminDashboard;
+export default DashboardPage;
