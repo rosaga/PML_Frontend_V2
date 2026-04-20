@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GetAdminOrganizations } from "@/app/api/actions/admin/admin";
 
@@ -8,9 +8,13 @@ const OrganizationsPage = () => {
   const router = useRouter();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [serviceFilter, setServiceFilter] = useState("ALL");
   const [organizations, setOrganizations] = useState([]);
+  const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [error, setError] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -21,22 +25,39 @@ const OrganizationsPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, statusFilter, serviceFilter]);
 
   useEffect(() => {
     async function fetchOrganizations() {
       try {
         setLoading(true);
+        setError("");
 
-        const query = searchTerm
-          ? `search=${encodeURIComponent(searchTerm)}`
-          : "";
+        const params = new URLSearchParams();
 
-        const response = await GetAdminOrganizations(query);
+        if (searchTerm.trim()) {
+          params.set("search", searchTerm.trim());
+        }
+
+        if (statusFilter !== "ALL") {
+          params.set("status", statusFilter);
+        }
+
+        if (serviceFilter !== "ALL") {
+          params.set("service", serviceFilter);
+        }
+
+        const response = await GetAdminOrganizations(params.toString());
+
         setOrganizations(response?.data || []);
+        setCount(response?.count || response?.data?.length || 0);
       } catch (error) {
         console.error("Error loading organizations:", error);
         setOrganizations([]);
+        setCount(0);
+        setError(
+          error?.response?.data?.error || "Failed to load organizations."
+        );
       } finally {
         setLoading(false);
       }
@@ -45,7 +66,7 @@ const OrganizationsPage = () => {
     if (isClient) {
       fetchOrganizations();
     }
-  }, [searchTerm, isClient]);
+  }, [searchTerm, statusFilter, serviceFilter, isClient]);
 
   const handleOrganizationClick = (org) => {
     router.push(`/apps/admin/organizations/${org.external_id}`);
@@ -58,6 +79,7 @@ const OrganizationsPage = () => {
       case "SUSPENDED":
         return "bg-rose-600 text-white";
       case "INACTIVE":
+        return "bg-gray-100 text-gray-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -70,29 +92,55 @@ const OrganizationsPage = () => {
     return d.toLocaleDateString("en-CA");
   };
 
-  const totalPages = Math.ceil(organizations.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(organizations.length / itemsPerPage));
 
-  const paginatedOrganizations = organizations.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedOrganizations = useMemo(() => {
+    return organizations.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [organizations, currentPage]);
+
+  const totalDisplayed = organizations.length;
 
   if (!isClient) return null;
 
   return (
     <div className="ml-0 min-h-screen bg-gray-50 p-5 md:ml-64">
       <div className="w-full">
-        <div className="mb-5">
-          <h1 className="text-[30px] font-semibold leading-tight text-gray-900">
-            Organizations
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage all registered organizations
-          </p>
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-[30px] font-semibold leading-tight text-gray-900">
+              Organizations
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Manage all registered organizations
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!loading) {
+                const event = new Event("refresh-organizations");
+                window.dispatchEvent(event);
+                setSearchTerm((prev) => prev);
+              }
+            }}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            Refresh
+          </button>
         </div>
 
+        {error ? (
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
         <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="relative flex-1">
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
@@ -121,21 +169,33 @@ const OrganizationsPage = () => {
               />
             </div>
 
-            <button
-              type="button"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Filters
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-11 rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none focus:border-gray-400"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+
+              <select
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+                className="h-11 rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none focus:border-gray-400"
+              >
+                <option value="ALL">All Services</option>
+                <option value="SMS">SMS</option>
+                <option value="DATA">DATA</option>
+                <option value="AIRTIME">AIRTIME</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+            <span>Total: {count.toLocaleString()}</span>
+            <span>Showing loaded results: {totalDisplayed.toLocaleString()}</span>
           </div>
         </div>
 
@@ -172,7 +232,7 @@ const OrganizationsPage = () => {
                       <div className="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
                     </td>
                   </tr>
-                ) : organizations.length === 0 ? (
+                ) : paginatedOrganizations.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
@@ -208,13 +268,11 @@ const OrganizationsPage = () => {
                       </td>
 
                       <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-900">
-                        {org.recharge_count || 0}
+                        {Number(org.recharge_count || 0).toLocaleString()}
                       </td>
 
                       <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">
-                        {org.last_recharge_at
-                          ? formatDate(org.last_recharge_at)
-                          : "-"}
+                        {org.last_recharge_at ? formatDate(org.last_recharge_at) : "-"}
                       </td>
 
                       <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">

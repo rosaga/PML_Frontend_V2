@@ -49,15 +49,15 @@ const SidebarAdmin = () => {
       className: "settings",
       subLinks: [
         { href: "/apps/admin/services/sms", label: "Bulk SMS", className: "bulk-sms" },
-        { href: "/apps/admin/services/bulk-whatsapp", label: "Bulk WhatsApp", className: "bulk-whatsapp" },
+        // { href: "/apps/admin/services/bulk-whatsapp", label: "Bulk WhatsApp", className: "bulk-whatsapp" },
         { href: "/apps/admin/services/data", label: "Bulk Data", className: "bulk-data" },
         { href: "/apps/admin/services/airtime", label: "Bulk Airtime", className: "bulk-airtime" },
-        { href: "/apps/admin/services/ussd-flows", label: "USSD Flows", className: "ussd-flows" },
+        // { href: "/apps/admin/services/ussd-flows", label: "USSD Flows", className: "ussd-flows" },
       ],
     },
-    { href: "/apps/admin/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports & Analytics", className: "reports" },
-    { href: "/apps/admin/users", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
-    { href: "/apps/admin/settings", src: "/images/Settings.svg", alt: "Settings", label: "Settings", className: "settings" },
+    // { href: "/apps/admin/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports & Analytics", className: "reports" },
+    // { href: "/apps/admin/users", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
+    // { href: "/apps/admin/settings", src: "/images/Settings.svg", alt: "Settings", label: "Settings", className: "settings" },
   ];
 
   return (
