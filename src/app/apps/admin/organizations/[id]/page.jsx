@@ -1386,21 +1386,30 @@ const OrganizationDetailPage = () => {
           </>
         )}
 
-        <AdjustBalanceModal
-          open={isBalanceModalOpen}
-          onClose={() => setIsBalanceModalOpen(false)}
-          orgId={orgId}
-          accounts={dataModules}
-          onSuccess={async () => {
-            await fetchProfile();
-            if (activeTab === "settings") {
-              await Promise.allSettled([fetchRates(), fetchRevenue()]);
-            }
-            if (activeTab === "activity") {
-              await fetchRecharges();
-            }
-          }}
-        />
+       <AdjustBalanceModal
+        open={isBalanceModalOpen}
+        onClose={() => setIsBalanceModalOpen(false)}
+        orgId={orgId}
+        applicationId={orgId}
+        accounts={dataModules}
+        balances={{
+          sms_balance: profile?.sms?.balance || 0,
+          data_balance: profile?.total_data_units || 0,
+          airtime_balance: profile?.airtime_balance || 0,
+        }}
+        organization={organization}
+        onSuccess={async () => {
+          await fetchProfile();
+
+          if (activeTab === "settings") {
+            await Promise.allSettled([fetchRates(), fetchRevenue()]);
+          }
+
+          if (activeTab === "activity") {
+            await fetchRecharges();
+          }
+        }}
+      />
       </div>
     </div>
   );
