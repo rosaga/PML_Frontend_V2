@@ -154,6 +154,19 @@ export async function GetAdminDashboardSummary() {
   }
 }
 
+export async function GetAdminOrganizationRecharges(orgId) {
+  const config = await authHeaders();
+
+  try {
+    const url = withQuery(`${apiUrl.GET_BALANCE}/admin/organization/${orgId}/recharges`);
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch recharge requests:", error.message);
+    throw error;
+  }
+}
+
 export async function GetAdminRechargeRequests(query = "") {
   const config = await authHeaders();
 

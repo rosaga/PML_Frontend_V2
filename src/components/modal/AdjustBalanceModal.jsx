@@ -5,6 +5,9 @@ import {
   AdjustAdminOrganizationBalance,
   AutoProvisionAdminBalance,
 } from "@/app/api/actions/admin/admin";
+import { provisionSmsUnits } from "@/app/api/actions/reward/reward";
+
+const SMS_PACKAGE = "@1 Persms";
 
 const DEFAULT_FORM = {
   mode: "provision",
@@ -14,7 +17,15 @@ const DEFAULT_FORM = {
   reason: "",
 };
 
-const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) => {
+const AdjustBalanceModal = ({
+  open,
+  onClose,
+  orgId,
+  applicationId,
+  accounts = [],
+  balances = null,
+  onSuccess,
+}) => {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -44,14 +55,17 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
   }, [open, onClose, submitting]);
 
   const serviceOptions = useMemo(() => {
-    const existing = new Set(
-      (accounts || [])
-        .map((acc) => (acc?.service || "").toUpperCase())
-        .filter(Boolean)
-    );
+    const options = new Set(["DATA", "AIRTIME", "SMS"]);
 
-    if (existing.size === 0) return ["DATA", "AIRTIME", "SMS"];
-    return Array.from(existing);
+    (accounts || []).forEach((acc) => {
+      const service = (acc?.service || "").toUpperCase();
+
+      if (service) {
+        options.add(service);
+      }
+    });
+
+    return Array.from(options);
   }, [accounts]);
 
   const filteredModules = useMemo(() => {
@@ -60,14 +74,55 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
     );
   }, [accounts, form.service]);
 
+  const balanceSource = useMemo(() => {
+    return balances?.data || balances || {};
+  }, [balances]);
+
+  const selectedBalance = useMemo(() => {
+    if (form.service === "SMS") {
+      return Number(balanceSource?.sms_balance || 0);
+    }
+
+    if (form.service === "DATA") {
+      return Number(balanceSource?.data_balance || 0);
+    }
+
+    if (form.service === "AIRTIME") {
+      return Number(balanceSource?.airtime_balance || 0);
+    }
+
+    return 0;
+  }, [form.service, balanceSource]);
+
   const isData = form.service === "DATA";
+  const isAirtime = form.service === "AIRTIME";
+  const isSms = form.service === "SMS";
   const isReduce = form.mode === "reduce";
+
+  const shouldShowProvisionModuleFields = isData;
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({
       ...prev,
       [field]: e.target.value,
     }));
+  };
+
+  const handleServiceChange = (e) => {
+    const selectedService = e.target.value;
+
+    setForm((prev) => ({
+      ...prev,
+      service: selectedService,
+      module: "",
+    }));
+  };
+
+  const getBalanceLabel = () => {
+    if (form.service === "SMS") return "SMS units";
+    if (form.service === "DATA") return "GB";
+    if (form.service === "AIRTIME") return "units";
+    return "units";
   };
 
   const handleSubmit = async (e) => {
@@ -87,8 +142,13 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
       return;
     }
 
-    if (form.mode === "provision" && !form.module.trim()) {
+    if (form.mode === "provision" && isData && !form.module.trim()) {
       setErrorMessage("Please enter a package or module.");
+      return;
+    }
+
+    if (form.mode === "provision" && isSms && !applicationId) {
+      setErrorMessage("SMS application ID is missing.");
       return;
     }
 
@@ -106,12 +166,26 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
       setSubmitting(true);
 
       if (form.mode === "provision") {
-        await AutoProvisionAdminBalance({
-          package: form.module.trim(),
-          units: Math.floor(unitsNumber),
-          service: form.service,
-          org_id: orgId,
-        });
+        if (isSms) {
+          const response = await provisionSmsUnits({
+            newRequest: {
+              package: SMS_PACKAGE,
+              units: Math.floor(unitsNumber),
+              application_id: applicationId,
+            },
+          });
+
+          if (response?.errors?._error) {
+            throw new Error(response.errors._error);
+          }
+        } else {
+          await AutoProvisionAdminBalance({
+            package: isAirtime ? null : form.module.trim(),
+            units: Math.floor(unitsNumber),
+            service: form.service,
+            org_id: orgId,
+          });
+        }
 
         setSuccessMessage("Balance provisioned successfully.");
       } else {
@@ -136,6 +210,8 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
       setErrorMessage(
         err?.response?.data?.error ||
           err?.response?.data?.message ||
+          err?.errors?._error ||
+          err?.message ||
           "Request failed. Please try again."
       );
     } finally {
@@ -192,10 +268,13 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                   />
                 </svg>
               </div>
+
               <h2 className="mb-4 text-2xl font-semibold text-green-600">
                 Success!
               </h2>
+
               <p className="mb-6 text-gray-900">{successMessage}</p>
+
               <button
                 onClick={onClose}
                 className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 transition-colors"
@@ -220,10 +299,13 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                   />
                 </svg>
               </div>
+
               <h2 className="mb-4 text-2xl font-semibold text-red-600">
                 Oops!
               </h2>
+
               <p className="mb-6 text-gray-900">{errorMessage}</p>
+
               <button
                 onClick={() => setErrorMessage("")}
                 className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 transition-colors"
@@ -237,6 +319,7 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                 <h3 className="text-xl font-semibold text-gray-900">
                   Adjust Balance
                 </h3>
+
                 <button
                   onClick={onClose}
                   disabled={submitting}
@@ -263,20 +346,14 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
 
               <form onSubmit={handleSubmit} className="p-6">
                 <div className="space-y-4">
-
                   <div>
                     <label className="block mb-2 text-sm font-medium text-gray-900">
                       Service
                     </label>
+
                     <select
                       value={form.service}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          service: e.target.value,
-                          module: "",
-                        }))
-                      }
+                      onChange={handleServiceChange}
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
                       disabled={submitting}
                     >
@@ -288,11 +365,41 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                     </select>
                   </div>
 
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          Current {form.service} Balance
+                        </p>
+
+                        <p className="mt-1 text-2xl font-semibold text-gray-900">
+                          {Number(selectedBalance || 0).toLocaleString()}{" "}
+                          <span className="text-sm font-medium text-gray-500">
+                            {getBalanceLabel()}
+                          </span>
+                        </p>
+                      </div>
+
+                      {isSms ? (
+                        <div className="text-right">
+                          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                            SMS Package
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold text-gray-900">
+                            {SMS_PACKAGE}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
                   {form.mode === "reduce" ? (
                     <div>
                       <label className="block mb-2 text-sm font-medium text-gray-900">
                         {isData ? "Module" : "Module (optional)"}
                       </label>
+
                       <select
                         value={form.module}
                         onChange={handleChange("module")}
@@ -302,6 +409,7 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                         <option value="">
                           {isData ? "Select module..." : "Not required"}
                         </option>
+
                         {filteredModules.map((acc) => (
                           <option key={acc.id} value={acc.module || ""}>
                             {acc.module || "Unnamed module"} (
@@ -312,52 +420,53 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                     </div>
                   ) : (
                     <>
-                      {filteredModules.length > 0 ? (
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-900">
-                            Use Existing Module
-                          </label>
-                          <select
-                            value={
-                              filteredModules.some(
-                                (acc) => acc.module === form.module
-                              )
-                                ? form.module
-                                : ""
-                            }
-                            onChange={handleChange("module")}
-                            disabled={submitting}
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
-                          >
-                            <option value="">Custom / New Module</option>
-                            {filteredModules.map((acc) => (
-                              <option key={acc.id} value={acc.module || ""}>
-                                {acc.module || "Unnamed module"}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ) : null}
+                      {shouldShowProvisionModuleFields ? (
+                        <>
+                          {filteredModules.length > 0 ? (
+                            <div>
+                              <label className="block mb-2 text-sm font-medium text-gray-900">
+                                Use Existing Module
+                              </label>
 
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-900">
-                          Package / Module
-                        </label>
-                        <input
-                          type="text"
-                          value={form.module}
-                          onChange={handleChange("module")}
-                          placeholder={
-                            form.service === "DATA"
-                              ? "e.g. 5GB"
-                              : form.service === "AIRTIME"
-                              ? "e.g. AIRTIME"
-                              : "e.g. SMS"
-                          }
-                          disabled={submitting}
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
-                        />
-                      </div>
+                              <select
+                                value={
+                                  filteredModules.some(
+                                    (acc) => acc.module === form.module
+                                  )
+                                    ? form.module
+                                    : ""
+                                }
+                                onChange={handleChange("module")}
+                                disabled={submitting}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
+                              >
+                                <option value="">Custom / New Module</option>
+
+                                {filteredModules.map((acc) => (
+                                  <option key={acc.id} value={acc.module || ""}>
+                                    {acc.module || "Unnamed module"}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : null}
+
+                          <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-900">
+                              Package / Module
+                            </label>
+
+                            <input
+                              type="text"
+                              value={form.module}
+                              onChange={handleChange("module")}
+                              placeholder="e.g. 5GB"
+                              disabled={submitting}
+                              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
+                            />
+                          </div>
+                        </>
+                      ) : null}
                     </>
                   )}
 
@@ -365,6 +474,7 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                     <label className="block mb-2 text-sm font-medium text-gray-900">
                       Units
                     </label>
+
                     <input
                       type="number"
                       min="1"
@@ -372,7 +482,13 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                       onChange={handleChange("units")}
                       disabled={submitting}
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
-                      placeholder="Enter units"
+                      placeholder={
+                        isAirtime
+                          ? "Enter airtime units"
+                          : isSms
+                          ? "Enter SMS units"
+                          : "Enter units"
+                      }
                     />
                   </div>
 
@@ -380,6 +496,7 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                     <label className="block mb-2 text-sm font-medium text-gray-900">
                       Reason {isReduce ? "*" : ""}
                     </label>
+
                     <textarea
                       value={form.reason}
                       onChange={handleChange("reason")}
@@ -399,6 +516,7 @@ const AdjustBalanceModal = ({ open, onClose, orgId, accounts = [], onSuccess }) 
                       <h4 className="text-sm font-medium text-gray-900 mb-2">
                         Current {form.service} modules
                       </h4>
+
                       <div className="space-y-1">
                         {filteredModules.map((acc) => (
                           <p key={acc.id} className="text-sm text-gray-600">
