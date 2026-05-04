@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   GetAdminOrganizations,
   GetAdminOrganizationProfile,
-  GetAdminRechargeRequests,
+  GetAdminAllRecharges,
   AutoProvisionAdminBalance,
 } from "@/app/api/actions/admin/admin";
 
@@ -58,10 +58,10 @@ const ProvisionUnitsPage = () => {
       setPageError("");
       setSuccessMessage("");
 
-      const [organizationsResult, rechargeRequestsResult] =
+      const [organizationsResult, allRechargesResult] =
         await Promise.allSettled([
           GetAdminOrganizations("limit=500"),
-          GetAdminRechargeRequests("page=1&page_size=50"),
+          GetAdminAllRecharges("page=1&page_size=50"),
         ]);
 
       if (organizationsResult.status === "fulfilled") {
@@ -70,11 +70,17 @@ const ProvisionUnitsPage = () => {
         setOrganizations([]);
       }
 
-      if (rechargeRequestsResult.status === "fulfilled") {
+      if (allRechargesResult.status === "fulfilled") {
         setRecentProvisions(
-          rechargeRequestsResult.value?.data ||
-            rechargeRequestsResult.value?.items ||
-            rechargeRequestsResult.value?.recharges ||
+          allRechargesResult.value?.data?.items ||
+            allRechargesResult.value?.data?.recharges ||
+            allRechargesResult.value?.data?.records ||
+            allRechargesResult.value?.data?.results ||
+            allRechargesResult.value?.items ||
+            allRechargesResult.value?.recharges ||
+            allRechargesResult.value?.records ||
+            allRechargesResult.value?.results ||
+            allRechargesResult.value?.data ||
             []
         );
       } else {
@@ -83,7 +89,7 @@ const ProvisionUnitsPage = () => {
 
       if (
         organizationsResult.status === "rejected" &&
-        rechargeRequestsResult.status === "rejected"
+        allRechargesResult.status === "rejected"
       ) {
         setPageError("Failed to load provisioning data.");
       } else if (organizationsResult.status === "rejected") {
@@ -91,9 +97,9 @@ const ProvisionUnitsPage = () => {
           organizationsResult.reason?.response?.data?.error ||
             "Failed to load organizations."
         );
-      } else if (rechargeRequestsResult.status === "rejected") {
+      } else if (allRechargesResult.status === "rejected") {
         setPageError(
-          rechargeRequestsResult.reason?.response?.data?.error ||
+          allRechargesResult.reason?.response?.data?.error ||
             "Failed to load recent provisions."
         );
       }
@@ -205,6 +211,8 @@ const ProvisionUnitsPage = () => {
   function normalizeProvisionService(item) {
     const raw = String(
       item?.service ||
+        item?.service_name ||
+        item?.service_type ||
         item?.transaction_type ||
         item?.type ||
         item?.module ||
@@ -223,16 +231,27 @@ const ProvisionUnitsPage = () => {
   }
 
   function getProvisionUnits(item) {
-    return Number(item?.units ?? item?.amount ?? item?.quantity ?? 0);
+    return Number(
+      item?.units ??
+        item?.amount ??
+        item?.quantity ??
+        item?.value ??
+        item?.recharge_amount ??
+        item?.credited_units ??
+        0
+    );
   }
 
   function getProvisionDate(item) {
     return (
       item?.created_at ||
       item?.createdat ||
+      item?.requested_at ||
+      item?.recharge_date ||
       item?.updated_at ||
       item?.updatedat ||
       item?.date ||
+      item?.timestamp ||
       null
     );
   }
@@ -255,8 +274,17 @@ const ProvisionUnitsPage = () => {
         const service = normalizeProvisionService(item);
 
         return {
-          id: item?.id || item?.request_id || `PRV-${index + 1}`,
-          organization: org?.name || item?.organization || applicationId || "—",
+          id: item?.id || item?.request_id || item?.recharge_id || `PRV-${index + 1}`,
+          organization:
+            org?.name ||
+            item?.organization_name ||
+            item?.organization?.name ||
+            item?.organization ||
+            item?.org_name ||
+            item?.business_name ||
+            item?.company_name ||
+            applicationId ||
+            "—",
           service,
           amount: `${formatNumber(getProvisionUnits(item))} units`,
           admin: getProvisionAdmin(item),

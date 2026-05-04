@@ -343,3 +343,32 @@ export async function ApproveAdminSMSSenderID(serviceId) {
     throw error;
   }
 }
+
+export async function GetAdminAllRecharges(query = "") {
+  const config = await authHeaders();
+
+  try {
+    const url = withQuery(`${apiUrl.GET_BALANCE}/admin/recharges/list-all`, query);
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch all recharge activities:", error.message);
+    throw error;
+  }
+}
+
+function normalizeRechargeListPayload(payload) {
+  const rows =
+    payload?.data?.items ||
+    payload?.data?.recharges ||
+    payload?.data?.records ||
+    payload?.data?.results ||
+    payload?.items ||
+    payload?.recharges ||
+    payload?.records ||
+    payload?.results ||
+    payload?.data ||
+    [];
+
+  return Array.isArray(rows) ? rows : [];
+}
