@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   GetAdminBalancesSummary,
-  GetAdminRechargeRequests,
+  GetAdminAllRecharges,
   AutoProvisionAdminBalance,
 } from "@/app/api/actions/admin/admin";
 
@@ -55,7 +55,7 @@ const AccountsPage = () => {
 
       const [summaryResult, rechargeResult] = await Promise.allSettled([
         GetAdminBalancesSummary(),
-        GetAdminRechargeRequests("page=1&page_size=100"),
+        GetAdminAllRecharges("page=1&page_size=100"),
       ]);
 
       if (summaryResult.status === "fulfilled") {
@@ -71,9 +71,15 @@ const AccountsPage = () => {
 
       if (rechargeResult.status === "fulfilled") {
         setRecharges(
-          rechargeResult.value?.data ||
+          rechargeResult.value?.data?.items ||
+            rechargeResult.value?.data?.recharges ||
+            rechargeResult.value?.data?.records ||
+            rechargeResult.value?.data?.results ||
             rechargeResult.value?.items ||
             rechargeResult.value?.recharges ||
+            rechargeResult.value?.records ||
+            rechargeResult.value?.results ||
+            rechargeResult.value?.data ||
             []
         );
       } else {
@@ -95,6 +101,8 @@ const AccountsPage = () => {
   function normalizeService(rawItem) {
     const value = String(
       rawItem?.service ||
+        rawItem?.service_name ||
+        rawItem?.service_type ||
         rawItem?.transaction_type ||
         rawItem?.type ||
         rawItem?.module ||
@@ -137,9 +145,12 @@ const AccountsPage = () => {
     return (
       item?.created_at ||
       item?.createdat ||
+      item?.requested_at ||
+      item?.recharge_date ||
       item?.updated_at ||
       item?.updatedat ||
       item?.date ||
+      item?.timestamp ||
       null
     );
   }
@@ -150,7 +161,10 @@ const AccountsPage = () => {
       item?.quantity ??
       item?.amount_units ??
       item?.top_up_units ??
+      item?.recharge_amount ??
+      item?.credited_units ??
       0;
+
     return Number(value || 0);
   }
 
@@ -172,7 +186,11 @@ const AccountsPage = () => {
 
   function getRechargeStatus(item) {
     return String(
-      item?.status || item?.status_code || item?.approval_status || "APPROVED"
+      item?.status ||
+        item?.status_code ||
+        item?.approval_status ||
+        item?.request_status ||
+        "APPROVED"
     ).toUpperCase();
   }
 
@@ -463,14 +481,20 @@ const AccountsPage = () => {
   const topUpHistory = useMemo(() => {
     return filteredApprovedRecharges
       .map((item, index) => ({
-        id: item?.id || index,
+        id: item?.id || item?.request_id || item?.recharge_id || index,
         service: normalizeService(item),
         serviceLabel: SERVICE_LABELS[normalizeService(item)] || normalizeService(item),
         units: getRechargeUnits(item),
         cashValue: getRechargeCashValue(item),
         status: getRechargeStatus(item),
         date: getRechargeDate(item),
-        package: item?.package || item?.module || item?.service || "—",
+        package:
+          item?.package ||
+          item?.module ||
+          item?.service_name ||
+          item?.service ||
+          item?.service_type ||
+          "—",
       }))
       .sort((a, b) => {
         const left = a.date ? new Date(a.date).getTime() : 0;

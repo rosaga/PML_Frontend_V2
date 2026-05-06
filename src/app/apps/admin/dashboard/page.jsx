@@ -6,7 +6,7 @@ import {
   GetAdminBalancesSummary,
   GetAdminOrganizations,
   GetAdminDataDispatches,
-  GetAdminRechargeRequests,
+  GetAdminAllRecharges,
 } from "@/app/api/actions/admin/admin";
 
 const DashboardPage = () => {
@@ -39,7 +39,7 @@ const DashboardPage = () => {
         GetAdminDashboardSummary(),
         GetAdminBalancesSummary(),
         GetAdminOrganizations("recent=true&limit=5"),
-        GetAdminRechargeRequests("page=1&page_size=5"),
+        GetAdminAllRecharges("page=1&page_size=5"),
         GetAdminDataDispatches("status=FAILED&page=1&page_size=8"),
       ]);
 
@@ -47,7 +47,7 @@ const DashboardPage = () => {
         summaryResult,
         balancesResult,
         recentOrgsResult,
-        rechargeRequestsResult,
+        allRechargesResult,
         failedDispatchesResult,
       ] = results;
 
@@ -60,12 +60,9 @@ const DashboardPage = () => {
       const recentOrganizationsData =
         recentOrgsResult.status === "fulfilled" ? recentOrgsResult.value?.data || [] : [];
 
-      const rechargeRequestsData =
-        rechargeRequestsResult.status === "fulfilled"
-          ? rechargeRequestsResult.value?.data ||
-            rechargeRequestsResult.value?.recharges ||
-            rechargeRequestsResult.value?.items ||
-            []
+      const recentActivityData =
+        allRechargesResult.status === "fulfilled"
+          ? normalizeRechargeListPayload(allRechargesResult.value)
           : [];
 
       const failedDispatchesData =
@@ -76,7 +73,7 @@ const DashboardPage = () => {
       setSummary(summaryData);
       setBalances(balancesData);
       setRecentOrganizations(recentOrganizationsData);
-      setRecentServiceRequests(rechargeRequestsData);
+      setRecentServiceRequests(recentActivityData);
       setFailedDispatches(failedDispatchesData);
 
       const criticalErrors = [];
@@ -101,11 +98,11 @@ const DashboardPage = () => {
         setError(criticalErrors.join(" | "));
       }
 
-      if (rechargeRequestsResult.status === "rejected") {
+      if (allRechargesResult.status === "rejected") {
         setServiceRequestsError(
-          rechargeRequestsResult.reason?.response?.data?.error ||
-            rechargeRequestsResult.reason?.message ||
-            "Failed to load recent service requests"
+          allRechargesResult.reason?.response?.data?.error ||
+            allRechargesResult.reason?.message ||
+            "Failed to load recent activity"
         );
       }
     } catch (err) {
@@ -114,6 +111,22 @@ const DashboardPage = () => {
     } finally {
       setLoading(false);
     }
+  }
+
+  function normalizeRechargeListPayload(payload) {
+    const rows =
+      payload?.data?.items ||
+      payload?.data?.recharges ||
+      payload?.data?.records ||
+      payload?.data?.results ||
+      payload?.items ||
+      payload?.recharges ||
+      payload?.records ||
+      payload?.results ||
+      payload?.data ||
+      [];
+
+    return Array.isArray(rows) ? rows : [];
   }
 
   function formatNumber(value) {
@@ -283,10 +296,17 @@ const DashboardPage = () => {
   function getOrganizationName(item) {
     return (
       item?.organization_name ||
+      item?.organization?.name ||
       item?.organization ||
+      item?.org_name ||
+      item?.business_name ||
+      item?.company_name ||
       item?.name ||
       item?.app_name ||
+      item?.application_name ||
       item?.application_id ||
+      item?.org_id ||
+      item?.organization_id ||
       "—"
     );
   }
@@ -295,14 +315,49 @@ const DashboardPage = () => {
     return (
       item?.service ||
       item?.service_name ||
-      item?.package ||
+      item?.service_type ||
       item?.module ||
+      item?.account_type ||
+      item?.type ||
+      item?.package ||
+      item?.bundle_type ||
       "—"
     );
   }
 
   function getRequestStatus(item) {
-    return item?.status || item?.status_code || item?.approval_status || "Pending";
+    return (
+      item?.status ||
+      item?.approval_status ||
+      item?.status_code ||
+      item?.request_status ||
+      "Pending"
+    );
+  }
+
+  function getRechargeAmount(item) {
+    const amount =
+      item?.amount ??
+      item?.units ??
+      item?.quantity ??
+      item?.value ??
+      item?.recharge_amount ??
+      item?.credited_units;
+
+    if (amount === null || amount === undefined || amount === "") return "—";
+
+    return Number(amount).toLocaleString();
+  }
+
+  function getActivityDate(item) {
+    return (
+      item?.created_at ||
+      item?.requested_at ||
+      item?.recharge_date ||
+      item?.date ||
+      item?.updated_at ||
+      item?.timestamp
+    );
   }
 
   if (!isClient) return null;
@@ -381,42 +436,6 @@ const DashboardPage = () => {
               ))}
             </div>
 
-            <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <h2 className="text-[18px] font-semibold text-gray-900">
-                System Health
-              </h2>
-
-              <div className="mt-5 divide-y divide-gray-100">
-                {systemHealth.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center justify-between gap-4 py-4"
-                  >
-                    <div>
-                      <p className="text-[14px] font-medium text-gray-900">
-                        {item.title}
-                      </p>
-                      <p className="mt-1 text-[13px] text-gray-500">
-                        {item.note}
-                      </p>
-                    </div>
-
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${getStatusPill(
-                        item.status
-                      )} ${
-                        item.status === "Operational"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : ""
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="mb-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
               <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="border-b border-gray-200 px-4 py-4">
@@ -479,7 +498,7 @@ const DashboardPage = () => {
               <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="border-b border-gray-200 px-4 py-4">
                   <h2 className="text-[18px] font-semibold text-gray-900">
-                    Recent Service Requests
+                    Recent Activity
                   </h2>
                 </div>
 
@@ -500,6 +519,12 @@ const DashboardPage = () => {
                           Service
                         </th>
                         <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Amount / Units
+                        </th>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                          Date
+                        </th>
+                        <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
                           Status
                         </th>
                       </tr>
@@ -508,20 +533,34 @@ const DashboardPage = () => {
                       {recentServiceRequests.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={3}
+                            colSpan={5}
                             className="px-4 py-8 text-center text-sm text-gray-500"
                           >
-                            No recent service requests found
+                            No recent activity found
                           </td>
                         </tr>
                       ) : (
                         recentServiceRequests.slice(0, 4).map((item, index) => (
-                          <tr key={item?.id || item?.request_id || index}>
+                          <tr
+                            key={
+                              item?.id ||
+                              item?.request_id ||
+                              item?.recharge_id ||
+                              item?.reference ||
+                              index
+                            }
+                          >
                             <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-gray-900">
                               {getOrganizationName(item)}
                             </td>
                             <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">
                               {getServiceName(item)}
+                            </td>
+                            <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">
+                              {getRechargeAmount(item)}
+                            </td>
+                            <td className="border-b border-gray-100 px-4 py-4 text-[13px] text-gray-600">
+                              {formatDateTime(getActivityDate(item))}
                             </td>
                             <td className="border-b border-gray-100 px-4 py-4">
                               <span

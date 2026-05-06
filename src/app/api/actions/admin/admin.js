@@ -318,6 +318,35 @@ export async function GetAdminSMSCampaignSummary(campaignId) {
   }
 }
 
+export async function GetAdminAllRecharges(query = "") {
+  const config = await authHeaders();
+
+  try {
+    const url = withQuery(`${apiUrl.GET_BALANCE}/admin/recharges/list-all`, query);
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch all recharge activities:", error.message);
+    throw error;
+  }
+}
+
+function normalizeRechargeListPayload(payload) {
+  const rows =
+    payload?.data?.items ||
+    payload?.data?.recharges ||
+    payload?.data?.records ||
+    payload?.data?.results ||
+    payload?.items ||
+    payload?.recharges ||
+    payload?.records ||
+    payload?.results ||
+    payload?.data ||
+    [];
+
+  return Array.isArray(rows) ? rows : [];
+}
+
 export async function GetAdminSMSSenderIDs(query = "") {
   const config = await authHeaders();
 
@@ -327,6 +356,32 @@ export async function GetAdminSMSSenderIDs(query = "") {
     return res.data;
   } catch (error) {
     console.error("Failed to fetch SMS sender IDs:", error.message);
+    throw error;
+  }
+}
+
+export async function CreateAdminSMSSenderID(payload) {
+  const config = await authHeaders();
+
+  try {
+    const url = `${apiUrl.MESSAGE_COUNTS}/admin/sender-ids`;
+    const res = await axios.post(url, payload, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to create SMS sender ID:", error.message);
+    throw error;
+  }
+}
+
+export async function UpdateAdminSMSSenderID(serviceId, payload) {
+  const config = await authHeaders();
+
+  try {
+    const url = `${apiUrl.MESSAGE_COUNTS}/admin/sender-ids/${serviceId}`;
+    const res = await axios.put(url, payload, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to update SMS sender ID:", error.message);
     throw error;
   }
 }
