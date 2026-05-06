@@ -6,7 +6,8 @@ import {
   GetAdminSMSCampaignSummaries,
   GetAdminSMSSenderIDs,
   ApproveAdminSMSSenderID,
-  GetAdminOrganizations,
+  UpdateAdminSMSSenderID,
+  CreateAdminSMSSenderID,
 } from "@/app/api/actions/admin/admin";
 
 const MetricCard = ({ title, value, subtitle, iconBg, iconColor, icon }) => {
@@ -37,13 +38,14 @@ const MetricCard = ({ title, value, subtitle, iconBg, iconColor, icon }) => {
 const Tabs = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: "campaigns", label: "Campaigns" },
-    { id: "senderIdApprovals", label: "Sender ID Approvals" },
+    { id: "senderIds", label: "Sender IDs" },
   ];
 
   return (
     <div className="mb-8 inline-flex rounded-full bg-gray-200 p-1">
       {tabs.map((tab) => {
         const active = activeTab === tab.id;
+
         return (
           <button
             key={tab.id}
@@ -73,9 +75,228 @@ const CardShell = ({ title, subtitle, rightAction, children }) => {
             <p className="mt-2 text-sm text-gray-500">{subtitle}</p>
           ) : null}
         </div>
+
         {rightAction}
       </div>
+
       {children}
+    </div>
+  );
+};
+
+const Pagination = ({
+  page,
+  pageSize,
+  totalPages,
+  count,
+  onPageChange,
+  onPageSizeChange,
+  disabled,
+}) => {
+  const safeTotalPages = totalPages || 1;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 px-6 py-4">
+      <div className="text-sm text-gray-500">
+        Page <span className="font-semibold text-gray-900">{page}</span> of{" "}
+        <span className="font-semibold text-gray-900">{safeTotalPages}</span>
+        {" • "}
+        Total: <span className="font-semibold text-gray-900">{count || 0}</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          disabled={disabled}
+          className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-gray-400 disabled:opacity-60"
+        >
+          <option value={10}>10 rows</option>
+          <option value={20}>20 rows</option>
+          <option value={50}>50 rows</option>
+          <option value={100}>100 rows</option>
+        </select>
+
+        <button
+          type="button"
+          onClick={() => onPageChange(page - 1)}
+          disabled={disabled || page <= 1}
+          className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Previous
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          disabled={disabled || page >= safeTotalPages}
+          className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const SenderStatusBadge = ({ status }) => {
+  const normalized = String(status || "").toUpperCase();
+
+  if (normalized === "SVC200") {
+    return (
+      <span className="inline-flex rounded-full bg-[#02051d] px-4 py-1.5 text-xs font-bold text-white">
+        Active
+      </span>
+    );
+  }
+
+  if (normalized === "SVC202") {
+    return (
+      <span className="inline-flex rounded-full bg-amber-100 px-4 py-1.5 text-xs font-bold text-amber-800">
+        Activation Pending
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex rounded-full bg-gray-100 px-4 py-1.5 text-xs font-bold text-gray-700">
+      {status || "Unknown"}
+    </span>
+  );
+};
+
+const EditSenderIDModal = ({
+  open,
+  form,
+  setForm,
+  onClose,
+  onSubmit,
+  loading,
+}) => {
+  if (!open) return null;
+
+  function updateField(field, value) {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+        <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Edit Sender ID</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Update the sender name, provider, country, channel, or message type.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-full p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4 px-6 py-5">
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-gray-700">
+              Sender ID Name
+            </label>
+            <input
+              value={form.name}
+              onChange={(e) => updateField("name", e.target.value)}
+              className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-gray-400"
+              placeholder="Example: PEAKMOBILE"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-gray-700">
+              Provider
+            </label>
+            <input
+              value={form.provider}
+              onChange={(e) => updateField("provider", e.target.value)}
+              className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-gray-400"
+              placeholder="Example: Safaricom"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-700">
+                Country Code
+              </label>
+              <input
+                value={form.country_code}
+                onChange={(e) =>
+                  updateField("country_code", e.target.value.toUpperCase())
+                }
+                className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-gray-400"
+                placeholder="KE"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-700">
+                Channel
+              </label>
+              <input
+                value={form.channel}
+                onChange={(e) =>
+                  updateField("channel", e.target.value.toUpperCase())
+                }
+                className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm outline-none focus:border-gray-400"
+                placeholder="SENDERNAME"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-gray-700">
+              Message Type
+            </label>
+            <select
+              value={form.message_type}
+              onChange={(e) => updateField("message_type", e.target.value)}
+              className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-gray-400"
+              required
+            >
+              <option value="TRANSACTIONAL">TRANSACTIONAL</option>
+              <option value="PROMOTIONAL">PROMOTIONAL</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="h-11 rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="h-11 rounded-xl bg-[#02051d] px-5 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
@@ -85,10 +306,29 @@ export default function BulkSMSManagementPage() {
   const [activeTab, setActiveTab] = useState("campaigns");
 
   const [summary, setSummary] = useState(null);
+
   const [campaigns, setCampaigns] = useState([]);
   const [campaignsMeta, setCampaignsMeta] = useState(null);
+  const [campaignPage, setCampaignPage] = useState(1);
+  const [campaignPageSize, setCampaignPageSize] = useState(20);
+
   const [senderIds, setSenderIds] = useState([]);
-  const [organizations, setOrganizations] = useState([]);
+  const [senderIdsMeta, setSenderIdsMeta] = useState(null);
+  const [senderPage, setSenderPage] = useState(1);
+  const [senderPageSize, setSenderPageSize] = useState(20);
+  const [senderStatusFilter, setSenderStatusFilter] = useState("");
+  const [senderMessageTypeFilter, setSenderMessageTypeFilter] = useState("");
+  const [senderSearch, setSenderSearch] = useState("");
+
+  const [showCreateSenderForm, setShowCreateSenderForm] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createSenderForm, setCreateSenderForm] = useState({
+    name: "",
+    provider: "Safaricom",
+    country_code: "KE",
+    channel: "SENDERNAME",
+    message_type: "TRANSACTIONAL",
+  });
 
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
@@ -97,7 +337,17 @@ export default function BulkSMSManagementPage() {
   const [error, setError] = useState("");
   const [campaignsError, setCampaignsError] = useState("");
   const [senderIdsError, setSenderIdsError] = useState("");
+
   const [approveLoadingId, setApproveLoadingId] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editingSender, setEditingSender] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    provider: "",
+    country_code: "KE",
+    channel: "SENDERNAME",
+    message_type: "TRANSACTIONAL",
+  });
 
   useEffect(() => {
     setIsClient(true);
@@ -115,23 +365,37 @@ export default function BulkSMSManagementPage() {
       fetchCampaigns();
     }
 
-    if (activeTab === "senderIdApprovals") {
+    if (activeTab === "senderIds") {
       fetchSenderIds();
     }
-  }, [activeTab, isClient]);
+  }, [
+    activeTab,
+    isClient,
+    campaignPage,
+    campaignPageSize,
+    senderPage,
+    senderPageSize,
+    senderStatusFilter,
+    senderMessageTypeFilter,
+  ]);
+
+  function buildQuery(params) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        searchParams.set(key, String(value));
+      }
+    });
+
+    return searchParams.toString();
+  }
 
   async function fetchInitialData() {
     try {
       setError("");
-
-      const [summaryResult, orgsResult] = await Promise.allSettled([
-        fetchSummary(),
-        fetchOrganizations(),
-      ]);
-
-      if (summaryResult.status === "rejected" && orgsResult.status === "rejected") {
-        setError("Failed to load Bulk SMS management data.");
-      }
+      await fetchSummary();
+      await fetchCampaigns();
     } catch (err) {
       console.error("Failed to load initial bulk SMS data:", err);
       setError("Failed to load Bulk SMS management data.");
@@ -141,8 +405,10 @@ export default function BulkSMSManagementPage() {
   async function fetchSummary() {
     try {
       setLoadingSummary(true);
+
       const res = await GetAdminSMSDashboardSummary();
       setSummary(res || null);
+
       return res;
     } catch (err) {
       console.error("Failed to load SMS dashboard summary:", err);
@@ -156,26 +422,23 @@ export default function BulkSMSManagementPage() {
     }
   }
 
-  async function fetchOrganizations() {
-    try {
-      const res = await GetAdminOrganizations("limit=500");
-      setOrganizations(res?.data || []);
-      return res;
-    } catch (err) {
-      console.error("Failed to load organizations:", err);
-      setOrganizations([]);
-      throw err;
-    }
-  }
-
   async function fetchCampaigns() {
     try {
       setLoadingCampaigns(true);
       setCampaignsError("");
 
-      const res = await GetAdminSMSCampaignSummaries("page=1&page_size=50");
+      const query = buildQuery({
+        page: campaignPage,
+        page_size: campaignPageSize,
+      });
+
+      const res = await GetAdminSMSCampaignSummaries(query);
+
       setCampaigns(res?.data || []);
-      setCampaignsMeta(res?.pagination || null);
+      setCampaignsMeta({
+        ...(res?.pagination || {}),
+        count: res?.count || 0,
+      });
     } catch (err) {
       console.error("Failed to load SMS campaigns:", err);
       setCampaigns([]);
@@ -188,27 +451,96 @@ export default function BulkSMSManagementPage() {
     }
   }
 
-  async function fetchSenderIds() {
+  async function fetchSenderIds(overrides = {}) {
     try {
       setLoadingSenderIds(true);
       setSenderIdsError("");
 
-      const res = await GetAdminSMSSenderIDs("page=1&page_size=100");
+      const query = buildQuery({
+        page: overrides.page || senderPage,
+        page_size: overrides.pageSize || senderPageSize,
+        status:
+          overrides.status !== undefined ? overrides.status : senderStatusFilter,
+        message_type:
+          overrides.messageType !== undefined
+            ? overrides.messageType
+            : senderMessageTypeFilter,
+        search: overrides.search !== undefined ? overrides.search : senderSearch,
+      });
+
+      const res = await GetAdminSMSSenderIDs(query);
+
       setSenderIds(res?.data || []);
+      setSenderIdsMeta({
+        ...(res?.pagination || {}),
+        count: res?.count || 0,
+      });
     } catch (err) {
       console.error("Failed to load sender IDs:", err);
       setSenderIds([]);
+      setSenderIdsMeta(null);
       setSenderIdsError(
-        err?.response?.data?.error || "Failed to load sender ID approvals."
+        err?.response?.data?.error || "Failed to load sender IDs."
       );
     } finally {
       setLoadingSenderIds(false);
     }
   }
 
+  function updateCreateSenderField(field, value) {
+    setCreateSenderForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  function resetCreateSenderForm() {
+    setCreateSenderForm({
+      name: "",
+      provider: "Safaricom",
+      country_code: "KE",
+      channel: "SENDERNAME",
+      message_type: "TRANSACTIONAL",
+    });
+  }
+
+  async function handleCreateSenderID(e) {
+    e.preventDefault();
+
+    try {
+      setCreateLoading(true);
+      setSenderIdsError("");
+
+      await CreateAdminSMSSenderID({
+        name: createSenderForm.name,
+        provider: createSenderForm.provider,
+        country_code: createSenderForm.country_code,
+        channel: createSenderForm.channel,
+        message_type: createSenderForm.message_type,
+      });
+
+      resetCreateSenderForm();
+      setShowCreateSenderForm(false);
+      setSenderPage(1);
+
+      await fetchSenderIds({ page: 1 });
+    } catch (err) {
+      console.error("Failed to create sender ID:", err);
+      setSenderIdsError(
+        err?.response?.data?.error || "Failed to create sender ID."
+      );
+    } finally {
+      setCreateLoading(false);
+    }
+  }
+
   async function handleApproveSenderId(serviceId) {
+    if (!serviceId) return;
+
     try {
       setApproveLoadingId(serviceId);
+      setSenderIdsError("");
+
       await ApproveAdminSMSSenderID(serviceId);
       await fetchSenderIds();
     } catch (err) {
@@ -221,12 +553,108 @@ export default function BulkSMSManagementPage() {
     }
   }
 
+  function openEditModal(item) {
+    setEditingSender(item);
+    setEditForm({
+      name: item?.name || item?.sender_id || "",
+      provider: item?.provider || "",
+      country_code: item?.country_code || "KE",
+      channel: item?.channel || "SENDERNAME",
+      message_type: item?.message_type || "TRANSACTIONAL",
+    });
+  }
+
+  function closeEditModal() {
+    if (editLoading) return;
+
+    setEditingSender(null);
+    setEditForm({
+      name: "",
+      provider: "",
+      country_code: "KE",
+      channel: "SENDERNAME",
+      message_type: "TRANSACTIONAL",
+    });
+  }
+
+  async function handleUpdateSenderID(e) {
+    e.preventDefault();
+
+    const serviceId = getSenderServiceId(editingSender);
+    if (!serviceId) return;
+
+    try {
+      setEditLoading(true);
+      setSenderIdsError("");
+
+      await UpdateAdminSMSSenderID(serviceId, {
+        name: editForm.name,
+        provider: editForm.provider,
+        country_code: editForm.country_code,
+        channel: editForm.channel,
+        message_type: editForm.message_type,
+      });
+
+      setEditingSender(null);
+
+      await fetchSenderIds();
+    } catch (err) {
+      console.error("Failed to update sender ID:", err);
+      setSenderIdsError(
+        err?.response?.data?.error || "Failed to update sender ID."
+      );
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  function handleSenderFilterChange(field, value) {
+    if (field === "status") {
+      setSenderStatusFilter(value);
+    }
+
+    if (field === "message_type") {
+      setSenderMessageTypeFilter(value);
+    }
+
+    setSenderPage(1);
+  }
+
+  function handleSenderSearchSubmit(e) {
+    e.preventDefault();
+    setSenderPage(1);
+    fetchSenderIds({ page: 1, search: senderSearch });
+  }
+
+  function resetSenderFilters() {
+    setSenderStatusFilter("");
+    setSenderMessageTypeFilter("");
+    setSenderSearch("");
+    setSenderPage(1);
+
+    fetchSenderIds({
+      page: 1,
+      status: "",
+      messageType: "",
+      search: "",
+    });
+  }
+
+  function getSenderServiceId(item) {
+    return item?.id || item?.service_id;
+  }
+
+  function isInactiveSender(item) {
+    return String(item?.status || "").toUpperCase() === "SVC202";
+  }
+
   function formatNumber(value) {
     return Number(value || 0).toLocaleString();
   }
 
   function formatPercent(value) {
     const num = Number(value || 0);
+
     return `${num.toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 1,
@@ -235,20 +663,19 @@ export default function BulkSMSManagementPage() {
 
   function formatDate(value) {
     if (!value) return "—";
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString("en-CA");
-  }
 
-  const organizationsByExternalId = useMemo(() => {
-    const map = {};
-    (organizations || []).forEach((org) => {
-      if (org?.external_id) {
-        map[String(org.external_id)] = org;
-      }
+    const d = new Date(value);
+
+    if (Number.isNaN(d.getTime())) return "—";
+
+    return d.toLocaleString("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
-    return map;
-  }, [organizations]);
+  }
 
   const metrics = useMemo(() => {
     return [
@@ -367,45 +794,26 @@ export default function BulkSMSManagementPage() {
     }));
   }, [campaigns]);
 
-  const senderApprovalRows = useMemo(() => {
-    const allRows = (Array.isArray(senderIds) ? senderIds : []).map((item) => {
-      const rawStatus = String(item?.status || "").toUpperCase();
-      const isApproved =
-        rawStatus.includes("ACTIVE") || rawStatus.includes("APPROVED");
-      const applicationId = item?.application_id || "";
-      const organizationName =
-        organizationsByExternalId[String(applicationId)]?.name ||
-        applicationId ||
-        "—";
-
-      return {
-        serviceId: item?.service_id,
-        senderId: item?.sender_id || "—",
-        organization: organizationName,
-        status: isApproved ? "Approved" : "Pending",
-        requestDate: formatDate(item?.createdat),
-        approvedDate: isApproved ? formatDate(item?.updatedat) : "—",
-        sortDate: isApproved ? item?.updatedat || item?.createdat : item?.createdat,
-      };
-    });
-
-    const pending = allRows
-      .filter((item) => item.status === "Pending")
+  const senderRows = useMemo(() => {
+    return (Array.isArray(senderIds) ? senderIds : [])
+      .map((item) => ({
+        id: getSenderServiceId(item),
+        name: item?.name || item?.sender_id || "—",
+        provider: item?.provider || "—",
+        status: item?.status || "—",
+        countryCode: item?.country_code || "—",
+        channel: item?.channel || "—",
+        messageType: item?.message_type || "—",
+        createdAt: item?.createdat,
+        updatedAt: item?.updatedat,
+        raw: item,
+      }))
       .sort(
         (a, b) =>
-          new Date(b.sortDate || 0).getTime() - new Date(a.sortDate || 0).getTime()
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
       );
-
-    const approved = allRows
-      .filter((item) => item.status === "Approved")
-      .sort(
-        (a, b) =>
-          new Date(b.sortDate || 0).getTime() - new Date(a.sortDate || 0).getTime()
-      )
-      .slice(0, 5);
-
-    return [...pending, ...approved];
-  }, [senderIds, organizationsByExternalId]);
+  }, [senderIds]);
 
   const loading = loadingSummary && !summary;
 
@@ -420,13 +828,23 @@ export default function BulkSMSManagementPage() {
               Bulk SMS Management
             </h1>
             <p className="mt-2 text-[16px] text-gray-600">
-              Monitor SMS campaigns and sender ID approvals
+              Monitor SMS campaigns, sender IDs, and approval status
             </p>
           </div>
 
           <button
             type="button"
-            onClick={fetchInitialData}
+            onClick={() => {
+              fetchSummary();
+
+              if (activeTab === "campaigns") {
+                fetchCampaigns();
+              }
+
+              if (activeTab === "senderIds") {
+                fetchSenderIds();
+              }
+            }}
             className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             Refresh
@@ -456,55 +874,7 @@ export default function BulkSMSManagementPage() {
             {activeTab === "campaigns" && (
               <CardShell
                 title="SMS Campaigns"
-                rightAction={
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Filter
-                    </button>
-
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M7 10L12 15L17 10"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M12 15V3"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Export
-                    </button>
-                  </div>
-                }
+                subtitle="Campaigns are listed from newest to oldest"
               >
                 {campaignsError ? (
                   <div className="px-6 py-4 text-sm text-amber-700">
@@ -547,6 +917,7 @@ export default function BulkSMSManagementPage() {
                           </th>
                         </tr>
                       </thead>
+
                       <tbody>
                         {campaignRows.length === 0 ? (
                           <tr>
@@ -592,21 +963,210 @@ export default function BulkSMSManagementPage() {
                   </div>
                 )}
 
-                {campaignsMeta ? (
-                  <div className="px-6 py-4 text-sm text-gray-500">
-                    Page {campaignsMeta.page || 1} of{" "}
-                    {campaignsMeta.total_pages || 1}
-                    {" • "}Total: {campaignsMeta.total_count || campaigns.length || 0}
-                  </div>
-                ) : null}
+                <Pagination
+                  page={campaignPage}
+                  pageSize={campaignPageSize}
+                  totalPages={campaignsMeta?.total_pages || 1}
+                  count={campaignsMeta?.count || 0}
+                  disabled={loadingCampaigns}
+                  onPageChange={setCampaignPage}
+                  onPageSizeChange={(value) => {
+                    setCampaignPageSize(value);
+                    setCampaignPage(1);
+                  }}
+                />
               </CardShell>
             )}
 
-            {activeTab === "senderIdApprovals" && (
+            {activeTab === "senderIds" && (
               <CardShell
-                title="Sender ID Approvals"
-                subtitle="Showing all pending requests and last 5 approved requests"
+                title="Sender IDs"
+                subtitle="Sender IDs are listed from newest to oldest"
+                rightAction={
+                  <form
+                    onSubmit={handleSenderSearchSubmit}
+                    className="flex flex-wrap items-center gap-3"
+                  >
+                    <input
+                      value={senderSearch}
+                      onChange={(e) => setSenderSearch(e.target.value)}
+                      placeholder="Search sender/provider"
+                      className="h-10 w-56 rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-gray-400"
+                    />
+
+                    <select
+                      value={senderStatusFilter}
+                      onChange={(e) =>
+                        handleSenderFilterChange("status", e.target.value)
+                      }
+                      className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-gray-400"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+
+                    <select
+                      value={senderMessageTypeFilter}
+                      onChange={(e) =>
+                        handleSenderFilterChange("message_type", e.target.value)
+                      }
+                      className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-gray-400"
+                    >
+                      <option value="">All Types</option>
+                      <option value="TRANSACTIONAL">Transactional</option>
+                      <option value="PROMOTIONAL">Promotional</option>
+                    </select>
+
+                    <button
+                      type="submit"
+                      disabled={loadingSenderIds}
+                      className="h-10 rounded-xl bg-[#02051d] px-4 text-sm font-semibold text-white hover:opacity-95 disabled:opacity-60"
+                    >
+                      Search
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={resetSenderFilters}
+                      disabled={loadingSenderIds}
+                      className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                    >
+                      Reset
+                    </button>
+                  </form>
+                }
               >
+                <div className="border-b border-gray-100 px-6 py-5">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Create New Sender Name
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Add a new sender name.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateSenderForm((prev) => !prev)}
+                      className="h-10 rounded-xl bg-[#02051d] px-4 text-sm font-semibold text-white hover:opacity-95"
+                    >
+                      {showCreateSenderForm ? "Hide Form" : "Add Sender Name"}
+                    </button>
+                  </div>
+
+                  {showCreateSenderForm ? (
+                    <form
+                      onSubmit={handleCreateSenderID}
+                      className="mt-5 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-5 md:grid-cols-2 xl:grid-cols-5"
+                    >
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">
+                          Sender Name
+                        </label>
+                        <input
+                          value={createSenderForm.name}
+                          onChange={(e) =>
+                            updateCreateSenderField("name", e.target.value)
+                          }
+                          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-gray-400"
+                          placeholder="PEAKMOBILE"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">
+                          Provider
+                        </label>
+                        <input
+                          value={createSenderForm.provider}
+                          onChange={(e) =>
+                            updateCreateSenderField("provider", e.target.value)
+                          }
+                          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-gray-400"
+                          placeholder="Safaricom"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">
+                          Country Code
+                        </label>
+                        <input
+                          value={createSenderForm.country_code}
+                          onChange={(e) =>
+                            updateCreateSenderField(
+                              "country_code",
+                              e.target.value.toUpperCase()
+                            )
+                          }
+                          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-gray-400"
+                          placeholder="KE"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">
+                          Channel
+                        </label>
+                        <input
+                          value={createSenderForm.channel}
+                          onChange={(e) =>
+                            updateCreateSenderField(
+                              "channel",
+                              e.target.value.toUpperCase()
+                            )
+                          }
+                          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-gray-400"
+                          placeholder="SENDERNAME"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">
+                          Message Type
+                        </label>
+                        <select
+                          value={createSenderForm.message_type}
+                          onChange={(e) =>
+                            updateCreateSenderField("message_type", e.target.value)
+                          }
+                          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none focus:border-gray-400"
+                          required
+                        >
+                          <option value="TRANSACTIONAL">TRANSACTIONAL</option>
+                          <option value="PROMOTIONAL">PROMOTIONAL</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-end gap-3 md:col-span-2 xl:col-span-5">
+                        <button
+                          type="submit"
+                          disabled={createLoading}
+                          className="h-11 rounded-xl bg-[#02051d] px-5 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {createLoading ? "Creating..." : "Create Sender Name"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={resetCreateSenderForm}
+                          disabled={createLoading}
+                          className="h-11 rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </div>
+
                 {senderIdsError ? (
                   <div className="px-6 py-4 text-sm text-amber-700">
                     {senderIdsError}
@@ -623,74 +1183,101 @@ export default function BulkSMSManagementPage() {
                       <thead>
                         <tr>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Sender ID
+                            ID
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Organization
+                            Name
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Provider
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
                             Status
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Request Date
+                            Country
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Approved Date
+                            Channel
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Message Type
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Date Created
+                          </th>
+                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                            Date Updated
                           </th>
                           <th className="border-b border-gray-200 px-6 py-5 text-right text-sm font-semibold text-gray-600">
                             Actions
                           </th>
                         </tr>
                       </thead>
+
                       <tbody>
-                        {senderApprovalRows.length === 0 ? (
+                        {senderRows.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={6}
+                              colSpan={10}
                               className="px-6 py-10 text-center text-sm text-gray-500"
                             >
-                              No sender ID approvals found
+                              No sender IDs found
                             </td>
                           </tr>
                         ) : (
-                          senderApprovalRows.map((item) => (
-                            <tr key={`${item.senderId}-${item.requestDate}-${item.serviceId}`}>
+                          senderRows.map((item) => (
+                            <tr key={item.id}>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                                {item.senderId}
+                                {item.id}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                                {item.name}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                                {item.organization}
+                                {item.provider}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm">
-                                {item.status === "Pending" ? (
-                                  <span className="inline-flex rounded-full bg-gray-100 px-4 py-1.5 text-sm font-semibold text-gray-900">
-                                    Pending
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex rounded-full bg-[#02051d] px-4 py-1.5 text-sm font-semibold text-white">
-                                    Approved
-                                  </span>
-                                )}
+                                <SenderStatusBadge status={item.status} />
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                                {item.requestDate}
+                                {item.countryCode}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                                {item.approvedDate}
+                                {item.channel}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                                {item.messageType}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                                {formatDate(item.createdAt)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                                {formatDate(item.updatedAt)}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-right text-sm">
-                                {item.status === "Pending" ? (
+                                <div className="flex justify-end gap-2">
                                   <button
                                     type="button"
-                                    onClick={() => handleApproveSenderId(item.serviceId)}
-                                    disabled={approveLoadingId === item.serviceId}
-                                    className="rounded-xl bg-[#02051d] px-5 py-3 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                    onClick={() => openEditModal(item.raw)}
+                                    className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                   >
-                                    {approveLoadingId === item.serviceId
-                                      ? "Approving..."
-                                      : "Approve"}
+                                    Edit
                                   </button>
-                                ) : null}
+
+                                  {isInactiveSender(item.raw) ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApproveSenderId(item.id)}
+                                      disabled={approveLoadingId === item.id}
+                                      className="rounded-xl bg-[#02051d] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {approveLoadingId === item.id
+                                        ? "Approving..."
+                                        : "Approve"}
+                                    </button>
+                                  ) : null}
+                                </div>
                               </td>
                             </tr>
                           ))
@@ -699,11 +1286,33 @@ export default function BulkSMSManagementPage() {
                     </table>
                   </div>
                 )}
+
+                <Pagination
+                  page={senderPage}
+                  pageSize={senderPageSize}
+                  totalPages={senderIdsMeta?.total_pages || 1}
+                  count={senderIdsMeta?.count || 0}
+                  disabled={loadingSenderIds}
+                  onPageChange={setSenderPage}
+                  onPageSizeChange={(value) => {
+                    setSenderPageSize(value);
+                    setSenderPage(1);
+                  }}
+                />
               </CardShell>
             )}
           </>
         )}
       </div>
+
+      <EditSenderIDModal
+        open={Boolean(editingSender)}
+        form={editForm}
+        setForm={setEditForm}
+        onClose={closeEditModal}
+        onSubmit={handleUpdateSenderID}
+        loading={editLoading}
+      />
     </div>
   );
 }

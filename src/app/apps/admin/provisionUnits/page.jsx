@@ -5,32 +5,33 @@ import {
   GetAdminOrganizations,
   GetAdminOrganizationProfile,
   GetAdminAllRecharges,
-  AutoProvisionAdminBalance,
 } from "@/app/api/actions/admin/admin";
+import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
 
-const DEFAULT_FORM = {
-  organizationId: "",
-  service: "DATA",
-  module: "",
-  units: "",
-  reason: "",
-};
+const DEFAULT_ORG_PAGE_SIZE = 10;
 
 const ProvisionUnitsPage = () => {
   const [isClient, setIsClient] = useState(false);
 
   const [organizations, setOrganizations] = useState([]);
   const [recentProvisions, setRecentProvisions] = useState([]);
-  const [selectedOrgProfile, setSelectedOrgProfile] = useState(null);
 
-  const [form, setForm] = useState(DEFAULT_FORM);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [selectedOrgProfile, setSelectedOrgProfile] = useState(null);
+  const [showProvisionModal, setShowProvisionModal] = useState(false);
+
+  const [organizationSearch, setOrganizationSearch] = useState("");
+  const [appliedOrganizationSearch, setAppliedOrganizationSearch] = useState("");
+
+  const [organizationPage, setOrganizationPage] = useState(1);
+  const [organizationPageSize, setOrganizationPageSize] = useState(
+    DEFAULT_ORG_PAGE_SIZE
+  );
 
   const [loading, setLoading] = useState(true);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [loadingOrgProfileId, setLoadingOrgProfileId] = useState(null);
 
   const [pageError, setPageError] = useState("");
-  const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
@@ -42,16 +43,6 @@ const ProvisionUnitsPage = () => {
     fetchProvisionPageData();
   }, [isClient]);
 
-  useEffect(() => {
-    if (!isClient) return;
-    if (!form.organizationId) {
-      setSelectedOrgProfile(null);
-      return;
-    }
-
-    fetchSelectedOrganizationProfile(form.organizationId);
-  }, [isClient, form.organizationId]);
-
   async function fetchProvisionPageData() {
     try {
       setLoading(true);
@@ -60,29 +51,18 @@ const ProvisionUnitsPage = () => {
 
       const [organizationsResult, allRechargesResult] =
         await Promise.allSettled([
-          GetAdminOrganizations("limit=500"),
+          GetAdminOrganizations("limit=1000"),
           GetAdminAllRecharges("page=1&page_size=50"),
         ]);
 
       if (organizationsResult.status === "fulfilled") {
-        setOrganizations(organizationsResult.value?.data || []);
+        setOrganizations(normalizeOrganizationListPayload(organizationsResult.value));
       } else {
         setOrganizations([]);
       }
 
       if (allRechargesResult.status === "fulfilled") {
-        setRecentProvisions(
-          allRechargesResult.value?.data?.items ||
-            allRechargesResult.value?.data?.recharges ||
-            allRechargesResult.value?.data?.records ||
-            allRechargesResult.value?.data?.results ||
-            allRechargesResult.value?.items ||
-            allRechargesResult.value?.recharges ||
-            allRechargesResult.value?.records ||
-            allRechargesResult.value?.results ||
-            allRechargesResult.value?.data ||
-            []
-        );
+        setRecentProvisions(normalizeRechargeListPayload(allRechargesResult.value));
       } else {
         setRecentProvisions([]);
       }
@@ -95,100 +75,186 @@ const ProvisionUnitsPage = () => {
       } else if (organizationsResult.status === "rejected") {
         setPageError(
           organizationsResult.reason?.response?.data?.error ||
+            organizationsResult.reason?.response?.data?.message ||
             "Failed to load organizations."
         );
       } else if (allRechargesResult.status === "rejected") {
         setPageError(
           allRechargesResult.reason?.response?.data?.error ||
+            allRechargesResult.reason?.response?.data?.message ||
             "Failed to load recent provisions."
         );
       }
     } catch (err) {
       console.error("Failed to load provision page:", err);
       setPageError(
-        err?.response?.data?.error || "Failed to load provisioning data."
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to load provisioning data."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  async function fetchSelectedOrganizationProfile(orgId) {
+  async function fetchRecentProvisions() {
     try {
-      setLoadingProfile(true);
-      const res = await GetAdminOrganizationProfile(orgId);
-      setSelectedOrgProfile(res || null);
+      const res = await GetAdminAllRecharges("page=1&page_size=50");
+      setRecentProvisions(normalizeRechargeListPayload(res));
     } catch (err) {
-      console.error("Failed to load selected organization profile:", err);
-      setSelectedOrgProfile(null);
-    } finally {
-      setLoadingProfile(false);
+      console.error("Failed to refresh recent provisions:", err);
     }
   }
 
-  function resetForm() {
-    setForm(DEFAULT_FORM);
-    setFormError("");
-    setSuccessMessage("");
+  function normalizeOrganizationListPayload(payload) {
+    const rows =
+      payload?.data?.items ||
+      payload?.data?.organizations ||
+      payload?.data?.records ||
+      payload?.data?.results ||
+      payload?.items ||
+      payload?.organizations ||
+      payload?.records ||
+      payload?.results ||
+      payload?.data ||
+      [];
+
+    return Array.isArray(rows) ? rows : [];
   }
 
-  const accounts = useMemo(() => {
-    return Array.isArray(selectedOrgProfile?.accounts)
-      ? selectedOrgProfile.accounts
-      : [];
-  }, [selectedOrgProfile]);
+  function normalizeRechargeListPayload(payload) {
+    const rows =
+      payload?.data?.items ||
+      payload?.data?.recharges ||
+      payload?.data?.records ||
+      payload?.data?.results ||
+      payload?.items ||
+      payload?.recharges ||
+      payload?.records ||
+      payload?.results ||
+      payload?.data ||
+      [];
 
-  const serviceOptions = useMemo(() => {
-    const existing = new Set(
-      accounts
-        .map((acc) => String(acc?.service || "").toUpperCase())
-        .filter(Boolean)
+    return Array.isArray(rows) ? rows : [];
+  }
+
+  function getOrganizationId(org) {
+    return org?.external_id || org?.id || org?.organization_id || org?.org_id || "";
+  }
+
+  function getOrganizationName(org) {
+    return (
+      org?.name ||
+      org?.organization_name ||
+      org?.business_name ||
+      org?.company_name ||
+      "Unnamed Organization"
     );
+  }
 
-    if (existing.size === 0) return ["DATA", "AIRTIME", "SMS"];
-    return Array.from(existing);
-  }, [accounts]);
+  function getOrganizationEmail(org) {
+    return org?.email || org?.contact_email || org?.admin_email || "—";
+  }
 
-  const filteredModules = useMemo(() => {
-    return accounts.filter(
-      (acc) => String(acc?.service || "").toUpperCase() === form.service
+  function getOrganizationPhone(org) {
+    return org?.phone || org?.phone_number || org?.msisdn || org?.contact_phone || "—";
+  }
+
+  function getOrganizationStatus(org) {
+    return org?.status || org?.status_code || org?.state || "—";
+  }
+
+  function getOrganizationApplicationId(org, profile = null) {
+    return (
+      profile?.application_id ||
+      profile?.sms_application_id ||
+      profile?.data?.application_id ||
+      profile?.data?.sms_application_id ||
+      org?.application_id ||
+      org?.sms_application_id ||
+      org?.external_id ||
+      org?.id ||
+      ""
     );
-  }, [accounts, form.service]);
+  }
 
-  const organizationsByExternalId = useMemo(() => {
-    const map = {};
-    organizations.forEach((org) => {
-      if (org?.external_id) {
-        map[String(org.external_id)] = org;
-      }
-    });
-    return map;
-  }, [organizations]);
+  function getOrganizationAccounts(profile) {
+    const accounts =
+      profile?.accounts ||
+      profile?.data?.accounts ||
+      profile?.organization?.accounts ||
+      [];
 
-  function handleChange(field) {
-    return (e) => {
-      const value = e.target.value;
+    return Array.isArray(accounts) ? accounts : [];
+  }
 
-      setForm((prev) => {
-        const next = {
-          ...prev,
-          [field]: value,
-        };
+  function getOrganizationBalances(profile) {
+    return (
+      profile?.balances ||
+      profile?.balance ||
+      profile?.data?.balances ||
+      profile?.data?.balance ||
+      profile?.data ||
+      profile ||
+      null
+    );
+  }
 
-        if (field === "organizationId") {
-          next.service = "DATA";
-          next.module = "";
-          next.units = "";
-          next.reason = "";
-        }
+  async function handleOpenProvisionModal(org) {
+    const orgId = getOrganizationId(org);
 
-        if (field === "service") {
-          next.module = "";
-        }
+    if (!orgId) {
+      setPageError("Organization ID is missing.");
+      return;
+    }
 
-        return next;
-      });
-    };
+    try {
+      setPageError("");
+      setSuccessMessage("");
+      setLoadingOrgProfileId(orgId);
+
+      const profile = await GetAdminOrganizationProfile(orgId);
+
+      setSelectedOrg(org);
+      setSelectedOrgProfile(profile || null);
+      setShowProvisionModal(true);
+    } catch (err) {
+      console.error("Failed to load organization profile:", err);
+      setPageError(
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to load organization profile."
+      );
+    } finally {
+      setLoadingOrgProfileId(null);
+    }
+  }
+
+  function handleCloseProvisionModal() {
+    setShowProvisionModal(false);
+    setSelectedOrg(null);
+    setSelectedOrgProfile(null);
+  }
+
+  async function handleProvisionSuccess() {
+    setSuccessMessage("Balance updated successfully.");
+
+    await Promise.allSettled([
+      fetchRecentProvisions(),
+      selectedOrg ? GetAdminOrganizationProfile(getOrganizationId(selectedOrg)) : null,
+    ]);
+  }
+
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    setAppliedOrganizationSearch(organizationSearch.trim());
+    setOrganizationPage(1);
+  }
+
+  function handleResetSearch() {
+    setOrganizationSearch("");
+    setAppliedOrganizationSearch("");
+    setOrganizationPage(1);
   }
 
   function formatNumber(value) {
@@ -197,8 +263,11 @@ const ProvisionUnitsPage = () => {
 
   function formatDateTime(value) {
     if (!value) return "—";
+
     const d = new Date(value);
+
     if (Number.isNaN(d.getTime())) return "—";
+
     return d.toLocaleString("en-CA", {
       year: "numeric",
       month: "2-digit",
@@ -224,9 +293,11 @@ const ProvisionUnitsPage = () => {
 
     if (!raw) return "SMS";
     if (raw.includes("SMS") || raw.includes("PERSMS")) return "SMS";
-    if (raw.includes("DATA") || raw.includes("GB") || raw.includes("MB"))
+    if (raw.includes("DATA") || raw.includes("GB") || raw.includes("MB")) {
       return "DATA";
+    }
     if (raw.includes("AIRTIME")) return "AIRTIME";
+
     return raw;
   }
 
@@ -260,6 +331,64 @@ const ProvisionUnitsPage = () => {
     return item?.created_by || item?.createdby || item?.updated_by || "Admin User";
   }
 
+  const organizationsByExternalId = useMemo(() => {
+    const map = {};
+
+    organizations.forEach((org) => {
+      const externalId = org?.external_id;
+      const id = org?.id;
+
+      if (externalId) {
+        map[String(externalId)] = org;
+      }
+
+      if (id) {
+        map[String(id)] = org;
+      }
+    });
+
+    return map;
+  }, [organizations]);
+
+  const filteredOrganizations = useMemo(() => {
+    const search = appliedOrganizationSearch.trim().toLowerCase();
+
+    if (!search) return organizations;
+
+    return organizations.filter((org) => {
+      const searchableText = [
+        getOrganizationName(org),
+        getOrganizationStatus(org),
+        org?.kra_pin,
+        org?.createdat,
+        org?.updatedat,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(search);
+    });
+  }, [organizations, appliedOrganizationSearch]);
+
+  const organizationTotalPages = useMemo(() => {
+    if (filteredOrganizations.length === 0) return 1;
+    return Math.ceil(filteredOrganizations.length / organizationPageSize);
+  }, [filteredOrganizations.length, organizationPageSize]);
+
+  const paginatedOrganizations = useMemo(() => {
+    const safePage = Math.min(organizationPage, organizationTotalPages);
+    const start = (safePage - 1) * organizationPageSize;
+    const end = start + organizationPageSize;
+
+    return filteredOrganizations.slice(start, end);
+  }, [
+    filteredOrganizations,
+    organizationPage,
+    organizationPageSize,
+    organizationTotalPages,
+  ]);
+
   const mappedRecentProvisions = useMemo(() => {
     return (Array.isArray(recentProvisions) ? recentProvisions : [])
       .map((item, index) => {
@@ -272,9 +401,14 @@ const ProvisionUnitsPage = () => {
 
         const org = organizationsByExternalId[String(applicationId)] || null;
         const service = normalizeProvisionService(item);
+        const rawDate = getProvisionDate(item);
 
         return {
-          id: item?.id || item?.request_id || item?.recharge_id || `PRV-${index + 1}`,
+          id:
+            item?.id ||
+            item?.request_id ||
+            item?.recharge_id ||
+            `PRV-${index + 1}`,
           organization:
             org?.name ||
             item?.organization_name ||
@@ -288,68 +422,22 @@ const ProvisionUnitsPage = () => {
           service,
           amount: `${formatNumber(getProvisionUnits(item))} units`,
           admin: getProvisionAdmin(item),
-          datetime: formatDateTime(getProvisionDate(item)),
+          datetime: formatDateTime(rawDate),
+          rawDate,
         };
       })
       .sort((a, b) => {
-        const left = a.datetime ? new Date(a.datetime).getTime() : 0;
-        const right = b.datetime ? new Date(b.datetime).getTime() : 0;
+        const left = a.rawDate ? new Date(a.rawDate).getTime() : 0;
+        const right = b.rawDate ? new Date(b.rawDate).getTime() : 0;
         return right - left;
       })
       .slice(0, 20);
   }, [recentProvisions, organizationsByExternalId]);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError("");
-    setSuccessMessage("");
-
-    const unitsNumber = Number(form.units);
-
-    if (!form.organizationId) {
-      setFormError("Please select an organization.");
-      return;
-    }
-
-    if (!form.service) {
-      setFormError("Please select a service.");
-      return;
-    }
-
-    if (!unitsNumber || unitsNumber <= 0) {
-      setFormError("Units must be greater than zero.");
-      return;
-    }
-
-    if (!form.module.trim()) {
-      setFormError("Please enter a package or module.");
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-
-      await AutoProvisionAdminBalance({
-        package: form.module.trim(),
-        units: Math.floor(unitsNumber),
-        service: form.service,
-        org_id: form.organizationId,
-        reason: form.reason.trim(),
-      });
-
-      setSuccessMessage("Balance provisioned successfully.");
-      resetForm();
-      await fetchProvisionPageData();
-    } catch (err) {
-      setFormError(
-        err?.response?.data?.error ||
-          err?.response?.data?.message ||
-          "Request failed. Please try again."
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const selectedOrgId = selectedOrg ? getOrganizationId(selectedOrg) : "";
+  const selectedApplicationId = selectedOrg
+    ? getOrganizationApplicationId(selectedOrg, selectedOrgProfile)
+    : "";
 
   if (!isClient) return null;
 
@@ -362,7 +450,7 @@ const ProvisionUnitsPage = () => {
               Provision Units
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Provision balance units to organizations
+              Search organizations, then provision or reduce DATA, AIRTIME, and SMS balances.
             </p>
           </div>
 
@@ -387,183 +475,207 @@ const ProvisionUnitsPage = () => {
           </div>
         ) : null}
 
-        <div className="mb-6 rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-gray-200 p-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Adjust Balance
-            </h2>
+        <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
+            <div>
+              <h2 className="text-[22px] font-semibold text-gray-900">
+                Organizations
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Search for an organization, then click Provision to open the balance modal.
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex w-full flex-wrap items-center gap-3 lg:w-auto"
+            >
+              <input
+                type="text"
+                value={organizationSearch}
+                onChange={(e) => setOrganizationSearch(e.target.value)}
+                placeholder="Search organization..."
+                className="h-10 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none focus:border-orange-500 focus:ring-orange-500 lg:w-80"
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="h-10 rounded-xl bg-[#02051d] px-4 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Search
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetSearch}
+                disabled={loading}
+                className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Reset
+              </button>
+            </form>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6">
-            {formError ? (
-              <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {formError}
-              </div>
-            ) : null}
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900">
-                  Organization
-                </label>
-                <select
-                  value={form.organizationId}
-                  onChange={handleChange("organizationId")}
-                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
-                  disabled={submitting || loading}
-                >
-                  <option value="">Select organization...</option>
-                  {organizations.map((org) => (
-                    <option key={org.external_id} value={org.external_id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900">
-                  Service
-                </label>
-                <select
-                  value={form.service}
-                  onChange={handleChange("service")}
-                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
-                  disabled={submitting || loadingProfile}
-                >
-                  {serviceOptions.map((service) => (
-                    <option key={service} value={service}>
-                      {service}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {filteredModules.length > 0 ? (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-900">
-                    Use Existing Module
-                  </label>
-                  <select
-                    value={
-                      filteredModules.some((acc) => acc.module === form.module)
-                        ? form.module
-                        : ""
-                    }
-                    onChange={handleChange("module")}
-                    disabled={submitting}
-                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
-                  >
-                    <option value="">Custom / New Module</option>
-                    {filteredModules.map((acc) => (
-                      <option key={acc.id} value={acc.module || ""}>
-                        {acc.module || "Unnamed module"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900">
-                  Package / Module
-                </label>
-                <input
-                  type="text"
-                  value={form.module}
-                  onChange={handleChange("module")}
-                  placeholder={
-                    form.service === "DATA"
-                      ? "e.g. 5GB"
-                      : form.service === "AIRTIME"
-                      ? "e.g. AIRTIME"
-                      : "e.g. SMS"
-                  }
-                  disabled={submitting}
-                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900">
-                  Units
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.units}
-                  onChange={handleChange("units")}
-                  disabled={submitting}
-                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
-                  placeholder="Enter units"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-900">
-                  Reason
-                </label>
-                <textarea
-                  value={form.reason}
-                  onChange={handleChange("reason")}
-                  disabled={submitting}
-                  rows={3}
-                  placeholder="Optional for provisioning"
-                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-orange-500 focus:ring-orange-500"
-                />
-              </div>
-
-              {loadingProfile ? (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-500">
-                  Loading organization modules...
-                </div>
-              ) : filteredModules.length > 0 ? (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <h4 className="mb-2 text-sm font-medium text-gray-900">
-                    Current {form.service} modules
-                  </h4>
-                  <div className="space-y-1">
-                    {filteredModules.map((acc) => (
-                      <p key={acc.id} className="text-sm text-gray-600">
-                        {acc.module || "Unnamed module"} —{" "}
-                        {formatNumber(acc.units)} units
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="flex space-x-2 pt-4">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  disabled={submitting}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-300 disabled:opacity-50"
-                >
-                  Clear
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className={`w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-4 ${
-                    submitting
-                      ? "cursor-not-allowed bg-gray-400"
-                      : "bg-orange-500 hover:bg-orange-600 focus:ring-orange-300"
-                  }`}
-                >
-                  {submitting ? "Provisioning..." : "Provision Balance"}
-                </button>
-              </div>
+          {appliedOrganizationSearch ? (
+            <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 text-sm text-gray-600">
+              Showing results for{" "}
+              <span className="font-semibold text-gray-900">
+                “{appliedOrganizationSearch}”
+              </span>
             </div>
-          </form>
+          ) : null}
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+             <thead>
+                <tr>
+                  <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
+                    Organization
+                  </th>
+                  <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
+                    Status
+                  </th>
+                  <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
+                    Date Created
+                  </th>
+                  <th className="border-b border-gray-200 px-6 py-4 text-right text-sm font-medium text-gray-500">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center">
+                      <div className="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
+                    </td>
+                  </tr>
+                ) : paginatedOrganizations.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-10 text-center text-sm text-gray-500"
+                    >
+                      No organizations found
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedOrganizations.map((org) => {
+                    const orgId = getOrganizationId(org);
+                    const loadingThisOrg = String(loadingOrgProfileId) === String(orgId);
+
+                    return (
+                      <tr key={orgId || getOrganizationName(org)}>
+                        <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                          {getOrganizationName(org)}
+                        </td>
+
+                        <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                          <span className="inline-flex rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-800">
+                            {getOrganizationStatus(org)}
+                          </span>
+                        </td>
+
+                        <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                          {formatDateTime(org?.createdat || org?.created_at)}
+                        </td>
+
+                        <td className="border-b border-gray-100 px-6 py-5 text-right text-sm">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenProvisionModal(org)}
+                            disabled={loadingThisOrg}
+                            className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+                          >
+                            {loadingThisOrg ? "Opening..." : "Provision"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 px-6 py-4">
+            <div className="text-sm text-gray-500">
+              Page{" "}
+              <span className="font-semibold text-gray-900">
+                {Math.min(organizationPage, organizationTotalPages)}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-gray-900">
+                {organizationTotalPages}
+              </span>
+              {" • "}
+              Total:{" "}
+              <span className="font-semibold text-gray-900">
+                {filteredOrganizations.length}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={organizationPageSize}
+                onChange={(e) => {
+                  setOrganizationPageSize(Number(e.target.value));
+                  setOrganizationPage(1);
+                }}
+                disabled={loading}
+                className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-orange-500 disabled:opacity-60"
+              >
+                <option value={10}>10 rows</option>
+                <option value={20}>20 rows</option>
+                <option value={50}>50 rows</option>
+                <option value={100}>100 rows</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setOrganizationPage((prev) => Math.max(prev - 1, 1))}
+                disabled={loading || organizationPage <= 1}
+                className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setOrganizationPage((prev) =>
+                    Math.min(prev + 1, organizationTotalPages)
+                  )
+                }
+                disabled={loading || organizationPage >= organizationTotalPages}
+                className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-200 px-6 py-5">
-            <h2 className="text-[22px] font-semibold text-gray-900">
-              Recent Provisions
-            </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-5">
+            <div>
+              <h2 className="text-[22px] font-semibold text-gray-900">
+                Recent Provisions
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Latest provision and recharge activity across services.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={fetchRecentProvisions}
+              className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Refresh List
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -613,20 +725,25 @@ const ProvisionUnitsPage = () => {
                       <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
                         {item.id}
                       </td>
+
                       <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
                         {item.organization}
                       </td>
+
                       <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                        <span className="inline-flex rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-800">
+                        <span className="inline-flex rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-800">
                           {item.service}
                         </span>
                       </td>
+
                       <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
                         {item.amount}
                       </td>
+
                       <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
                         {item.admin}
                       </td>
+
                       <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
                         {item.datetime}
                       </td>
@@ -638,6 +755,16 @@ const ProvisionUnitsPage = () => {
           </div>
         </div>
       </div>
+
+      <AdjustBalanceModal
+        open={showProvisionModal}
+        onClose={handleCloseProvisionModal}
+        orgId={selectedOrgId}
+        applicationId={selectedApplicationId}
+        accounts={getOrganizationAccounts(selectedOrgProfile)}
+        balances={getOrganizationBalances(selectedOrgProfile)}
+        onSuccess={handleProvisionSuccess}
+      />
     </div>
   );
 };

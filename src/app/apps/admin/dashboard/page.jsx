@@ -436,42 +436,6 @@ const DashboardPage = () => {
               ))}
             </div>
 
-            <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <h2 className="text-[18px] font-semibold text-gray-900">
-                System Health
-              </h2>
-
-              <div className="mt-5 divide-y divide-gray-100">
-                {systemHealth.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center justify-between gap-4 py-4"
-                  >
-                    <div>
-                      <p className="text-[14px] font-medium text-gray-900">
-                        {item.title}
-                      </p>
-                      <p className="mt-1 text-[13px] text-gray-500">
-                        {item.note}
-                      </p>
-                    </div>
-
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${getStatusPill(
-                        item.status
-                      )} ${
-                        item.status === "Operational"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : ""
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="mb-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
               <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="border-b border-gray-200 px-4 py-4">

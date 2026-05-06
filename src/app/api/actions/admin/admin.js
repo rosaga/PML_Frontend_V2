@@ -318,32 +318,6 @@ export async function GetAdminSMSCampaignSummary(campaignId) {
   }
 }
 
-export async function GetAdminSMSSenderIDs(query = "") {
-  const config = await authHeaders();
-
-  try {
-    const url = withQuery(`${apiUrl.GET_BALANCE}/admin/sms/sender-ids`, query);
-    const res = await axios.get(url, config);
-    return res.data;
-  } catch (error) {
-    console.error("Failed to fetch SMS sender IDs:", error.message);
-    throw error;
-  }
-}
-
-export async function ApproveAdminSMSSenderID(serviceId) {
-  const config = await authHeaders();
-
-  try {
-    const url = `${apiUrl.GET_BALANCE}/admin/sms/sender-ids/${serviceId}/approve`;
-    const res = await axios.put(url, {}, config);
-    return res.data;
-  } catch (error) {
-    console.error("Failed to approve SMS sender ID:", error.message);
-    throw error;
-  }
-}
-
 export async function GetAdminAllRecharges(query = "") {
   const config = await authHeaders();
 
@@ -371,4 +345,56 @@ function normalizeRechargeListPayload(payload) {
     [];
 
   return Array.isArray(rows) ? rows : [];
+}
+
+export async function GetAdminSMSSenderIDs(query = "") {
+  const config = await authHeaders();
+
+  try {
+    const url = withQuery(`${apiUrl.GET_BALANCE}/admin/sms/sender-ids`, query);
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch SMS sender IDs:", error.message);
+    throw error;
+  }
+}
+
+export async function CreateAdminSMSSenderID(payload) {
+  const config = await authHeaders();
+
+  try {
+    const url = `${apiUrl.MESSAGE_COUNTS}/admin/sender-ids`;
+    const res = await axios.post(url, payload, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to create SMS sender ID:", error.message);
+    throw error;
+  }
+}
+
+export async function UpdateAdminSMSSenderID(serviceId, payload) {
+  const config = await authHeaders();
+
+  try {
+    const url = `${apiUrl.MESSAGE_COUNTS}/admin/sender-ids/${serviceId}`;
+    const res = await axios.put(url, payload, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to update SMS sender ID:", error.message);
+    throw error;
+  }
+}
+
+export async function ApproveAdminSMSSenderID(serviceId) {
+  const config = await authHeaders();
+
+  try {
+    const url = `${apiUrl.GET_BALANCE}/admin/sms/sender-ids/${serviceId}/approve`;
+    const res = await axios.put(url, {}, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to approve SMS sender ID:", error.message);
+    throw error;
+  }
 }
