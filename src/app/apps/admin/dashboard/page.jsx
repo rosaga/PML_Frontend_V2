@@ -590,10 +590,13 @@ const DashboardPage = () => {
                   <thead>
                     <tr>
                       <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
+                        Organization
+                      </th>
+                      <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
                         Recipient
                       </th>
                       <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
-                        Error Reason
+                        Status Description
                       </th>
                       <th className="border-b border-gray-200 px-4 py-4 text-left text-[13px] font-semibold text-gray-600">
                         Timestamp
@@ -604,7 +607,7 @@ const DashboardPage = () => {
                     {failedDispatches.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={3}
+                          colSpan={4}
                           className="px-4 py-8 text-center text-sm text-gray-500"
                         >
                           No failed dispatches found
@@ -614,10 +617,14 @@ const DashboardPage = () => {
                       failedDispatches.slice(0, 8).map((item, index) => (
                         <tr key={item?.id || index}>
                           <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-gray-900">
+                            {getOrganizationName(item)}
+                          </td>
+                          <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-gray-900">
                             {item?.recipient || item?.msisdn || "—"}
                           </td>
                           <td className="border-b border-gray-100 px-4 py-4 text-[14px] text-red-600">
-                            {item?.error_reason ||
+                            {item?.status_desc ||
+                              item?.error_reason ||
                               item?.reason ||
                               item?.error ||
                               item?.status ||
