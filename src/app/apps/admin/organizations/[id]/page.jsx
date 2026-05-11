@@ -11,6 +11,7 @@ import {
   DeleteAdminOrganizationRate,
   GetAdminOrganizationRecharges,
   GetAdminOrganizationRevenue,
+  GetAllSMSs,
 } from "@/app/api/actions/admin/admin";
 import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
 
@@ -24,6 +25,7 @@ const OrganizationDetailPage = () => {
   const params = useParams();
 
   const [activeTab, setActiveTab] = useState("campaigns");
+  const [dispatchServiceFilter, setDispatchServiceFilter] = useState("DATA");
   const [isClient, setIsClient] = useState(false);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
 
@@ -41,7 +43,9 @@ const OrganizationDetailPage = () => {
 
   const [profile, setProfile] = useState(null);
   const [dispatches, setDispatches] = useState([]);
+  const [smsDispatches, setSmsDispatches] = useState([]);
   const [dispatchMeta, setDispatchMeta] = useState(null);
+  const [smsDispatchMeta, setSmsDispatchMeta] = useState(null);
   const [recharges, setRecharges] = useState(null);
   const [revenue, setRevenue] = useState(null);
 
@@ -53,6 +57,7 @@ const OrganizationDetailPage = () => {
 
   const [error, setError] = useState("");
   const [activityError, setActivityError] = useState("");
+  const [dispatchError, setDispatchError] = useState("");
   const [rates, setRates] = useState([]);
   const [savingRate, setSavingRate] = useState(false);
   const [ratesError, setRatesError] = useState("");
@@ -115,18 +120,66 @@ const OrganizationDetailPage = () => {
   async function fetchDispatches() {
     try {
       setLoadingDispatches(true);
+      setDispatchError("");
 
-      const res = await GetAdminOrganizationDataDispatches(
-        orgId,
-        "page=1&page_size=20"
-      );
+      const smsApplicationId = getSmsApplicationId();
+      const smsQuery = "limit=10";
 
-      setDispatches(res?.data || []);
-      setDispatchMeta(res?.pagination || null);
+      const results = await Promise.allSettled([
+        GetAdminOrganizationDataDispatches(orgId, "page=1&page_size=20"),
+        smsApplicationId
+          ? GetAllSMSs(smsApplicationId, smsQuery)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      const [dataDispatchesResult, smsDispatchesResult] = results;
+
+      if (dataDispatchesResult.status === "fulfilled") {
+        setDispatches(normalizeListPayload(dataDispatchesResult.value));
+        setDispatchMeta(getPaginationPayload(dataDispatchesResult.value));
+      } else {
+        setDispatches([]);
+        setDispatchMeta(null);
+      }
+
+      if (smsDispatchesResult.status === "fulfilled") {
+        setSmsDispatches(normalizeListPayload(smsDispatchesResult.value));
+        setSmsDispatchMeta(getPaginationPayload(smsDispatchesResult.value));
+      } else {
+        setSmsDispatches([]);
+        setSmsDispatchMeta(null);
+      }
+
+      const dispatchErrors = [];
+
+      if (dataDispatchesResult.status === "rejected") {
+        dispatchErrors.push(
+          dataDispatchesResult.reason?.response?.data?.error ||
+            dataDispatchesResult.reason?.message ||
+            "Failed to load data dispatches"
+        );
+      }
+
+      if (smsDispatchesResult.status === "rejected") {
+        dispatchErrors.push(
+          smsDispatchesResult.reason?.response?.data?.error ||
+            smsDispatchesResult.reason?.message ||
+            "Failed to load SMS dispatches"
+        );
+      }
+
+      if (dispatchErrors.length > 0) {
+        setDispatchError(dispatchErrors.join(" | "));
+      }
     } catch (err) {
       console.error("Failed to load dispatches:", err);
       setDispatches([]);
+      setSmsDispatches([]);
       setDispatchMeta(null);
+      setSmsDispatchMeta(null);
+      setDispatchError(
+        err?.response?.data?.error || "Failed to load dispatch history."
+      );
     } finally {
       setLoadingDispatches(false);
     }
@@ -180,6 +233,48 @@ const OrganizationDetailPage = () => {
     } finally {
       setLoadingRevenue(false);
     }
+  }
+
+  function normalizeListPayload(payload) {
+    const rows =
+      payload?.data?.items ||
+      payload?.data?.dispatches ||
+      payload?.data?.campaigns ||
+      payload?.data?.accounts ||
+      payload?.data?.records ||
+      payload?.data?.results ||
+      payload?.items ||
+      payload?.dispatches ||
+      payload?.campaigns ||
+      payload?.accounts ||
+      payload?.records ||
+      payload?.results ||
+      payload?.data ||
+      [];
+
+    return Array.isArray(rows) ? rows : [];
+  }
+
+  function getPaginationPayload(payload) {
+    return (
+      payload?.pagination ||
+      payload?.data?.pagination ||
+      payload?.meta ||
+      payload?.data?.meta ||
+      null
+    );
+  }
+
+  function getSmsApplicationId() {
+    return (
+      profile?.sms?.application_id ||
+      profile?.sms?.app_id ||
+      profile?.sms?.id ||
+      organization?.application_id ||
+      organization?.app_id ||
+      organization?.external_id ||
+      orgId
+    );
   }
 
   function resetRateForm() {
@@ -311,6 +406,14 @@ const OrganizationDetailPage = () => {
     }));
   }, [revenue]);
 
+  const visibleDispatches = useMemo(() => {
+    return dispatchServiceFilter === "SMS" ? smsDispatches : dispatches;
+  }, [dispatchServiceFilter, smsDispatches, dispatches]);
+
+  const visibleDispatchMeta = useMemo(() => {
+    return dispatchServiceFilter === "SMS" ? smsDispatchMeta : dispatchMeta;
+  }, [dispatchServiceFilter, smsDispatchMeta, dispatchMeta]);
+
   const recentActivity = useMemo(() => {
     const activityItems = [];
 
@@ -402,6 +505,21 @@ const OrganizationDetailPage = () => {
     return d.toLocaleDateString("en-CA");
   }
 
+  function formatTableDateTime(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+
+    return d.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+
   function relativeTime(value) {
     if (!value) return "—";
     const d = new Date(value);
@@ -443,25 +561,107 @@ const OrganizationDetailPage = () => {
     );
   }
 
-  function getPhone() {
+  function getDispatchId(item) {
     return (
-      organization?.phone ||
-      organization?.phone_number ||
-      organization?.mobile ||
+      item?.id ||
+      item?.campaign_id ||
+      item?.request_id ||
+      item?.requestid ||
+      item?.service_id ||
+      item?.sid ||
       "—"
     );
   }
 
-  function getLocation() {
-    const parts = [
-      organization?.city,
-      organization?.state,
-      organization?.country,
-      organization?.location,
-    ].filter(Boolean);
+  function getDispatchService(item) {
+    if (dispatchServiceFilter === "SMS") return "SMS";
+    return (item?.service || "DATA").toUpperCase();
+  }
 
-    if (parts.length === 0) return "—";
-    return [...new Set(parts)].join(", ");
+  function getDispatchDescription(item) {
+    if (dispatchServiceFilter === "SMS") {
+      return (
+        item?.status_desc ||
+        item?.status_description ||
+        item?.delivery_status ||
+        item?.metadata?.status_desc ||
+        item?.metadata?.deliveryStatus ||
+        "SMS Dispatch Record"
+      );
+    }
+
+    return (
+      item?.name ||
+      item?.campaign_name ||
+      item?.bundle_amount ||
+      "Dispatch Record"
+    );
+  }
+
+  function getDispatchDate(item) {
+    return (
+      item?.created_at ||
+      item?.createdAt ||
+      item?.createdat ||
+      item?.date ||
+      item?.first_message_at ||
+      item?.last_message_at ||
+      item?.updated_at ||
+      item?.updatedAt
+    );
+  }
+
+  function getDispatchVolume(item) {
+    return (
+      item?.messages_sent ||
+      item?.total_messages ||
+      item?.message_count ||
+      item?.successful_messages ||
+      item?.success_count ||
+      item?.delivered_count ||
+      item?.accepted_count ||
+      item?.bundle_amount ||
+      item?.bundleAmount ||
+      0
+    );
+  }
+
+  function getDispatchStatus(item) {
+    return (
+      item?.status ||
+      item?.status_code ||
+      item?.delivery_status ||
+      item?.campaign_status ||
+      "Completed"
+    );
+  }
+
+  function getDispatchSource(item) {
+    return item?.source || item?.sender || item?.sender_id || item?.from || "—";
+  }
+
+  function getDispatchDestination(item) {
+    return (
+      item?.destination ||
+      item?.recipient ||
+      item?.msisdn ||
+      item?.metadata?.msisdn ||
+      item?.metadata?.Msisdn ||
+      "—"
+    );
+  }
+
+  function getDispatchStatusDesc(item) {
+    return (
+      item?.status_desc ||
+      item?.status_description ||
+      item?.delivery_status ||
+      item?.metadata?.status_desc ||
+      item?.metadata?.DeliveryStatus ||
+      item?.metadata?.deliveryStatus ||
+      item?.status ||
+      "—"
+    );
   }
 
   const metricCards = [
@@ -553,7 +753,7 @@ const OrganizationDetailPage = () => {
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path
-            d="M4 6.8C4 5.11984 4 4.27976 4.32698 3.63803C4.6146 3.07354 5.07354 2.6146 5.63803 2.32698C6.27976 2 7.11984 2 8.8 2H15.2C16.8802 2 17.7202 2 18.362 2.32698C18.9265 2.6146 19.3854 3.07354 19.673 3.63803C20 4.27976 20 5.11984 20 6.8V12.2C20 13.8802 20 14.7202 19.673 15.362C19.3854 15.9265 18.9265 16.3854 18.362 16.673C17.7202 17 16.8802 17 15.2 17H9L4 21V6.8Z"
+            d="M4 6.8C4 5.11984 4 4.27976 4.32698 3.63803C4.6146 3.07354 5.07354 2.6146 5.63803 2.32698C6.27976 2 7.11984 2 8.8 2H15.2C16.8802 2 17.7202 2 18.362 2.32698C18.9265 2.6146 19.3854 3.07354 19.673 3.63803C20 4.27976 20 6.11984 20 6.8V12.2C20 13.8802 20 14.7202 19.673 15.362C19.3854 15.9265 18.9265 16.3854 18.362 16.673C17.7202 17 16.8802 17 15.2 17H9L4 21V6.8Z"
             stroke="currentColor"
             strokeWidth="1.7"
             strokeLinecap="round"
@@ -695,11 +895,9 @@ const OrganizationDetailPage = () => {
                     </span>
                     <span className="text-[16px]">{getContactEmail()}</span>
                   </div>
-
                 </div>
 
                 <div className="space-y-4 md:pl-8">
-
                   <div className="flex items-center gap-3 text-gray-700">
                     <span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -808,11 +1006,41 @@ const OrganizationDetailPage = () => {
 
             {activeTab === "campaigns" && (
               <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div className="border-b border-gray-200 px-6 py-5">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-5">
                   <h2 className="text-[22px] font-semibold text-gray-900">
                     Dispatch History
                   </h2>
+
+                  <div className="inline-flex rounded-full bg-gray-100 p-1">
+                    {[
+                      { id: "DATA", label: "Data" },
+                      { id: "SMS", label: "SMS" },
+                    ].map((filter) => {
+                      const active = dispatchServiceFilter === filter.id;
+
+                      return (
+                        <button
+                          key={filter.id}
+                          type="button"
+                          onClick={() => setDispatchServiceFilter(filter.id)}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                            active
+                              ? "bg-[#02051d] text-white"
+                              : "text-gray-700 hover:bg-white"
+                          }`}
+                        >
+                          {filter.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {dispatchError ? (
+                  <div className="mx-6 mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    {dispatchError}
+                  </div>
+                ) : null}
 
                 {loadingDispatches ? (
                   <div className="flex justify-center py-12">
@@ -822,72 +1050,119 @@ const OrganizationDetailPage = () => {
                   <div className="overflow-x-auto">
                     <table className="min-w-full">
                       <thead>
-                        <tr>
-                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Dispatch ID
-                          </th>
-                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Service
-                          </th>
-                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Description
-                          </th>
-                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Date
-                          </th>
-                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Volume
-                          </th>
-                          <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                            Status
-                          </th>
-                        </tr>
+                        {dispatchServiceFilter === "SMS" ? (
+                          <tr>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              ID
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Source
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Destination
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Status Desc
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Created At
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Status
+                            </th>
+                          </tr>
+                        ) : (
+                          <tr>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Dispatch ID
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Service
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Description
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Date
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Volume
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Status
+                            </th>
+                          </tr>
+                        )}
                       </thead>
+
                       <tbody>
-                        {dispatches.length === 0 ? (
+                        {visibleDispatches.length === 0 ? (
                           <tr>
                             <td
                               colSpan={6}
                               className="px-6 py-10 text-center text-sm text-gray-500"
                             >
-                              No dispatch history found
+                              No {dispatchServiceFilter === "SMS" ? "SMS" : "data"} dispatch history found
                             </td>
                           </tr>
-                        ) : (
-                          dispatches.map((item) => (
-                            <tr key={item.id}>
+                        ) : dispatchServiceFilter === "SMS" ? (
+                          visibleDispatches.map((item, index) => (
+                            <tr key={item?.id || item?.campaign_id || item?.request_id || index}>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
-                                {item.id}
+                                {getDispatchId(item)}
                               </td>
-                              <td className="border-b border-gray-100 px-6 py-5 text-sm">
-                                <span className="inline-flex rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-900">
-                                  {(item.service || "DATA").toUpperCase()}
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                                {getDispatchSource(item)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                                {getDispatchDestination(item)}
+                              </td>
+                              <td className="max-w-[420px] border-b border-gray-100 px-6 py-5 text-sm text-gray-700">
+                                <span className="line-clamp-2">
+                                  {getDispatchStatusDesc(item)}
                                 </span>
                               </td>
-                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                                {item.name ||
-                                  item.campaign_name ||
-                                  item.bundle_amount ||
-                                  "Dispatch Record"}
-                              </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
-                                {formatTableDate(item.created_at || item.createdAt)}
-                              </td>
-                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                                {formatNumber(
-                                  item.messages_sent ||
-                                    item.bundle_amount ||
-                                    item.bundleAmount ||
-                                    0
-                                )}
+                                {formatTableDateTime(getDispatchDate(item))}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm">
                                 <span
                                   className={`inline-flex rounded-full px-4 py-1.5 text-sm font-semibold ${getStatusPill(
-                                    item.status || "Completed"
+                                    getDispatchStatus(item)
                                   )}`}
                                 >
-                                  {item.status || "Completed"}
+                                  {getDispatchStatus(item)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          visibleDispatches.map((item, index) => (
+                            <tr key={item?.id || item?.campaign_id || item?.request_id || index}>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
+                                {getDispatchId(item)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm">
+                                <span className="inline-flex rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-900">
+                                  {getDispatchService(item)}
+                                </span>
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                                {getDispatchDescription(item)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                                {formatTableDate(getDispatchDate(item))}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                                {formatNumber(getDispatchVolume(item))}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm">
+                                <span
+                                  className={`inline-flex rounded-full px-4 py-1.5 text-sm font-semibold ${getStatusPill(
+                                    getDispatchStatus(item)
+                                  )}`}
+                                >
+                                  {getDispatchStatus(item)}
                                 </span>
                               </td>
                             </tr>
@@ -898,10 +1173,10 @@ const OrganizationDetailPage = () => {
                   </div>
                 )}
 
-                {dispatchMeta ? (
+                {visibleDispatchMeta ? (
                   <div className="px-6 py-4 text-sm text-gray-500">
-                    Page {dispatchMeta.page} of {dispatchMeta.total_pages || 1}
-                    {" • "}Total: {dispatchMeta.total_count || 0}
+                    Page {visibleDispatchMeta.page} of {visibleDispatchMeta.total_pages || 1}
+                    {" • "}Total: {visibleDispatchMeta.total_count || 0}
                   </div>
                 ) : null}
               </div>
@@ -1386,30 +1661,30 @@ const OrganizationDetailPage = () => {
           </>
         )}
 
-       <AdjustBalanceModal
-        open={isBalanceModalOpen}
-        onClose={() => setIsBalanceModalOpen(false)}
-        orgId={orgId}
-        applicationId={orgId}
-        accounts={dataModules}
-        balances={{
-          sms_balance: profile?.sms?.balance || 0,
-          data_balance: profile?.total_data_units || 0,
-          airtime_balance: profile?.airtime_balance || 0,
-        }}
-        organization={organization}
-        onSuccess={async () => {
-          await fetchProfile();
+        <AdjustBalanceModal
+          open={isBalanceModalOpen}
+          onClose={() => setIsBalanceModalOpen(false)}
+          orgId={orgId}
+          applicationId={orgId}
+          accounts={dataModules}
+          balances={{
+            sms_balance: profile?.sms?.balance || 0,
+            data_balance: profile?.total_data_units || 0,
+            airtime_balance: profile?.airtime_balance || 0,
+          }}
+          organization={organization}
+          onSuccess={async () => {
+            await fetchProfile();
 
-          if (activeTab === "settings") {
-            await Promise.allSettled([fetchRates(), fetchRevenue()]);
-          }
+            if (activeTab === "settings") {
+              await Promise.allSettled([fetchRates(), fetchRevenue()]);
+            }
 
-          if (activeTab === "activity") {
-            await fetchRecharges();
-          }
-        }}
-      />
+            if (activeTab === "activity") {
+              await fetchRecharges();
+            }
+          }}
+        />
       </div>
     </div>
   );

@@ -303,6 +303,25 @@ export async function GetAdminSMSCampaignSummaries(query = "") {
   }
 }
 
+export async function GetAllSMSs(appId, query = "") {
+  const config = await authHeaders();
+
+  try {
+    const url = withQuery(
+      `${apiUrl.MESSAGE_COUNTS}/admin/accounts/${encodeURIComponent(
+        appId
+      )}/sms/dispatches/latest`,
+      query
+    );
+
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch SMS dispatches:", error.message);
+    throw error;
+  }
+}
+
 export async function GetAdminSMSCampaignSummary(campaignId) {
   const config = await authHeaders();
 

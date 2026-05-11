@@ -1,24 +1,32 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
-import { useRouter } from 'next/navigation';
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  CircularProgress,
+} from "@mui/material";
+import { useRouter } from "next/navigation";
+import { getToken } from "@/utils/auth";
+import { hasRole } from "../../utils/decodeToken";
 import { GetSenderId } from "../api/actions/senderId/senderId";
-import '../../app/globals.css';
+import "../../app/globals.css";
 
 const MiniApp = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const router = useRouter();
 
-  let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
-  }
+  const getSenderIds = async (orgId) => {
+    if (!orgId) return;
 
-  const getSenderIds = async (org_id) => {
-    if (!org_id) return;
     try {
-      const res = await GetSenderId(org_id);
+      const res = await GetSenderId(orgId);
+
       if (res.errors) {
         console.log("AN ERROR HAS OCCURRED");
       } else {
@@ -30,31 +38,50 @@ const MiniApp = () => {
   };
 
   useEffect(() => {
-    getSenderIds(org_id);
+    if (typeof window === "undefined") return;
+
+    const orgId = localStorage.getItem("selectedAccountId");
+    const token = getToken();
+
+    setIsAdmin(hasRole(token, "SuperAdmin"));
+
+    getSenderIds(orgId);
     setIsLoaded(true);
   }, []);
 
   const handleOptionSelect = (option) => {
     if (selectedOption) return;
+
+    if (option === "admin" && !isAdmin) {
+      return;
+    }
+
     setSelectedOption(option);
 
     setTimeout(() => {
       switch (option) {
-        case 'data':
-          router.push('/apps/data/dashboard');
+        case "data":
+          router.push("/apps/data/dashboard");
           break;
-        case 'airtime':
-          router.push('/apps/airtime/dashboard');
+
+        case "airtime":
+          router.push("/apps/airtime/dashboard");
           break;
-        case 'sms':
-          router.push('/apps/sms/dashboard');
+
+        case "sms":
+          router.push("/apps/sms/dashboard");
           break;
-        case 'flowbot':
-          router.push('/apps/flowbot/dashboard');;
+
+        case "flowbot":
+          router.push("/apps/flowbot/dashboard");
           break;
-        case 'admin':
-          router.push('/apps/admin/dashboard');
+
+        case "admin":
+          if (isAdmin) {
+            router.push("/apps/admin/dashboard");
+          }
           break;
+
         default:
           break;
       }
@@ -63,43 +90,53 @@ const MiniApp = () => {
 
   return (
     <>
-      <img src="images/peaklogo.svg" alt="Company Logo" className="w-60 h-60 mb-4" />
+      <img
+        src="images/peaklogo.svg"
+        alt="Company Logo"
+        className="w-60 h-60 mb-4"
+      />
+
       <div className="flex flex-col items-center justify-center max-h-screen bg-white p-4">
         <Typography variant="h5" className="font-semi-bold mb-6">
           Please Select a Service
         </Typography>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-w-3xl w-full">
-
           {/* Data Rewards */}
           <Card
-            onClick={() => handleOptionSelect('data')}
+            onClick={() => handleOptionSelect("data")}
             className={`cursor-pointer transition duration-300 transform ${
-              selectedOption && selectedOption !== 'data'
-                ? 'opacity-50 pointer-events-none'
-                : 'hover:border-[#FF9800] hover:scale-105'
+              selectedOption && selectedOption !== "data"
+                ? "opacity-50 pointer-events-none"
+                : "hover:border-[#FF9800] hover:scale-105"
             }`}
             sx={{
               borderRadius: 1,
-              textAlign: 'center',
+              textAlign: "center",
               padding: 2,
-              background: '#4B465C0A',
-              border: '1px solid transparent',
-              boxShadow: 'none',
+              background: "#4B465C0A",
+              border: "1px solid transparent",
+              boxShadow: "none",
             }}
           >
             <CardContent>
-              {selectedOption === 'data' ? (
+              {selectedOption === "data" ? (
                 <Box className="flex justify-center items-center h-32">
-                  <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+                  <CircularProgress size={40} sx={{ color: "#FF9800" }} />
                 </Box>
               ) : (
                 <Box className="flex flex-col items-center justify-center">
-                  <img src="images/data.svg" alt="Data Icon" className="w-10 h-10 mb-2" />
+                  <img
+                    src="images/data.svg"
+                    alt="Data Icon"
+                    className="w-10 h-10 mb-2"
+                  />
+
                   <Typography variant="h6" className="font-semi-bold mt-2">
                     Data Rewards
                   </Typography>
-                  <Typography variant="body2" style={{ color: '#4B465C' }}>
+
+                  <Typography variant="body2" style={{ color: "#4B465C" }}>
                     Use Mobile Data to Attract, Engage and Retain Customers
                   </Typography>
                 </Box>
@@ -107,37 +144,41 @@ const MiniApp = () => {
             </CardContent>
           </Card>
 
-              
-
           {/* Airtime Rewards */}
           <Card
-            onClick={() => handleOptionSelect('airtime')}
+            onClick={() => handleOptionSelect("airtime")}
             className={`cursor-pointer transition duration-300 transform ${
-              selectedOption && selectedOption !== 'airtime'
-                ? 'opacity-50 pointer-events-none'
-                : 'hover:border-[#FF9800] hover:scale-105'
+              selectedOption && selectedOption !== "airtime"
+                ? "opacity-50 pointer-events-none"
+                : "hover:border-[#FF9800] hover:scale-105"
             }`}
             sx={{
               borderRadius: 1,
-              textAlign: 'center',
+              textAlign: "center",
               padding: 2,
-              background: '#4B465C0A',
-              border: '1px solid transparent',
-              boxShadow: 'none',
+              background: "#4B465C0A",
+              border: "1px solid transparent",
+              boxShadow: "none",
             }}
           >
             <CardContent>
-              {selectedOption === 'airtime' ? (
+              {selectedOption === "airtime" ? (
                 <Box className="flex justify-center items-center h-32">
-                  <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+                  <CircularProgress size={40} sx={{ color: "#FF9800" }} />
                 </Box>
               ) : (
                 <Box className="flex flex-col items-center justify-center">
-                  <img src="images/airtime.svg" alt="Airtime Icon" className="w-10 h-10 mb-2" />
+                  <img
+                    src="images/airtime.svg"
+                    alt="Airtime Icon"
+                    className="w-10 h-10 mb-2"
+                  />
+
                   <Typography variant="h6" className="font-semi-bold mt-2">
                     Airtime Rewards
                   </Typography>
-                  <Typography variant="body2" style={{ color: '#4B465C' }}>
+
+                  <Typography variant="body2" style={{ color: "#4B465C" }}>
                     Reward your customers with Free Airtime
                   </Typography>
                 </Box>
@@ -147,33 +188,39 @@ const MiniApp = () => {
 
           {/* Bulk SMS */}
           <Card
-            onClick={() => handleOptionSelect('sms')}
+            onClick={() => handleOptionSelect("sms")}
             className={`cursor-pointer transition duration-300 transform ${
-              selectedOption && selectedOption !== 'sms'
-                ? 'opacity-50 pointer-events-none'
-                : 'hover:border-[#FF9800] hover:scale-105'
+              selectedOption && selectedOption !== "sms"
+                ? "opacity-50 pointer-events-none"
+                : "hover:border-[#FF9800] hover:scale-105"
             }`}
             sx={{
               borderRadius: 1,
-              textAlign: 'center',
+              textAlign: "center",
               padding: 2,
-              background: '#4B465C0A',
-              border: '1px solid transparent',
-              boxShadow: 'none',
+              background: "#4B465C0A",
+              border: "1px solid transparent",
+              boxShadow: "none",
             }}
           >
             <CardContent>
-              {selectedOption === 'sms' ? (
+              {selectedOption === "sms" ? (
                 <Box className="flex justify-center items-center h-32">
-                  <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+                  <CircularProgress size={40} sx={{ color: "#FF9800" }} />
                 </Box>
               ) : (
                 <Box className="flex flex-col items-center justify-center">
-                  <img src="images/message.svg" alt="SMS Icon" className="w-10 h-10 mb-2" />
+                  <img
+                    src="images/message.svg"
+                    alt="SMS Icon"
+                    className="w-10 h-10 mb-2"
+                  />
+
                   <Typography variant="h6" className="font-semi-bold mt-2">
                     Bulk SMS
                   </Typography>
-                  <Typography variant="body2" style={{ color: '#4B465C' }}>
+
+                  <Typography variant="body2" style={{ color: "#4B465C" }}>
                     Run SMS marketing campaigns with ease
                   </Typography>
                 </Box>
@@ -181,105 +228,148 @@ const MiniApp = () => {
             </CardContent>
           </Card>
 
-          {/* WhatsApp Bots */}
-           <Card
-              onClick={() => handleOptionSelect('flowbot')}
-              className={`cursor-pointer transition duration-300 transform ${
-                selectedOption && selectedOption !== 'flowbot'
-                  ? 'opacity-50 pointer-events-none'
-                  : 'hover:border-[#FF9800] hover:scale-105'
-              }`}
-              sx={{
-                borderRadius: 1,
-                textAlign: 'center',
-                padding: 2,
-                background: '#4B465C0A',
-                border: '1px solid transparent',
-                boxShadow: 'none',
-              }}
-          >
-            <CardContent>
-              <Box className="flex flex-col items-center justify-center">
-                <img src="images/sms.svg" alt="WhatsApp Icon" className="w-10 h-10 mb-2" />
-                <Typography variant="h6" className="font-semi-bold mt-2">
-                  Flow Bots
-                </Typography>
-                <Typography variant="body2" style={{ color: '#4B465C' }}>
-                  Create conversations to support & engage your customers
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-
+          {/* Flow Bots */}
           <Card
-            onClick={() => {
-              const orgId = localStorage.getItem("selectedAccountId");
-              const encoded = btoa(orgId); // base64 encode
-              window.location.href = `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${encoded}`;
-            }}
+            onClick={() => handleOptionSelect("flowbot")}
             className={`cursor-pointer transition duration-300 transform ${
-              selectedOption && selectedOption !== 'whatsapp'
-                ? 'opacity-50 pointer-events-none'
-                : 'hover:border-[#FF9800] hover:scale-105'
+              selectedOption && selectedOption !== "flowbot"
+                ? "opacity-50 pointer-events-none"
+                : "hover:border-[#FF9800] hover:scale-105"
             }`}
             sx={{
               borderRadius: 1,
-              textAlign: 'center',
+              textAlign: "center",
               padding: 2,
-              background: '#4B465C0A',
-              border: '1px solid transparent',
-              boxShadow: 'none',
+              background: "#4B465C0A",
+              border: "1px solid transparent",
+              boxShadow: "none",
             }}
           >
             <CardContent>
-              <Box className="flex flex-col items-center justify-center">
-                <img src="images/sms.svg" alt="WhatsApp Icon" className="w-10 h-10 mb-2" />
-                <Typography variant="h6" className="font-semi-bold mt-2">
-                  Bulk Whatsapp
-                </Typography>
-                <Typography variant="body2" style={{ color: '#4B465C' }}>
-                  Create conversations to support & engage your customers
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Admin Portal */}
-          <Card
-            onClick={() => handleOptionSelect('admin')}
-            className={`cursor-pointer transition duration-300 transform ${
-              selectedOption && selectedOption !== 'admin'
-                ? 'opacity-50 pointer-events-none'
-                : 'hover:border-[#FF9800] hover:scale-105'
-            }`}
-            sx={{
-              borderRadius: 1,
-              textAlign: 'center',
-              padding: 2,
-              background: '#4B465C0A',
-              border: '1px solid transparent',
-              boxShadow: 'none',
-            }}
-          >
-            <CardContent>
-              {selectedOption === 'admin' ? (
+              {selectedOption === "flowbot" ? (
                 <Box className="flex justify-center items-center h-32">
-                  <CircularProgress size={40} sx={{ color: '#FF9800' }} />
+                  <CircularProgress size={40} sx={{ color: "#FF9800" }} />
                 </Box>
               ) : (
                 <Box className="flex flex-col items-center justify-center">
-                  <img src="images/settings.svg" alt="Admin Icon" className="w-10 h-10 mb-2" style={{ filter: 'invert(67%) sepia(78%) saturate(1160%) hue-rotate(359deg) brightness(103%) contrast(101%)' }} />
+                  <img
+                    src="images/sms.svg"
+                    alt="Flow Bots Icon"
+                    className="w-10 h-10 mb-2"
+                  />
+
                   <Typography variant="h6" className="font-semi-bold mt-2">
-                    Admin Portal
+                    Flow Bots
                   </Typography>
-                  <Typography variant="body2" style={{ color: '#4B465C' }}>
-                    Manage your organization and users
+
+                  <Typography variant="body2" style={{ color: "#4B465C" }}>
+                    Create conversations to support & engage your customers
                   </Typography>
                 </Box>
               )}
             </CardContent>
           </Card>
 
+          {/* Bulk WhatsApp */}
+          <Card
+            onClick={() => {
+              if (selectedOption) return;
+
+              const orgId = localStorage.getItem("selectedAccountId");
+
+              if (!orgId) return;
+
+              setSelectedOption("whatsapp");
+
+              const encoded = btoa(orgId);
+              window.location.href = `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${encoded}`;
+            }}
+            className={`cursor-pointer transition duration-300 transform ${
+              selectedOption && selectedOption !== "whatsapp"
+                ? "opacity-50 pointer-events-none"
+                : "hover:border-[#FF9800] hover:scale-105"
+            }`}
+            sx={{
+              borderRadius: 1,
+              textAlign: "center",
+              padding: 2,
+              background: "#4B465C0A",
+              border: "1px solid transparent",
+              boxShadow: "none",
+            }}
+          >
+            <CardContent>
+              {selectedOption === "whatsapp" ? (
+                <Box className="flex justify-center items-center h-32">
+                  <CircularProgress size={40} sx={{ color: "#FF9800" }} />
+                </Box>
+              ) : (
+                <Box className="flex flex-col items-center justify-center">
+                  <img
+                    src="images/sms.svg"
+                    alt="WhatsApp Icon"
+                    className="w-10 h-10 mb-2"
+                  />
+
+                  <Typography variant="h6" className="font-semi-bold mt-2">
+                    Bulk Whatsapp
+                  </Typography>
+
+                  <Typography variant="body2" style={{ color: "#4B465C" }}>
+                    Create conversations to support & engage your customers
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Admin Portal - only visible to SuperAdmin users */}
+          {isAdmin && (
+            <Card
+              onClick={() => handleOptionSelect("admin")}
+              className={`cursor-pointer transition duration-300 transform ${
+                selectedOption && selectedOption !== "admin"
+                  ? "opacity-50 pointer-events-none"
+                  : "hover:border-[#FF9800] hover:scale-105"
+              }`}
+              sx={{
+                borderRadius: 1,
+                textAlign: "center",
+                padding: 2,
+                background: "#4B465C0A",
+                border: "1px solid transparent",
+                boxShadow: "none",
+              }}
+            >
+              <CardContent>
+                {selectedOption === "admin" ? (
+                  <Box className="flex justify-center items-center h-32">
+                    <CircularProgress size={40} sx={{ color: "#FF9800" }} />
+                  </Box>
+                ) : (
+                  <Box className="flex flex-col items-center justify-center">
+                    <img
+                      src="images/settings.svg"
+                      alt="Admin Icon"
+                      className="w-10 h-10 mb-2"
+                      style={{
+                        filter:
+                          "invert(67%) sepia(78%) saturate(1160%) hue-rotate(359deg) brightness(103%) contrast(101%)",
+                      }}
+                    />
+
+                    <Typography variant="h6" className="font-semi-bold mt-2">
+                      Admin Portal
+                    </Typography>
+
+                    <Typography variant="body2" style={{ color: "#4B465C" }}>
+                      Manage your organization and users
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>

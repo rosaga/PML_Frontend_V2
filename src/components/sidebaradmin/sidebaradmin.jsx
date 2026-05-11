@@ -62,14 +62,7 @@ const SidebarAdmin = () => {
 
   return (
     <div>
-      <ConfirmSignOutModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onConfirm={() => {
-          clearToken();
-          router.push("/signin");
-        }}
-      />
+
 
       {/* Mobile toggle */}
       <button onClick={toggleSidebar} className="sm:hidden block p-2 bg-gray-700 text-white">

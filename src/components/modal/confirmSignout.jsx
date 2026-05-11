@@ -3,15 +3,14 @@ import { requestUnits } from "@/app/api/actions/reward/reward";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 
 
-const ConfirmSignOutModal = ({ open, onClose, onConfirm }) => {
+const ConfirmSignOutModal = ({ onClose, onConfirm }) => {
 
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
   }
 
-  // Don't render if not open
-  if (!open) return null;
+  
   
   return (
     <div
