@@ -12,9 +12,7 @@ export default function LoginLayout({
     <html lang="en">
       <body>
         <SessionProviderWrapper>
-          <div>
-            {children}
-          </div>
+          {children}
         </SessionProviderWrapper>
       </body>
     </html>
