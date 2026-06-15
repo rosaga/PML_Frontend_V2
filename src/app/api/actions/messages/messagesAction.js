@@ -146,32 +146,26 @@ export async function messageBalanceAction(formValues) {
 
 export async function broadcastMessages(formValues) {
     const broadcastUrl = `${apiUrl.BROADCAST_MESSAGE}/${formValues.selectedSenderId}/broadcast/send`;
+
     try {
         const config = await authHeaders();
-  
-        return axios
-            .post(broadcastUrl, formValues.newSms, config)
-            .then((res) => {
-                console.log("THE RESPONSE IS !!!!!!!", res);
-                return res;
-            })
-            .catch((error) => {
-                if (error.response) {
-                    console.log("Error response data:", error.response.data);
-                    console.log("Error response status:", error.response.status);
-                    return error.response;
-                }
-                return {
-                    errors: {
-                        _error: "Network error. Please try again.",
-                    },
-                };
-            });
+
+        const res = await axios.post(broadcastUrl, formValues.newSms, config);
+
+        console.log("THE RESPONSE IS !!!!!!!", res);
+        return res;
     } catch (error) {
-        console.error("Error:", error);
+        if (error.response) {
+            console.log("Error response data:", error.response.data);
+            console.log("Error response status:", error.response.status);
+
+            return error.response;
+        }
+
         return {
-            errors: {
-                _error: "An error occurred. Please try again.",
+            status: 0,
+            data: {
+                error: "Network error. Please try again.",
             },
         };
     }
