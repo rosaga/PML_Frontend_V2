@@ -49,17 +49,14 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
   const [filters, setFilters] = useState({
-    // Basic filters
     name: "",
     startDate: "",
     endDate: "",
-    // Advanced filters
     id: "",
     description: "",
     serviceId: "",
     content: "",
     groupId: "",
-    organizationId: "",
   });
 
   const [paginationModel, setPaginationModel] = useState({
@@ -130,9 +127,6 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       serverParams['eq__group_id'] = filters.groupId.trim();
     }
     
-    if (filters.organizationId.trim()) {
-      serverParams['eq__org_id'] = filters.organizationId.trim();
-    }
 
     return serverParams;
   };
@@ -162,7 +156,6 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       serviceId: "",
       content: "",
       groupId: "",
-      organizationId: "",
     });
     setHasActiveFilters(false);
     setPaginationModel({ pageSize: 10, page: 0 });
@@ -177,56 +170,59 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   }, [token]);
 
   const getCampaigns = async (isFilterChange = false) => {
-    if (!email) {
-      console.warn("user email missing, skipping fetch");
-      return;
+  if (!org_id) {
+    console.warn("selected account/org missing, skipping fetch");
+    setCampaigns([]);
+    setTotal(0);
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const params = {
+      page: paginationModel.page + 1,
+      limit: paginationModel.pageSize,
+      org_id,
+      orderby: "createdat DESC",
+    };
+
+    const now = new Date().toISOString();
+
+    if (campaignType === "scheduled") {
+      params['gte__scheduled'] = now;
+    } else if (campaignType === "completed") {
+      params['lte__scheduled'] = now;
     }
-    
-    setLoading(true);
 
-    try {
-      const params = {
-        page: paginationModel.page + 1,
-        limit: paginationModel.pageSize,
-        email,
-        orderby: "createdat DESC",
-      };
+    const serverFilters = buildServerFilters();
+    Object.assign(params, serverFilters);
 
-      const now = new Date().toISOString();
-      if (campaignType === "scheduled") {
-        params['gte__scheduled'] = now;
-      } else if (campaignType === "completed") {
-        params['lte__scheduled'] = now;
-      }
+    console.log("Fetching campaigns with params:", params);
 
-      const serverFilters = buildServerFilters();
-      Object.assign(params, serverFilters);
+    const res = await GetSmsCampaigns(params);
 
-      console.log("Fetching campaigns with params:", params);
-
-      const res = await GetSmsCampaigns(params);
-      
-      if (res.errors) {
-        console.error("API errors:", res.errors);
-        setCampaigns([]);
-        setTotal(0);
-      } else {
-        setCampaigns(res.data || []);
-        setTotal(res.count || 0);
-      }
-    } catch (e) {
-      console.error("Fetch error:", e);
+    if (res.errors) {
+      console.error("API errors:", res.errors);
       setCampaigns([]);
       setTotal(0);
-    } finally {
-      setLoading(false);
+    } else {
+      setCampaigns(res.data || []);
+      setTotal(res.count || 0);
     }
-  };
+  } catch (e) {
+    console.error("Fetch error:", e);
+    setCampaigns([]);
+    setTotal(0);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     getCampaigns();
   }, [
-    email,
+    org_id,
     campaignType,
     paginationModel,
     isSingleModalOpen,
@@ -392,23 +388,6 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Organization
-                </label>
-                <select
-                  value={filters.organizationId}
-                  onChange={(e) => handleFilterChange("organizationId", e.target.value)}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="">All Organizations</option>
-                  {organizations.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
                   Group ID
                 </label>
                 <input
@@ -484,11 +463,6 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
           {hasActiveFilters && (
             <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
               Filters Applied
-            </span>
-          )}
-          {filters.organizationId && (
-            <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
-              Org: {organizations.find(o => o.id === filters.organizationId)?.name || filters.organizationId}
             </span>
           )}
         </div>

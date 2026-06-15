@@ -96,21 +96,27 @@ const MiniApp = () => {
     if (orgId) GetSenderId(orgId).catch(console.error);
   }, []);
 
-  const handleCardClick = (id) => {
-    if (navigating) return;
+  const navigateToService = (id) => {
+    if (!id || navigating) return;
     if (id === "admin" && !isAdmin) return;
-    setSelectedOption(id);
-  };
 
-  const handleGetStarted = () => {
-    if (!selectedOption || navigating) return;
+    setSelectedOption(id);
     setNavigating(true);
+
     setTimeout(() => {
-      switch (selectedOption) {
-        case "data":      router.push("/apps/data/dashboard"); break;
-        case "airtime":   router.push("/apps/airtime/dashboard"); break;
-        case "sms":       router.push("/apps/sms/dashboard"); break;
-        case "flowbot":   router.push("/apps/flowbot/dashboard"); break;
+      switch (id) {
+        case "data":
+          router.push("/apps/data/dashboard");
+          break;
+        case "airtime":
+          router.push("/apps/airtime/dashboard");
+          break;
+        case "sms":
+          router.push("/apps/sms/dashboard");
+          break;
+        case "flowbot":
+          router.push("/apps/flowbot/dashboard");
+          break;
         case "whatsapp": {
           const orgId = localStorage.getItem("selectedAccountId");
           if (orgId) window.location.href = `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`;
@@ -121,6 +127,14 @@ const MiniApp = () => {
           break;
       }
     }, 600);
+  };
+
+  const handleCardClick = (id) => {
+    navigateToService(id);
+  };
+
+  const handleGetStarted = () => {
+    navigateToService(selectedOption);
   };
 
   const visibleServices = isAdmin ? [...services, adminService] : services;
@@ -231,7 +245,7 @@ const MiniApp = () => {
         </div>
 
         {/* Footer */}
-        <div className="miniapp-footer">
+        {/* <div className="miniapp-footer">
           <p className={`miniapp-footer-text${selectedOption ? " active" : ""}`}>
             {selectedOption ? "Great choice! Click get started." : ""}
           </p>
@@ -242,7 +256,7 @@ const MiniApp = () => {
           >
             Get started →
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

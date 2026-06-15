@@ -21,10 +21,9 @@ export async function fetchAllCampaigns(baseParams) {
   return { data: all, count: all.length };
 }
 
-export async function GetSmsCampaigns(params) {
+export async function GetSmsCampaigns(params = {}) {
   const {
     org_id,
-    email,
     page,
     limit,
     status,
@@ -32,6 +31,7 @@ export async function GetSmsCampaigns(params) {
     month,
     day,
     orderby,
+
     // Server-side filter parameters
     like__name,
     like__description,
@@ -39,74 +39,93 @@ export async function GetSmsCampaigns(params) {
     eq__id,
     eq__service_id,
     eq__group_id,
-    eq__org_id,
     gte__createdat,
     lte__createdat,
     gte__scheduled,
     lte__scheduled,
+
+    // Keep these here so old callers do not break,
+    // but do not send them to the backend.
+    email,
+    eq__org_id,
+
     ...additionalParams
   } = params;
 
   let campaignUrl = `${MESSAGING_API_BASE_URL}/campaign/list`;
   const queryParams = new URLSearchParams();
 
-  // basic parameters
-  if (email) {
-    queryParams.append('eq__createdby', email);
+  // Campaign ownership is now resolved by backend using:
+  // org_id -> application_services_v.application_id -> campaigns.application_services_id
+  if (org_id) {
+    queryParams.append('org_id', org_id);
   }
+
   if (page != null) {
     queryParams.append('page', page);
   }
+
   if (limit != null) {
     queryParams.append('limit', limit);
   }
+
   if (status) {
     queryParams.append('status', status);
   }
+
   if (year) {
     queryParams.append('year', year);
   }
+
   if (month) {
     queryParams.append('month', month);
   }
+
   if (day) {
     queryParams.append('day', day);
   }
+
   if (orderby) {
     queryParams.append('orderby', orderby);
   }
 
-  // server filters
+  // Server filters
   if (like__name) {
     queryParams.append('like__name', like__name);
   }
+
   if (like__description) {
     queryParams.append('like__description', like__description);
   }
+
   if (like__content) {
     queryParams.append('like__content', like__content);
   }
+
   if (eq__id) {
     queryParams.append('eq__id', eq__id);
   }
+
   if (eq__service_id) {
     queryParams.append('eq__service_id', eq__service_id);
   }
+
   if (eq__group_id) {
     queryParams.append('eq__group_id', eq__group_id);
   }
-  if (eq__org_id) {
-    queryParams.append('eq__org_id', eq__org_id);
-  }
+
   if (gte__createdat) {
     queryParams.append('gte__createdat', gte__createdat);
   }
+
   if (lte__createdat) {
     queryParams.append('lte__createdat', lte__createdat);
   }
+
   if (gte__scheduled) {
     queryParams.append('gte__scheduled', gte__scheduled);
   }
+
   if (lte__scheduled) {
     queryParams.append('lte__scheduled', lte__scheduled);
   }
@@ -139,6 +158,7 @@ export async function GetSmsCampaigns(params) {
     return res.data;
   } catch (error) {
     console.error("Error fetching SMS campaigns:", error);
+
     if (error.response) {
       return {
         errors: {
@@ -148,6 +168,7 @@ export async function GetSmsCampaigns(params) {
         },
       };
     }
+
     return {
       errors: {
         _error: 'Network error. Please try again.',
