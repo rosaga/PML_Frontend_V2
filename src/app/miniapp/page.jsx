@@ -181,7 +181,11 @@ const MiniApp = () => {
             onClick={() => {
               const orgId = localStorage.getItem("selectedAccountId");
               const encoded = btoa(orgId); // base64 encode
-              window.location.href = `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${encoded}`;
+              window.open(
+                `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${encoded}`,
+                '_blank',
+                'noopener,noreferrer'
+              );
             }}
             className={`cursor-pointer transition duration-300 transform ${
               selectedOption && selectedOption !== 'whatsapp'
