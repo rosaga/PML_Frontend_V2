@@ -119,7 +119,12 @@ const MiniApp = () => {
           break;
         case "whatsapp": {
           const orgId = localStorage.getItem("selectedAccountId");
-          if (orgId) window.location.href = `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`;
+         
+          if (orgId) window.open(
+                `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`,
+                '_blank',
+                'noopener,noreferrer'
+              );
           break;
         }
         case "admin":
