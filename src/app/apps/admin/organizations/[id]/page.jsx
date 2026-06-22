@@ -353,13 +353,30 @@ const OrganizationDetailPage = () => {
   const accounts = Array.isArray(profile?.accounts) ? profile.accounts : [];
 
   const dataModules = useMemo(() => {
-    return accounts.map((account) => ({
-      id: account.id,
-      module: account.module || "-",
-      units: Number(account.units || 0),
-      expires_on: account.expires_on || null,
-      service: (account.service || "DATA").toUpperCase(),
-    }));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const threeMonthsAgo = new Date(today);
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    return accounts
+      .map((account) => ({
+        id: account.id,
+        module: account.module || "-",
+        units: Number(account.units || 0),
+        expires_on: account.expires_on || null,
+        service: (account.service || "DATA").toUpperCase(),
+      }))
+      .filter((account) => {
+        if (!account.expires_on) return false;
+
+        const expiryDate = new Date(account.expires_on);
+        if (Number.isNaN(expiryDate.getTime())) return false;
+
+        expiryDate.setHours(0, 0, 0, 0);
+
+        return expiryDate >= threeMonthsAgo;
+      });
   }, [accounts]);
 
   const enabledServices = useMemo(() => {
@@ -437,14 +454,15 @@ const OrganizationDetailPage = () => {
     });
 
     smsRecharges.forEach((item, index) => {
+      const smsCreatedAt = item?.createdat || item?.created_at || item?.CreatedAt;
+
+      
       activityItems.push({
         id: `sms-${item?.id || index}`,
         title: "SMS Recharge",
         description: `${formatNumber(item?.units)} SMS units added`,
-        timeValue: item?.createdat || item?.created_at || item?.CreatedAt,
-        time: relativeTime(
-          item?.createdat || item?.created_at || item?.CreatedAt
-        ),
+        timeValue: smsCreatedAt,
+        time: formatTableDateTime(smsCreatedAt),
         status: item?.status_code || item?.status || "Approved",
       });
     });

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  GetAdminOrganizations,
   GetAdminSMSDashboardSummary,
   GetAdminSMSCampaignSummaries,
   GetAdminSMSSenderIDs,
@@ -39,6 +40,7 @@ const Tabs = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: "campaigns", label: "Campaigns" },
     { id: "senderIds", label: "Sender IDs" },
+    { id: "usage", label: "Usage" },
   ];
 
   return (
@@ -65,10 +67,18 @@ const Tabs = ({ activeTab, setActiveTab }) => {
   );
 };
 
-const CardShell = ({ title, subtitle, rightAction, children }) => {
+const CardShell = ({
+  title,
+  subtitle,
+  rightAction,
+  children,
+  headerClassName = "",
+}) => {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
+      <div
+        className={`flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 px-6 py-5 ${headerClassName}`}
+      >
         <div>
           <h2 className="text-[22px] font-bold text-gray-900">{title}</h2>
           {subtitle ? (
@@ -306,6 +316,7 @@ export default function BulkSMSManagementPage() {
   const [activeTab, setActiveTab] = useState("campaigns");
 
   const [summary, setSummary] = useState(null);
+  const [organizations, setOrganizations] = useState([]);
 
   const [campaigns, setCampaigns] = useState([]);
   const [campaignsMeta, setCampaignsMeta] = useState(null);
@@ -361,10 +372,9 @@ export default function BulkSMSManagementPage() {
   useEffect(() => {
     if (!isClient) return;
 
-    if (activeTab === "campaigns") {
-      fetchCampaigns();
-    }
-
+  if (["campaigns", "usage"].includes(activeTab)) {
+    fetchCampaigns();
+  }
     if (activeTab === "senderIds") {
       fetchSenderIds();
     }
@@ -394,11 +404,35 @@ export default function BulkSMSManagementPage() {
   async function fetchInitialData() {
     try {
       setError("");
-      await fetchSummary();
-      await fetchCampaigns();
+      await Promise.allSettled([
+        fetchOrganizations(),
+        fetchSummary(),
+        fetchCampaigns(),
+      ]);
     } catch (err) {
       console.error("Failed to load initial bulk SMS data:", err);
       setError("Failed to load Bulk SMS management data.");
+    }
+  }
+
+  async function fetchOrganizations() {
+    try {
+      const res = await GetAdminOrganizations("limit=500");
+
+      const rows =
+        res?.data?.items ||
+        res?.data?.organizations ||
+        res?.data?.records ||
+        res?.items ||
+        res?.organizations ||
+        res?.records ||
+        res?.data ||
+        [];
+
+      setOrganizations(Array.isArray(rows) ? rows : []);
+    } catch (err) {
+      console.error("Failed to load organizations:", err);
+      setOrganizations([]);
     }
   }
 
@@ -778,21 +812,91 @@ export default function BulkSMSManagementPage() {
     ];
   }, [summary]);
 
+  function getOrganizationIdFromCampaign(item) {
+    return (
+      item?.organization_id ||
+      item?.org_id ||
+      item?.organizationId ||
+      item?.orgId ||
+      item?.application_id ||
+      item?.service_id ||
+      ""
+    );
+  }
+
+  function getOrganizationNameFromCampaign(item) {
+    const existingName =
+      item?.organization_name ||
+      item?.org_name ||
+      item?.organization?.name ||
+      item?.organization;
+
+    if (existingName && !String(existingName).match(/^\d+$/)) {
+      return existingName;
+    }
+
+    const orgId = String(getOrganizationIdFromCampaign(item));
+
+    const matchedOrg = organizations.find((org) => {
+      const possibleIds = [
+        org?.id,
+        org?.org_id,
+        org?.organization_id,
+        org?.organizationId,
+        org?.application_id,
+        org?.external_id,
+      ].map((value) => String(value || ""));
+
+      return possibleIds.includes(orgId);
+    });
+
+    return matchedOrg?.name || matchedOrg?.organization_name || orgId || "Unknown Organization";
+  }
+
   const campaignRows = useMemo(() => {
     return (Array.isArray(campaigns) ? campaigns : []).map((item) => ({
       id: item?.campaign_id || "—",
       name: item?.name || "—",
-      organization:
-        item?.organization ||
-        item?.application_id ||
-        (item?.service_id ? `Service ${item.service_id}` : "—"),
+      organization: getOrganizationNameFromCampaign(item),
       totalSent: formatNumber(item?.total_sent),
       delivered: formatNumber(item?.successful),
       failed: formatNumber(item?.unsuccessful),
       date: item?.date || formatDate(item?.first_message_at),
       deliveryTime: item?.delivery_time || "—",
     }));
-  }, [campaigns]);
+  }, [campaigns, organizations]);
+
+  const usageRows = useMemo(() => {
+    const grouped = {};
+
+    (Array.isArray(campaigns) ? campaigns : []).forEach((item) => {
+      const organization = getOrganizationNameFromCampaign(item);
+
+      if (!grouped[organization]) {
+        grouped[organization] = {
+          organization,
+          campaigns: 0,
+          totalSent: 0,
+          delivered: 0,
+          failed: 0,
+        };
+      }
+
+      grouped[organization].campaigns += 1;
+      grouped[organization].totalSent += Number(item?.total_sent || 0);
+      grouped[organization].delivered += Number(item?.successful || 0);
+      grouped[organization].failed += Number(item?.unsuccessful || 0);
+    });
+
+    
+    return Object.values(grouped)
+      .map((item) => ({
+        ...item,
+        successRate:
+          item.totalSent > 0 ? (item.delivered / item.totalSent) * 100 : 0,
+      }))
+      .sort((a, b) => b.totalSent - a.totalSent);
+  }, [campaigns, organizations]);
 
   const senderRows = useMemo(() => {
     return (Array.isArray(senderIds) ? senderIds : [])
@@ -977,6 +1081,125 @@ export default function BulkSMSManagementPage() {
                 />
               </CardShell>
             )}
+
+            {activeTab === "usage" && (
+            <CardShell
+              title="SMS Usage Data"
+              headerClassName="items-center"
+              rightAction={
+                <div className="flex flex-wrap items-center gap-4">
+                  <select className="h-12 rounded-xl border border-gray-300 bg-white px-4 text-[16px] text-gray-900 outline-none focus:border-gray-400">
+                    <option>Last 30 Days</option>
+                    <option>Last 7 Days</option>
+                    <option>This Month</option>
+                  </select>
+
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-500">
+                      Total SMS Usage
+                    </p>
+                    <p className="text-[20px] font-semibold leading-none text-gray-900">
+                      {formatNumber(
+                        usageRows.reduce(
+                          (sum, item) => sum + Number(item.totalSent || 0),
+                          0
+                        )
+                      )}
+                    </p>
+                  </div>
+                </div>
+              }
+            >
+              {campaignsError ? (
+                <div className="px-6 py-4 text-sm text-amber-700">
+                  {campaignsError}
+                </div>
+              ) : null}
+
+              {loadingCampaigns ? (
+                <div className="flex justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Organization
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Campaigns
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          SMS Sent
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Delivered
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Failed
+                        </th>
+                        <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                          Success Rate
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {usageRows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            className="px-6 py-10 text-center text-sm text-gray-500"
+                          >
+                            No SMS usage data found
+                          </td>
+                        </tr>
+                      ) : (
+                        usageRows.map((item, index) => (
+                          <tr key={`${item.organization}-${index}`}>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {item.organization}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                              {formatNumber(item.campaigns)}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {formatNumber(item.totalSent)}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-medium text-green-600">
+                              {formatNumber(item.delivered)}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-medium text-red-500">
+                              {formatNumber(item.failed)}
+                            </td>
+                            <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                              {formatPercent(item.successRate)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <Pagination
+                page={campaignPage}
+                pageSize={campaignPageSize}
+                totalPages={campaignsMeta?.total_pages || 1}
+                count={campaignsMeta?.count || 0}
+                disabled={loadingCampaigns}
+                onPageChange={setCampaignPage}
+                onPageSizeChange={(value) => {
+                  setCampaignPageSize(value);
+                  setCampaignPage(1);
+                }}
+              />
+            </CardShell>
+          )}
+
 
             {activeTab === "senderIds" && (
               <CardShell
