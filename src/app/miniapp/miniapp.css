@@ -31,6 +31,14 @@
   margin-bottom: 20px;
 }
 
+.miniapp-logo-img {
+  height: 75px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 28px;
+}
+
 .miniapp-logo span {
   color: #F4822A;
 }
