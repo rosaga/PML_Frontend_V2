@@ -85,14 +85,23 @@ const MiniApp = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [navigating, setNavigating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [organizationName, setOrganizationName] = useState("");
 
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const orgId = localStorage.getItem("selectedAccountId");
+    const orgName = localStorage.getItem("selectedAccountName");
     const token = getToken();
+
     setIsAdmin(hasRole(token, "SuperAdmin"));
+
+    if (orgName) {
+      setOrganizationName(orgName);
+    }
+
     if (orgId) GetSenderId(orgId).catch(console.error);
   }, []);
 
@@ -125,30 +134,42 @@ const MiniApp = () => {
         case "data":
           router.push("/apps/data/dashboard");
           break;
+
         case "airtime":
           router.push("/apps/airtime/dashboard");
           break;
+
         case "sms":
           router.push("/apps/sms/dashboard");
           break;
+
         case "flowbot":
           router.push("/apps/flowbot/dashboard");
           break;
+
         case "whatsapp": {
           const orgId = localStorage.getItem("selectedAccountId");
-         
-          if (orgId) window.open(
-                `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`,
-                '_blank',
-                'noopener,noreferrer'
-              );
+
+          if (orgId) {
+            window.open(
+              `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`,
+              "_blank",
+              "noopener,noreferrer"
+            );
+          }
 
           setSelectedOption(null);
           setNavigating(false);
           break;
         }
+
         case "admin":
           if (isAdmin) router.push("/apps/admin/dashboard");
+          break;
+
+        default:
+          setSelectedOption(null);
+          setNavigating(false);
           break;
       }
     }, 600);
@@ -160,6 +181,10 @@ const MiniApp = () => {
 
   const handleGetStarted = () => {
     navigateToService(selectedOption);
+  };
+
+  const handleBackToAccounts = () => {
+    router.back();
   };
 
   const visibleServices = isAdmin ? [...services, adminService] : services;
@@ -178,11 +203,20 @@ const MiniApp = () => {
 
             <div className="miniapp-headline">
               <h1>
-                What can we<br />do for you{" "}
-                <span style={{ color: "#F4822A" }}>today?</span>
+                Welcome,{" "}
+                <span style={{ color: "#F4822A" }}>
+                  {organizationName || "there"}{" "}
+                </span>
+                <span className="miniapp-wave" role="img" aria-label="waving hand">
+                  👋
+                </span>
               </h1>
+
               <p>
-                Hey! I&apos;m Amara, your Peak Mobile guide. Pick a service and let&apos;s make it happen.
+                Connect and Engage at Scale with our mobile marketing tools.
+              </p>
+              <p>
+                Pick a service below to get started.
               </p>
             </div>
           </div>
@@ -203,12 +237,22 @@ const MiniApp = () => {
 
       {/* ── Body ── */}
       <div className="miniapp-body">
+        <button
+          type="button"
+          className="miniapp-back-btn"
+          onClick={handleBackToAccounts}
+        >
+          <span className="miniapp-back-icon">←</span>
+          <span>Back to Accounts</span>
+        </button>
+
         <div className="miniapp-label">Choose a service</div>
 
         <div className="miniapp-grid">
           {visibleServices.map((svc) => {
             const isSelected = selectedOption === svc.id;
             const isDisabled = navigating && !isSelected;
+
             return (
               <div
                 key={svc.id}
