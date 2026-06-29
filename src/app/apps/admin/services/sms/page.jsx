@@ -780,35 +780,35 @@ export default function BulkSMSManagementPage() {
           </svg>
         ),
       },
-      {
-        title: "Pending Delivery from dispatch/scheduled",
-        value: formatNumber(
-          summary?.pending_delivery_total ??
-            (Number(summary?.pending_dispatch || 0) +
-              Number(summary?.pending_scheduled || 0))
-        ),
-        subtitle: "",
-        iconBg: "#fef3c7",
-        iconColor: "#d97706",
-        icon: (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            />
-            <path
-              d="M12 7V12L15 14"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        ),
-      },
+      // {
+      //   title: "Pending Delivery from dispatch/scheduled",
+      //   value: formatNumber(
+      //     summary?.pending_delivery_total ??
+      //       (Number(summary?.pending_dispatch || 0) +
+      //         Number(summary?.pending_scheduled || 0))
+      //   ),
+      //   subtitle: "",
+      //   iconBg: "#fef3c7",
+      //   iconColor: "#d97706",
+      //   icon: (
+      //     <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      //       <circle
+      //         cx="12"
+      //         cy="12"
+      //         r="9"
+      //         stroke="currentColor"
+      //         strokeWidth="1.8"
+      //       />
+      //       <path
+      //         d="M12 7V12L15 14"
+      //         stroke="currentColor"
+      //         strokeWidth="1.8"
+      //         strokeLinecap="round"
+      //         strokeLinejoin="round"
+      //       />
+      //     </svg>
+      //   ),
+      // },
     ];
   }, [summary]);
 

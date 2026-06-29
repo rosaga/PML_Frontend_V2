@@ -89,6 +89,22 @@ export async function GetAdminOrganizationDataDispatches(orgId, query = "") {
   }
 }
 
+export async function GetAdminOrganizationAirtimeDispatches(orgId, query = "") {
+  const config = await authHeaders();
+
+  try {
+    const url = withQuery(
+      `${apiUrl.GET_BALANCE}/admin/organization/${orgId}/airtime/dispatch/list`,
+      query
+    );
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch organization airtime dispatches:", error.message);
+    throw error;
+  }
+}
+
 export async function GetAdminBundleCatalog(query = "") {
   const config = await authHeaders();
 
@@ -137,6 +153,35 @@ export async function UpdateAdminBundleCatalog(bundleType, payload) {
     return res.data;
   } catch (error) {
     console.error("Failed to update bundle catalog item:", error.message);
+    throw error;
+  }
+}
+
+export async function GetAdminGlobalDataTopUps(query = "") {
+  const config = await authHeaders();
+
+  try {
+    const url = withQuery(
+      `${apiUrl.GET_BALANCE}/admin/data/global-top-up/list`,
+      query
+    );
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch global data top-ups:", error.message);
+    throw error;
+  }
+}
+
+export async function GetAdminGlobalDataAvailability() {
+  const config = await authHeaders();
+
+  try {
+    const url = `${apiUrl.GET_BALANCE}/admin/data/global-availability`;
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch global data availability:", error.message);
     throw error;
   }
 }
@@ -274,15 +319,33 @@ export async function GetAdminOrganizationRevenue(orgId, query = "") {
   }
 }
 
-export async function GetAdminSMSDashboardSummary() {
+export async function GetAdminSMSDashboardSummary(query = "") {
   const config = await authHeaders();
 
   try {
-    const url = `${apiUrl.GET_BALANCE}/admin/sms/dashboard/summary`;
+    const url = withQuery(
+      `${apiUrl.GET_BALANCE}/admin/sms/dashboard/summary`,
+      query
+    );
     const res = await axios.get(url, config);
     return res.data;
   } catch (error) {
     console.error("Failed to fetch SMS dashboard summary:", error.message);
+    throw error;
+  }
+}
+
+export async function GetAdminSMSFailureSummary(appId) {
+  const config = await authHeaders();
+
+  try {
+    const url = `${apiUrl.MESSAGE_COUNTS}/message/${encodeURIComponent(
+      appId
+    )}/failure-summary`;
+    const res = await axios.get(url, config);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch SMS failure summary:", error.message);
     throw error;
   }
 }

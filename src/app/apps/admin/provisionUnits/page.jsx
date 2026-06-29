@@ -9,6 +9,13 @@ import {
 import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
 
 const DEFAULT_ORG_PAGE_SIZE = 10;
+const DEFAULT_PROVISION_PAGE_SIZE = 10;
+const PROVISION_SERVICE_TABS = [
+  { id: "DATA", label: "Data" },
+  { id: "SMS", label: "SMS" },
+  { id: "AIRTIME", label: "Airtime" },
+  { id: "WHATSAPP", label: "Whatsapp" },
+];
 
 const ProvisionUnitsPage = () => {
   const [isClient, setIsClient] = useState(false);
@@ -27,11 +34,19 @@ const ProvisionUnitsPage = () => {
   const [organizationPageSize, setOrganizationPageSize] = useState(
     DEFAULT_ORG_PAGE_SIZE
   );
+  const [activeProvisionService, setActiveProvisionService] = useState("DATA");
+  const [provisionPage, setProvisionPage] = useState(1);
+  const [provisionPageSize, setProvisionPageSize] = useState(
+    DEFAULT_PROVISION_PAGE_SIZE
+  );
+  const [provisionMeta, setProvisionMeta] = useState(null);
 
   const [loading, setLoading] = useState(true);
+  const [loadingRecentProvisions, setLoadingRecentProvisions] = useState(false);
   const [loadingOrgProfileId, setLoadingOrgProfileId] = useState(null);
 
   const [pageError, setPageError] = useState("");
+  const [recentProvisionsError, setRecentProvisionsError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
@@ -43,50 +58,23 @@ const ProvisionUnitsPage = () => {
     fetchProvisionPageData();
   }, [isClient]);
 
+  useEffect(() => {
+    if (!isClient) return;
+    fetchRecentProvisions();
+  }, [isClient, activeProvisionService, provisionPage, provisionPageSize]);
+
   async function fetchProvisionPageData() {
     try {
       setLoading(true);
       setPageError("");
       setSuccessMessage("");
 
-      const [organizationsResult, allRechargesResult] =
-        await Promise.allSettled([
-          GetAdminOrganizations("limit=1000"),
-          GetAdminAllRecharges("page=1&page_size=50"),
-        ]);
+      const organizationsResult = await GetAdminOrganizations("limit=1000");
 
-      if (organizationsResult.status === "fulfilled") {
-        setOrganizations(normalizeOrganizationListPayload(organizationsResult.value));
-      } else {
-        setOrganizations([]);
-      }
-
-      if (allRechargesResult.status === "fulfilled") {
-        setRecentProvisions(normalizeRechargeListPayload(allRechargesResult.value));
-      } else {
-        setRecentProvisions([]);
-      }
-
-      if (
-        organizationsResult.status === "rejected" &&
-        allRechargesResult.status === "rejected"
-      ) {
-        setPageError("Failed to load provisioning data.");
-      } else if (organizationsResult.status === "rejected") {
-        setPageError(
-          organizationsResult.reason?.response?.data?.error ||
-            organizationsResult.reason?.response?.data?.message ||
-            "Failed to load organizations."
-        );
-      } else if (allRechargesResult.status === "rejected") {
-        setPageError(
-          allRechargesResult.reason?.response?.data?.error ||
-            allRechargesResult.reason?.response?.data?.message ||
-            "Failed to load recent provisions."
-        );
-      }
+      setOrganizations(normalizeOrganizationListPayload(organizationsResult));
     } catch (err) {
       console.error("Failed to load provision page:", err);
+      setOrganizations([]);
       setPageError(
         err?.response?.data?.error ||
           err?.response?.data?.message ||
@@ -97,13 +85,45 @@ const ProvisionUnitsPage = () => {
     }
   }
 
-  async function fetchRecentProvisions() {
+  async function fetchRecentProvisions({
+    page = provisionPage,
+    pageSize = provisionPageSize,
+    service = activeProvisionService,
+  } = {}) {
     try {
-      const res = await GetAdminAllRecharges("page=1&page_size=50");
+      setLoadingRecentProvisions(true);
+      setRecentProvisionsError("");
+
+      const query = buildProvisionQuery({ page, pageSize, service });
+      const res = await GetAdminAllRecharges(query);
+
       setRecentProvisions(normalizeRechargeListPayload(res));
+      setProvisionMeta(getPaginationPayload(res));
     } catch (err) {
       console.error("Failed to refresh recent provisions:", err);
+      setRecentProvisions([]);
+      setProvisionMeta(null);
+      setRecentProvisionsError(
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to load recent provisions."
+      );
+    } finally {
+      setLoadingRecentProvisions(false);
     }
+  }
+
+  function buildProvisionQuery({ page, pageSize, service }) {
+    const params = new URLSearchParams();
+
+    params.set("page", String(page));
+    params.set("page_size", String(pageSize));
+
+    if (service) {
+      params.set("service", service);
+    }
+
+    return params.toString();
   }
 
   function normalizeOrganizationListPayload(payload) {
@@ -136,6 +156,35 @@ const ProvisionUnitsPage = () => {
       [];
 
     return Array.isArray(rows) ? rows : [];
+  }
+
+  function getPaginationPayload(payload) {
+    const meta =
+      payload?.pagination ||
+      payload?.data?.pagination ||
+      payload?.meta ||
+      payload?.data?.meta ||
+      null;
+
+    if (meta) return meta;
+
+    if (
+      typeof payload?.count !== "undefined" ||
+      typeof payload?.total_count !== "undefined" ||
+      typeof payload?.total_pages !== "undefined"
+    ) {
+      return payload;
+    }
+
+    if (
+      typeof payload?.data?.count !== "undefined" ||
+      typeof payload?.data?.total_count !== "undefined" ||
+      typeof payload?.data?.total_pages !== "undefined"
+    ) {
+      return payload.data;
+    }
+
+    return null;
   }
 
   function getOrganizationId(org) {
@@ -185,19 +234,115 @@ const ProvisionUnitsPage = () => {
       profile?.organization?.accounts ||
       [];
 
-    return Array.isArray(accounts) ? accounts : [];
+    if (!Array.isArray(accounts)) return [];
+
+    const groupedAccounts = new Map();
+
+    accounts.forEach((account, index) => {
+      const service = getAccountService(account);
+      const module =
+        account?.module ||
+        account?.package ||
+        account?.bundle_size ||
+        account?.bundle_type ||
+        account?.bundle_amount ||
+        account?.name ||
+        account?.description ||
+        "";
+      const units = Number(
+        account?.units ??
+          account?.balance ??
+          account?.unit_balance ??
+          account?.quantity ??
+          0
+      );
+      const key = `${service}-${module || account?.id || index}`;
+
+      if (!groupedAccounts.has(key)) {
+        groupedAccounts.set(key, {
+          ...account,
+          id: account?.id || key,
+          module,
+          units: Number.isFinite(units) ? units : 0,
+          expires_on: account?.expires_on || account?.expiresAt || null,
+          service,
+        });
+        return;
+      }
+
+      const existing = groupedAccounts.get(key);
+      groupedAccounts.set(key, {
+        ...existing,
+        units: existing.units + (Number.isFinite(units) ? units : 0),
+      });
+    });
+
+    return Array.from(groupedAccounts.values());
   }
 
   function getOrganizationBalances(profile) {
-    return (
-      profile?.balances ||
-      profile?.balance ||
-      profile?.data?.balances ||
-      profile?.data?.balance ||
-      profile?.data ||
-      profile ||
-      null
-    );
+    const root = profile || {};
+    const source = profile?.data || profile || {};
+    const balances =
+      source?.balances || source?.balance || root?.balances || root?.balance || {};
+    const accounts = getOrganizationAccounts(profile);
+    const dataAccountBalance = accounts
+      .filter((account) => account.service === "DATA")
+      .reduce((sum, account) => sum + Number(account.units || 0), 0);
+
+    return {
+      sms_balance: getNumericValue(
+        source?.sms_balance,
+        root?.sms_balance,
+        source?.sms?.balance,
+        root?.sms?.balance,
+        balances?.sms_balance,
+        balances?.sms
+      ),
+      data_balance: getNumericValue(
+        source?.data_balance,
+        root?.data_balance,
+        source?.total_data_units,
+        root?.total_data_units,
+        balances?.data_balance,
+        balances?.data,
+        dataAccountBalance
+      ),
+      airtime_balance: getNumericValue(
+        source?.airtime_balance,
+        root?.airtime_balance,
+        source?.total_airtime_units,
+        root?.total_airtime_units,
+        balances?.airtime_balance,
+        balances?.airtime
+      ),
+    };
+  }
+
+  function getAccountService(account) {
+    const rawService = String(
+      account?.service || account?.service_name || account?.service_type || ""
+    )
+      .trim()
+      .toUpperCase();
+
+    if (rawService) return rawService;
+
+    const module = String(
+      account?.module ||
+        account?.package ||
+        account?.bundle_size ||
+        account?.bundle_type ||
+        account?.bundle_amount ||
+        ""
+    )
+      .trim()
+      .toUpperCase();
+
+    if (module.includes("SMS")) return "SMS";
+    if (module.includes("AIRTIME")) return "AIRTIME";
+
+    return "DATA";
   }
 
   async function handleOpenProvisionModal(org) {
@@ -238,9 +383,10 @@ const ProvisionUnitsPage = () => {
 
   async function handleProvisionSuccess() {
     setSuccessMessage("Balance updated successfully.");
+    setProvisionPage(1);
 
     await Promise.allSettled([
-      fetchRecentProvisions(),
+      fetchRecentProvisions({ page: 1 }),
       selectedOrg ? GetAdminOrganizationProfile(getOrganizationId(selectedOrg)) : null,
     ]);
   }
@@ -259,6 +405,22 @@ const ProvisionUnitsPage = () => {
 
   function formatNumber(value) {
     return Number(value || 0).toLocaleString();
+  }
+
+  function getNumericValue(...values) {
+    for (const value of values) {
+      if (value === null || typeof value === "undefined" || value === "") {
+        continue;
+      }
+
+      const num = Number(value);
+
+      if (Number.isFinite(num)) {
+        return num;
+      }
+    }
+
+    return 0;
   }
 
   function formatDateTime(value) {
@@ -284,21 +446,52 @@ const ProvisionUnitsPage = () => {
         item?.service_type ||
         item?.transaction_type ||
         item?.type ||
-        item?.module ||
-        item?.package ||
         ""
     )
       .trim()
       .toUpperCase();
 
+    const packageValue = String(item?.package || item?.module || "").trim();
+    const packageUpper = packageValue.toUpperCase();
+
+    if (!raw && packageValue && !Number.isNaN(Number(packageValue))) return "DATA";
     if (!raw) return "SMS";
+    if (raw.includes("WHATSAPP") || raw.includes("WHATS APP")) return "WHATSAPP";
     if (raw.includes("SMS") || raw.includes("PERSMS")) return "SMS";
     if (raw.includes("DATA") || raw.includes("GB") || raw.includes("MB")) {
       return "DATA";
     }
     if (raw.includes("AIRTIME")) return "AIRTIME";
+    if (packageUpper.includes("GB") || packageUpper.includes("MB")) return "DATA";
+    if (!Number.isNaN(Number(packageValue))) return "DATA";
 
     return raw;
+  }
+
+  function getProvisionBundleSize(item) {
+    const value =
+      item?.bundle_size ??
+      item?.bundleSize ??
+      item?.bundle_amount ??
+      item?.bundleAmount ??
+      item?.package ??
+      item?.module ??
+      item?.data_bundle_type ??
+      item?.data_bundle ??
+      "";
+
+    if (value === null || typeof value === "undefined" || value === "") {
+      return "—";
+    }
+
+    const stringValue = String(value).trim();
+    const numericValue = Number(stringValue);
+
+    if (Number.isFinite(numericValue)) {
+      return `${formatNumber(numericValue)} MB`;
+    }
+
+    return stringValue;
   }
 
   function getProvisionUnits(item) {
@@ -402,6 +595,7 @@ const ProvisionUnitsPage = () => {
         const org = organizationsByExternalId[String(applicationId)] || null;
         const service = normalizeProvisionService(item);
         const rawDate = getProvisionDate(item);
+        const units = getProvisionUnits(item);
 
         return {
           id:
@@ -420,19 +614,50 @@ const ProvisionUnitsPage = () => {
             applicationId ||
             "—",
           service,
-          amount: `${formatNumber(getProvisionUnits(item))} units`,
+          bundleSize: getProvisionBundleSize(item),
+          units,
+          amount: `${formatNumber(units)} units`,
           admin: getProvisionAdmin(item),
           datetime: formatDateTime(rawDate),
           rawDate,
         };
       })
+      .filter((item) => item.service === activeProvisionService)
       .sort((a, b) => {
         const left = a.rawDate ? new Date(a.rawDate).getTime() : 0;
         const right = b.rawDate ? new Date(b.rawDate).getTime() : 0;
         return right - left;
-      })
-      .slice(0, 20);
-  }, [recentProvisions, organizationsByExternalId]);
+      });
+  }, [recentProvisions, organizationsByExternalId, activeProvisionService]);
+
+  const provisionTotalPages = useMemo(() => {
+    const totalCount =
+      provisionMeta?.total_count ||
+      provisionMeta?.totalCount ||
+      provisionMeta?.count ||
+      provisionMeta?.total ||
+      0;
+
+    return Number(
+      provisionMeta?.total_pages ||
+        provisionMeta?.totalPages ||
+        provisionMeta?.pages ||
+        (totalCount ? Math.ceil(totalCount / provisionPageSize) : 0) ||
+        1
+    );
+  }, [provisionMeta, provisionPageSize]);
+
+  const provisionTotalCount = useMemo(() => {
+    return Number(
+      provisionMeta?.total_count ||
+        provisionMeta?.totalCount ||
+        provisionMeta?.count ||
+        provisionMeta?.total ||
+        mappedRecentProvisions.length
+    );
+  }, [provisionMeta, mappedRecentProvisions.length]);
+
+  const provisionColumnCount = activeProvisionService === "DATA" ? 6 : 5;
 
   const selectedOrgId = selectedOrg ? getOrganizationId(selectedOrg) : "";
   const selectedApplicationId = selectedOrg
@@ -450,7 +675,7 @@ const ProvisionUnitsPage = () => {
               Provision Units
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Search organizations, then provision or reduce DATA, AIRTIME, and SMS balances.
+              Search organizations, then provision DATA, AIRTIME, and SMS balances.
             </p>
           </div>
 
@@ -671,12 +896,45 @@ const ProvisionUnitsPage = () => {
 
             <button
               type="button"
-              onClick={fetchRecentProvisions}
+              onClick={() => fetchRecentProvisions()}
+              disabled={loadingRecentProvisions}
               className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
-              Refresh List
+              {loadingRecentProvisions ? "Refreshing..." : "Refresh List"}
             </button>
           </div>
+
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="inline-flex flex-wrap rounded-full bg-gray-100 p-1">
+              {PROVISION_SERVICE_TABS.map((tab) => {
+                const active = activeProvisionService === tab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveProvisionService(tab.id);
+                      setProvisionPage(1);
+                    }}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#02051d] text-white"
+                        : "text-gray-700 hover:bg-white"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {recentProvisionsError ? (
+            <div className="mx-6 mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              {recentProvisionsError}
+            </div>
+          ) : null}
 
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -688,12 +946,20 @@ const ProvisionUnitsPage = () => {
                   <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
                     Organization
                   </th>
-                  <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
-                    Service
-                  </th>
-                  <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
-                    Amount
-                  </th>
+                  {activeProvisionService === "DATA" ? (
+                    <>
+                      <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
+                        Bundle Size
+                      </th>
+                      <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
+                        Number of Units
+                      </th>
+                    </>
+                  ) : (
+                    <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
+                      Amount
+                    </th>
+                  )}
                   <th className="border-b border-gray-200 px-6 py-4 text-left text-sm font-medium text-gray-500">
                     Admin
                   </th>
@@ -704,19 +970,22 @@ const ProvisionUnitsPage = () => {
               </thead>
 
               <tbody>
-                {loading ? (
+                {loadingRecentProvisions ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td
+                      colSpan={provisionColumnCount}
+                      className="px-6 py-12 text-center"
+                    >
                       <div className="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
                     </td>
                   </tr>
                 ) : mappedRecentProvisions.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={provisionColumnCount}
                       className="px-6 py-10 text-center text-sm text-gray-500"
                     >
-                      No recent provisions found
+                      No recent {activeProvisionService.toLowerCase()} provisions found
                     </td>
                   </tr>
                 ) : (
@@ -730,15 +999,21 @@ const ProvisionUnitsPage = () => {
                         {item.organization}
                       </td>
 
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                        <span className="inline-flex rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                          {item.service}
-                        </span>
-                      </td>
+                      {activeProvisionService === "DATA" ? (
+                        <>
+                          <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                            {item.bundleSize}
+                          </td>
 
-                      <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
-                        {item.amount}
-                      </td>
+                          <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                            {formatNumber(item.units)}
+                          </td>
+                        </>
+                      ) : (
+                        <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                          {item.amount}
+                        </td>
+                      )}
 
                       <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
                         {item.admin}
@@ -752,6 +1027,55 @@ const ProvisionUnitsPage = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 text-sm text-gray-500">
+            <div>
+              Page {provisionPage} of {Math.max(provisionTotalPages, 1)}
+              {" • "}Total: {formatNumber(provisionTotalCount)}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={provisionPageSize}
+                onChange={(e) => {
+                  setProvisionPageSize(Number(e.target.value));
+                  setProvisionPage(1);
+                }}
+                disabled={loadingRecentProvisions}
+                className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-orange-500 disabled:opacity-60"
+              >
+                <option value={10}>10 rows</option>
+                <option value={20}>20 rows</option>
+                <option value={50}>50 rows</option>
+                <option value={100}>100 rows</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setProvisionPage((prev) => Math.max(prev - 1, 1))}
+                disabled={loadingRecentProvisions || provisionPage <= 1}
+                className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setProvisionPage((prev) =>
+                    Math.min(prev + 1, Math.max(provisionTotalPages, 1))
+                  )
+                }
+                disabled={
+                  loadingRecentProvisions ||
+                  provisionPage >= Math.max(provisionTotalPages, 1)
+                }
+                className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>
