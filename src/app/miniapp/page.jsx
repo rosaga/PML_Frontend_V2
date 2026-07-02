@@ -120,11 +120,23 @@ const MiniApp = () => {
         case "whatsapp": {
           const orgId = localStorage.getItem("selectedAccountId");
           const authToken = getToken();
-          if (orgId) window.open(
-                `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}&authToken=${authToken}`,
-                '_blank',
-                'noopener,noreferrer'
-              );
+          if (orgId) {
+            const popup = window.open(
+              `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`,
+              '_blank'
+            );
+            const onMessage = (event) => {
+              if (event.origin !== 'https://v0-whatsapp-bulk-messaging-six.vercel.app') return;
+              if (event.data?.type === 'ready') {
+                popup.postMessage(
+                  { type: 'auth', authToken },
+                  'https://v0-whatsapp-bulk-messaging-six.vercel.app'
+                );
+                window.removeEventListener('message', onMessage);
+              }
+            };
+            window.addEventListener('message', onMessage);
+          }
           break;
         }
         case "admin":
