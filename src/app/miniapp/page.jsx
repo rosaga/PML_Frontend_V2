@@ -119,9 +119,9 @@ const MiniApp = () => {
           break;
         case "whatsapp": {
           const orgId = localStorage.getItem("selectedAccountId");
-         
+          const authToken = getToken();
           if (orgId) window.open(
-                `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`,
+                `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}&authToken=${authToken}`,
                 '_blank',
                 'noopener,noreferrer'
               );
