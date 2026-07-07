@@ -6,11 +6,13 @@ import axios from 'axios';
 interface UtilizationVisualizationProps {
   selectedYear: string;
   selectedMonth: string;
+  selectedBundleType: string;
 }
 
 const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
   selectedYear,
-  selectedMonth
+  selectedMonth,
+  selectedBundleType
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<Highcharts.Chart | null>(null);
@@ -24,9 +26,18 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
   }
 
   // API function to get utilization data
-  const getUtilizationData = async (orgId: string, granularity: string, startDate: string, endDate: string) => {
+  const getUtilizationData = async (orgId: string, granularity: string, startDate: string, endDate: string, bundleAmount?: string) => {
     const apiUrl = 'https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2';
-    const utilizationUrl = `${apiUrl}/organization/${orgId}/utilization-report?group=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    let utilizationUrl = `${apiUrl}/organization/${orgId}/utilization-report?group=${granularity}&start_date=${startDate}&end_date=${endDate}`;
+    
+    // Add bundle_amount parameter only if a specific bundle type is selected
+    if (bundleAmount && bundleAmount !== '') {
+      if (bundleAmount === '1000') {
+        utilizationUrl += `&bundle_amount=1000&bundle_amount=1024`; // Send both for 1GB
+      } else {
+        utilizationUrl += `&bundle_amount=${bundleAmount}`;
+      }
+    }
 
     try {
       const config = await authHeaders();
@@ -96,7 +107,7 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
 
     try {
       const { granularity, startDate, endDate } = getDateParams();
-      const result = await getUtilizationData(org_id, granularity, startDate, endDate);
+      const result = await getUtilizationData(org_id, granularity, startDate, endDate, selectedBundleType);
 
       if (result.errors) {
         setError(result.errors._error);
@@ -113,16 +124,18 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
 
   // Process API data for pie chart
   const processApiData = () => {
-    if (!data) {
+    if (!data || !data.report) {
       return {
+        totalData: 0,
         dispatched: 0,
         balance: 0
       };
     }
 
     return {
-      dispatched: data.report.total_dispatched || data.dispatched || 0,
-      balance: data.report.total_balance || data.balance || 0
+      totalData: data.report.total_data || 0,
+      dispatched: data.report.total_dispatched || 0,
+      balance: data.report.total_balance || 0
     };
   };
 
@@ -304,7 +317,7 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
   // Fetch data when filters change
   useEffect(() => {
     fetchData();
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, selectedBundleType]);
 
   // Create chart when data changes
   useEffect(() => {
@@ -323,8 +336,49 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
     }
   }, [data, loading, selectedYear, selectedMonth]);
 
+  // Download graph as SVG
+  const downloadGraph = () => {
+    if (chartInstance.current && chartInstance.current.container) {
+      try {
+        // Get SVG element from the chart container
+        const svgElement = chartInstance.current.container.querySelector('svg');
+        if (!svgElement) {
+          throw new Error('SVG element not found');
+        }
+        
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        const filename = `utilization-report-${new Date().getTime()}`;
+        
+        // Create download link
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString));
+        element.setAttribute('download', `${filename}.svg`);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      } catch (error) {
+        console.error('Error downloading graph:', error);
+        alert('Failed to download graph');
+      }
+    }
+  };
+
   return (
     <div className="border-[1.5px] rounded-3xl p-6 mb-4">
+      {/* Download Button */}
+      {!loading && !error && (
+        <div className="mb-4 text-right">
+          <button
+            onClick={downloadGraph}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all"
+            title="Download graph as PNG"
+          >
+            ⬇️ Download Graph
+          </button>
+        </div>
+      )}
+
       {loading && (
         <div className="flex justify-center items-center h-96">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF9800]"></div>
@@ -357,7 +411,13 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
 
       {/* Summary Cards */}
       {!loading && !error && data && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="text-sm text-gray-600 font-medium">Total Data</div>
+            <div className="text-2xl font-bold text-gray-700">
+              {Highcharts.numberFormat(processApiData().totalData, 0)} MB
+            </div>
+          </div>
           <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
             <div className="text-sm text-[#F58426] font-medium">Data Dispatched</div>
             <div className="text-2xl font-bold text-[#F58426]">
@@ -370,10 +430,12 @@ const UtilizationVisualization: React.FC<UtilizationVisualizationProps> = ({
               {Highcharts.numberFormat(processApiData().balance, 0)} MB
             </div>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <div className="text-sm text-gray-600 font-medium">Total Data</div>
-            <div className="text-2xl font-bold text-gray-700">
-              {Highcharts.numberFormat(processApiData().dispatched + processApiData().balance, 0)} MB
+          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <div className="text-sm text-purple-600 font-medium">Utilization Rate</div>
+            <div className="text-2xl font-bold text-purple-700">
+              {processApiData().totalData > 0 
+                ? ((processApiData().dispatched / processApiData().totalData) * 100).toFixed(1)
+                : '0.0'}%
             </div>
           </div>
         </div>

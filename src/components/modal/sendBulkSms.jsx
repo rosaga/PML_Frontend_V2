@@ -64,6 +64,9 @@ const SendBulkModal = ({ closeModal }) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(100);
 
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleChange = (e) => {
     const value = e.target.value;
     const name = e.target.name;
@@ -78,10 +81,24 @@ const SendBulkModal = ({ closeModal }) => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsButtonClicked(true);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
+  if (isButtonClicked) return;
+
+  if (!org_id) return setErrorMessage("No organization selected.");
+  if (!selectedChannel) return setErrorMessage("Please select a channel.");
+  if (!selectedGroup) return setErrorMessage("Please select a group.");
+  if (!selectedSenderId) return setErrorMessage("Please select a sender ID.");
+  if (!state.name.trim()) return setErrorMessage("Please enter the campaign name.");
+  if (!state.description.trim()) return setErrorMessage("Please enter the campaign description.");
+  if (!state.content.trim()) return setErrorMessage("Please enter the message content.");
+
+  setIsButtonClicked(true);
+  setErrorMessage("");
+  setSuccessMessage("");
+
+  try {
     const originalContent = state.content;
     const formattedContent = originalContent.replace(/\n/g, "\\n");
 
@@ -99,19 +116,37 @@ const SendBulkModal = ({ closeModal }) => {
       repeat_interval: schedule ? repeatInterval : "",
     };
 
-    const res = broadcastMessages({ selectedSenderId, newSms }).then((res) => {
-      setIsButtonClicked(false);
-      if (res.status === 200) {
-        toast.success("SMS SENT SUCCESSFULLY!!!");
-      } else {
-        toast.error("SEND SMS FAILED");
-      }
+    const res = await broadcastMessages({ selectedSenderId, newSms });
+
+    if (res.status === 200) {
+      setSuccessMessage("SMS campaign has been created successfully.");
+
       setState(initialState);
       setCharCount(0);
-    });
+      setRepeatCount(0);
+      setRepeatInterval("");
+      setSchedule(false);
+    } else {
+      const backendError =
+        res?.data?.error ||
+        res?.data?.message ||
+        res?.errors?._error ||
+        "SEND SMS FAILED";
 
-    return res;
-  };
+      const displayError =
+        backendError.toLowerCase().includes("insufficient")
+          ? "Insufficient units. Please top up to proceed."
+          : backendError;
+
+      setErrorMessage(displayError);
+    }
+  } catch (error) {
+    console.error("Send bulk SMS error:", error);
+    setErrorMessage("Failed to send SMS. Please try again.");
+  } finally {
+    setIsButtonClicked(false);
+  }
+};
 
   const getGroups = () => {
     GetGroups(org_id, page, limit, searchParams)
@@ -190,6 +225,32 @@ const SendBulkModal = ({ closeModal }) => {
             </div>
 
             <div className="p-4 md:p-5">
+              {successMessage ? (
+    <div className="p-4 text-center">
+      <div className="mb-4 text-2xl font-semibold text-green-500">Success!</div>
+      <div className="mb-4 text-gray-900 dark:text-white">{successMessage}</div>
+      <button
+        onClick={() => {
+          setSuccessMessage("");
+          closeModal();
+        }}
+        className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+      >
+        OK
+      </button>
+    </div>
+  ) : errorMessage ? (
+    <div className="p-4 text-center">
+      <div className="mb-4 text-2xl font-semibold text-red-500">Oops!</div>
+      <div className="mb-4 text-gray-900 dark:text-white">{errorMessage}</div>
+      <button
+        onClick={() => setErrorMessage("")}
+        className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+      >
+        OK
+      </button>
+    </div>
+  ) : (
               <form className="space-y-2" action="#">
                 <div className="flex space-x-4">
                   <div className="flex-1">
@@ -409,16 +470,15 @@ const SendBulkModal = ({ closeModal }) => {
                   </button>
                   <button
                     type="button"
-                    className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                    onClick={(e) => {
-                      handleSubmit(e);
-                      setIsButtonClicked(true);
-                    }}
+                    disabled={isButtonClicked}
+                    className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                    onClick={handleSubmit}
                   >
                     {isButtonClicked ? "SENDING..." : "SEND"}
                   </button>
                 </div>
               </form>
+              )}
             </div>
           </div>
         </div>
