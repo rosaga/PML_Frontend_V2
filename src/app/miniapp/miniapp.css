@@ -22,6 +22,12 @@
   justify-content: space-between;
   gap: 24px;
 }
+.miniapp-wave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: miniappWave 1.8s ease-in-out infinite;
+}
+
 
 .miniapp-logo {
   font-size: 20px;
@@ -29,6 +35,14 @@
   color: #fff;
   letter-spacing: -0.5px;
   margin-bottom: 20px;
+}
+
+.miniapp-logo-img {
+  height: 75px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 28px;
 }
 
 .miniapp-logo span {
@@ -44,11 +58,49 @@
   color: #fff;
 }
 
+.miniapp-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #0D1B3E;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.miniapp-back-btn:hover {
+  color: #F4822A;
+  transform: translateX(-3px);
+}
+
+.miniapp-back-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: #0D1B3E;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.miniapp-back-btn:hover .miniapp-back-icon {
+  color: #F4822A;
+}
+
+
+
 .miniapp-headline p {
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.55);
   margin: 0 0 28px;
-  max-width: 280px;
+  max-width: 580px;
   line-height: 1.6;
 }
 
@@ -240,5 +292,39 @@
   .miniapp-btn {
     padding: 11px 20px;
     font-size: 12px;
+  }
+}
+
+@keyframes miniappWave {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  10% {
+    transform: rotate(14deg);
+  }
+
+  20% {
+    transform: rotate(-8deg);
+  }
+
+  30% {
+    transform: rotate(14deg);
+  }
+
+  40% {
+    transform: rotate(-4deg);
+  }
+
+  50% {
+    transform: rotate(10deg);
+  }
+
+  60% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
   }
 }

@@ -148,43 +148,48 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
 
   export async function batchReward(formValues) {
     const sendRewardUrl = `${apiUrl.GET_CONTACTS}/${formValues.org_id}/batchreward`;
+
     try {
       const selectedFile = formValues.newReward.contacts;
-  
+
       const authHeaderObject = await authHeaders();
       const headers = authHeaderObject.headers;
-  
+
       const formData = new FormData();
       formData.append("contacts", selectedFile);
-      formData.append("message", formValues.newReward.message);
       formData.append("bundle", formValues.newReward.bundle);
       formData.append("slogan", formValues.newReward.slogan);
-      formData.append("postpay", formValues.newReward.postpay);
-      formData.append("sender_id", formValues.newReward.sender_id.toString());
-  
+      formData.append("postpay", String(formValues.newReward.postpay));
+
+      if (formValues.newReward.message?.trim()) {
+        formData.append("message", formValues.newReward.message.trim());
+      }
+
+      const rawSenderId = formValues.newReward.sender_id;
+      const senderIdNum =
+        rawSenderId === null || rawSenderId === undefined || String(rawSenderId).trim() === ""
+          ? null
+          : parseInt(String(rawSenderId), 10);
+
+      if (Number.isFinite(senderIdNum) && senderIdNum > 0) {
+        formData.append("sender_id", String(senderIdNum));
+      }
+
       return axios.post(sendRewardUrl, formData, {
         headers: {
           ...headers,
           "Content-Type": "multipart/form-data",
         },
-      })
-        .then((res) => {
-          console.log("Response:", res.data);
-          return res;
-        });
+      }).then((res) => {
+        console.log("Response:", res.data);
+        return res;
+      });
+
     } catch (error) {
       if (error.response) {
-        return {
-          errors: {
-            _error: 'The contacts could not be uploaded.',
-          },
-        };
+        return { errors: { _error: "The contacts could not be uploaded." } };
       }
-      return {
-        errors: {
-          _error: 'Network error. Please try again.',
-        },
-      };
+      return { errors: { _error: "Network error. Please try again." } };
     }
   }
 
