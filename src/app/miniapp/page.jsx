@@ -149,13 +149,26 @@ const MiniApp = () => {
 
         case "whatsapp": {
           const orgId = localStorage.getItem("selectedAccountId");
+          const token = getToken();
+          const tokenExpiration = localStorage.getItem("tokenExpiration");
 
-          if (orgId) {
-            window.open(
-              `https://v0-whatsapp-bulk-messaging-six.vercel.app/?token=${btoa(orgId)}`,
-              "_blank",
-              "noopener,noreferrer"
+          if (orgId && token) {
+            const popup = window.open(
+              `https://v0-whatsapp-bulk-messaging-six.vercel.app/`,
+              "_blank"
             );
+
+            const onMessage = (event) => {
+              if (event.origin !== "https://v0-whatsapp-bulk-messaging-six.vercel.app") return;
+              if (event.data?.type === "ready") {
+                popup.postMessage(
+                  { type: "auth", token, tokenExpiration, orgId },
+                  "https://v0-whatsapp-bulk-messaging-six.vercel.app"
+                );
+                window.removeEventListener("message", onMessage);
+              }
+            };
+            window.addEventListener("message", onMessage);
           }
 
           setSelectedOption(null);
