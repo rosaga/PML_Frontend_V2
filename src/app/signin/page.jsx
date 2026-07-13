@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@mui/material";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -15,6 +15,13 @@ import "react-toastify/dist/ReactToastify.css";
 
 const SignIn = () => {
   const router = useRouter();
+
+  useEffect(() => {
+    if (sessionStorage.getItem("passwordUpdateSuccess") === "true") {
+      sessionStorage.removeItem("passwordUpdateSuccess");
+      toast.success("Password updated. Please sign in again.");
+    }
+  }, []);
 
   const [authMode, setAuthMode] = useState("password");
 

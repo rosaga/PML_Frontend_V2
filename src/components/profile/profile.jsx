@@ -7,13 +7,15 @@ import { getToken, clearToken } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import ConfirmSignOutModal from "../modal/confirmSignout";
-import { FaChevronDown, FaExchangeAlt, FaSignOutAlt, FaThLarge } from "react-icons/fa";
+import ChangePasswordModal from "../modal/changePassword";
+import { FaChevronDown, FaExchangeAlt, FaKey, FaSignOutAlt, FaThLarge } from "react-icons/fa";
 
 const Profile = () => {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState({ name: "", email: "" });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const handleSwitchAccount = () => {
     router.push('/user-orgs');
@@ -45,7 +47,13 @@ const Profile = () => {
   }, []);
 
   const handleLogout = () => {
+    setIsDropdownOpen(false);
     setModalOpen(true);
+  };
+
+  const handleChangePassword = () => {
+    setIsDropdownOpen(false);
+    setChangePasswordOpen(true);
   };
 
   const handleSignOut = () => {
@@ -62,6 +70,18 @@ const Profile = () => {
 
   const handleCloseModal = () => {
     setModalOpen(false);
+  };
+
+  const handlePasswordUpdated = async () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("passwordUpdateSuccess", "true");
+      clearToken();
+    }
+    try {
+      await signOut({ callbackUrl: "/signin" });
+    } catch {
+      window.location.replace("/signin");
+    }
   };
 
   return (
@@ -110,6 +130,15 @@ const Profile = () => {
           <div className="border-t border-gray-200 mt-1"></div>
           <div className="py-1">
             <button
+              onClick={handleChangePassword}
+              className="w-full text-left px-6 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white flex items-center"
+            >
+              <FaKey className="mr-3 text-gray-500 text-lg" />
+              <span>Change Password</span>
+            </button>
+          </div>
+          <div className="py-1">
+            <button
               onClick={handleLogout}
               className="w-full text-left px-6 py-3 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white flex items-center"
             >
@@ -123,6 +152,12 @@ const Profile = () => {
       {/* Logout Confirmation Modal */}
       {modalOpen && (
         <ConfirmSignOutModal onClose={handleCloseModal} onConfirm={handleConfirmLogout} />
+      )}
+      {changePasswordOpen && (
+        <ChangePasswordModal
+          onClose={() => setChangePasswordOpen(false)}
+          onSuccess={handlePasswordUpdated}
+        />
       )}
     </div>
   );
