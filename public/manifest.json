@@ -1,0 +1,13 @@
+{
+  "name": "Peak Mobile",
+  "short_name": "Peak Mobile",
+  "description": "Peak Mobile business platform",
+  "start_url": "/signin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a1a",
+  "icons": [
+    { "src": "/images/logo.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/images/logo.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}
