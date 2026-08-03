@@ -5,8 +5,9 @@ import Image from "next/image";
 import { clearToken } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import ConfirmSignOutModal from "../modal/confirmSignout";
+import { X } from "lucide-react";
 
-const SidebarAdmin = () => {
+const SidebarAdmin = ({ onClose }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -55,15 +56,10 @@ const SidebarAdmin = () => {
         // { href: "/apps/admin/services/ussd-flows", label: "USSD Flows", className: "ussd-flows" },
       ],
     },
-    // { href: "/apps/admin/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports & Analytics", className: "reports" },
-    // { href: "/apps/admin/users", src: "/images/users.svg", alt: "Users", label: "Users", className: "users" },
-    // { href: "/apps/admin/settings", src: "/images/Settings.svg", alt: "Settings", label: "Settings", className: "settings" },
   ];
 
   return (
     <div>
-
-
       {/* Mobile toggle */}
       <button onClick={toggleSidebar} className="sm:hidden block p-2 bg-gray-700 text-white">
         <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,9 +74,15 @@ const SidebarAdmin = () => {
       >
         {/* Sidebar container with flex column */}
         <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-800">
-          {/* Header / Logo (non-scroll) */}
-          <div className="px-3 pt-4 pb-2">
-            <img src="/images/peaklogo.png" className="h-30 me-24 sm:h-24" alt="Peak Logo" />
+          
+          {/* Header / Logo with Close Button (non-scroll) */}
+          <div className="px-3 pt-4 pb-2 flex justify-between items-center">
+            <img src="/images/peaklogo.png" className="h-30 sm:h-24" alt="Peak Logo" />
+            {onClose && (
+              <button onClick={onClose} className="md:hidden p-1 text-gray-600 hover:bg-gray-200 rounded-md">
+                <X size={28} />
+              </button>
+            )}
           </div>
 
           {/* Nav list (scrollable area) */}
@@ -141,7 +143,7 @@ const SidebarAdmin = () => {
             </ul>
           </nav>
 
-          {/* Footer (fixed at bottom) */}
+          {/* Footer */}
           <div className="px-3 pb-4">
             <button
               onClick={() => setModalOpen(true)}

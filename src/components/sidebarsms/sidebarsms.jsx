@@ -5,8 +5,9 @@ import Image from "next/image";
 import { clearToken } from '@/utils/auth';
 import { useRouter } from 'next/navigation';
 import ConfirmSignOutModal from "../modal/confirmSignout";
+import { X } from "lucide-react";
 
-const SidebarSms = () => {
+const SidebarSms = ({ onClose }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -27,13 +28,13 @@ const SidebarSms = () => {
   };
 
   const toggleSettingsSubMenu = (e) => {
-    e.preventDefault(); // Prevent redirect
-    setIsSettingsOpen(!isSettingsOpen); // Toggle the Settings sub-menu
+    e.preventDefault(); 
+    setIsSettingsOpen(!isSettingsOpen); 
   };
 
   const handleSubMenuClick = (href) => {
-    setActiveLink(href); // Update active link
-    router.push(href); // Navigate to the sub-menu page
+    setActiveLink(href); 
+    router.push(href); 
   };
 
   const links = [
@@ -54,7 +55,6 @@ const SidebarSms = () => {
       ]
     },
     { href: "/apps/sms/reports", src: "/images/Reports.svg", alt: "Reports", label: "Reports", className: "reports" },
-
   ];
 
   return (
@@ -71,15 +71,16 @@ const SidebarSms = () => {
         className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0 shadow-lg`}
         aria-label="Sidebar"
       >
-        {/* Make the sidebar a column with a scrollable middle section */}
         <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-800">
-          {/* Header / Logo (non-scroll) */}
-          <div className="px-3 pt-4 pb-2">
-            <img
-              src="/images/peaklogo.png"
-              className="h-30 me-24 sm:h-24"
-              alt="Peak Logo"
-            />
+          
+          {/* Header / Logo with Close Button (non-scroll) */}
+          <div className="px-3 pt-4 pb-2 flex justify-between items-center">
+            <img src="/images/peaklogo.png" className="h-30 sm:h-24" alt="Peak Logo" />
+            {onClose && (
+              <button onClick={onClose} className="md:hidden p-1 text-gray-600 hover:bg-gray-200 rounded-md">
+                <X size={28} />
+              </button>
+            )}
           </div>
 
           {/* Nav list (scrollable area) */}
@@ -91,10 +92,10 @@ const SidebarSms = () => {
                     href={link.href}
                     onClick={(e) => {
                       if (link.subLinks) {
-                        toggleSettingsSubMenu(e); // Prevent immediate navigation and toggle sub-menu
+                        toggleSettingsSubMenu(e); 
                       } else {
                         handleLinkClick(link.href);
-                        router.push(link.href); // Navigate for non-submenu links
+                        router.push(link.href); 
                       }
                     }}
                     className={`icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white ${

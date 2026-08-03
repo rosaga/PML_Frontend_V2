@@ -4,7 +4,7 @@ import Image from "next/image";
 import Profile from "../profile/profile";
 import { useRouter } from "next/navigation";
 import { Tooltip } from "@mui/material";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import SidebarFlowbot from "@/components/sidebarflowbot/sidebarflowbot";
 
 const Navbar = () => {
@@ -35,9 +35,9 @@ const Navbar = () => {
       <div className="flex flex-row justify-between items-center p-4 sm:p-2 bg-white shadow-md relative z-40 w-full">
         <button
           onClick={toggleMobileMenu}
-          className="md:hidden p-2 -ml-2 mr-2 text-gray-600 focus:outline-none hover:bg-gray-100 rounded-md"
+          className="md:hidden p-1.5 -ml-2 mr-2 bg-[#001F3D] text-white focus:outline-none hover:bg-opacity-90 rounded-md"
         >
-          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          <Menu size={28} />
         </button>
 
         <div className="flex-1 text-left sm:ml-8 sm:text-center truncate">
@@ -76,7 +76,7 @@ const Navbar = () => {
             onClick={toggleMobileMenu}
           ></div>
           <div className="relative z-50 w-64 h-full bg-white shadow-lg overflow-y-auto transform transition-transform duration-300">
-            <SidebarFlowbot />
+            <SidebarFlowbot onClose={toggleMobileMenu} />
           </div>
         </div>
       )}
