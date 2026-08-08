@@ -73,7 +73,7 @@ const Reports = () => {
   // Consumer Report
   if (selectedReport === 'consumer') {
     return (
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
@@ -166,7 +166,7 @@ const Reports = () => {
   // Utilization Rate Report
   if (selectedReport === 'utilization') {
     return (
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
@@ -259,7 +259,7 @@ const Reports = () => {
   // Efficiency Report
   if (selectedReport === 'efficiency') {
     return (
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
@@ -352,7 +352,7 @@ const Reports = () => {
   // Financial Report
   if (selectedReport === 'financial') {
     return (
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
@@ -444,7 +444,7 @@ const Reports = () => {
 
   // Main reports page with tiles
   return (
-    <div className="p-4 sm:ml-64 h-screen">
+    <div className="p-4 lg:ml-64 h-screen">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
           <div className="p-4">

@@ -16,13 +16,11 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <SessionProviderWrapper>
-          <div className="flex flex-col md:flex-row min-h-screen w-full overflow-hidden">
-            <div className="hidden md:block">
-              <SidebarData />
-            </div>
-            <div className="flex flex-col flex-1 w-full min-w-0 overflow-y-auto">
+          <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+            <SidebarData />
+            <div className="flex flex-col flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden">
               <Navbar />
-              <main className="flex-1 w-full">
+              <main className="flex-1 w-full relative">
                 {children}
               </main>
             </div>
