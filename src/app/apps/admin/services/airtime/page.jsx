@@ -731,7 +731,7 @@ export default function BulkAirtimeManagementPage() {
   if (!isClient) return null;
 
   return (
-    <div className="ml-0 min-h-screen bg-gray-50 p-6 md:ml-64">
+    <div className="lg:ml-64 min-h-screen bg-gray-50 p-6">
       <div className="w-full">
         <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>

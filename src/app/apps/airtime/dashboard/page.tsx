@@ -276,7 +276,7 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col sm:flex-row">
-      <div className="flex-1 p-4 sm:ml-64 h-screen">
+      <div className="flex-1 p-4 lg:ml-64 h-screen">
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
             <h1 className="text-xl font-semibold mb-4">Airtime Rewards</h1>
@@ -287,7 +287,7 @@ const Dashboard = () => {
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
                 <p className="m-1 text-md">Airtime Rewards Summary</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-8">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 p-8">
                 {/* Recipients Reached */}
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
                   <span className="text-gray-500">Recipients Reached</span>
@@ -339,7 +339,7 @@ const Dashboard = () => {
             </div>
 
             {/* Airtime Rewards Table */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-8">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 mb-8">
               <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
                 <p className="mt-2 font-medium text-lg">Airtime Rewards</p>
                 <div className="mt-4" style={{ height: 450, width: "100%" }}>
@@ -363,6 +363,8 @@ const Dashboard = () => {
                             alignItems: "center",
                             justifyContent: "space-between",
                             padding: "8px",
+                            flexWrap: "wrap",
+                            gap: "8px",
                           }}
                         >
                           <GridToolbar />
@@ -385,7 +387,7 @@ const Dashboard = () => {
                     alt="Help"
                     priority
                   />
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
+                  <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-orange-400">Help</p>
                 </div>
                 <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
                   <Image
@@ -396,7 +398,7 @@ const Dashboard = () => {
                     alt="Notification"
                     priority
                   />
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-red-600">Notification</p>
+                  <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-red-600">Notification</p>
                 </div>
               </div>
             </div>
