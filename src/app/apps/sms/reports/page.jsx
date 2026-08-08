@@ -118,7 +118,7 @@ const SmsReports = () => {
   // ✅ SMS Consumption Report
   if (selectedReport === "consumption") {
     return (
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
@@ -140,7 +140,7 @@ const SmsReports = () => {
   // ✅ SMS Balance Report
   if (selectedReport === "balance") {
     return (
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
@@ -162,7 +162,7 @@ const SmsReports = () => {
   // ✅ SMS Efficiency Report
   if (selectedReport === "efficiency") {
     return (
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="flex flex-col h-full">
           <div className="flex flex-col">
             <div className="p-4">
@@ -183,7 +183,7 @@ const SmsReports = () => {
 
   // ✅ Main SMS reports page (tiles)
   return (
-    <div className="p-4 sm:ml-64 h-screen">
+    <div className="p-4 lg:ml-64 h-screen">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
           <div className="p-4">
