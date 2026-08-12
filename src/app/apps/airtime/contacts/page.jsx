@@ -91,7 +91,7 @@ const Contacts = () => {
   ];
 
   return (
-    <div className="p-4 sm:ml-64 h-screen ">
+    <div className="p-4 lg:ml-64 h-screen ">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
           <div className="p-4">

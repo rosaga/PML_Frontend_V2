@@ -4,14 +4,22 @@ import Image from "next/image";
 import Profile from "../profile/profile";
 import { useRouter } from "next/navigation";
 import { Tooltip } from "@mui/material";
+import { Menu } from "lucide-react";
+
 const Navbar = () => {
   let org_id = null;
   let name = null;
   const [accountName, setAccountName] = useState("");
   const router = useRouter();
+
   const handleSwitchAccount = () => {
     router.push("/user-orgs");
   };
+
+  const openSidebar = () => {
+    window.dispatchEvent(new Event("toggle-mobile-sidebar"));
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       name = localStorage.getItem("selectedAccountName");
@@ -19,12 +27,21 @@ const Navbar = () => {
       setAccountName(name);
     }
   }, []);
+
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center p-4 sm:p-2 bg-white shadow-md">
-      <div className="flex-1 sm:ml-8 text-center sm:text-center">
-        <p className="text-xl font-bold">{accountName}</p>
+    <div className="flex flex-row justify-between items-center p-4 sm:p-2 bg-white shadow-md relative z-40 w-full">
+      <button
+        onClick={openSidebar}
+        className="lg:hidden p-1.5 -ml-2 mr-2 bg-[#001F3D] text-white focus:outline-none hover:bg-opacity-90 rounded-md"
+      >
+        <Menu size={23} />
+      </button>
+
+      <div className="flex-1 text-left sm:ml-8 sm:text-center truncate">
+        <p className="text-xl font-bold truncate">{accountName}</p>
       </div>
-      <div className="flex items-center space-x-6 mt-2 sm:mt-0">
+
+      <div className="flex items-center space-x-3 sm:space-x-6">
         <div>
           <Tooltip title="Notifications">
             <Image
@@ -38,58 +55,11 @@ const Navbar = () => {
             />
           </Tooltip>
         </div>
-        {/* <div className="flex sm:flex-row flex-col items-center rounded-lg overflow-hidden shadow-sm w-full sm:w-auto">
-          <div
-            className="flex items-center bg-orange-100 text-[#F58426] py-2 px-5 sm:rounded-l-lg w-full sm:w-auto justify-center"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="6" width="18" height="12" rx="2" />
-              <path d="M3 10h18M12 14h6" />
-            </svg> 
-            <span className="text-sm font-medium">Package Trial</span>
-          </div>
-          <div
-            className="bg-[#F58426] text-white py-2 px-5 sm:rounded-r-lg flex items-center justify-center cursor-pointer w-full sm:w-auto"
-            onClick={() => router.push("/apps/data/data-topup")}
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="6" width="18" height="12" rx="2" />
-              <path d="M3 10h18M12 14h6" />
-            </svg>
-            <span className="text-sm font-medium">Upgrade</span>
-          </div>
-        </div> */}
-                <div className="flex sm:flex-row flex-col items-center rounded-lg overflow-hidden shadow-sm w-full sm:w-auto">
-          <div
-            className="flex items-center bg-orange-100 text-[#F58426] py-2 px-5 sm:rounded-l-lg w-full sm:w-auto justify-center"
-          >
-            {/* <svg
-              className="w-5 h-5 mr-2"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="6" width="18" height="12" rx="2" />
-              <path d="M3 10h18M12 14h6" />
-            </svg> */}
+        <div className="hidden sm:flex flex-row items-center rounded-lg overflow-hidden shadow-sm">
+          <div className="flex items-center bg-orange-100 text-[#F58426] py-2 px-5 rounded-lg justify-center">
             <span className="text-sm font-medium">Data Rewards</span>
           </div>
-
         </div>
-        {/* Profile Section */}
         <div>
           <Profile />
         </div>

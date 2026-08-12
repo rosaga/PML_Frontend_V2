@@ -206,7 +206,7 @@ const AirtimeBalance = () => {
   return (
     <>
       <ToastContainer />
-      <div className="p-4 sm:ml-64 h-screen">
+      <div className="p-4 lg:ml-64 h-screen">
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
             <div className="p-8">

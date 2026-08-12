@@ -9,7 +9,7 @@ import GroupDashboard from "@/components/rewards-tables/groupDashboard";
 import { messagesAction, messageCountsAction, messageBalanceAction } from "../../../api/actions/messages/messagesAction";
 import { set } from "date-fns";
 import { useRouter } from "next/navigation";
-import { format,parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 const Dashboard = () => {
 
@@ -26,7 +26,6 @@ const Dashboard = () => {
   const [totalPending, setTotalPending] = useState('');
   const [totalBalance, setTotalBalance] = useState(0);
 
-  // Initialize with current date values
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -41,29 +40,28 @@ const Dashboard = () => {
   });
 
   const columns = [
-    // { field: "id", headerName: "ID", flex: 1, minWidth: 50 },
     { field: "source", headerName: "SOURCE", flex: 1, minWidth: 150 },
-    { 
-      field: "destination", 
-      headerName: "DESTINATION", 
-      flex: 1, 
+    {
+      field: "destination",
+      headerName: "DESTINATION",
+      flex: 1,
       minWidth: 150,
       renderCell: (params) => (
         <span style={{ fontWeight: '550' }}>
           {params.value}
         </span>
-      ) 
+      )
     },
     { field: "content", headerName: "CONTENT", flex: 1, minWidth: 150 },
     { field: "channel", headerName: "CHANNEL", flex: 1, minWidth: 150 },
     { field: "direction", headerName: "DIRECTION", flex: 1, minWidth: 150 },
-    { 
-      field: "status_desc", 
-      headerName: "STATUS", 
-      flex: 1, 
-      minWidth: 150, 
+    {
+      field: "status_desc",
+      headerName: "STATUS",
+      flex: 1,
+      minWidth: 150,
       renderCell: (params) => {
-        let color = 'inherit'; // Default color
+        let color = 'inherit';
         if (params.value === "SUCCESS") {
           color = 'green';
         } else if (params.value === "InvalidMsisdn") {
@@ -72,7 +70,8 @@ const Dashboard = () => {
         return <span style={{ color }}>{params.value}</span>;
       }
     },
-    { field: "createdat", headerName: "Date Created", flex: 1, minWidth: 150, 
+    {
+      field: "createdat", headerName: "Date Created", flex: 1, minWidth: 150,
       valueFormatter: (params) => {
         try {
           const date = parseISO(params);
@@ -81,7 +80,7 @@ const Dashboard = () => {
           return "Invalid Date";
         }
       },
-     },
+    },
   ];
 
   const handleHelp = () => {
@@ -105,18 +104,8 @@ const Dashboard = () => {
   const generateMonthOptions = () => {
     const options = [{ value: "", label: "All Months" }];
     const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
     ];
     for (let i = 0; i < 12; i++) {
       const monthNumber = i + 1;
@@ -146,7 +135,6 @@ const Dashboard = () => {
           if (res.errors) {
             console.log("AN ERROR HAS OCCURED");
           } else {
-            console.log("Balance is", res)
             setTotalBalance(res.data.balance);
             setLoading(false);
           }
@@ -164,7 +152,7 @@ const Dashboard = () => {
       setTotalMessages(0);
       setTotalSuccess(0);
       setTotalPending(0);
-      
+
       const filterParams = {
         org_id,
         selectedYear: selectedYear || undefined,
@@ -172,11 +160,8 @@ const Dashboard = () => {
         selectedDay: selectedDay || undefined
       };
 
-      console.log("Sending filter params:", filterParams); 
-
       messageCountsAction(filterParams)
         .then((res) => {
-          
           if (res.errors) {
             console.log("AN ERROR HAS OCCURED");
             setTotalMessages(0);
@@ -184,19 +169,18 @@ const Dashboard = () => {
             setTotalPending(0);
           } else {
             const responseData = res.data || {};
-            
             const totalCount = responseData.TotalMessageCount || 0;
             setTotalMessages(totalCount);
-  
+
             let successCount = 0;
             let pendingCount = 0;
-  
+
             if (responseData.StatusCounts && Array.isArray(responseData.StatusCounts)) {
               responseData.StatusCounts.forEach((status) => {
-                if (status.StatusDescription === "Recieved Pending Confirmation" || 
-                    status.StatusDescription === "SUCCESS" || 
-                    status.StatusDescription === "DeliveredToTerminal" ||
-                    status.StatusDescription === "Accepted for processing"
+                if (status.StatusDescription === "Recieved Pending Confirmation" ||
+                  status.StatusDescription === "SUCCESS" ||
+                  status.StatusDescription === "DeliveredToTerminal" ||
+                  status.StatusDescription === "Accepted for processing"
                 ) {
                   successCount += status.MessageCount || 0;
                 } else {
@@ -204,11 +188,10 @@ const Dashboard = () => {
                 }
               });
             }
-  
+
             setTotalSuccess(successCount);
             setTotalPending(pendingCount);
           }
-          
           setLoading(false);
         })
         .catch((err) => {
@@ -280,12 +263,14 @@ const Dashboard = () => {
   }, [org_id, selectedMonth, selectedYear, selectedDay]);
 
   return (
-    <div className="flex flex-col sm:flex-row">
-      <div className="flex-1 p-4 sm:ml-64 h-screen">
-        <div className="p-4 h-full rounded-lg dark:border-gray-700">
-          <div className="flex flex-col h-full">
-            <div className="mb-4 p-4 border rounded-lg flex space-x-4 items-center">
-              <div>
+    <div className="flex flex-col sm:flex-row w-full min-w-0">
+      <div className="flex-1 min-w-0 p-4 lg:ml-64 h-screen">
+        <div className="p-4 h-full rounded-lg dark:border-gray-700 min-w-0">
+          <div className="flex flex-col h-full min-w-0">
+
+            {/* Filter section – wraps on mobile, original desktop appearance */}
+            <div className="mb-4 p-4 border rounded-lg flex flex-col md:flex-row md:items-center gap-4 md:gap-0 md:space-x-4">
+              <div className="w-full md:w-auto">
                 <label htmlFor="yearFilter" className="block text-sm font-medium text-gray-700 mb-1">
                   Year
                 </label>
@@ -293,7 +278,7 @@ const Dashboard = () => {
                   id="yearFilter"
                   value={selectedYear}
                   onChange={(e) => handleYearChange(e.target.value)}
-                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full md:w-auto p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {yearOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -302,7 +287,7 @@ const Dashboard = () => {
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="w-full md:w-auto">
                 <label htmlFor="monthFilter" className="block text-sm font-medium text-gray-700 mb-1">
                   Month
                 </label>
@@ -310,7 +295,7 @@ const Dashboard = () => {
                   id="monthFilter"
                   value={selectedMonth}
                   onChange={(e) => handleMonthChange(e.target.value)}
-                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full md:w-auto p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {monthOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -319,7 +304,7 @@ const Dashboard = () => {
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="w-full md:w-auto">
                 <label htmlFor="dayFilter" className="block text-sm font-medium text-gray-700 mb-1">
                   Day
                 </label>
@@ -327,7 +312,7 @@ const Dashboard = () => {
                   id="dayFilter"
                   value={selectedDay}
                   onChange={(e) => handleDayChange(e.target.value)}
-                  className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full md:w-auto p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {dayOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -337,7 +322,7 @@ const Dashboard = () => {
                 </select>
               </div>
             </div>
-            
+
             {loading && (
               <div className="flex justify-center items-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -345,7 +330,8 @@ const Dashboard = () => {
               </div>
             )}
 
-            <div className="border-[1.5px] rounded-3xl">
+            {/* Summary Tiles – all equal height on every screen */}
+            <div className="border-[1.5px] rounded-3xl min-w-0">
               <div className="p-8">
                 <p className="m-1 font-semibold text-lg">Summary Tiles</p>
                 <div className="flex items-center justify-between">
@@ -359,8 +345,8 @@ const Dashboard = () => {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
-                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-8">
+                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-4">
                     <div className="text-gray-500">Total Messages</div>
                     <div>
@@ -368,8 +354,7 @@ const Dashboard = () => {
                         <Image
                           style={{ color: "#F58426" }}
                           className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
+                          width={60} height={60}
                           src="/images/Icon-0.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
@@ -381,7 +366,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-2xl font-bold">{totalMessages || 0}</div>
                 </div>
-                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
+                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-4">
                     <div className="text-gray-500">Total Delivered</div>
                     <div>
@@ -389,8 +374,7 @@ const Dashboard = () => {
                         <Image
                           style={{ color: "#F58426" }}
                           className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
+                          width={60} height={60}
                           src="/images/Icon-1.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
@@ -402,7 +386,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-2xl font-bold">{totalSuccess || 0}</div>
                 </div>
-                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
+                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-4">
                     <div className="text-gray-500">Total Failed Delivery</div>
                     <div>
@@ -410,8 +394,7 @@ const Dashboard = () => {
                         <Image
                           style={{ color: "#F58426" }}
                           className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
+                          width={60} height={60}
                           src="/images/Icon-1.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
@@ -423,7 +406,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-2xl font-bold">{totalPending || 0}</div>
                 </div>
-                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col">
+                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-4">
                     <div className="text-gray-500">SMS Balance</div>
                     <div>
@@ -431,8 +414,7 @@ const Dashboard = () => {
                         <Image
                           style={{ color: "#F58426" }}
                           className="w-12 h-12 rounded-lg"
-                          width={60}
-                          height={60}
+                          width={60} height={60}
                           src="/images/Icon-3.svg"
                           blurDataURL="/bluriconloader.png"
                           placeholder="blur"
@@ -446,76 +428,75 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
-                <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
-                  <p className="mt-2 font-medium text-lg">Recent Messages</p>
-                  <div className="mt-4">
-                    <div style={{ height: 350, width: "100%" }}>
-                    <DataGrid
-                      rows={messages}
-                      columns={columns}
-                      pageSize={5}
-                      rowsPerPageOptions={[5]}
-                      paginationModel={paginationModel}
-                      onPaginationModelChange={setPaginationModel}
-                      pagination
-                      paginationMode="client"
-                      getRowId={(row) => row.message_id || row.destination || Math.random().toString()}
-                      sx={{
-                        "&.MuiDataGrid-root": {
-                          border: "none",
-                        },
-                      }}
-                    />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-4 col-span-1">
-                  <div onClick={handleHelp} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
-                    <span>
-                      <Image
-                        style={{ color: "#F58426" }}
-                        className="w-12 h-12 ml-4 rounded-lg"
-                        width={60}
-                        height={60}
-                        src="/images/help.svg"
-                        blurDataURL="/bluriconloader.png"
-                        placeholder="blur"
-                        alt="Help"
-                        priority
-                      />
-                    </span>
-                    <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
-                  </div>
-                  <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
-                    <span>
-                      <Image
-                        style={{ color: "#F58426" }}
-                        className="w-12 h-12 ml-4 rounded-lg"
-                        width={60}
-                        height={60}
-                        src="/images/noti.svg"
-                        blurDataURL="/bluriconloader.png"
-                        placeholder="blur"
-                        alt="Notification"
-                        priority
-                      />
-                    </span>
-                    <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-wrap text-red-600">Notification</p>
-                  </div>
+
+            {/* Recent Messages + side cards */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 my-4 p-1 min-w-0">
+              {/* THE CAGE: Added overflow-hidden to trap the DataGrid so it can't stretch the page */}
+              <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6 min-w-0 overflow-hidden">
+                <p className="mt-2 font-medium text-lg">Recent Messages</p>
+                <div className="mt-4 w-full" style={{ height: 350 }}>
+                  <DataGrid
+                    rows={messages}
+                    columns={columns}
+                    pageSize={5}
+                    rowsPerPageOptions={[5]}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
+                    pagination
+                    paginationMode="client"
+                    getRowId={(row) => row.message_id || row.destination || Math.random().toString()}
+                    sx={{
+                      "&.MuiDataGrid-root": {
+                        border: "none",
+                      },
+                    }}
+                  />
                 </div>
               </div>
-            <div className="flex flex-col">
-              <div className="p-4 shadow-md rounded-lg">
+              <div className="flex flex-col gap-4 col-span-1 min-w-0">
+                <div onClick={handleHelp} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
+                  <span>
+                    <Image
+                      style={{ color: "#F58426" }}
+                      className="w-12 h-12 ml-4 rounded-lg"
+                      width={60} height={60}
+                      src="/images/help.svg"
+                      blurDataURL="/bluriconloader.png"
+                      placeholder="blur"
+                      alt="Help"
+                      priority
+                    />
+                  </span>
+                  <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-orange-400">Help</p>
+                </div>
+                <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
+                  <span>
+                    <Image
+                      style={{ color: "#F58426" }}
+                      className="w-12 h-12 ml-4 rounded-lg"
+                      width={60} height={60}
+                      src="/images/noti.svg"
+                      blurDataURL="/bluriconloader.png"
+                      placeholder="blur"
+                      alt="Notification"
+                      priority
+                    />
+                  </span>
+                  <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-wrap text-red-600">Notification</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom sections */}
+            <div className="flex flex-col min-w-0">
+              <div className="p-4 shadow-md rounded-lg min-w-0 overflow-hidden">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Recipients</p>
                   <span>
                     <Image
                       style={{ color: "#F58426" }}
                       className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
+                      width={60} height={60}
                       src="/images/Expand.svg"
                       blurDataURL="/bluriconloader.png"
                       placeholder="blur"
@@ -524,19 +505,18 @@ const Dashboard = () => {
                     />
                   </span>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 overflow-x-auto">
                   <RecipientDashboard />
                 </div>
               </div>
-              <div className="p-4 shadow-md rounded-lg mt-4">
+              <div className="p-4 shadow-md rounded-lg mt-4 min-w-0 overflow-hidden">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Groups</p>
                   <span>
                     <Image
                       style={{ color: "#F58426" }}
                       className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
+                      width={60} height={60}
                       src="/images/Expand.svg"
                       blurDataURL="/bluriconloader.png"
                       placeholder="blur"
@@ -545,19 +525,18 @@ const Dashboard = () => {
                     />
                   </span>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 overflow-x-auto">
                   <GroupDashboard />
                 </div>
               </div>
-              <div className="p-4 shadow-md rounded-lg mt-4 mb-4">
+              <div className="p-4 shadow-md rounded-lg mt-4 mb-4 min-w-0 overflow-hidden">
                 <div className="flex items-center justify-between">
                   <p className="mt-4 font-medium text-lg">Recent Campaigns</p>
                   <span>
                     <Image
                       style={{ color: "#F58426" }}
                       className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
+                      width={60} height={60}
                       src="/images/Expand.svg"
                       blurDataURL="/bluriconloader.png"
                       placeholder="blur"
@@ -566,7 +545,7 @@ const Dashboard = () => {
                     />
                   </span>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 overflow-x-auto">
                   <RecentCampaigns />
                 </div>
               </div>

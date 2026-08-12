@@ -180,8 +180,7 @@ const Dashboard = () => {
   const monthOptions = generateMonthOptions();
 
   return (
-    <div className="flex flex-col sm:flex-row">
-      <div className="flex-1 p-4 sm:ml-64 h-screen">
+      <div className="flex-1 p-4 lg:ml-64 h-screen"> {/* lg:ml-64 ensures the margin only appears when the sidebar is visible */}
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
             {/* filter section start */}
@@ -319,7 +318,7 @@ const Dashboard = () => {
             </div>
 
             {/* Data Balance start */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 my-4 p-1">{/*avoid overflow on tablet*/}
               <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
                 <p className="mt-2 font-medium text-lg">Data Balance</p>
                 <div className="mt-4" style={{ height: 350, width: "100%" }}>
@@ -357,7 +356,7 @@ const Dashboard = () => {
                       priority
                     />
                   </span>
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
+                  <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-orange-400">Help</p>
                 </div>
                 <div
                   onClick={handleNotifications}
@@ -376,8 +375,8 @@ const Dashboard = () => {
                       priority
                     />
                   </span>
-                  <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-wrap text-red-600">
-                    Notification
+                  <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-red-600">
+                  Notification
                   </p>
                 </div>
               </div>
@@ -452,7 +451,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
