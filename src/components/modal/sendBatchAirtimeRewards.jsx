@@ -10,6 +10,10 @@ import { v4 as uuidv4 } from "uuid";
 import { sendSms } from "../../app/api/actions/messages/messagesAction";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestAirtimeModal from "./requestAirtime";
+import RequestSmsUnitsModal from "./requestSmsUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 const CSV_CHECKER_URL =
   process.env.NEXT_PUBLIC_CSV_CHECKER_URL || "https://csv-checker.netlify.app/";
@@ -30,6 +34,10 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedSenderName, setSelectedSenderName] = useState("");
   const [senderName, setSenderName] = useState([]);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
+  const [showInsufficientSmsBalanceModal, setShowInsufficientSmsBalanceModal] = useState(false);
+  const [showRequestSmsUnitsModal, setShowRequestSmsUnitsModal] = useState(false);
 
   const [isCsvCheckerOpen, setIsCsvCheckerOpen] = useState(false);
   const [isSendingToChecker, setIsSendingToChecker] = useState(false);
@@ -209,6 +217,7 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
 
     try {
       const parsedContacts = await parseCsvFile(contactsFile);
+      let hasInsufficientSmsBalance = false;
 
       if (parsedContacts.length === 0) {
         setErrorMessage("CSV file is empty or improperly formatted.");
@@ -237,7 +246,16 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
         });
         console.log("Response for", contact.mobile, ":", res.data);
 
-        if (res.status === 200 && rewardPayload.sender_id) {
+        if (isInsufficientBalanceError(res)) {
+          setShowInsufficientBalanceModal(true);
+          return;
+        }
+
+        if (
+          res.status === 200 &&
+          rewardPayload.sender_id &&
+          !hasInsufficientSmsBalance
+        ) {
           const smsPayload = {
             destination: rewardPayload.msisdn,
             content: message,
@@ -252,14 +270,26 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
             newSms: smsPayload,
           });
           console.log("SMS Response for", contact.mobile, ":", smsRes.data);
+
+          if (isInsufficientBalanceError(smsRes)) {
+            hasInsufficientSmsBalance = true;
+          }
         }
       }
 
       setSuccessMessage("The batch airtime rewards have been sent successfully.");
       setErrorMessage("");
+      if (hasInsufficientSmsBalance) {
+        setShowInsufficientSmsBalanceModal(true);
+      }
     } catch (error) {
       console.error("Batch reward error:", error);
-      setErrorMessage("An error occurred while processing batch rewards.");
+      if (isInsufficientBalanceError(error)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
+      } else {
+        setErrorMessage("An error occurred while processing batch rewards.");
+      }
     }
   };
 
@@ -290,6 +320,51 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
     }
     fetchBalance();
   }, [org_id]);
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestAirtimeModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showRequestSmsUnitsModal) {
+    return (
+      <RequestSmsUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestSmsUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientSmsBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="SMS"
+        description="The airtime rewards were sent successfully, but one or more notification SMS messages could not be sent because your SMS balance is too low. Request more SMS units for future notifications."
+        onClose={() => setShowInsufficientSmsBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientSmsBalanceModal(false);
+          setShowRequestSmsUnitsModal(true);
+        }}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="AIRTIME"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div

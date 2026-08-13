@@ -7,6 +7,10 @@ import { GetBalance } from "@/app/api/actions/reward/reward";
 import { sendSms } from "../../app/api/actions/messages/messagesAction";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestAirtimeModal from "./requestAirtime";
+import RequestSmsUnitsModal from "./requestSmsUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 const SendAirtimeRewardModal = ({ closeModal }) => {
   let org_id = null;
@@ -27,6 +31,10 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
   const [selectedBundle, setSelectedBundle] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [contactSelected, setContactSelected] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
+  const [showInsufficientSmsBalanceModal, setShowInsufficientSmsBalanceModal] = useState(false);
+  const [showRequestSmsUnitsModal, setShowRequestSmsUnitsModal] = useState(false);
 
   const { v4: uuidv4 } = require("uuid");
 
@@ -143,14 +151,22 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
             selectedSenderId: newReward.sender_id,
             newSms: newSmsPayload,
           });
+
+          if (isInsufficientBalanceError(smsRes)) {
+            setShowInsufficientSmsBalanceModal(true);
+          }
         }
+      } else if (isInsufficientBalanceError(airtimeRes)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage("An error occurred. Please try again.");
         setSuccessMessage("");
       }
     } catch (error) {
-      if (error.response && error.response.status === 402) {
-        setErrorMessage("Insufficient units. Please top up to proceed");
+      if (isInsufficientBalanceError(error)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage(`Failed to send airtime reward: ${error.message}`);
       }
@@ -187,6 +203,51 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
     }
     fetchBalance();
   }, [org_id]);
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestAirtimeModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showRequestSmsUnitsModal) {
+    return (
+      <RequestSmsUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestSmsUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientSmsBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="SMS"
+        description="The airtime was sent successfully, but the notification SMS could not be sent because your SMS balance is too low. Request more SMS units for future notifications."
+        onClose={() => setShowInsufficientSmsBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientSmsBalanceModal(false);
+          setShowRequestSmsUnitsModal(true);
+        }}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="AIRTIME"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div
