@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { requestUnits } from "@/app/api/actions/reward/reward";
-import { GetBalance } from "@/app/api/actions/reward/reward";
 
-const RequestUnitsModal = ({ closeModal }) => {
+const RequestUnitsModal = ({ closeModal, onCancel }) => {
+  const handleCancel = onCancel || closeModal;
+
   let org_id = null;
   if (typeof window !== 'undefined') {
     org_id = localStorage.getItem('selectedAccountId');
@@ -13,11 +14,33 @@ const RequestUnitsModal = ({ closeModal }) => {
   const [requests, setRequests] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [bundles, setBundles] = useState([]);
   const [bundleAmountError, setBundleAmountError] = useState(false);
   const [numberOfUnitsError, setNumberOfUnitsError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleRequest = async () => {
+    if (submitting) return;
+
+    if (!org_id) {
+      setErrorMessage("No organization selected. Please select an account and try again.");
+      return;
+    }
+
+    const hasCurrentRequest = Boolean(bundleAmount || numberOfUnits);
+    const currentUnits = Number(numberOfUnits);
+
+    if ((requests.length === 0 || hasCurrentRequest) && !bundleAmount) {
+      setBundleAmountError(true);
+      return;
+    }
+    if (
+      (requests.length === 0 || hasCurrentRequest) &&
+      (!Number.isInteger(currentUnits) || currentUnits <= 0)
+    ) {
+      setNumberOfUnitsError(true);
+      return;
+    }
+
     const currentRequest = bundleAmount && numberOfUnits ? {
       bundleAmount,
       numberOfUnits
@@ -25,32 +48,59 @@ const RequestUnitsModal = ({ closeModal }) => {
   
     const allRequests = currentRequest ? [...requests, currentRequest] : requests;
   
-    const results = await Promise.all(allRequests.map(async (request) => {
-      const newRequest = {
-        package: request.bundleAmount,
-        units: parseInt(request.numberOfUnits),
-        service: "DATA",
-      };
-  
-      const res = await requestUnits({ org_id, newRequest });
-      return res.status === 201 || res.status === 200;
-    }));
-  
-    if (results.every(result => result)) {
-      setSuccessMessage(`Your Data Units Request is under Review`);
-      setErrorMessage("");
-    } else {
-      setErrorMessage("Failed to send data. Please try again.");
+    setSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const failedRequests = [];
+
+      for (const request of allRequests) {
+        const newRequest = {
+          package: request.bundleAmount,
+          units: Number(request.numberOfUnits),
+          service: "DATA",
+        };
+
+        try {
+          const res = await requestUnits({ org_id, newRequest });
+          if (res.status !== 201 && res.status !== 200) {
+            failedRequests.push(request);
+          }
+        } catch (error) {
+          console.error("Failed to submit a data-unit request:", error);
+          failedRequests.push(request);
+        }
+      }
+
+      setBundleAmount("");
+      setNumberOfUnits("");
+      setRequests(failedRequests);
+
+      if (failedRequests.length === 0) {
+        setSuccessMessage(`Your Data Units Request is under Review`);
+      } else {
+        setErrorMessage(
+          "Some requests could not be submitted. Please retry the remaining requests."
+        );
+      }
+    } catch (error) {
+      console.error("Failed to request data units:", error);
+      setErrorMessage("Failed to request data units. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
   
 
   const handleAddRequest = () => {
+    if (submitting) return;
+
     if (bundleAmount === "") {
       setBundleAmountError(true);
       return;
     }
-    if (numberOfUnits === "") {
+    const units = Number(numberOfUnits);
+    if (!Number.isInteger(units) || units <= 0) {
       setNumberOfUnitsError(true);
       return;
     }
@@ -68,6 +118,8 @@ const RequestUnitsModal = ({ closeModal }) => {
   };
 
   const handleRemoveRequest = (index) => {
+    if (submitting) return;
+
     const newRequests = [...requests];
     newRequests.splice(index, 1);
     setRequests(newRequests);
@@ -89,27 +141,32 @@ const RequestUnitsModal = ({ closeModal }) => {
     return (totalCost + currentRequestCost).toFixed(2);
   };
 
-  useEffect(() => {
-    async function fetchBalance() {
-      const balanceData = await GetBalance(org_id);
-      if (balanceData) {
-        setBundles(balanceData.data.data);
-      }
-    }
-    fetchBalance();
-  }, []);
-
   return (
     <div
-      id="authentication-modal"
+      id="request-data-units-modal"
       tabIndex="-1"
-      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="request-data-units-title"
+      onClick={(event) => {
+        event.stopPropagation();
+        if (
+          event.target === event.currentTarget &&
+          !submitting &&
+          !successMessage
+        ) {
+          handleCancel();
+        }
+      }}
       className="fixed inset-0 z-50 flex justify-center items-center w-full h-screen bg-black bg-opacity-50"
     >
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
           <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h3
+              id="request-data-units-title"
+              className="text-xl font-semibold text-gray-900 dark:text-white"
+            >
               Request Data Units
             </h3>
             <div className="flex space-x-4">
@@ -119,7 +176,8 @@ const RequestUnitsModal = ({ closeModal }) => {
               {!successMessage ? (
                 <button
                 onClick={handleAddRequest}
-                className="flex items-center px-4 py-2 text-sm font-medium text-white  rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 dark:focus:ring-orange-800"
+                disabled={submitting}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-orange-800"
                 style={{ backgroundColor: "#F58426" }}
               >
                 + New
@@ -158,7 +216,9 @@ const RequestUnitsModal = ({ closeModal }) => {
                     </span>
                     <button
                       onClick={() => handleRemoveRequest(index)}
-                      className="text-red-500 hover:text-red-700"
+                      disabled={submitting}
+                      aria-label={`Remove ${request.numberOfUnits} unit request`}
+                      className="text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       X
                     </button>
@@ -177,6 +237,7 @@ const RequestUnitsModal = ({ closeModal }) => {
                       className={`bg-gray-50 border ${bundleAmountError ? 'border-red-500' : 'border-gray-300'} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white`}
                       value={bundleAmount}
                       onChange={(e) => { setBundleAmount(e.target.value); setBundleAmountError(false); }}
+                      disabled={submitting}
                       required
                     >
                       <option value="">Select Bundle</option>
@@ -210,6 +271,7 @@ const RequestUnitsModal = ({ closeModal }) => {
                       placeholder="200"
                       value={numberOfUnits}
                       onChange={(e) => { setNumberOfUnits(e.target.value); setNumberOfUnitsError(false); }}
+                      disabled={submitting}
                       required
                     />
                   </div>
@@ -219,17 +281,19 @@ const RequestUnitsModal = ({ closeModal }) => {
                   <div className="flex space-x-2">
                     <button
                       type="button"
-                      onClick={closeModal}
-                      className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                      onClick={handleCancel}
+                      disabled={submitting}
+                      className="w-full text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={handleRequest}
-                      className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-orange-500 dark:hover:bg-orange-600 dark:focus:ring-orange-800"
+                      disabled={submitting}
+                      className="w-full text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:cursor-not-allowed disabled:opacity-60 dark:bg-orange-500 dark:hover:bg-orange-600 dark:focus:ring-orange-800"
                     >
-                      Request
+                      {submitting ? "Requesting..." : "Request"}
                     </button>
                   </div>
                 </form>

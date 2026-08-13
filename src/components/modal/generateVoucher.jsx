@@ -3,6 +3,9 @@ import React, { useEffect, useState } from "react";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 import { CreateVouchers } from "@/app/api/actions/vouchers/vouchers";
 import * as XLSX from 'xlsx';
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestUnitsModal from "./requestUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 const GenerateVoucherModal = ({ closeModal }) => {
   const [bundles, setBundles] = useState([]);
@@ -11,6 +14,8 @@ const GenerateVoucherModal = ({ closeModal }) => {
   const { v4: uuidv4 } = require('uuid');
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
 
   let org_id = null;
   if (typeof window !== 'undefined') {
@@ -62,9 +67,10 @@ const GenerateVoucherModal = ({ closeModal }) => {
         setErrorMessage("Failed to create Vouchers. Please try again.");
       }
     } catch (error) {
-      if (error.response && error.response.status === 400) {
-        setErrorMessage("Insufficient units. Please top up to proceed");
-      }else {
+      if (isInsufficientBalanceError(error)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
+      } else {
         setErrorMessage(`Failed to create Vouchers. Please try again. ${error.message}`);
       }
       setSuccessMessage("");
@@ -80,6 +86,28 @@ const GenerateVoucherModal = ({ closeModal }) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Vouchers");
     XLSX.writeFile(workbook, "vouchers_" + new Date().toISOString() + ".xlsx");
   };
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="DATA"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div

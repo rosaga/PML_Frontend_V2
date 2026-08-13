@@ -6,6 +6,9 @@ import { sendReward } from "@/app/api/actions/reward/reward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestUnitsModal from "./requestUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 
 const SendDataRewardModal = ({ closeModal }) => {
@@ -28,6 +31,8 @@ const SendDataRewardModal = ({ closeModal }) => {
   const [selectedBundle, setSelectedBundle] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [contactSelected, setContactSelected] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
 
   const { v4: uuidv4 } = require("uuid");
 
@@ -164,13 +169,17 @@ const SendDataRewardModal = ({ closeModal }) => {
       if (res.status === 200) {
         setSuccessMessage("You have dispatched data successfully!");
         setErrorMessage("");
+      } else if (isInsufficientBalanceError(res)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage("An error occurred. Please try again.");
         setSuccessMessage("");
       }
     } catch (error) {
-      if (error.response && error.response.status === 400) {
-        setErrorMessage("Insufficient units. Please top up to proceed");
+      if (isInsufficientBalanceError(error)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage(`Failed to send reward: ${error.message}`);
       }
@@ -203,6 +212,28 @@ const SendDataRewardModal = ({ closeModal }) => {
     };
     initialise();
   }, [org_id]);
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="DATA"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div
