@@ -277,6 +277,16 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
         </span>
       ),
     },
+
+    {
+      field: "createdby",          
+      headerName: "CREATED BY",
+      flex: 1,
+      minWidth: 200,
+      renderCell: (p) => (
+        <span>{p.value || "Unknown"}</span>
+      ),
+    },
     { field: "service_id", headerName: "SENDER ID", flex: 1, minWidth: 120 },
     { field: "group_id", headerName: "GROUP ID", flex: 1, minWidth: 100 },
     {
