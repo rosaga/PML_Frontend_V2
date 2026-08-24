@@ -110,6 +110,9 @@ const CreateCampaignModal = ({ closeModal }) => {
         if (res.status === 202) {
           setSuccessMessage(`Data has been dispatched successfully under campaign`);
           setErrorMessage("");
+        } else if (isInsufficientBalanceError(res)) {
+          setErrorMessage("");
+          setShowInsufficientBalanceModal(true);
         } else {
           setErrorMessage("Failed to create Campaign. Please try again.");
           setCampaignName("");
