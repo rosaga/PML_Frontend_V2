@@ -22,6 +22,6 @@ export const isInsufficientBalanceError = (error) => {
   const responseData = error?.response?.data ?? error?.data ?? error;
 
   return getErrorMessages(responseData).some((message) =>
-    message.trim().toLowerCase() === INSUFFICIENT_BALANCE_ERROR
+    message.trim().toLowerCase().includes(INSUFFICIENT_BALANCE_ERROR)
   );
 };
