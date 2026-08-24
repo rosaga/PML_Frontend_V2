@@ -15,6 +15,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import InsufficientBalanceModal from "./insufficientBalance";
 import RequestSmsUnitsModal from "./requestSmsUnits";
 import { isInsufficientBalanceError } from "@/utils/apiErrors";
+import { getSmsUnitCount } from "@/utils/smsUnits";
 
 const SendSmsModal = ({ closeModal }) => {
   let org_id = null;
@@ -138,6 +139,7 @@ const SendSmsModal = ({ closeModal }) => {
   }, [org_id, selectedChannel]);
 
   const counterValue = charCount + (isPromotional ? STOP_LEN : 0);
+  const smsUnits = getSmsUnitCount(charCount > 0 ? counterValue : 0);
 
   const maxTyped = isPromotional ? 480 - STOP_LEN : 480;
 
@@ -296,6 +298,12 @@ const SendSmsModal = ({ closeModal }) => {
                     rows="4"
                     required
                   />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Estimated SMS units:{" "}
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {smsUnits} SMS {smsUnits === 1 ? "unit" : "units"}
+                    </span>
+                  </p>
                 </div>
 
                 <FormGroup>

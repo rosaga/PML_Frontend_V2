@@ -16,6 +16,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import InsufficientBalanceModal from "./insufficientBalance";
 import RequestSmsUnitsModal from "./requestSmsUnits";
 import { isInsufficientBalanceError } from "@/utils/apiErrors";
+import { getSmsUnitCount } from "@/utils/smsUnits";
 
 const SendBulkModal = ({ closeModal }) => {
   let org_id = null;
@@ -191,6 +192,12 @@ const SendBulkModal = ({ closeModal }) => {
   }, [org_id, selectedChannel]);
 
   const counterValue = charCount + (isPromotional ? STOP_LEN : 0);
+  const smsUnitsPerRecipient = getSmsUnitCount(charCount > 0 ? counterValue : 0);
+  const selectedGroupData = groups.find(
+    (group) => String(group.id) === String(selectedGroup)
+  );
+  const recipientCount = Number(selectedGroupData?.contact_count) || 0;
+  const totalSmsUnits = smsUnitsPerRecipient * recipientCount;
 
   const maxTyped = isPromotional ? 480 - STOP_LEN : 480;
 
@@ -430,6 +437,19 @@ const SendBulkModal = ({ closeModal }) => {
                   rows="4"
                   required
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Estimated SMS units per send:{" "}
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {smsUnitsPerRecipient} per recipient
+                    {selectedGroupData && (
+                      <>
+                        {" · "}
+                        {totalSmsUnits.toLocaleString()} total for {recipientCount.toLocaleString()}{" "}
+                        {recipientCount === 1 ? "recipient" : "recipients"}
+                      </>
+                    )}
+                  </span>
+                </p>
 
                 <FormGroup>
                   <FormControlLabel

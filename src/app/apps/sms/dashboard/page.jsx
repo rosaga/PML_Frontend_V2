@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [totalMessages, setTotalMessages] = useState('');
   const [totalSuccess, setTotalSuccess] = useState('');
   const [totalPending, setTotalPending] = useState('');
+  const [totalUnitsSpent, setTotalUnitsSpent] = useState('');
   const [totalBalance, setTotalBalance] = useState(0);
 
   const currentDate = new Date();
@@ -70,6 +71,7 @@ const Dashboard = () => {
         return <span style={{ color }}>{params.value}</span>;
       }
     },
+    { field: "createdby", headerName: "CREATED BY", flex: 1, minWidth: 150 },
     {
       field: "createdat", headerName: "Date Created", flex: 1, minWidth: 150,
       valueFormatter: (params) => {
@@ -152,6 +154,7 @@ const Dashboard = () => {
       setTotalMessages(0);
       setTotalSuccess(0);
       setTotalPending(0);
+      setTotalUnitsSpent(0);
 
       const filterParams = {
         org_id,
@@ -167,10 +170,12 @@ const Dashboard = () => {
             setTotalMessages(0);
             setTotalSuccess(0);
             setTotalPending(0);
+            setTotalUnitsSpent(0);
           } else {
             const responseData = res.data || {};
             const totalCount = responseData.TotalMessageCount || 0;
             setTotalMessages(totalCount);
+            setTotalUnitsSpent(responseData.TotalSMSUnits || 0);
 
             let successCount = 0;
             let pendingCount = 0;
@@ -199,6 +204,7 @@ const Dashboard = () => {
           setTotalMessages(0);
           setTotalSuccess(0);
           setTotalPending(0);
+          setTotalUnitsSpent(0);
           setLoading(false);
         });
     } else {
@@ -206,6 +212,7 @@ const Dashboard = () => {
       setTotalMessages(0);
       setTotalSuccess(0);
       setTotalPending(0);
+      setTotalUnitsSpent(0);
       setLoading(false);
     }
   };
@@ -235,6 +242,7 @@ const Dashboard = () => {
     setTotalMessages(0);
     setTotalSuccess(0);
     setTotalPending(0);
+    setTotalUnitsSpent(0);
     setLoading(true);
   };
 
@@ -243,6 +251,7 @@ const Dashboard = () => {
     setTotalMessages(0);
     setTotalSuccess(0);
     setTotalPending(0);
+    setTotalUnitsSpent(0);
     setLoading(true);
   };
 
@@ -251,6 +260,7 @@ const Dashboard = () => {
     setTotalMessages(0);
     setTotalSuccess(0);
     setTotalPending(0);
+    setTotalUnitsSpent(0);
     setLoading(true);
   };
 
@@ -345,7 +355,7 @@ const Dashboard = () => {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 p-8">
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-4">
                     <div className="text-gray-500">Total Messages</div>
@@ -405,6 +415,26 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div className="text-2xl font-bold">{totalPending || 0}</div>
+                </div>
+                <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col h-full">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="text-gray-500">Total Units Spent</div>
+                    <div>
+                      <span>
+                        <Image
+                          style={{ color: "#F58426" }}
+                          className="w-12 h-12 rounded-lg"
+                          width={60} height={60}
+                          src="/images/Icon-2.svg"
+                          blurDataURL="/bluriconloader.png"
+                          placeholder="blur"
+                          alt="Total units spent"
+                          priority
+                        />
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold">{totalUnitsSpent || 0}</div>
                 </div>
                 <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-4">
