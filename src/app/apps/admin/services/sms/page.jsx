@@ -10,6 +10,7 @@ import {
   UpdateAdminSMSSenderID,
   CreateAdminSMSSenderID,
 } from "@/app/api/actions/admin/admin";
+import SenderNameAssignmentCard from "@/components/admin/SenderNameAssignmentCard";
 
 const MetricCard = ({ title, value, subtitle, iconBg, iconColor, icon }) => {
   return (
@@ -1200,6 +1201,11 @@ export default function BulkSMSManagementPage() {
             </CardShell>
           )}
 
+            {activeTab === "senderIds" && (
+              <div className="mb-6">
+                <SenderNameAssignmentCard organizations={organizations} />
+              </div>
+            )}
 
             {activeTab === "senderIds" && (
               <CardShell

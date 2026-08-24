@@ -14,6 +14,7 @@ import {
   GetAllSMSs,
 } from "@/app/api/actions/admin/admin";
 import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
+import SenderNameAssignmentCard from "@/components/admin/SenderNameAssignmentCard";
 
 const DEFAULT_RATE_FORM = {
   service: "",
@@ -1262,6 +1263,11 @@ const OrganizationDetailPage = () => {
 
             {activeTab === "settings" && (
               <div className="space-y-6">
+                <SenderNameAssignmentCard
+                  organizationId={orgId}
+                  organizationName={organization?.name}
+                />
+
                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
