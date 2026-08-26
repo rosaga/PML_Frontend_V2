@@ -1,10 +1,9 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
-import { CircularProgress } from "@mui/material";
-import { useRouter } from "next/navigation";
-import { getToken } from "@/utils/auth";
-import { hasRole } from "../../utils/decodeToken";
+'use client';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
+import { useRouter } from 'next/navigation';
+import { getToken } from '@/utils/auth';
+import { hasRole } from '../../utils/decodeToken';
 import { GetSenderId } from "../api/actions/senderId/senderId";
 import "./miniapp.css";
 
@@ -154,7 +153,8 @@ const MiniApp = () => {
 
           if (orgId && token) {
             const popup = window.open(
-              `https://v0-whatsapp-bulk-messaging-six.vercel.app/`,
+
+              "https://v0-whatsapp-bulk-messaging-six.vercel.app/",
               "_blank"
             );
 
