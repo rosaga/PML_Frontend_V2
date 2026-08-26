@@ -4,6 +4,7 @@ import Image from "next/image";
 import Profile from "../profile/profile";
 import { useRouter } from "next/navigation";
 import { Tooltip } from "@mui/material";
+import { Menu } from "lucide-react";
 
 const AdminNavbar = () => {
   let org_id = null;
@@ -15,6 +16,11 @@ const AdminNavbar = () => {
     router.push("/user-orgs");
   };
 
+  // Broadcast an event to open the sidebar instead of rendering a duplicate
+  const openSidebar = () => {
+    window.dispatchEvent(new Event("toggle-mobile-sidebar"));
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       name = localStorage.getItem("selectedAccountName");
@@ -24,11 +30,20 @@ const AdminNavbar = () => {
   }, []);
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center p-4 sm:p-2 bg-white shadow-md">
-      <div className="flex-1 sm:ml-8 text-center sm:text-center">
-        <p className="text-xl font-bold">{accountName}</p>
+    <div className="flex flex-row justify-between items-center p-4 sm:p-2 bg-white shadow-md relative z-40 w-full">
+      {/* Hamburger Button */}
+      <button
+        onClick={openSidebar}
+        className="lg:hidden p-1.5 -ml-2 mr-2 bg-[#001F3D] text-white focus:outline-none hover:bg-opacity-90 rounded-md"
+      >
+        <Menu size={23} />
+      </button>
+
+      <div className="flex-1 text-left sm:ml-8 sm:text-center truncate">
+        <p className="text-xl font-bold truncate">{accountName}</p>
       </div>
-      <div className="flex items-center space-x-6 mt-2 sm:mt-0">
+      
+      <div className="flex items-center space-x-3 sm:space-x-6">
         <div>
           <Tooltip title="Notifications">
             <Image
@@ -42,8 +57,8 @@ const AdminNavbar = () => {
             />
           </Tooltip>
         </div>
-        <div className="flex sm:flex-row flex-col items-center rounded-lg overflow-hidden shadow-sm w-full sm:w-auto">
-          <div className="flex items-center bg-orange-100 text-[#F58426] py-2 px-5 sm:rounded-l-lg w-full sm:w-auto justify-center">
+        <div className="hidden sm:flex flex-row items-center rounded-lg overflow-hidden shadow-sm">
+          <div className="flex items-center bg-orange-100 text-[#F58426] py-2 px-5 rounded-lg justify-center">
             <span className="text-sm font-medium">Admin Portal</span>
           </div>
         </div>

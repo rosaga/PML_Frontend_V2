@@ -12,6 +12,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import MaterialUIPickers from "../utils/timePicker";
 import Box from "@mui/material/Box";
 import dayjs from "dayjs";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestAirtimeModal from "./requestAirtime";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 const CreateAirtimeCampaignModal = ({ closeModal }) => {
   let token = getToken();
@@ -30,6 +33,8 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
   const [repeatInterval, setRepeatInterval] = useState("");
   const [repeatCount, setRepeatCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
 
   let org_id = null;
   if (typeof window !== "undefined") {
@@ -144,6 +149,9 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
       if (res.status === 202) {
         setSuccessMessage(`Airtime has been dispatched successfully under campaign`);
         setErrorMessage("");
+      } else if (isInsufficientBalanceError(res)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage("Failed to create Airtime Campaign. Please try again.");
         setCampaignName("");
@@ -154,14 +162,9 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
     })
     .catch((error) => {
       console.log("Error:", error);
-      setErrorMessage("Failed to create Airtime Campaign. Please try again.");
-      if (error.response && error.response.status === 400) {
-        console.log("Error:", error);
-        setErrorMessage("Sorry, you have insufficient airtime balance");
-        setCampaignName("");
-        setSelectedGroup("");
-        setSelectedAmount("");
-        setMessage("");
+      if (isInsufficientBalanceError(error)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage(`Failed to create campaign: ${error.message}`);
       }
@@ -172,6 +175,28 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
 
   return res;
 };
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestAirtimeModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="AIRTIME"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div

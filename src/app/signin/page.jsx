@@ -1,5 +1,7 @@
 "use client"
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from "react";
+
 import { Card, CardContent } from "@mui/material";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -17,6 +19,16 @@ import { GetSenderId } from "../api/actions/senderId/senderId";
 const SignIn = () => {
  
   const router = useRouter();
+
+
+    useEffect(() => {
+    if (sessionStorage.getItem("passwordUpdateSuccess") === "true") {
+      sessionStorage.removeItem("passwordUpdateSuccess");
+      toast.success("Password updated. Please sign in again.");
+    }
+  }, []);
+
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);

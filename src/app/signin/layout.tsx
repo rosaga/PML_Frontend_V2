@@ -1,8 +1,13 @@
-// src/app/signin/layout.js
-'use client';
+// src/app/signin/layout.tsx  (Server Component — no 'use client')
 
+// @ts-ignore: allow side-effect CSS import in this layout file
+import "./signin.css";
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
-import "./signin.css"; // Import any specific styles for the login page
+
+export const metadata = {
+  manifest: "/manifest.json",
+  themeColor: "#0a0a1a",
+};
 
 export default function LoginLayout({
   children,
@@ -13,9 +18,7 @@ export default function LoginLayout({
     <html lang="en">
       <body>
         <SessionProviderWrapper>
-          <div>
-            {children}
-          </div>
+          <div>{children}</div>
         </SessionProviderWrapper>
       </body>
     </html>

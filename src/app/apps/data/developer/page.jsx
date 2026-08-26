@@ -181,7 +181,7 @@ export default function APIDocs() {
   };
 
   return (
-    <div className="p-4 sm:ml-64 h-screen ">
+    <div className="p-4 lg:ml-64 h-screen ">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
           <div className="p-4">
@@ -281,9 +281,9 @@ export default function APIDocs() {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col xl:flex-row gap-8">
           {/* Sidebar with endpoints list */}
-          <div className="w-full lg:w-1/3">
+          <div className="w-full xl:w-1/3">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Endpoints</h2>
               <div className="space-y-2">
@@ -326,7 +326,7 @@ export default function APIDocs() {
           </div>
 
           {/* Main content area */}
-          <div className="w-full lg:w-2/3">
+          <div className="w-full xl:w-2/3">
             {selectedEndpoint ? (
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-6 border-b border-gray-200">

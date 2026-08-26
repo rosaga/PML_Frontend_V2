@@ -106,7 +106,7 @@ const OrganizationsPage = () => {
   if (!isClient) return null;
 
   return (
-    <div className="ml-0 min-h-screen bg-gray-50 p-5 md:ml-64">
+    <div className="lg:ml-64 min-h-screen bg-gray-50 p-5">
       <div className="w-full">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>

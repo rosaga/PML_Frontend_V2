@@ -12,6 +12,10 @@ import Switch from "@mui/material/Switch";
 import MaterialUIPickers from "../../components/utils/timePicker";
 import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestSmsUnitsModal from "./requestSmsUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
+import { getSmsUnitCount } from "@/utils/smsUnits";
 
 const SendSmsModal = ({ closeModal }) => {
   let org_id = null;
@@ -54,6 +58,8 @@ const SendSmsModal = ({ closeModal }) => {
   const [selectedChannel, setSelectedChannel] = useState("");
   const [selectedSenderId, setSelectedSenderId] = useState("");
   const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
   const [schedule, setSchedule] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
@@ -71,8 +77,12 @@ const SendSmsModal = ({ closeModal }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isButtonClicked) return;
+
+    setIsButtonClicked(true);
 
     const originalContent = state.content;
     const formattedContent = originalContent.replace(/\n/g, "\\n");
@@ -86,17 +96,27 @@ const SendSmsModal = ({ closeModal }) => {
       organization_id: org_id,
     };
 
-    const res = sendSms({ selectedSenderId, newSms }).then((res) => {
+    try {
+      const res = await sendSms({ selectedSenderId, newSms });
+
       if (res.status === 202) {
         toast.success("SMS SENT SUCCESSFULLY!!!");
+        setState(initialState);
+        setCharCount(0);
+      } else if (isInsufficientBalanceError(res)) {
+        setShowInsufficientBalanceModal(true);
       } else {
         toast.error("SEND SMS FAILED");
       }
+    } catch (error) {
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceModal(true);
+      } else {
+        toast.error("SEND SMS FAILED");
+      }
+    } finally {
       setIsButtonClicked(false);
-    });
-
-    setState(initialState);
-    return res;
+    }
   };
 
   const getAppServices = () => {
@@ -119,8 +139,31 @@ const SendSmsModal = ({ closeModal }) => {
   }, [org_id, selectedChannel]);
 
   const counterValue = charCount + (isPromotional ? STOP_LEN : 0);
+  const smsUnits = getSmsUnitCount(charCount > 0 ? counterValue : 0);
 
   const maxTyped = isPromotional ? 480 - STOP_LEN : 480;
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestSmsUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="SMS"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -255,6 +298,12 @@ const SendSmsModal = ({ closeModal }) => {
                     rows="4"
                     required
                   />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Estimated SMS units:{" "}
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {smsUnits} SMS {smsUnits === 1 ? "unit" : "units"}
+                    </span>
+                  </p>
                 </div>
 
                 <FormGroup>
@@ -282,11 +331,9 @@ const SendSmsModal = ({ closeModal }) => {
                   </button>
                   <button
                     type="button"
+                    disabled={isButtonClicked}
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                    onClick={(e) => {
-                      handleSubmit(e);
-                      setIsButtonClicked(true);
-                    }}
+                    onClick={handleSubmit}
                   >
                     {isButtonClicked ? "SENDING..." : "SEND"}
                   </button>

@@ -153,9 +153,11 @@ const MiniApp = () => {
 
           if (orgId && token) {
             const popup = window.open(
+
               "https://v0-whatsapp-bulk-messaging-six.vercel.app/",
               "_blank"
             );
+
             const onMessage = (event) => {
               if (event.origin !== "https://v0-whatsapp-bulk-messaging-six.vercel.app") return;
               if (event.data?.type === "ready") {

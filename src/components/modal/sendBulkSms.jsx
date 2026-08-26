@@ -13,6 +13,10 @@ import Switch from "@mui/material/Switch";
 import MaterialUIPickers from "../../components/utils/timePicker";
 import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestSmsUnitsModal from "./requestSmsUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
+import { getSmsUnitCount } from "@/utils/smsUnits";
 
 const SendBulkModal = ({ closeModal }) => {
   let org_id = null;
@@ -66,6 +70,8 @@ const SendBulkModal = ({ closeModal }) => {
 
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -126,6 +132,8 @@ const SendBulkModal = ({ closeModal }) => {
       setRepeatCount(0);
       setRepeatInterval("");
       setSchedule(false);
+    } else if (isInsufficientBalanceError(res)) {
+      setShowInsufficientBalanceModal(true);
     } else {
       const backendError =
         res?.data?.error ||
@@ -134,15 +142,17 @@ const SendBulkModal = ({ closeModal }) => {
         "SEND SMS FAILED";
 
       const displayError =
-        backendError.toLowerCase().includes("insufficient")
-          ? "Insufficient units. Please top up to proceed."
-          : backendError;
+        typeof backendError === "string" ? backendError : "SEND SMS FAILED";
 
       setErrorMessage(displayError);
     }
   } catch (error) {
     console.error("Send bulk SMS error:", error);
-    setErrorMessage("Failed to send SMS. Please try again.");
+    if (isInsufficientBalanceError(error)) {
+      setShowInsufficientBalanceModal(true);
+    } else {
+      setErrorMessage("Failed to send SMS. Please try again.");
+    }
   } finally {
     setIsButtonClicked(false);
   }
@@ -182,8 +192,36 @@ const SendBulkModal = ({ closeModal }) => {
   }, [org_id, selectedChannel]);
 
   const counterValue = charCount + (isPromotional ? STOP_LEN : 0);
+  const smsUnitsPerRecipient = getSmsUnitCount(charCount > 0 ? counterValue : 0);
+  const selectedGroupData = groups.find(
+    (group) => String(group.id) === String(selectedGroup)
+  );
+  const recipientCount = Number(selectedGroupData?.contact_count) || 0;
+  const totalSmsUnits = smsUnitsPerRecipient * recipientCount;
 
   const maxTyped = isPromotional ? 480 - STOP_LEN : 480;
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestSmsUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="SMS"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -399,6 +437,19 @@ const SendBulkModal = ({ closeModal }) => {
                   rows="4"
                   required
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Estimated SMS units per send:{" "}
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {smsUnitsPerRecipient} per recipient
+                    {selectedGroupData && (
+                      <>
+                        {" · "}
+                        {totalSmsUnits.toLocaleString()} total for {recipientCount.toLocaleString()}{" "}
+                        {recipientCount === 1 ? "recipient" : "recipients"}
+                      </>
+                    )}
+                  </span>
+                </p>
 
                 <FormGroup>
                   <FormControlLabel

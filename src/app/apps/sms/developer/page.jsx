@@ -16,10 +16,8 @@ export default function APIDocs() {
   const smsBaseUrl = "https://messaging-peak-1048592730476.europe-west4.run.app";
   const dataBaseUrl = "https://peakdata-1048592730476.europe-west4.run.app";
 
-
-  // Sample API endpoints data - replace with your actual endpoints
   const apiEndpoints = [
-  {
+    {
       id: 'login',
       method: 'POST',
       base: 'data',
@@ -34,7 +32,7 @@ export default function APIDocs() {
   "password": "Test@1234"
 }`
     },
-  {
+    {
       id: 'accounts',
       method: 'GET',
       base: 'data',
@@ -46,7 +44,7 @@ export default function APIDocs() {
         { name: 'offset', type: 'number', required: false, description: 'Number of accounts to skip' }
       ]
     },
-  {
+    {
       id: 'sms',
       method: 'POST',
       base: 'sms',
@@ -70,10 +68,19 @@ export default function APIDocs() {
     "scheduled": "2025-09-13T09:35:37.602Z"
 }`
     },
-];
+    {
+      id: 'balance',
+      method: 'GET',
+      base: 'sms',
+      path: '{{base_url}}/api/v1/application/{{org_id}}/balance',
+      description: 'Retrieve the SMS balance for your organization',
+      requiresAuth: true,
+      parameters: [
+        { name: 'organization_id', type: 'string', required: true, description: 'The id of your organization' }
+      ]
+    },
+  ];
 
-
-  // Update request body when endpoint changes
   useEffect(() => {
     if (selectedEndpoint?.exampleBody) {
       setRequestBody(selectedEndpoint.exampleBody);
@@ -84,18 +91,14 @@ export default function APIDocs() {
     }
   }, [selectedEndpoint]);
 
-  // Function to replace placeholders with actual values
   const resolvePath = (path, base) => {
-  const baseUrl =
-    base === "data" ? dataBaseUrl : smsBaseUrl;
-  return path
-    .replace("{{base_url}}", baseUrl)
-    .replace("{{org_id}}", orgId)
-    .replace("{{sender_id}}", senderId);
-};
+    const baseUrl = base === "data" ? dataBaseUrl : smsBaseUrl;
+    return path
+      .replace("{{base_url}}", baseUrl)
+      .replace("{{org_id}}", orgId)
+      .replace("{{sender_id}}", senderId);
+  };
 
-
-  // Function to display path without base URL for UI
   const displayPath = (path) => {
     return path
       .replace('{{base_url}}', '')
@@ -114,9 +117,7 @@ export default function APIDocs() {
         },
       };
 
-      // Add Authorization header if endpoint requires auth and we have a token
       if (selectedEndpoint.requiresAuth) {
-        // Use manual token if provided, otherwise use the one from login
         const tokenToUse = manualToken || authToken;
         if (tokenToUse) {
           options.headers['Authorization'] = `Bearer ${tokenToUse}`;
@@ -135,7 +136,6 @@ export default function APIDocs() {
         options.body = requestBody;
       }
 
-      // Resolve the path with the actual base URL and org ID
       const url = resolvePath(selectedEndpoint.path, selectedEndpoint.base);
       
       const res = await fetch(url, options);
@@ -147,7 +147,6 @@ export default function APIDocs() {
         data: JSON.stringify(data, null, 2)
       });
 
-      // If this is the login endpoint and we got an access_token, save it
       if (selectedEndpoint.id === 'login' && data.access_token) {
         setAuthToken(data.access_token);
       }
@@ -164,7 +163,6 @@ export default function APIDocs() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      // You could add a toast notification here
       alert('Copied to clipboard!');
     }).catch(err => {
       console.error('Failed to copy: ', err);
@@ -178,7 +176,7 @@ export default function APIDocs() {
   };
 
   return (
-    <div className="p-4 sm:ml-64 h-screen ">
+    <div className="p-4 lg:ml-64 h-screen ">
       <div className="flex flex-col h-full">
         <div className="flex flex-col">
           <div className="p-4">
@@ -198,7 +196,6 @@ export default function APIDocs() {
           </div>
         </div>
 
-        {/* Configuration Section */}
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <h3 className="text-lg font-medium text-gray-900 mb-3">Configuration</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,7 +227,6 @@ export default function APIDocs() {
           </div>
         </div>
 
-        {/* Auth Token Display */}
         {(authToken || manualToken) && (
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex justify-between items-center">
@@ -255,7 +251,6 @@ export default function APIDocs() {
           </div>
         )}
 
-        {/* Warning for endpoints requiring auth */}
         {selectedEndpoint?.requiresAuth && !authToken && !manualToken && (
           <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
             <div className="flex">
@@ -279,7 +274,6 @@ export default function APIDocs() {
         )}
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar with endpoints list */}
           <div className="w-full lg:w-1/3">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Endpoints</h2>
@@ -322,7 +316,6 @@ export default function APIDocs() {
             </div>
           </div>
 
-          {/* Main content area */}
           <div className="w-full lg:w-2/3">
             {selectedEndpoint ? (
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -380,7 +373,6 @@ export default function APIDocs() {
                     </div>
                   )}
 
-                  {/* cURL Example */}
                   {selectedEndpoint.id === 'login' && (
                     <div className="mt-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-2">cURL Example</h3>
@@ -406,7 +398,6 @@ export default function APIDocs() {
                     </div>
                   )}
 
-                  {/* cURL Example for sms endpoint */}
                   {selectedEndpoint.id === 'sms' && (
                     <div className="mt-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-2">cURL Example</h3>
@@ -437,9 +428,41 @@ export default function APIDocs() {
                       </div>
                     </div>
                   )}
+
+                  {selectedEndpoint.id === 'balance' && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">cURL Example</h3>
+                      <div className="bg-gray-800 rounded-md overflow-hidden">
+                        <div className="flex justify-between items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium">
+                          <span>Terminal command</span>
+                          <button
+                            onClick={() => copyToClipboard(`curl --location --request GET '${resolvePath(selectedEndpoint.path, selectedEndpoint.base)}' \\\n--header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}'`)}
+                            className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <pre className="p-4 text-green-400 bg-gray-800 overflow-auto text-sm">
+{`curl --location --request GET '${resolvePath(selectedEndpoint.path, selectedEndpoint.base)}' \\
+--header 'Authorization: Bearer ${manualToken || authToken || 'YOUR_ACCESS_TOKEN_HERE'}'`}
+                        </pre>
+                      </div>
+
+                      <h3 className="text-lg font-medium text-gray-900 mt-6 mb-2">Example Response</h3>
+                      <div className="bg-gray-800 rounded-md overflow-hidden">
+                        <div className="px-4 py-2 bg-gray-900 text-white text-sm font-medium">
+                          Status: 200 OK
+                        </div>
+                        <pre className="p-4 text-green-400 bg-gray-800 overflow-auto text-sm">
+{`{
+    "balance": 24674
+}`}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Request/Response section */}
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Try it out</h3>
                   
@@ -518,7 +541,7 @@ export default function APIDocs() {
                 <p className="mt-2 text-gray-500">Choose an API endpoint from the sidebar to explore its documentation and test it out.</p>
               </div>
             )}
-          </div>
+           </div>
         </div>
       </div>
     </div>

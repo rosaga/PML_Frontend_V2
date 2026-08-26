@@ -131,7 +131,7 @@ export default function SmsPaymentsPage() {
   }, [org_id, pageInfo, search]);
 
   return (
-    <div className="sm:ml-64 p-4">
+    <div className="lg:ml-64 p-4">
       {/* Header + Search */}
       <div className="flex flex-col md:flex-row items-center justify-between">
         <p className="mt-4 font-medium text-lg">All Payments</p>

@@ -16,7 +16,7 @@ const AirtimeCampaignsTable = () => {
 
   const filterOptions = [
     { value: "ilike__name", label: "Name" },
-    { value: "ilike__created_by", label: "Owner" },
+    { value: "ilike__created_by", label: "Created By" },
     { value: "eq__airtime_amount", label: "Airtime Amt (KES)" },
   ];
 
@@ -65,7 +65,7 @@ const AirtimeCampaignsTable = () => {
         }
       },
     },
-    { field: "created_by", headerName: "Owner", flex: 1, minWidth: 250 },
+    { field: "created_by", headerName: "Created By", flex: 1, minWidth: 250 },
     { field: "contacts_count", headerName: "Contact Counts", flex: 1, minWidth: 150 },
     {
       field: "airtime_amount",

@@ -56,7 +56,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
     description: "",
     serviceId: "",
     content: "",
-    groupId: "",
+    groupName: "",
   });
 
   const [paginationModel, setPaginationModel] = useState({
@@ -123,8 +123,8 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       serverParams['like__content'] = filters.content.trim();
     }
     
-    if (filters.groupId.trim()) {
-      serverParams['eq__group_id'] = filters.groupId.trim();
+    if (filters.groupName.trim()) {
+      serverParams['like__group_name'] = filters.groupName.trim();
     }
     
 
@@ -155,7 +155,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
       description: "",
       serviceId: "",
       content: "",
-      groupId: "",
+      groupName: "",
     });
     setHasActiveFilters(false);
     setPaginationModel({ pageSize: 10, page: 0 });
@@ -237,7 +237,7 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
   };
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 1, minWidth: 80 },
+    // { field: "id", headerName: "ID", flex: 1, minWidth: 80 },
     {
       field: "name",
       headerName: "CAMPAIGN NAME",
@@ -277,8 +277,18 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
         </span>
       ),
     },
+
+    {
+      field: "createdby",          
+      headerName: "CREATED BY",
+      flex: 1,
+      minWidth: 200,
+      renderCell: (p) => (
+        <span>{p.value || "Unknown"}</span>
+      ),
+    },
     { field: "service_id", headerName: "SENDER ID", flex: 1, minWidth: 120 },
-    { field: "group_id", headerName: "GROUP ID", flex: 1, minWidth: 100 },
+    { field: "group_name", headerName: "GROUP NAME", flex: 1, minWidth: 100 },
     {
       field: "createdat",
       headerName: "DATE CREATED",
@@ -388,14 +398,14 @@ const SmsCampaignsTable = ({ campaignType = "all" }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Group ID
+                  Group Name
                 </label>
                 <input
                   type="text"
-                  value={filters.groupId}
-                  onChange={(e) => handleFilterChange("groupId", e.target.value)}
+                  value={filters.groupName}
+                  onChange={(e) => handleFilterChange("groupName", e.target.value)}
                   className="w-full p-2 border rounded"
-                  placeholder="Enter group ID"
+                  placeholder="Enter group name"
                 />
               </div>
               <div>

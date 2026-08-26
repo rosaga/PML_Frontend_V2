@@ -35,7 +35,7 @@ const AirtimeRewards = () => {
   }, []);
 
   return (
-    <div className="p-4 sm:ml-64 h-screen">
+    <div className="p-4 lg:ml-64 h-screen">
       <div className="p-4 h-full rounded-lg dark:border-gray-700">
         {loading ? (
           <Box className="flex justify-center items-center h-full">

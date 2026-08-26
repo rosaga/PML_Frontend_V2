@@ -4,6 +4,7 @@ export default {
     GET_BALANCE: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2`,
     SIGN_UP: `${process.env.NEXT_PUBLIC_BASE_URL}/public/register`,
     SIGN_IN: `${process.env.NEXT_PUBLIC_BASE_URL}/public/login`,
+    CHANGE_PASSWORD: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/user/password`,
     VERIFY_EMAIL: `${process.env.NEXT_PUBLIC_BASE_URL}/public/verify/email`,
     USERS: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization`,
     GET_All_Organizations: `${process.env.NEXT_PUBLIC_BASE_URL}/api/v2/organization/list`,
@@ -17,6 +18,7 @@ export default {
     peakSMS: `https://messaging-peak-1048592730476.europe-west4.run.app/api/v1`,
 
     LIST_APP_SERVICES: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/application`,
+    MESSAGING_V2: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v2`,
     SEND_SMS: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
     LIST_MESSAGES: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1/message`,
     MESSAGE_COUNTS: `${process.env.NEXT_PUBLIC_ZOHARI_URL}/api/v1`,

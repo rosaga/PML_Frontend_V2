@@ -132,6 +132,7 @@ const RewardsTable = () => {
       flex: 1,
       minWidth: 200,
     },
+    { field: "created_by", headerName: "Created By", flex: 1, minWidth: 150 },
   ];
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
@@ -173,6 +174,7 @@ const RewardsTable = () => {
           "Phone Number": item.contact?.mobile_no || "",
           Status: item.status,
           "Status Description": item.status_desc,
+          "Created By": item.created_by,
         }));
       }
     } catch (err) {

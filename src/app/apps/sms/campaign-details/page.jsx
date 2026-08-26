@@ -94,7 +94,7 @@ const CampaignMessagesPage = () => {
   ];
 
   return (
-    <div className="p-4 sm:ml-64 h-screen flex flex-col">
+    <div className="p-4 lg:ml-64 h-screen flex flex-col">
       <h2 className="text-xl font-semibold mb-4">
         Campaign&nbsp;{campaignId}&nbsp;–&nbsp;Messages
       </h2>

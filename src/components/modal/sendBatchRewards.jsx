@@ -9,6 +9,9 @@ import Box from "@mui/material/Box";
 import { saveAs } from "file-saver";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestUnitsModal from "./requestUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 const CSV_CHECKER_URL =
   process.env.NEXT_PUBLIC_CSV_CHECKER_URL || "https://csv-checker.netlify.app/";
@@ -31,6 +34,8 @@ const SendBatchRewardsModal = ({ closeModal }) => {
   const [senderName, setSenderName] = useState([]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
 
   const [isCsvCheckerOpen, setIsCsvCheckerOpen] = useState(false);
   const [isSendingToChecker, setIsSendingToChecker] = useState(false);
@@ -211,12 +216,20 @@ const SendBatchRewardsModal = ({ closeModal }) => {
       if (res.status === 200) {
         setSuccessMessage(`The data has been sent`);
         setErrorMessage("");
+      } else if (isInsufficientBalanceError(res)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage("Failed to send data. Please try again.");
       }
     } catch (error) {
       console.error(error);
-      setErrorMessage("Failed to send data. Please try again.");
+      if (isInsufficientBalanceError(error)) {
+        setErrorMessage("");
+        setShowInsufficientBalanceModal(true);
+      } else {
+        setErrorMessage("Failed to send data. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -249,6 +262,28 @@ const SendBatchRewardsModal = ({ closeModal }) => {
     }
     fetchBalance();
   }, []);
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="DATA"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div

@@ -128,7 +128,8 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col sm:flex-row">
-      <div className="flex-1 p-4 sm:ml-64 h-screen">
+      {/* page wrapper: margin only on large screens when sidebar is visible */}
+      <div className="flex-1 p-4 lg:ml-64 h-screen">
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
             <div className="border-[1.5px] rounded-3xl">
@@ -225,7 +226,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 my-4 p-1">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 my-4 p-1">
                 <div className="col-span-1 sm:col-span-3 rounded-3xl border-[1.5px] font-semibold text-md p-6">
                   <p className="mt-2 font-medium text-lg">Recent Contacts</p>
                     <div className="mt-4">
@@ -247,7 +248,7 @@ const Dashboard = () => {
                         priority
                       />
                     </span>
-                    <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-orange-400">Help</p>
+                    <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-orange-400">Help</p>
                   </div>
                   <div onClick={handleNotifications} className="rounded-3xl border-[1.5px] p-8 cursor-pointer">
                     <span>
@@ -263,54 +264,12 @@ const Dashboard = () => {
                         priority
                       />
                     </span>
-                    <p className="mt-2 mb-20 ml-4 text-3xl font-bold text-wrap text-red-600">Notification</p>
+                    <p className="mt-2 mb-20 ml-4 text-xl md:text-2xl lg:text-3xl font-bold text-wrap text-red-600">Notification</p>
                   </div>
                 </div>
               </div>
             <div className="flex flex-col">
-
-              {/* <div className="p-4 shadow-md rounded-lg mt-4">
-                <div className="flex items-center justify-between">
-                  <p className="mt-4 font-medium text-lg">Recent Groups</p>
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/Expand.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Expand"
-                      priority
-                    />
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <GroupDashboard />
-                </div>
-              </div> */}
-              {/* <div className="p-4 shadow-md rounded-lg mt-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <p className="mt-4 font-medium text-lg">Recent Responses</p>
-                  <span>
-                    <Image
-                      style={{ color: "#F58426" }}
-                      className="w-8 h-8 ml-4 rounded-lg"
-                      width={60}
-                      height={60}
-                      src="/images/Expand.svg"
-                      blurDataURL="/bluriconloader.png"
-                      placeholder="blur"
-                      alt="Expand"
-                      priority
-                    />
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <RecentCampaigns />
-                </div>
-              </div> */}
+              {/* other sections remain unchanged */}
             </div>
           </div>
         </div>

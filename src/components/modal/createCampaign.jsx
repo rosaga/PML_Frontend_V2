@@ -12,6 +12,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import MaterialUIPickers from "../../components/utils/timePicker";
 import Box from "@mui/material/Box";
 import dayjs from "dayjs";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestUnitsModal from "./requestUnits";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 const CreateCampaignModal = ({ closeModal }) => {
   let token = getToken();
@@ -29,6 +32,8 @@ const CreateCampaignModal = ({ closeModal }) => {
   const [schedule, setSchedule] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState("");
   const [repeatCount, setRepeatCount] = useState(0);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -105,6 +110,9 @@ const CreateCampaignModal = ({ closeModal }) => {
         if (res.status === 202) {
           setSuccessMessage(`Data has been dispatched successfully under campaign`);
           setErrorMessage("");
+        } else if (isInsufficientBalanceError(res)) {
+          setErrorMessage("");
+          setShowInsufficientBalanceModal(true);
         } else {
           setErrorMessage("Failed to create Campaign. Please try again.");
           setCampaignName("");
@@ -115,14 +123,9 @@ const CreateCampaignModal = ({ closeModal }) => {
       })
       .catch((error) => {
         console.log("Error:", error);
-        setErrorMessage("Failed to create Campaign. Please try again.");
-        if (error.response && error.response.status === 400) {
-          console.log("Error:", error);
-          setErrorMessage("Sorry, you have insufficient units");
-          setCampaignName("");
-          setSelectedGroup("");
-          setSelectedBundle("");
-          setMessage("");
+        if (isInsufficientBalanceError(error)) {
+          setErrorMessage("");
+          setShowInsufficientBalanceModal(true);
         } else {
           setErrorMessage(`Failed to send reward: ${error.message}`);
         }
@@ -133,6 +136,28 @@ const CreateCampaignModal = ({ closeModal }) => {
 
     return res;
   };
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestUnitsModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="DATA"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div

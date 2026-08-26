@@ -2,6 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { CreateAirtimeVouchers } from "@/app/api/actions/vouchers/vouchers";
 import * as XLSX from "xlsx";
+import InsufficientBalanceModal from "./insufficientBalance";
+import RequestAirtimeModal from "./requestAirtime";
+import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
 const GenerateAirtimeVoucherModal = ({ closeModal }) => {
   const [selectedBundle, setSelectedBundle] = useState("");
@@ -10,6 +13,8 @@ const GenerateAirtimeVoucherModal = ({ closeModal }) => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showRequestUnitsModal, setShowRequestUnitsModal] = useState(false);
 
   let org_id = null;
   if (typeof window !== "undefined") {
@@ -48,14 +53,16 @@ const GenerateAirtimeVoucherModal = ({ closeModal }) => {
       if (res?.status === 201) {
         setSuccessMessage("The Airtime Vouchers have been created and downloaded successfully.");
         exportToExcel(res.data);
+      } else if (isInsufficientBalanceError(res)) {
+        setShowInsufficientBalanceModal(true);
       } else if (res?.errors?._error) {
         setErrorMessage(res.errors._error);
       } else {
         setErrorMessage("Failed to create vouchers. Please try again.");
       }
     } catch (error) {
-      if (error.response && error.response.status === 400) {
-        setErrorMessage("Insufficient units. Please top up to proceed.");
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalanceModal(true);
       } else {
         setErrorMessage(`Failed to create vouchers. Please try again. ${error.message}`);
       }
@@ -75,6 +82,28 @@ const GenerateAirtimeVoucherModal = ({ closeModal }) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Vouchers");
     XLSX.writeFile(workbook, "vouchers_" + new Date().toISOString() + ".xlsx");
   };
+
+  if (showRequestUnitsModal) {
+    return (
+      <RequestAirtimeModal
+        closeModal={closeModal}
+        onCancel={() => setShowRequestUnitsModal(false)}
+      />
+    );
+  }
+
+  if (showInsufficientBalanceModal) {
+    return (
+      <InsufficientBalanceModal
+        service="AIRTIME"
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        onRequestUnits={() => {
+          setShowInsufficientBalanceModal(false);
+          setShowRequestUnitsModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div
