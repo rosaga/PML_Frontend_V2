@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import {
   GetAdminOrganizationProfile,
   GetAdminOrganizationDataDispatches,
+  GetAdminOrganizationAirtimeDispatches,
   GetAdminOrganizationRates,
   CreateAdminOrganizationRate,
   UpdateAdminOrganizationRate,
@@ -29,6 +30,7 @@ const OrganizationDetailPage = () => {
   const [dispatchServiceFilter, setDispatchServiceFilter] = useState("DATA");
   const [isClient, setIsClient] = useState(false);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  const [isDataBundlesOpen, setIsDataBundlesOpen] = useState(false);
 
   const rawOrgId =
     params?.org_id ??
@@ -45,8 +47,10 @@ const OrganizationDetailPage = () => {
   const [profile, setProfile] = useState(null);
   const [dispatches, setDispatches] = useState([]);
   const [smsDispatches, setSmsDispatches] = useState([]);
+  const [airtimeDispatches, setAirtimeDispatches] = useState([]);
   const [dispatchMeta, setDispatchMeta] = useState(null);
   const [smsDispatchMeta, setSmsDispatchMeta] = useState(null);
+  const [airtimeDispatchMeta, setAirtimeDispatchMeta] = useState(null);
   const [recharges, setRecharges] = useState(null);
   const [revenue, setRevenue] = useState(null);
 
@@ -128,12 +132,17 @@ const OrganizationDetailPage = () => {
 
       const results = await Promise.allSettled([
         GetAdminOrganizationDataDispatches(orgId, "page=1&page_size=20"),
+        GetAdminOrganizationAirtimeDispatches(orgId, "page=1&page_size=20"),
         smsApplicationId
           ? GetAllSMSs(smsApplicationId, smsQuery)
           : Promise.resolve({ data: [] }),
       ]);
 
-      const [dataDispatchesResult, smsDispatchesResult] = results;
+      const [
+        dataDispatchesResult,
+        airtimeDispatchesResult,
+        smsDispatchesResult,
+      ] = results;
 
       if (dataDispatchesResult.status === "fulfilled") {
         setDispatches(normalizeListPayload(dataDispatchesResult.value));
@@ -141,6 +150,18 @@ const OrganizationDetailPage = () => {
       } else {
         setDispatches([]);
         setDispatchMeta(null);
+      }
+
+      if (airtimeDispatchesResult.status === "fulfilled") {
+        setAirtimeDispatches(
+          normalizeListPayload(airtimeDispatchesResult.value)
+        );
+        setAirtimeDispatchMeta(
+          getPaginationPayload(airtimeDispatchesResult.value)
+        );
+      } else {
+        setAirtimeDispatches([]);
+        setAirtimeDispatchMeta(null);
       }
 
       if (smsDispatchesResult.status === "fulfilled") {
@@ -161,6 +182,14 @@ const OrganizationDetailPage = () => {
         );
       }
 
+      if (airtimeDispatchesResult.status === "rejected") {
+        dispatchErrors.push(
+          airtimeDispatchesResult.reason?.response?.data?.error ||
+            airtimeDispatchesResult.reason?.message ||
+            "Failed to load airtime dispatches"
+        );
+      }
+
       if (smsDispatchesResult.status === "rejected") {
         dispatchErrors.push(
           smsDispatchesResult.reason?.response?.data?.error ||
@@ -176,8 +205,10 @@ const OrganizationDetailPage = () => {
       console.error("Failed to load dispatches:", err);
       setDispatches([]);
       setSmsDispatches([]);
+      setAirtimeDispatches([]);
       setDispatchMeta(null);
       setSmsDispatchMeta(null);
+      setAirtimeDispatchMeta(null);
       setDispatchError(
         err?.response?.data?.error || "Failed to load dispatch history."
       );
@@ -380,6 +411,38 @@ const OrganizationDetailPage = () => {
       });
   }, [accounts]);
 
+  const dataBundleBalances = useMemo(() => {
+    const bundleMap = new Map();
+
+    accounts.forEach((account) => {
+      const service = (account?.service || "DATA").toUpperCase();
+      if (service !== "DATA") return;
+
+      const bundleSize =
+        account?.module ||
+        account?.bundle_size ||
+        account?.bundle_type ||
+        account?.bundle_amount ||
+        account?.package ||
+        account?.name ||
+        account?.description ||
+        "Unknown bundle";
+
+      const units = Number(account?.units || 0);
+      if (!Number.isFinite(units) || units <= 0) return;
+
+      const currentUnits = bundleMap.get(bundleSize) || 0;
+      bundleMap.set(bundleSize, currentUnits + units);
+    });
+
+    return Array.from(bundleMap, ([bundleSize, units]) => ({
+      bundleSize,
+      units,
+    })).sort((a, b) =>
+      String(a.bundleSize).localeCompare(String(b.bundleSize))
+    );
+  }, [accounts]);
+
   const enabledServices = useMemo(() => {
     const services = [];
 
@@ -425,12 +488,16 @@ const OrganizationDetailPage = () => {
   }, [revenue]);
 
   const visibleDispatches = useMemo(() => {
-    return dispatchServiceFilter === "SMS" ? smsDispatches : dispatches;
-  }, [dispatchServiceFilter, smsDispatches, dispatches]);
+    if (dispatchServiceFilter === "SMS") return smsDispatches;
+    if (dispatchServiceFilter === "AIRTIME") return airtimeDispatches;
+    return dispatches;
+  }, [dispatchServiceFilter, smsDispatches, airtimeDispatches, dispatches]);
 
   const visibleDispatchMeta = useMemo(() => {
-    return dispatchServiceFilter === "SMS" ? smsDispatchMeta : dispatchMeta;
-  }, [dispatchServiceFilter, smsDispatchMeta, dispatchMeta]);
+    if (dispatchServiceFilter === "SMS") return smsDispatchMeta;
+    if (dispatchServiceFilter === "AIRTIME") return airtimeDispatchMeta;
+    return dispatchMeta;
+  }, [dispatchServiceFilter, smsDispatchMeta, airtimeDispatchMeta, dispatchMeta]);
 
   const recentActivity = useMemo(() => {
     const activityItems = [];
@@ -598,21 +665,11 @@ const OrganizationDetailPage = () => {
   }
 
   function getDispatchDescription(item) {
-    if (dispatchServiceFilter === "SMS") {
-      return (
-        item?.status_desc ||
-        item?.status_description ||
-        item?.delivery_status ||
-        item?.metadata?.status_desc ||
-        item?.metadata?.deliveryStatus ||
-        "SMS Dispatch Record"
-      );
-    }
-
     return (
-      item?.name ||
-      item?.campaign_name ||
-      item?.bundle_amount ||
+      item?.status_desc ||
+      item?.status_description ||
+      item?.metadata?.status_desc ||
+      item?.metadata?.StatusDesc ||
       "Dispatch Record"
     );
   }
@@ -630,19 +687,22 @@ const OrganizationDetailPage = () => {
     );
   }
 
-  function getDispatchVolume(item) {
-    return (
-      item?.messages_sent ||
-      item?.total_messages ||
-      item?.message_count ||
-      item?.successful_messages ||
-      item?.success_count ||
-      item?.delivered_count ||
-      item?.accepted_count ||
-      item?.bundle_amount ||
-      item?.bundleAmount ||
-      0
-    );
+  function getDispatchBundleSize(item) {
+    const value =
+      item?.bundle_size ??
+      item?.bundleSize ??
+      item?.bundle_amount ??
+      item?.bundleAmount ??
+      item?.data_bundle_type ??
+      item?.data_bundle ??
+      item?.module;
+
+    if (value === null || typeof value === "undefined" || value === "") {
+      return "—";
+    }
+
+    const num = Number(value);
+    return Number.isFinite(num) ? formatNumber(num) : value;
   }
 
   function getDispatchStatus(item) {
@@ -683,6 +743,31 @@ const OrganizationDetailPage = () => {
     );
   }
 
+  function getDispatchFilterLabel() {
+    if (dispatchServiceFilter === "SMS") return "SMS";
+    if (dispatchServiceFilter === "AIRTIME") return "airtime";
+    return "data";
+  }
+
+  function getDispatchColumnCount() {
+    return dispatchServiceFilter === "SMS" ? 5 : 6;
+  }
+
+  function getAirtimeDispatchId(item) {
+    return item?.request_id || item?.response_id || item?.id || "—";
+  }
+
+  function formatAirtimeAmount(item) {
+    const value = item?.airtime_amount ?? item?.airtimeAmount ?? item?.amount;
+
+    if (value === null || typeof value === "undefined" || value === "") {
+      return "—";
+    }
+
+    const num = Number(value);
+    return Number.isFinite(num) ? formatCurrency(num) : value;
+  }
+
   const metricCards = [
     {
       label: "SMS Balance",
@@ -708,6 +793,7 @@ const OrganizationDetailPage = () => {
     {
       label: "Data Balance",
       value: `${formatNumber(profile?.total_data_units)} GB`,
+      hasBundleBreakdown: true,
       iconBg: "#fef3c7",
       iconColor: "#d97706",
       icon: (
@@ -971,6 +1057,76 @@ const OrganizationDetailPage = () => {
                       {item.icon}
                     </div>
                   </div>
+
+                  {item.hasBundleBreakdown && dataBundleBalances.length > 0 ? (
+                    <div className="mt-5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsDataBundlesOpen((current) => !current)
+                        }
+                        aria-expanded={isDataBundlesOpen}
+                        className="flex w-full items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-left text-sm font-semibold text-gray-900 hover:bg-amber-100"
+                      >
+                        <span className="flex min-w-0 flex-col">
+                          <span className="text-sm font-semibold text-gray-900">
+                            Bundle breakdown
+                          </span>
+                          <span className="text-xs font-medium text-gray-500">
+                            {dataBundleBalances.length} active bundle
+                            {dataBundleBalances.length === 1 ? "" : "s"}
+                          </span>
+                        </span>
+
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className={`shrink-0 transition ${
+                            isDataBundlesOpen ? "rotate-180" : ""
+                          }`}
+                        >
+                          <path
+                            d="M6 9L12 15L18 9"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+
+                      {isDataBundlesOpen ? (
+                        <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-2">
+                          <div className="max-h-56 space-y-2 overflow-y-auto">
+                            {dataBundleBalances.map((bundle) => (
+                              <div
+                                key={bundle.bundleSize}
+                                className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 shadow-sm"
+                              >
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    {bundle.bundleSize}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    Bundle size
+                                  </p>
+                                </div>
+
+                                <div className="text-right">
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    {formatNumber(bundle.units)}
+                                  </p>
+                                  <p className="text-xs text-gray-500">units</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -1034,6 +1190,7 @@ const OrganizationDetailPage = () => {
                     {[
                       { id: "DATA", label: "Data" },
                       { id: "SMS", label: "SMS" },
+                      { id: "AIRTIME", label: "Airtime" },
                     ].map((filter) => {
                       const active = dispatchServiceFilter === filter.id;
 
@@ -1075,10 +1232,28 @@ const OrganizationDetailPage = () => {
                               ID
                             </th>
                             <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                              Source
+                              Sender Name
                             </th>
                             <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                              Destination
+                              Recipient
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Status Description
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Created At
+                            </th>
+                          </tr>
+                        ) : dispatchServiceFilter === "AIRTIME" ? (
+                          <tr>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Request ID
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Recipient
+                            </th>
+                            <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                              Amount
                             </th>
                             <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
                               Status Desc
@@ -1105,7 +1280,7 @@ const OrganizationDetailPage = () => {
                               Date
                             </th>
                             <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                              Volume
+                              Bundle Size
                             </th>
                             <th className="border-b border-gray-200 px-6 py-5 text-left text-sm font-semibold text-gray-600">
                               Status
@@ -1118,15 +1293,22 @@ const OrganizationDetailPage = () => {
                         {visibleDispatches.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={6}
+                              colSpan={getDispatchColumnCount()}
                               className="px-6 py-10 text-center text-sm text-gray-500"
                             >
-                              No {dispatchServiceFilter === "SMS" ? "SMS" : "data"} dispatch history found
+                              No {getDispatchFilterLabel()} dispatch history found
                             </td>
                           </tr>
                         ) : dispatchServiceFilter === "SMS" ? (
                           visibleDispatches.map((item, index) => (
-                            <tr key={item?.id || item?.campaign_id || item?.request_id || index}>
+                            <tr
+                              key={
+                                item?.id ||
+                                item?.campaign_id ||
+                                item?.request_id ||
+                                index
+                              }
+                            >
                               <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
                                 {getDispatchId(item)}
                               </td>
@@ -1135,6 +1317,35 @@ const OrganizationDetailPage = () => {
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
                                 {getDispatchDestination(item)}
+                              </td>
+                              <td className="max-w-[420px] border-b border-gray-100 px-6 py-5 text-sm text-gray-700">
+                                <span className="line-clamp-2">
+                                  {getDispatchStatusDesc(item)}
+                                </span>
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-600">
+                                {formatTableDateTime(getDispatchDate(item))}
+                              </td>
+                            </tr>
+                          ))
+                        ) : dispatchServiceFilter === "AIRTIME" ? (
+                          visibleDispatches.map((item, index) => (
+                            <tr
+                              key={
+                                item?.id ||
+                                item?.request_id ||
+                                item?.response_id ||
+                                index
+                              }
+                            >
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
+                                {getAirtimeDispatchId(item)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
+                                {getDispatchDestination(item)}
+                              </td>
+                              <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-gray-900">
+                                {formatAirtimeAmount(item)}
                               </td>
                               <td className="max-w-[420px] border-b border-gray-100 px-6 py-5 text-sm text-gray-700">
                                 <span className="line-clamp-2">
@@ -1157,7 +1368,14 @@ const OrganizationDetailPage = () => {
                           ))
                         ) : (
                           visibleDispatches.map((item, index) => (
-                            <tr key={item?.id || item?.campaign_id || item?.request_id || index}>
+                            <tr
+                              key={
+                                item?.id ||
+                                item?.campaign_id ||
+                                item?.request_id ||
+                                index
+                              }
+                            >
                               <td className="border-b border-gray-100 px-6 py-5 text-sm font-semibold text-blue-600">
                                 {getDispatchId(item)}
                               </td>
@@ -1173,7 +1391,7 @@ const OrganizationDetailPage = () => {
                                 {formatTableDate(getDispatchDate(item))}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm text-gray-900">
-                                {formatNumber(getDispatchVolume(item))}
+                                {getDispatchBundleSize(item)}
                               </td>
                               <td className="border-b border-gray-100 px-6 py-5 text-sm">
                                 <span
@@ -1194,7 +1412,8 @@ const OrganizationDetailPage = () => {
 
                 {visibleDispatchMeta ? (
                   <div className="px-6 py-4 text-sm text-gray-500">
-                    Page {visibleDispatchMeta.page} of {visibleDispatchMeta.total_pages || 1}
+                    Page {visibleDispatchMeta.page} of{" "}
+                    {visibleDispatchMeta.total_pages || 1}
                     {" • "}Total: {visibleDispatchMeta.total_count || 0}
                   </div>
                 ) : null}
