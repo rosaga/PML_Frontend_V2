@@ -93,7 +93,7 @@ export function TagsProvider({ children }: { children: ReactNode }) {
     setTagsLoading(true);
     try {
       // 1. All label names for this org
-      const labelsRes = await fetch(`/api/tags?organizationId=${encodeURIComponent(organizationId)}`);
+      const labelsRes = await fetch(`/api/whatsapp/tags?organizationId=${encodeURIComponent(organizationId)}`);
       const labelsData = await labelsRes.json();
       const labelNames: string[] = Array.isArray(labelsData?.data) ? labelsData.data : [];
 
@@ -209,7 +209,7 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       // TODO: Once backend supports multi-label, replace this single PATCH with
       //       POST /api/v1/organization/{orgId}/contact/{contactId}/labels { label: tagId }
       //       and remove the localStorage sync above entirely.
-      fetch(`/api/tags?organizationId=${encodeURIComponent(organizationId ?? "")}`, {
+      fetch(`/api/whatsapp/tags?organizationId=${encodeURIComponent(organizationId ?? "")}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contact_id: contactId, label: tagId }),
@@ -235,7 +235,7 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       // TODO: Once backend supports multi-label, replace with
       //       DELETE /api/v1/organization/{orgId}/contact/{contactId}/labels/{tagId}
       const remainingTag = updated.find((tc) => tc.mobileNo === mobileNo)?.tagId ?? "";
-      fetch(`/api/tags?organizationId=${encodeURIComponent(organizationId ?? "")}`, {
+      fetch(`/api/whatsapp/tags?organizationId=${encodeURIComponent(organizationId ?? "")}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contact_id: contactId, label: remainingTag }),

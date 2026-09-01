@@ -132,7 +132,7 @@ function AddContactDialog({
   useEffect(() => {
     if (!open || !organizationId) return;
     setLoadingContacts(true);
-    fetch("/api/whatsapp/messages/list?page=1&size=500&orderby=created_at%20DESC", {
+    fetch("/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500&orderby=created_at%20DESC", {
       headers: { "x-organization-id": organizationId },
     })
       .then((r) => r.json())
@@ -306,7 +306,7 @@ export function TagsLayout() {
     setContactLoading(true);
     try {
       const res = await fetch(
-        "/api/whatsapp/messages/list?page=1&size=500&orderby=created_at%20DESC",
+        "/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500&orderby=created_at%20DESC",
         { headers: { "x-organization-id": organizationId } },
       );
       const data = await res.json();

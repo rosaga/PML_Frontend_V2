@@ -112,7 +112,7 @@ export async function fetchInboxMessages(
     ...extra,
   });
   try {
-    const res = await fetch(`/api/whatsapp/messages/list?${params}`, {
+    const res = await fetch(`/api/whatsapp/whatsapp-internal/messages/list?${params}`, {
       headers: { "x-organization-id": orgId },
     });
     const data = await res.json();
