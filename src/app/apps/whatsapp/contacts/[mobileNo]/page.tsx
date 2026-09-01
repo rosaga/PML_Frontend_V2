@@ -231,7 +231,7 @@ function ContactDetailContent() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/contacts")}
+            onClick={() => router.push("/apps/whatsapp/contacts")}
             className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -279,7 +279,7 @@ function ContactDetailContent() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push("/contacts")}
+          onClick={() => router.push("/apps/whatsapp/contacts")}
           className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -447,7 +447,7 @@ function ContactDetailContent() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push(`/inbox/${encodeURIComponent(mobileNo)}`)}
+                onClick={() => router.push(`/apps/whatsapp/inbox/${encodeURIComponent(mobileNo)}`)}
                 className="gap-1.5 text-xs h-7 px-2 text-primary hover:text-primary"
               >
                 View all
@@ -506,7 +506,7 @@ function ContactDetailContent() {
         {/* Open conversation CTA */}
         <Button
           className="w-full gap-2 bg-[#001F3D] hover:bg-[#003366] h-11"
-          onClick={() => router.push(`/inbox/${encodeURIComponent(mobileNo)}`)}
+          onClick={() => router.push(`/apps/whatsapp/inbox/${encodeURIComponent(mobileNo)}`)}
         >
           <MessageSquare className="h-4 w-4" />
           Open full conversation

@@ -197,7 +197,7 @@ function CampaignDetailContent() {
         <Header title="Campaign Details" description="" />
         <div className="p-6">
           <p className="text-muted-foreground text-sm">Campaign not found.</p>
-          <Button variant="ghost" size="sm" onClick={() => router.push("/campaigns")} className="mt-3">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/apps/whatsapp/campaigns")} className="mt-3">
             <ArrowLeft className="h-4 w-4 mr-1.5" />
             Back to Campaigns
           </Button>
@@ -230,7 +230,7 @@ function CampaignDetailContent() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/campaigns")}
+            onClick={() => router.push("/apps/whatsapp/campaigns")}
             className="text-muted-foreground -ml-2"
           >
             <ArrowLeft className="h-4 w-4 mr-1.5" />

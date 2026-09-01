@@ -398,7 +398,7 @@ function GroupContactsContent() {
       <Header title="Group Contacts" description={`Contacts in group ${groupId}`} />
       <div className="p-6">
         <div className="mb-6 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => router.push("/groups")}>
+          <Button variant="outline" size="sm" onClick={() => router.push("/apps/whatsapp/groups")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Groups
           </Button>

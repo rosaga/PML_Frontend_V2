@@ -29,27 +29,29 @@ import {
   X,
 } from "lucide-react";
 
+const BASE = "/apps/whatsapp";
+
 const messagesSubItems = [
-  { name: "Templates", href: "/templates", icon: FileText },
-  { name: "Send Message", href: "/send", icon: Send },
-  { name: "Campaigns", href: "/campaigns", icon: Megaphone },
-  { name: "Reports", href: "/messages", icon: ClipboardList },
+  { name: "Templates", href: `${BASE}/templates`, icon: FileText },
+  { name: "Send Message", href: `${BASE}/send`, icon: Send },
+  { name: "Campaigns", href: `${BASE}/campaigns`, icon: Megaphone },
+  { name: "Reports", href: `${BASE}/messages`, icon: ClipboardList },
 ];
 
 const contactsSubItems = [
-  { name: "Contact List", href: "/contacts", icon: BookUser },
-  { name: "Tags", href: "/tags", icon: Tag },
-  { name: "Groups", href: "/groups", icon: Users },
+  { name: "Contact List", href: `${BASE}/contacts`, icon: BookUser },
+  { name: "Tags", href: `${BASE}/tags`, icon: Tag },
+  { name: "Groups", href: `${BASE}/groups`, icon: Users },
 ];
 
 const chatbotSubItems = [
-  { name: "Flows", href: "/automations", icon: GitBranch },
-  { name: "Reporting", href: "/automations/reporting", icon: PieChart },
+  { name: "Flows", href: `${BASE}/automations`, icon: GitBranch },
+  { name: "Reporting", href: `${BASE}/automations/reporting`, icon: PieChart },
 ];
 
 const settingsSubItems = [
-  { name: "Account", href: "/settings/account", icon: Settings },
-  { name: "Top Ups", href: "/settings/topups", icon: Zap },
+  { name: "Account", href: `${BASE}/settings/account`, icon: Settings },
+  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap },
 ];
 
 export function Sidebar({
@@ -63,13 +65,13 @@ export function Sidebar({
   const { signOut } = useConfig();
   const { hasNewMessage, setHasNewMessage } = useMessageNotification();
 
-  const isMessagesActive = pathname.startsWith("/templates") || pathname.startsWith("/send") || pathname.startsWith("/campaigns");
+  const isMessagesActive = pathname.startsWith(`${BASE}/templates`) || pathname.startsWith(`${BASE}/send`) || pathname.startsWith(`${BASE}/campaigns`);
   const isContactsActive =
-    pathname.startsWith("/contacts") ||
-    pathname.startsWith("/tags") ||
-    pathname.startsWith("/groups");
-  const isChatbotActive = pathname.startsWith("/automations");
-  const isSettingsActive = pathname.startsWith("/settings");
+    pathname.startsWith(`${BASE}/contacts`) ||
+    pathname.startsWith(`${BASE}/tags`) ||
+    pathname.startsWith(`${BASE}/groups`);
+  const isChatbotActive = pathname.startsWith(`${BASE}/automations`);
+  const isSettingsActive = pathname.startsWith(`${BASE}/settings`);
 
   const [messagesOpen, setMessagesOpen] = useState(isMessagesActive);
   const [contactsOpen, setContactsOpen] = useState(isContactsActive);
@@ -138,7 +140,7 @@ export function Sidebar({
     );
   }
 
-  const isInboxActive = pathname === "/inbox" || pathname.startsWith("/inbox/");
+  const isInboxActive = pathname === `${BASE}/inbox` || pathname.startsWith(`${BASE}/inbox/`);
 
   return (
     <aside
@@ -176,13 +178,13 @@ export function Sidebar({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto space-y-1 px-3 py-4">
-          <Link href="/" className={navLinkClass(pathname === "/")}>
-            <LayoutDashboard className={cn("h-5 w-5 transition-colors", pathname === "/" ? "text-white" : "group-hover:text-white")} />
+          <Link href="/miniapp" className={navLinkClass(pathname === "/miniapp")}>
+            <LayoutDashboard className={cn("h-5 w-5 transition-colors", pathname === "/miniapp" ? "text-white" : "group-hover:text-white")} />
             <span>Quickstart</span>
           </Link>
 
           <Link
-            href="/inbox"
+            href={`${BASE}/inbox`}
             onClick={() => setHasNewMessage(false)}
             className={navLinkClass(isInboxActive)}
           >
@@ -193,8 +195,8 @@ export function Sidebar({
             </div>
           </Link>
 
-          <Link href="/dashboard" className={navLinkClass(pathname === "/dashboard")}>
-            <BarChart3 className={cn("h-5 w-5 transition-colors", pathname === "/dashboard" ? "text-white" : "group-hover:text-white")} />
+          <Link href={`${BASE}/dashboard`} className={navLinkClass(pathname === `${BASE}/dashboard`)}>
+            <BarChart3 className={cn("h-5 w-5 transition-colors", pathname === `${BASE}/dashboard` ? "text-white" : "group-hover:text-white")} />
             <span>Analytics</span>
           </Link>
 

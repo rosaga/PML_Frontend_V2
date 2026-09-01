@@ -599,7 +599,7 @@ export function TagsLayout() {
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 title="Go to chat"
-                                onClick={() => router.push(`/inbox/${encodeURIComponent(no)}`)}
+                                onClick={() => router.push(`/apps/whatsapp/inbox/${encodeURIComponent(no)}`)}
                                 className="text-muted-foreground hover:text-primary transition-colors"
                               >
                                 <MessageSquare className="w-4 h-4" />

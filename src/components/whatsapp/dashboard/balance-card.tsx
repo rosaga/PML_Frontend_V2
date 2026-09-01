@@ -77,7 +77,7 @@ export function BalanceCard() {
           )}
         </div>
         <Button
-          onClick={() => router.push("/settings/topups")}
+          onClick={() => router.push("/apps/whatsapp/settings/topups")}
           size="sm"
           variant="outline"
           className="w-full"
