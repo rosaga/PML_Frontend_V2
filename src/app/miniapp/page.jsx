@@ -149,7 +149,7 @@ const MiniApp = () => {
         case "whatsapp": {
           // WhatsApp is now part of this app — navigate directly without a popup.
           // Auth comes from PML's existing localStorage (token, selectedAccountId).
-          router.push("/apps/whatsapp/dashboard");
+          router.push("/apps/whatsapp/inbox");
           break;
         }
 
