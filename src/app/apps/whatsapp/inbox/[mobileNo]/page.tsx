@@ -549,7 +549,7 @@ export default function InboxChatPage() {
                 key={recipient.mobile_no}
                 onClick={() => {
                   markSidebarAsRead(recipient.mobile_no);
-                  router.push(`/inbox/${encodeURIComponent(recipient.mobile_no)}`);
+                  router.push(`/apps/whatsapp/inbox/${encodeURIComponent(recipient.mobile_no)}`);
                 }}
                 className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
                   recipient.mobile_no === mobileNo ? "bg-blue-50" : ""
@@ -634,7 +634,7 @@ export default function InboxChatPage() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
-                    onClick={() => router.push(`/contacts/${encodeURIComponent(mobileNo)}`)}
+                    onClick={() => router.push(`/apps/whatsapp/contacts/${encodeURIComponent(mobileNo)}`)}
                     className="hover:underline text-left"
                     title="Open contact details"
                   >

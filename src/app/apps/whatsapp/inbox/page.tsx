@@ -171,7 +171,7 @@ function InboxContent() {
 
   const handleRecipientClick = (mobileNo: string) => {
     markAsRead(mobileNo);
-    router.push(`/inbox/${encodeURIComponent(mobileNo)}`);
+    router.push(`/apps/whatsapp/inbox/${encodeURIComponent(mobileNo)}`);
   };
 
   // ── Client-side filtering + exact pagination ──────────────────────────────

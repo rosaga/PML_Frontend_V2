@@ -178,8 +178,8 @@ export function Sidebar({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto space-y-1 px-3 py-4">
-          <Link href="/miniapp" className={navLinkClass(pathname === "/miniapp")}>
-            <LayoutDashboard className={cn("h-5 w-5 transition-colors", pathname === "/miniapp" ? "text-white" : "group-hover:text-white")} />
+          <Link href={`${BASE}/quickstart`} className={navLinkClass(pathname === `${BASE}/quickstart`)}>
+            <LayoutDashboard className={cn("h-5 w-5 transition-colors", pathname === `${BASE}/quickstart` ? "text-white" : "group-hover:text-white")} />
             <span>Quickstart</span>
           </Link>
 
