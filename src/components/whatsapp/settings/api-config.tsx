@@ -55,7 +55,7 @@ export function ApiConfigSettings() {
       const account = peakData.data;
       const apiKey = account.APIKey;
 
-      const verifyResponse = await fetch("/api/whatsapp/auth/verify", {
+      const verifyResponse = await fetch("/api/whatsapp/whatsapp-internal/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey }),

@@ -73,15 +73,15 @@ export function FlowBuilder({ flowId, onBack, onSave }: FlowBuilderProps) {
   const fetchFlow = async (id: number) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/flows/${id}`);
+      const response = await fetch(`/api/whatsapp/flows/${id}`);
       if (!response.ok) throw new Error("Failed to fetch flow");
 
       const data = await response.json();
       setFlow(data.data);
 
       // Fetch nodes and edges
-      const nodesRes = await fetch(`/api/flows/${id}/nodes`);
-      const edgesRes = await fetch(`/api/flows/${id}/edges`);
+      const nodesRes = await fetch(`/api/whatsapp/flows/${id}/nodes`);
+      const edgesRes = await fetch(`/api/whatsapp/flows/${id}/edges`);
 
       if (nodesRes.ok) setNodes(await nodesRes.json());
       if (edgesRes.ok) setEdges(await edgesRes.json());
@@ -107,7 +107,7 @@ export function FlowBuilder({ flowId, onBack, onSave }: FlowBuilderProps) {
     try {
       setSaving(true);
       const method = flowId ? "PUT" : "POST";
-      const url = flowId ? `/api/flows/${flowId}` : "/api/flows";
+      const url = flowId ? `/api/whatsapp/flows/${flowId}` : "/api/flows";
 
       const payload = {
         ...flow,

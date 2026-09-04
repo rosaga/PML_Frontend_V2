@@ -55,7 +55,7 @@ export function FlowsList({ onEditFlow }: FlowsListProps) {
     try {
       setLoading(true);
       const response = await fetch(
-        `/api/flows?organization_id=${organizationExternalId}&size=50&page=1`
+        `/api/whatsapp/flows?organization_id=${organizationExternalId}&size=50&page=1`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch flows");
@@ -75,7 +75,7 @@ export function FlowsList({ onEditFlow }: FlowsListProps) {
     if (!deleteFlowId) return;
 
     try {
-      const response = await fetch(`/api/flows/${deleteFlowId}`, {
+      const response = await fetch(`/api/whatsapp/flows/${deleteFlowId}`, {
         method: "DELETE",
       });
 

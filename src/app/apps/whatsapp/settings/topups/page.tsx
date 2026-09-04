@@ -78,7 +78,7 @@ export default function TopUpsPage() {
     try {
       if (!displayPhoneNumber || !config.apiKey) return;
 
-      const response = await fetch("/api/balance", {
+      const response = await fetch("/api/whatsapp/balance", {
         headers: {
           "x-display-phone-number": displayPhoneNumber,
           "x-api-key": config.apiKey,

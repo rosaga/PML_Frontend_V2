@@ -190,7 +190,7 @@ export async function createTemplate(
   template: Omit<Template, "id" | "status">
 ): Promise<ApiResponse<Template>> {
   try {
-    const response = await fetch("/api/whatsapp/templates", {
+    const response = await fetch("/api/whatsapp/whatsapp-internal/templates", {
       method: "POST",
       headers: buildHeaders(config, { includeWaba: true }),
       body: JSON.stringify({
@@ -226,7 +226,7 @@ export async function getTemplates(
     if (filters?.fields) params.set("fields", filters.fields);
     
     const queryString = params.toString();
-    const url = `/api/whatsapp/templates${queryString ? `?${queryString}` : ""}`;
+    const url = `/api/whatsapp/whatsapp-internal/templates${queryString ? `?${queryString}` : ""}`;
     
     const response = await fetch(url, {
       method: "GET",
@@ -249,7 +249,7 @@ export async function getTemplateByName(
   templateName: string
 ): Promise<ApiResponse<Template>> {
   try {
-    const response = await fetch(`/api/whatsapp/templates?name=${encodeURIComponent(templateName)}`, {
+    const response = await fetch(`/api/whatsapp/whatsapp-internal/templates?name=${encodeURIComponent(templateName)}`, {
       method: "GET",
       headers: buildHeaders(config, { includeWaba: true }),
     });
@@ -274,7 +274,7 @@ export async function getTemplateById(
   templateId: string
 ): Promise<ApiResponse<Template>> {
   try {
-    const response = await fetch(`/api/whatsapp/templates/${templateId}`, {
+    const response = await fetch(`/api/whatsapp/whatsapp-internal/templates/${templateId}`, {
       method: "GET",
       headers: buildHeaders(config, { includeWaba: true }),
     });
@@ -295,7 +295,7 @@ export async function updateTemplate(
   template: Omit<Template, "id" | "status">
 ): Promise<ApiResponse<Template>> {
   try {
-    const response = await fetch(`/api/whatsapp/templates/${templateId}`, {
+    const response = await fetch(`/api/whatsapp/whatsapp-internal/templates/${templateId}`, {
       method: "PUT",
       headers: buildHeaders(config, { includeWaba: true }),
       body: JSON.stringify(template),
@@ -316,7 +316,7 @@ export async function deleteTemplate(
   templateName: string
 ): Promise<ApiResponse<void>> {
   try {
-    const response = await fetch(`/api/whatsapp/templates/${templateName}`, {
+    const response = await fetch(`/api/whatsapp/whatsapp-internal/templates/${templateName}`, {
       method: "DELETE",
       headers: buildHeaders(config, { includeWaba: true }),
     });
