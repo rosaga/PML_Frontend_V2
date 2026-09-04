@@ -42,10 +42,23 @@ interface ConfigContextType {
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
-const STORAGE_KEY = "whatsapp-api-config";
-const ORG_ID_KEY = "whatsapp-organization-id";
-const ORG_EXTERNAL_ID_KEY = "whatsapp-organization-external-id";
-const DISPLAY_PHONE_NUMBER_KEY = "whatsapp-display-phone-number";
+// All cache keys are scoped to the PML org ID so switching accounts
+// never bleeds one org's WhatsApp config into another org's session.
+const STORAGE_KEY_PREFIX = "whatsapp-api-config";
+const ORG_EXTERNAL_ID_KEY_PREFIX = "whatsapp-external-id";
+const DISPLAY_PHONE_NUMBER_KEY_PREFIX = "whatsapp-phone";
+
+function orgKey(prefix: string, pmlOrgId: string) {
+  return `${prefix}-${pmlOrgId}`;
+}
+
+// Legacy non-scoped keys — cleared on first load to avoid stale cross-org data.
+const LEGACY_KEYS = [
+  "whatsapp-api-config",
+  "whatsapp-organization-id",
+  "whatsapp-organization-external-id",
+  "whatsapp-display-phone-number",
+];
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<ApiConfig>({
@@ -65,21 +78,31 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   const INACTIVITY_MS = 20 * 60 * 1000;
 
   const signOut = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(ORG_ID_KEY);
-    localStorage.removeItem(ORG_EXTERNAL_ID_KEY);
-    localStorage.removeItem(DISPLAY_PHONE_NUMBER_KEY);
-    // Redirect to PML sign-in page
+    const pmlOrgId = getPmlOrgId();
+    if (pmlOrgId) {
+      localStorage.removeItem(orgKey(STORAGE_KEY_PREFIX, pmlOrgId));
+      localStorage.removeItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId));
+      localStorage.removeItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId));
+    }
+    LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
     window.location.href = "/signin";
   }, []);
 
   useEffect(() => {
-    // Pull auth directly from PML's localStorage
-    const orgId = getPmlOrgId();
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const storedOrgId = localStorage.getItem(ORG_ID_KEY);
-    const storedOrgExternalId = localStorage.getItem(ORG_EXTERNAL_ID_KEY);
-    const storedDisplayPhone = localStorage.getItem(DISPLAY_PHONE_NUMBER_KEY);
+    // Clear legacy non-scoped keys on first load — prevents cross-org bleed.
+    LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
+
+    const pmlOrgId = getPmlOrgId();
+
+    if (!pmlOrgId) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Read config scoped to the current PML org — a different org will find nothing here.
+    const stored = localStorage.getItem(orgKey(STORAGE_KEY_PREFIX, pmlOrgId));
+    const storedOrgExternalId = localStorage.getItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId));
+    const storedDisplayPhone = localStorage.getItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId));
 
     if (stored) {
       try {
@@ -97,13 +120,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       setIsConfigured(false);
     }
 
-    const effectiveOrgId = storedOrgId || orgId;
-    if (effectiveOrgId) {
-      setOrganizationIdState(effectiveOrgId);
-      setPmlOrganizationIdState(effectiveOrgId);
-      if (!storedOrgId) localStorage.setItem(ORG_ID_KEY, effectiveOrgId);
-    }
-    if (orgId) setPmlOrganizationIdState(orgId);
+    setOrganizationIdState(pmlOrgId);
+    setPmlOrganizationIdState(pmlOrgId);
     if (storedOrgExternalId) setOrganizationExternalIdState(storedOrgExternalId);
     if (storedDisplayPhone) setDisplayPhoneNumberState(storedDisplayPhone);
 
@@ -159,6 +177,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
         if (cancelled) return;
 
+        const pmlOrgId = getPmlOrgId();
         const newConfig = {
           apiKey,
           wabaId: userData.whatsapp_business_account_id,
@@ -166,16 +185,16 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
           accessToken: account.AccessToken,
         };
         setConfigState(newConfig);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
+        if (pmlOrgId) localStorage.setItem(orgKey(STORAGE_KEY_PREFIX, pmlOrgId), JSON.stringify(newConfig));
         setIsConfigured(true);
 
         if (account.OrganizationExternalID) {
           setOrganizationExternalIdState(account.OrganizationExternalID);
-          localStorage.setItem(ORG_EXTERNAL_ID_KEY, account.OrganizationExternalID);
+          if (pmlOrgId) localStorage.setItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId), account.OrganizationExternalID);
         }
         if (account.DisplayPhoneNumber) {
           setDisplayPhoneNumberState(account.DisplayPhoneNumber);
-          localStorage.setItem(DISPLAY_PHONE_NUMBER_KEY, account.DisplayPhoneNumber);
+          if (pmlOrgId) localStorage.setItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId), account.DisplayPhoneNumber);
         }
       } catch {
         // Silently fail — user can configure manually in settings
@@ -188,26 +207,32 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   const setConfig = useCallback((newConfig: ApiConfig) => {
     setConfigState(newConfig);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
+    const pmlOrgId = getPmlOrgId();
+    if (pmlOrgId) localStorage.setItem(orgKey(STORAGE_KEY_PREFIX, pmlOrgId), JSON.stringify(newConfig));
     setIsConfigured(!!newConfig.apiKey && !!newConfig.wabaId && !!newConfig.phoneNumberId);
   }, []);
 
   const setOrganizationId = useCallback((id: string) => {
+    // org ID always comes from PML's selectedAccountId — no separate localStorage entry needed
     setOrganizationIdState(id);
-    if (id) localStorage.setItem(ORG_ID_KEY, id);
-    else localStorage.removeItem(ORG_ID_KEY);
   }, []);
 
   const setOrganizationExternalId = useCallback((id: string) => {
     setOrganizationExternalIdState(id);
-    if (id) localStorage.setItem(ORG_EXTERNAL_ID_KEY, id);
-    else localStorage.removeItem(ORG_EXTERNAL_ID_KEY);
+    const pmlOrgId = getPmlOrgId();
+    if (pmlOrgId) {
+      if (id) localStorage.setItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId), id);
+      else localStorage.removeItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId));
+    }
   }, []);
 
   const setDisplayPhoneNumber = useCallback((number: string) => {
     setDisplayPhoneNumberState(number);
-    if (number) localStorage.setItem(DISPLAY_PHONE_NUMBER_KEY, number);
-    else localStorage.removeItem(DISPLAY_PHONE_NUMBER_KEY);
+    const pmlOrgId = getPmlOrgId();
+    if (pmlOrgId) {
+      if (number) localStorage.setItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId), number);
+      else localStorage.removeItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId));
+    }
   }, []);
 
   const signalPmlUnauthorized = useCallback(() => {
