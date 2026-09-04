@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { Badge } from "@/components/whatsapp/ui/badge";
-import { CheckCircle, XCircle, Menu, ChevronDown, LayoutGrid, ArrowLeftRight, KeyRound, LogOut } from "lucide-react";
+import { CheckCircle, XCircle, Menu, ChevronDown, LayoutGrid, ArrowLeftRight, KeyRound, LogOut, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getToken, clearToken } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
@@ -20,7 +20,7 @@ interface HeaderProps {
 }
 
 export function Header({ title, description }: HeaderProps) {
-  const { isConfigured } = useConfig();
+  const { isConfigured, isVerifying, isLoading } = useConfig();
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userEmail, setUserEmail] = useState("");
@@ -82,10 +82,12 @@ export function Header({ title, description }: HeaderProps) {
 
         <div className="flex items-center gap-3">
           <Badge
-            variant={isConfigured ? "default" : "destructive"}
+            variant={isLoading || isVerifying ? "outline" : isConfigured ? "default" : "destructive"}
             className="flex items-center gap-1.5"
           >
-            {isConfigured ? (
+            {isLoading || isVerifying ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" />Connecting...</>
+            ) : isConfigured ? (
               <><CheckCircle className="h-3.5 w-3.5" />API Connected</>
             ) : (
               <><XCircle className="h-3.5 w-3.5" />Not Configured</>

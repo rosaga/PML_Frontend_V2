@@ -27,6 +27,7 @@ interface ConfigContextType {
   setConfig: (config: ApiConfig) => void;
   isConfigured: boolean;
   isLoading: boolean;
+  isVerifying: boolean;
   organizationId: string;
   setOrganizationId: (id: string) => void;
   pmlOrganizationId: string;
@@ -73,6 +74,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   const [displayPhoneNumber, setDisplayPhoneNumberState] = useState("");
   const [isConfigured, setIsConfigured] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [pmlTokenExpired, setPmlTokenExpired] = useState(false);
   const lastActivityRef = useRef<number>(Date.now());
   const INACTIVITY_MS = 20 * 60 * 1000;
@@ -153,6 +155,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     const autoVerify = async () => {
+      setIsVerifying(true);
       try {
         const peakResponse = await fetch(
           `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?organization_external_id=${organizationId.trim()}`,
@@ -198,6 +201,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         }
       } catch {
         // Silently fail — user can configure manually in settings
+      } finally {
+        if (!cancelled) setIsVerifying(false);
       }
     };
 
@@ -241,7 +246,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConfigContext.Provider value={{
-      config, setConfig, isConfigured, isLoading,
+      config, setConfig, isConfigured, isLoading, isVerifying,
       organizationId, setOrganizationId,
       pmlOrganizationId,
       organizationExternalId, setOrganizationExternalId,
