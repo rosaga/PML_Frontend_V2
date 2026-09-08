@@ -89,15 +89,11 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  html {
-    background-color: #ffffff;
-  }
-  body {
-    background-color: #ffffff;
+  .whatsapp-root {
     @apply bg-background text-foreground;
+  }
+  .whatsapp-root * {
+    @apply border-border outline-ring/50;
   }
 }
 
