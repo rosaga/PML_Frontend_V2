@@ -27,7 +27,7 @@ export function BalanceCard() {
         }
 
         setLoading(true);
-        const response = await fetch("/api/balance", {
+        const response = await fetch("/api/whatsapp/balance", {
           headers: {
             "x-display-phone-number": displayPhoneNumber,
             "x-api-key": config.apiKey,

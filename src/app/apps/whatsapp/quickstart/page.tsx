@@ -1,14 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Header } from "@/components/whatsapp/dashboard/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
 import { useConfig } from "@/lib/whatsapp/config-context";
-import { ApiConfigSettings } from "@/components/whatsapp/settings/api-config";
 import Link from "next/link";
+import { getToken } from "@/utils/auth";
+import { hasRole } from "@/utils/decodeToken";
 import {
   FileText,
-  Send,
   MessageSquare,
   ArrowRight,
   ExternalLink,
@@ -50,29 +51,36 @@ const features = [
 
 function DashboardContent() {
   const { isConfigured } = useConfig();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const token = getToken();
+    setIsAdmin(hasRole(token, "SuperAdmin"));
+  }, []);
 
   return (
     <div className="min-h-screen">
       <Header title="Dashboard" description="WhatsApp Business Messaging Platform" />
 
       <div className="p-6 space-y-6">
-        {!isConfigured && (
+        {isAdmin && (
           <Card className="border-warning/50 bg-warning/5">
             <CardContent className="flex items-center gap-4 pt-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/20">
                 <Settings className="h-5 w-5 text-warning" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium text-foreground">Configuration Required</h3>
+                <h3 className="font-medium text-foreground">
+                  {isConfigured ? "WhatsApp Configured" : "Configuration Required"}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Please configure your API settings to start using the platform.
+                  {isConfigured
+                    ? "As a Super Admin you can switch to a different organisation's WhatsApp account."
+                    : "Please configure your API settings to start using the platform."}
                 </p>
               </div>
-              <Link
-                href="/apps/whatsapp/settings"
-                className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              >
-                Configure Now
+              <Link href="/apps/whatsapp/settings/account" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                {isConfigured ? "Change Account" : "Configure Now"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </CardContent>

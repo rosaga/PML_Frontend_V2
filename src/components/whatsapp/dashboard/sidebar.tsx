@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/whatsapp/utils";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { useMessageNotification } from "@/lib/whatsapp/message-context";
+import { getToken } from "@/utils/auth";
+import { hasRole } from "@/utils/decodeToken";
 import {
   LayoutDashboard,
   FileText,
@@ -49,9 +51,9 @@ const chatbotSubItems = [
   { name: "Reporting", href: `${BASE}/automations/reporting`, icon: PieChart },
 ];
 
-const settingsSubItems = [
-  { name: "Account", href: `${BASE}/settings/account`, icon: Settings },
-  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap },
+const allSettingsSubItems = [
+  { name: "Account", href: `${BASE}/settings/account`, icon: Settings, adminOnly: true },
+  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap, adminOnly: false },
 ];
 
 export function Sidebar({
@@ -77,7 +79,16 @@ export function Sidebar({
   const [contactsOpen, setContactsOpen] = useState(isContactsActive);
   const [chatbotOpen, setChatbotOpen] = useState(isChatbotActive);
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  useEffect(() => {
+    const token = getToken();
+    setIsAdmin(hasRole(token, "SuperAdmin"));
+  }, []);
+
+  const settingsSubItems = allSettingsSubItems.filter(
+    (item) => !item.adminOnly || isAdmin
+  );
 
   useEffect(() => {
     if (isMobileOpen && onMobileClose) {

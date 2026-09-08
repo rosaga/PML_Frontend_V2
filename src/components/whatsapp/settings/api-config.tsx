@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/whatsapp/ui/button";
+import { Input } from "@/components/whatsapp/ui/input";
 import {
   Card,
   CardContent,
@@ -12,7 +13,9 @@ import {
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
-import { CheckCircle, Loader2, RefreshCw, Circle } from "lucide-react";
+import { getToken } from "@/utils/auth";
+import { hasRole } from "@/utils/decodeToken";
+import { CheckCircle, Loader2, RefreshCw, Circle, Search } from "lucide-react";
 
 interface AccountDetails {
   apiKey: string;
@@ -38,6 +41,8 @@ export function ApiConfigSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [overrideOrgId, setOverrideOrgId] = useState("");
 
   const handleVerifyAndSave = useCallback(async (orgId: string) => {
     if (!orgId.trim()) return;
@@ -89,6 +94,10 @@ export function ApiConfigSettings() {
       setLoading(false);
     }
   }, [setConfig, setSavedOrgId, setSavedOrgExternalId, setSavedDisplayPhoneNumber, toast]);
+
+  useEffect(() => {
+    setIsSuperAdmin(hasRole(getToken(), "SuperAdmin"));
+  }, []);
 
   // Populate account details from stored config on load
   useEffect(() => {
@@ -183,6 +192,33 @@ export function ApiConfigSettings() {
             {loading ? "Connecting..." : "Re-verify Connection"}
           </Button>
         </div>
+
+        {isSuperAdmin && (
+          <div className="pt-4 border-t border-border space-y-3">
+            <div>
+              <h4 className="text-sm font-medium text-foreground">Switch Organisation Account</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                As a Super Admin you can configure any organisation's WhatsApp account by entering their org UUID below.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Paste organisation UUID..."
+                value={overrideOrgId}
+                onChange={(e) => setOverrideOrgId(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <Button
+                onClick={() => handleVerifyAndSave(overrideOrgId)}
+                disabled={loading || !overrideOrgId.trim()}
+                className="flex items-center gap-2 shrink-0"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {loading ? "Verifying..." : "Verify & Apply"}
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

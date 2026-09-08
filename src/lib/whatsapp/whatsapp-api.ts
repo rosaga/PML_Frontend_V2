@@ -338,7 +338,7 @@ export async function sendMessage(
   options?: { wabaNumber?: string; campaignName?: string; organizationId?: string }
 ): Promise<ApiResponse<{ messages: Array<{ id: string }> }>> {
   try {
-    const response = await fetch("/api/whatsapp/messages", {
+    const response = await fetch("/api/whatsapp/whatsapp-internal/messages", {
       method: "POST",
       headers: buildHeaders(config, {
         includeWaba: false,
@@ -390,7 +390,7 @@ export async function sendBulkMessages(
 // User Functions
 export async function getUserDetails(config: ApiConfig): Promise<ApiResponse<UserDetails>> {
   try {
-    const response = await fetch("/api/whatsapp/user", {
+    const response = await fetch("/api/whatsapp/whatsapp-internal/user", {
       method: "GET",
       headers: buildHeaders(config, { includeWaba: true }),
     });
@@ -407,7 +407,7 @@ export async function getUserDetails(config: ApiConfig): Promise<ApiResponse<Use
 
 export async function getWabaInfo(config: ApiConfig): Promise<ApiResponse<Record<string, unknown>>> {
   try {
-    const response = await fetch("/api/whatsapp/user", {
+    const response = await fetch("/api/whatsapp/whatsapp-internal/user", {
       method: "GET",
       headers: buildHeaders(config, { includeWaba: true }),
     });
@@ -428,7 +428,7 @@ export async function setWebhook(
   webhookConfig: WebhookConfig
 ): Promise<ApiResponse<void>> {
   try {
-    const response = await fetch("/api/whatsapp/webhook", {
+    const response = await fetch("/api/whatsapp/whatsapp-internal/webhook", {
       method: "POST",
       headers: buildHeaders(config, { includeWaba: true }),
       body: JSON.stringify(webhookConfig),
@@ -446,7 +446,7 @@ export async function setWebhook(
 
 export async function getWebhook(config: ApiConfig): Promise<ApiResponse<WebhookConfig>> {
   try {
-    const response = await fetch("/api/whatsapp/webhook", {
+    const response = await fetch("/api/whatsapp/whatsapp-internal/webhook", {
       method: "GET",
       headers: buildHeaders(config, { includeWaba: true }),
     });
@@ -463,7 +463,7 @@ export async function getWebhook(config: ApiConfig): Promise<ApiResponse<Webhook
 
 export async function deleteWebhook(config: ApiConfig): Promise<ApiResponse<void>> {
   try {
-    const response = await fetch("/api/whatsapp/webhook", {
+    const response = await fetch("/api/whatsapp/whatsapp-internal/webhook", {
       method: "DELETE",
       headers: buildHeaders(config, { includeWaba: true }),
     });
@@ -487,7 +487,7 @@ export async function uploadMedia(
     // Read file as binary and send with metadata in query parameters
     const fileBuffer = await file.arrayBuffer();
     
-    const url = new URL("/api/whatsapp/media", window.location.origin);
+    const url = new URL("/api/whatsapp/whatsapp-internal/media", window.location.origin);
     url.searchParams.set("name", file.name);
     url.searchParams.set("type", file.type);
     url.searchParams.set("size", file.size.toString());
