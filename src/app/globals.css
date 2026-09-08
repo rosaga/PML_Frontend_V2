@@ -92,7 +92,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    background-color: #ffffff;
+  }
   body {
+    background-color: #ffffff;
     @apply bg-background text-foreground;
   }
 }
