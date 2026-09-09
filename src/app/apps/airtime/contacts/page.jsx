@@ -269,7 +269,7 @@ const Contacts = () => {
             </div>
 
             <div className="mt-4">
-              <div style={{ height: 350, width: "100%" }}>
+              <div style={{ width: "100%" }}>
 
                 {loading ? (
                   <p>Loading...</p>
@@ -277,6 +277,7 @@ const Contacts = () => {
                   <DataGrid
                     rows={rows}
                     columns={columns}
+                    autoHeight
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",
