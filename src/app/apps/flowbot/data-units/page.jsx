@@ -164,7 +164,7 @@ const DataUnits = () => {
   async function fetchBalance() {
     const balanceData = await GetBalance(org_id);
     if (balanceData) {
-      setBalances(balanceData.data.data);
+      setBalances(balanceData.data.data.filter(balance => balance?.service === "DATA"));
     }
   }
   const getRecharges = async () => {
