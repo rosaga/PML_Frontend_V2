@@ -137,7 +137,7 @@ const ContactSessionsModal = ({ closeModal, contact }) => {
         id="contact-sessions-modal"
         tabIndex="-1"
         aria-hidden="true"
-        className="fixed inset-0 z-40 flex justify-center items-center w-full h-screen bg-black bg-opacity-50"
+        className="fixed inset-0 z-40 flex justify-center items-center w-full h-screen bg-black/50"
       >
         <div className="relative p-4 w-full max-w-4xl max-h-full overflow-y-auto">
           <div className="relative bg-white rounded-lg shadow">

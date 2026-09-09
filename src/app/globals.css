@@ -89,12 +89,19 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
+  .whatsapp-root {
     @apply bg-background text-foreground;
   }
+  .whatsapp-root * {
+    @apply border-border outline-ring/50;
+  }
+}
+
+/* Force white canvas on html/body so MUI modal backdrops render correctly.
+   Unlayered rules win over @layer base, so this applies regardless of Tailwind Preflight. */
+html,
+body {
+  background-color: #ffffff;
 }
 
 /* PML legacy custom utilities */

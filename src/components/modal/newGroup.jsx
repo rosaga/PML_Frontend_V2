@@ -416,7 +416,7 @@ const NewGroupModal = ({ closeModal }) => {
       id="authentication-modal"
       tabIndex={-1}
       aria-hidden="true"
-      className="fixed inset-0 z-50 flex items-center justify-center w-full h-screen bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center w-full h-screen bg-black/50"
     >
       <div className="relative w-full max-w-2xl p-4 max-h-full">
         <div className="bg-white rounded-lg shadow dark:bg-gray-700 relative">
@@ -690,7 +690,7 @@ const NewGroupModal = ({ closeModal }) => {
               {isCsvCheckerOpen && (
                 <div
                   id="csv-checker-modal-overlay"
-                  className="fixed inset-0 z-[60] flex items-center justify-center w-full h-screen bg-black bg-opacity-50 p-4"
+                  className="fixed inset-0 z-[60] flex items-center justify-center w-full h-screen bg-black/50 p-4"
                   onClick={(e) => {
                     if (e.target.id === "csv-checker-modal-overlay")
                       closeCsvChecker();
