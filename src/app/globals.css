@@ -89,9 +89,14 @@
 }
 
 @layer base {
+  /* Restore Tailwind v3 Preflight border-color default so data/airtime/sms borders stay light gray */
+  *, ::before, ::after {
+    border-color: #e5e7eb;
+  }
   .whatsapp-root {
     @apply bg-background text-foreground;
   }
+  /* WhatsApp design system overrides the default border-color with its own token */
   .whatsapp-root * {
     @apply border-border outline-ring/50;
   }
