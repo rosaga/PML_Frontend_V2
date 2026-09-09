@@ -275,15 +275,16 @@ const Users = () => {
             </div>
 
             <div className="mt-4">
-              <div style={{ height: 350, width: "100%" }}>
+              <div style={{ width: "100%" }}>
                 {loading ? (
-                  <Box className="flex justify-center items-center h-full">
+                  <Box className="flex justify-center items-center" style={{ height: 200 }}>
                     <CircularProgress style={{ color: "#E88A17" }} />
                   </Box>
                 ) : (
                   <DataGrid
                     rows={rows}
                     columns={columns}
+                    autoHeight
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",
