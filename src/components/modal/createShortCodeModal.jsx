@@ -120,7 +120,7 @@ const CreateChannelModal = ({ closeModal }) => {
       id="authentication-modal"
       tabIndex="-1"
       aria-hidden="true"
-      className="fixed inset-0 z-50 flex justify-center items-center w-full h-screen bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex justify-center items-center w-full h-screen bg-black/50"
     >
       <div className="relative p-4 w-full max-w-2xl max-h-full">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">

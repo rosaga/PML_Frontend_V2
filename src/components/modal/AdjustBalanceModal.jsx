@@ -247,7 +247,7 @@ const AdjustBalanceModal = ({
       id="adjust-balance-modal"
       tabIndex={-1}
       aria-hidden="true"
-      className="fixed inset-0 z-50 flex items-center justify-center w-full h-screen bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center w-full h-screen bg-black/50"
     >
       <div className="relative w-full max-w-2xl p-4 max-h-full">
         <div className="bg-white rounded-lg shadow max-h-[90vh] overflow-y-auto">
