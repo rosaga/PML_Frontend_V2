@@ -1,4 +1,5 @@
 const INSUFFICIENT_BALANCE_ERROR = "insufficient balance";
+const INSUFFICIENT_AIRTIME_BALANCE_ERROR = "insufficient airtime balance";
 
 const getErrorMessages = (value, depth = 0) => {
   if (typeof value === "string") {
@@ -21,7 +22,12 @@ const getErrorMessages = (value, depth = 0) => {
 export const isInsufficientBalanceError = (error) => {
   const responseData = error?.response?.data ?? error?.data ?? error;
 
-  return getErrorMessages(responseData).some((message) =>
-    message.trim().toLowerCase().includes(INSUFFICIENT_BALANCE_ERROR)
-  );
+  return getErrorMessages(responseData).some((message) => {
+    const normalizedMessage = message.trim().toLowerCase();
+
+    return (
+      normalizedMessage.includes(INSUFFICIENT_BALANCE_ERROR) ||
+      normalizedMessage.includes(INSUFFICIENT_AIRTIME_BALANCE_ERROR)
+    );
+  });
 };

@@ -51,7 +51,7 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
     const config = await authHeaders();
   
     return axios
-      .post(sendRewardUrl, formValues.newReward, config)
+      .post(sendRewardUrl, { ...formValues.newReward, product: "VAS" }, config)
       .then((res) => {
       
         if (res.data && res.status === 200) {
@@ -158,6 +158,7 @@ export async function GetRewards(org_id,page,pageSize, searchParams) {
       const formData = new FormData();
       formData.append("contacts", selectedFile);
       formData.append("bundle", formValues.newReward.bundle);
+      formData.append("product", "VAS");
       formData.append("slogan", formValues.newReward.slogan);
       formData.append("postpay", String(formValues.newReward.postpay));
 
