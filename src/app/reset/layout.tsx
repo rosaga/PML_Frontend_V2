@@ -1,6 +1,7 @@
-// app/login/layout.tsx
+import { Inter } from "next/font/google";
+import "./reset.css";
 
-import "./reset.css"; // Import any specific styles for the login page
+const inter = Inter({ subsets: ["latin"] });
 
 export default function LoginLayout({
   children,
@@ -9,7 +10,7 @@ export default function LoginLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <div>
           {children}
         </div>

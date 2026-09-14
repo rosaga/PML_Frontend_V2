@@ -1,7 +1,10 @@
 'use client';
 
+import { Inter } from "next/font/google";
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
-import "./miniapp.css"; // Import any specific styles for the login page
+import "./miniapp.css";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export default function LoginLayout({
   children,
@@ -10,7 +13,7 @@ export default function LoginLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <SessionProviderWrapper>
           {children}
         </SessionProviderWrapper>

@@ -1,8 +1,9 @@
-// src/app/signin/layout.tsx  (Server Component — no 'use client')
-
+import { Inter } from "next/font/google";
 // @ts-ignore: allow side-effect CSS import in this layout file
 import "./signin.css";
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   manifest: "/manifest.json",
@@ -16,7 +17,7 @@ export default function LoginLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <SessionProviderWrapper>
           <div>{children}</div>
         </SessionProviderWrapper>

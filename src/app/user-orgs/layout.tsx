@@ -1,8 +1,11 @@
 'use client';
 
+import { Inter } from "next/font/google";
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
 // @ts-ignore: side-effect import of CSS file without type declarations
-import "./user-orgs.css"; // Import any specific styles for the login page
+import "./user-orgs.css";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export default function LoginLayout({
   children,
@@ -11,7 +14,7 @@ export default function LoginLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <SessionProviderWrapper>
           <div>
             {children}
