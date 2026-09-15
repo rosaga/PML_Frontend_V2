@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Calendar,
   Layers,
+  MousePointerClick,
 } from "lucide-react";
 
 interface Campaign {
@@ -44,6 +45,7 @@ interface Campaign {
   text_count: number;
   success_rate: number;
   failure_rate: number;
+  button_clicks_count: number;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -252,7 +254,7 @@ function CampaignDetailContent() {
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={Users}
             label="Total Messages"
@@ -273,6 +275,13 @@ function CampaignDetailContent() {
             value={campaign.failed_count.toLocaleString()}
             sub={pct(campaign.failed_count, campaign.total_messages) + " of total"}
             color="#ef4444"
+          />
+          <StatCard
+            icon={MousePointerClick}
+            label="Button Clicks"
+            value={(campaign.button_clicks_count ?? 0).toLocaleString()}
+            sub={pct(campaign.button_clicks_count ?? 0, campaign.total_messages) + " of total"}
+            color="#f59e0b"
           />
         </div>
 
