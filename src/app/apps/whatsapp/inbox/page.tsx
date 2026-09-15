@@ -113,10 +113,8 @@ function InboxContent() {
       if (msgs.length === 0) return;
 
       setConversations((prev) => {
-        const latestCache = readCache(organizationId);
-        const baseline = latestCache ? latestCache.conversations : prev;
         const map = new Map<string, Recipient>();
-        for (const r of baseline) map.set(r.mobile_no, { ...r });
+        for (const r of prev) map.set(r.mobile_no, { ...r });
         const newestAt = applyMessages(map, msgs, newestAtRef.current);
         newestAtRef.current = newestAt;
 

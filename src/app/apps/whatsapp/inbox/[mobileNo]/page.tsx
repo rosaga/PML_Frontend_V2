@@ -120,12 +120,32 @@ export default function InboxChatPage() {
   }, []);
 
   useEffect(() => {
-    setContactName("");
-    setContactNameLoaded(false);
     setUnreadCount(0);
     setFirstUnreadId(null);
     hasScrolledToUnreadRef.current = false;
     messageRefs.current = {};
+    // Hydrate name from cache immediately — avoids blank header on contacts already looked up
+    if (organizationId) {
+      try {
+        const cached = loadNames(organizationId);
+        if (mobileNo in cached) {
+          const c = cached[mobileNo];
+          const raw = [c.firstName, c.lastName].filter(Boolean).join(" ");
+          const name = (raw && c.maybe) ? `Maybe: ${raw}` : raw;
+          setContactName(name);
+          setContactNameLoaded(true);
+        } else {
+          setContactName("");
+          setContactNameLoaded(false);
+        }
+      } catch {
+        setContactName("");
+        setContactNameLoaded(false);
+      }
+    } else {
+      setContactName("");
+      setContactNameLoaded(false);
+    }
     if (!contextLoading && organizationId) fetchMessages();
   }, [mobileNo, contextLoading, organizationId, pmlOrganizationId]);
 
@@ -259,10 +279,7 @@ export default function InboxChatPage() {
         const msgs = await fetchInboxMessages(organizationId, { gt__created_at: cache.newestMessageAt });
         if (msgs.length > 0) {
           const map = new Map<string, Recipient>();
-          // Re-read cache fresh — it may have been patched while this fetch was in flight
-          const latestCache = readCache(organizationId);
-          const baseline = latestCache ? latestCache.conversations : hydrated;
-          for (const r of baseline) map.set(r.mobile_no, { ...r });
+          for (const r of hydrated) map.set(r.mobile_no, { ...r });
           const newestAt = applyMessages(map, msgs, sidebarNewestAtRef.current);
           sidebarNewestAtRef.current = newestAt;
           const sorted = hydrateNamesFromCache(sortedConversations(map), organizationId);
