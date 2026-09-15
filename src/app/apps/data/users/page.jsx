@@ -275,15 +275,16 @@ const Users = () => {
             </div>
 
             <div className="mt-4">
-              <div style={{ height: 350, width: "100%" }}>
+              <div style={{ width: "100%" }}>
                 {loading ? (
-                  <Box className="flex justify-center items-center h-full">
+                  <Box className="flex justify-center items-center" style={{ height: 200 }}>
                     <CircularProgress style={{ color: "#E88A17" }} />
                   </Box>
                 ) : (
                   <DataGrid
                     rows={rows}
                     columns={columns}
+                    autoHeight
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",
@@ -306,7 +307,7 @@ const Users = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-user-title"
-          className="fixed inset-0 z-50 flex h-screen w-full items-center justify-center bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex h-screen w-full items-center justify-center bg-black/50"
         >
           <div className="w-full max-w-md p-4">
             <div className="rounded-lg bg-white shadow">

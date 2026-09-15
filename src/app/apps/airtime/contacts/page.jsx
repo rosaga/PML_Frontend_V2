@@ -269,7 +269,7 @@ const Contacts = () => {
             </div>
 
             <div className="mt-4">
-              <div style={{ height: 350, width: "100%" }}>
+              <div style={{ width: "100%" }}>
 
                 {loading ? (
                   <p>Loading...</p>
@@ -277,6 +277,7 @@ const Contacts = () => {
                   <DataGrid
                     rows={rows}
                     columns={columns}
+                    autoHeight
                     sx={{
                       "& .MuiDataGrid-columnHeader": {
                         backgroundColor: "#F1F2F3",
@@ -300,7 +301,7 @@ const Contacts = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-user-title"
-          className="fixed inset-0 z-50 flex h-screen w-full items-center justify-center bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex h-screen w-full items-center justify-center bg-black/50"
         >
           <div className="w-full max-w-md p-4">
             <div className="rounded-lg bg-white shadow">

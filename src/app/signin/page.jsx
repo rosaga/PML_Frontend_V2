@@ -115,8 +115,8 @@ const SignIn = () => {
                     />
                     <IconButton
                       aria-label="toggle password visibility"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
                       onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                      sx={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", padding: "4px" }}
                     >
                       {isPasswordVisible ? (
                         <VisibilityIcon />

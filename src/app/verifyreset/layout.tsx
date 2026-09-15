@@ -1,7 +1,8 @@
-// app/verifyreset/layout.tsx
-
+import { Inter } from "next/font/google";
 // @ts-ignore: allow side-effect CSS import in this layout file
-import "./verify.css"; // Import any specific styles for the login page
+import "./verify.css";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   manifest: "/manifest.json",
@@ -15,7 +16,7 @@ export default function LoginLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <div>{children}</div>
       </body>
     </html>

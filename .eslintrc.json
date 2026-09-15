@@ -1,3 +1,16 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": [
+        "src/app/apps/whatsapp/**/*.tsx",
+        "src/app/apps/whatsapp/**/*.ts",
+        "src/components/whatsapp/**/*.tsx",
+        "src/components/whatsapp/**/*.ts"
+      ],
+      "rules": {
+        "react/no-unescaped-entities": "off"
+      }
+    }
+  ]
 }
