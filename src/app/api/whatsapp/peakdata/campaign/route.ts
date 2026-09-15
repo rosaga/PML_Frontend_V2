@@ -5,6 +5,21 @@ const DEFAULT_ORGANIZATION_ID = process.env.NEXT_PUBLIC_ORGANIZATION_ID || "5804
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.headers.get("x-auth-token") || "";
+    let email: string;
+    try {
+      const payload = JSON.parse(Buffer.from(token.split(".")[1] || "", "base64url").toString("utf8"));
+      if (typeof payload?.email !== "string" || !payload.email.trim()) {
+        throw new Error("Missing email claim");
+      }
+      email = payload.email;
+    } catch {
+      return NextResponse.json(
+        { error: { message: "An access token with an email is required" } },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
       group_id,
@@ -69,6 +84,9 @@ export async function POST(request: NextRequest) {
       parameter_mapping: parameter_mapping || {},
       organization_external_id: organization_external_id || ORGANIZATION_ID,
       organization_id: ORGANIZATION_ID,
+
+      created_by: email,
+      updated_by: email,
     };
 
     if (scheduled_at) campaignBody.scheduled_at = scheduled_at;
@@ -81,6 +99,7 @@ export async function POST(request: NextRequest) {
         headers: {
           accept: "application/json",
           "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(campaignBody),
       }
@@ -95,7 +114,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({
+      ...data,
+      created_by: email,
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: { message: error.message || "Internal server error" } },
