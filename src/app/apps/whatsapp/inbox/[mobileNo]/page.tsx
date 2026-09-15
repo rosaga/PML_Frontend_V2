@@ -238,10 +238,10 @@ export default function InboxChatPage() {
         if (name) {
           setRecipients((prev) => prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec));
           setFilteredRecipients((prev) => prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec));
+          // Only persist when a name was found — empty entries permanently block future retries
+          const stored = loadNames(organizationId);
+          persistNames(organizationId, { ...stored, [no]: { firstName, lastName, maybe } });
         }
-        // Always persist — marks contact as "already checked" for future navigations
-        const stored = loadNames(organizationId);
-        persistNames(organizationId, { ...stored, [no]: { firstName, lastName, maybe } });
       } catch { /* ignore */ }
     });
   }, [visibleSidebarKeys, pmlOrganizationId, organizationId]);
