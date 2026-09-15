@@ -65,7 +65,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { signOut } = useConfig();
-  const { hasNewMessage, setHasNewMessage } = useMessageNotification();
+  const { unreadCount } = useMessageNotification();
 
   const isMessagesActive = pathname.startsWith(`${BASE}/templates`) || pathname.startsWith(`${BASE}/send`) || pathname.startsWith(`${BASE}/campaigns`);
   const isContactsActive =
@@ -161,13 +161,6 @@ export function Sidebar({
         "lg:translate-x-0"
       )}
     >
-      <style>{`
-        @keyframes blink {
-          0%, 49% { opacity: 1; }
-          50%, 100% { opacity: 0.3; }
-        }
-        .animate-blink { animation: blink 1s infinite; }
-      `}</style>
       <div className="flex h-full flex-col">
         {/* Logo + close button */}
         <div className="flex items-center justify-between border-b border-border px-4 py-4">
@@ -194,15 +187,15 @@ export function Sidebar({
             <span>Quickstart</span>
           </Link>
 
-          <Link
-            href={`${BASE}/inbox`}
-            onClick={() => setHasNewMessage(false)}
-            className={navLinkClass(isInboxActive)}
-          >
+          <Link href={`${BASE}/inbox`} className={navLinkClass(isInboxActive)}>
             <Inbox className={cn("h-5 w-5 transition-colors", isInboxActive ? "text-white" : "group-hover:text-white")} />
             <div className="flex items-center gap-2">
               <span>Inbox</span>
-              {hasNewMessage && <div className="animate-blink h-2.5 w-2.5 rounded-full bg-green-500" />}
+              {unreadCount > 0 && (
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-green-500 text-white text-xs font-semibold flex items-center justify-center leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </div>
           </Link>
 

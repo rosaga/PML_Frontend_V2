@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
@@ -20,6 +20,7 @@ import {
   AlertDialogDescription,
 } from "@/components/whatsapp/ui/alert-dialog";
 import { useTags } from "@/lib/whatsapp/tags-context";
+import { useMessageNotification } from "@/lib/whatsapp/message-context";
 import { persistNames, loadNames } from "@/lib/whatsapp/name-cache";
 import {
   type Recipient,
@@ -42,6 +43,12 @@ interface Message {
   content?: string;
   created_at?: string;
   updated_at?: string;
+  read_at?: string;
+}
+
+// TODO: replace with your real handler for expired/invalid PML auth tokens
+function signalPmlUnauthorized() {
+  console.warn("PML auth token appears invalid (401) — wire up a real handler here.");
 }
 
 type ReadFilter = "all" | "unread" | "read";
@@ -50,7 +57,8 @@ export default function InboxChatPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { organizationId, pmlOrganizationId, isLoading: contextLoading, signalPmlUnauthorized } = useConfig();
+  const { organizationId, pmlOrganizationId, isLoading: contextLoading } = useConfig();
+  const { refreshUnreadCount } = useMessageNotification();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const mobileNo = decodeURIComponent(params.mobileNo as string);
@@ -74,6 +82,26 @@ export default function InboxChatPage() {
   const [messageText, setMessageText] = useState("");
   const [config, setConfig] = useState({ apiKey: "", wabaId: "", phoneNumberId: "" });
 
+  // ── Unread tracking for the open conversation ─────────────────────────────
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [firstUnreadId, setFirstUnreadId] = useState<string | null>(null);
+  const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const hasScrolledToUnreadRef = useRef(false);
+
+  const patchCacheAsRead = useCallback((targetMobile: string) => {
+    if (!organizationId) return;
+    const cache = readCache(organizationId);
+    if (!cache) return;
+    writeCache(organizationId, {
+      ...cache,
+      conversations: cache.conversations.map((r) =>
+        r.mobile_no === targetMobile
+          ? { ...r, has_unread: false, unread_message_ids: [] }
+          : r
+      ),
+    });
+  }, [organizationId]);
+
   const [mediaAttachment, setMediaAttachment] = useState<{ type: "image" | "document"; url: string; filename?: string } | null>(null);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -92,35 +120,31 @@ export default function InboxChatPage() {
   }, []);
 
   useEffect(() => {
-    // Hydrate from name cache immediately — avoids skeleton on contacts already looked up
-    if (organizationId) {
-      try {
-        const cached = loadNames(organizationId);
-        if (mobileNo in cached) {
-          const c = cached[mobileNo];
-          const raw = [c.firstName, c.lastName].filter(Boolean).join(" ");
-          const name = (raw && c.maybe) ? `Maybe: ${raw}` : raw;
-          setContactName(name);
-          setContactNameLoaded(true); // already fetched before — no skeleton needed
-        } else {
-          setContactName("");
-          setContactNameLoaded(false);
-        }
-      } catch {
-        setContactName("");
-        setContactNameLoaded(false);
-      }
-    } else {
-      setContactName("");
-      setContactNameLoaded(false);
-    }
+    setContactName("");
+    setContactNameLoaded(false);
+    setUnreadCount(0);
+    setFirstUnreadId(null);
+    hasScrolledToUnreadRef.current = false;
+    messageRefs.current = {};
     if (!contextLoading && organizationId) fetchMessages();
   }, [mobileNo, contextLoading, organizationId, pmlOrganizationId]);
 
+  // Scroll to first unread on open (WhatsApp-style), then smooth-scroll on new messages
+  useLayoutEffect(() => {
+    if (loading || messages.length === 0) return;
 
-  useEffect(() => {
+    if (!hasScrolledToUnreadRef.current) {
+      hasScrolledToUnreadRef.current = true;
+      if (firstUnreadId && messageRefs.current[firstUnreadId]) {
+        messageRefs.current[firstUnreadId]?.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
+        return;
+      }
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      return;
+    }
+
     scrollToBottom();
-  }, [messages]);
+  }, [messages, loading, firstUnreadId]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -137,6 +161,11 @@ export default function InboxChatPage() {
 
   // Reset sidebar to page 1 when filter, search, or page size changes
   useEffect(() => { setSidebarPage(1); }, [sidebarReadFilter, searchQuery, sidebarPageSize]);
+
+  const totalUnreadCount = useMemo(
+    () => recipients.reduce((sum, r) => sum + (r.unread_message_ids?.length || 0), 0),
+    [recipients],
+  );
 
   // Lazy-load names only for visible sidebar contacts
   const visibleSidebarKeys = (
@@ -195,7 +224,7 @@ export default function InboxChatPage() {
         persistNames(organizationId, { ...stored, [no]: { firstName, lastName, maybe } });
       } catch { /* ignore */ }
     });
-  }, [visibleSidebarKeys, pmlOrganizationId, organizationId, signalPmlUnauthorized]);
+  }, [visibleSidebarKeys, pmlOrganizationId, organizationId]);
 
   // Close attach menu when clicking outside
   useEffect(() => {
@@ -224,18 +253,23 @@ export default function InboxChatPage() {
       const hydrated = hydrateNamesFromCache(cache.conversations, organizationId);
       setRecipients(hydrated);
       setFilteredRecipients(hydrated);
+      refreshUnreadCount(organizationId);
       // Background: fetch new messages since cache was built
       try {
         const msgs = await fetchInboxMessages(organizationId, { gt__created_at: cache.newestMessageAt });
         if (msgs.length > 0) {
           const map = new Map<string, Recipient>();
-          for (const r of hydrated) map.set(r.mobile_no, { ...r });
+          // Re-read cache fresh — it may have been patched while this fetch was in flight
+          const latestCache = readCache(organizationId);
+          const baseline = latestCache ? latestCache.conversations : hydrated;
+          for (const r of baseline) map.set(r.mobile_no, { ...r });
           const newestAt = applyMessages(map, msgs, sidebarNewestAtRef.current);
           sidebarNewestAtRef.current = newestAt;
           const sorted = hydrateNamesFromCache(sortedConversations(map), organizationId);
           writeCache(organizationId, { conversations: sortedConversations(map), newestMessageAt: newestAt, cachedAt: Date.now() });
           setRecipients(sorted);
           setFilteredRecipients(sorted);
+          refreshUnreadCount(organizationId);
         }
       } catch { /* ignore */ }
     } else {
@@ -248,8 +282,9 @@ export default function InboxChatPage() {
       writeCache(organizationId, { conversations: sortedConversations(map), newestMessageAt: newestAt, cachedAt: Date.now() });
       setRecipients(sorted);
       setFilteredRecipients(sorted);
+      refreshUnreadCount(organizationId);
     }
-  }, [organizationId]);
+  }, [organizationId, refreshUnreadCount]);
 
   useEffect(() => {
     if (!contextLoading && organizationId) loadSidebarFromCache();
@@ -277,6 +312,11 @@ export default function InboxChatPage() {
         );
         setMessages(sorted);
         setLoading(false); // Show messages immediately — don't wait for contact name
+
+        // Figure out which inbound messages are still unread — drives header count and scroll
+        const unreadMsgs = sorted.filter((m) => m.direction === "INBOUND" && !m.read_at);
+        setUnreadCount(unreadMsgs.length);
+        setFirstUnreadId(unreadMsgs.length > 0 ? unreadMsgs[0].id : null);
 
         // Fetch contact name in background — skip if already in name cache
         const authToken = localStorage.getItem("token") ?? "";
@@ -315,27 +355,18 @@ export default function InboxChatPage() {
           setContactNameLoaded(true);
         }
 
-        // Mark unread inbound messages as read — fire-and-forget
-        const unreadIds = (data.data as any[])
-          .filter((m) => m.direction === "INBOUND" && !m.read_at)
-          .map((m) => m.id);
-        if (unreadIds.length > 0) {
-          const cache = readCache(organizationId);
-          if (cache) {
-            writeCache(organizationId, {
-              ...cache,
-              conversations: cache.conversations.map((r) =>
-                r.mobile_no === mobileNo
-                  ? { ...r, has_unread: false, unread_message_ids: [] }
-                  : r,
-              ),
-            });
-          }
+        // Mark unread inbound messages as read
+        if (unreadMsgs.length > 0) {
           fetch("/api/whatsapp/whatsapp-internal/messages/read", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message_ids: unreadIds }),
-          }).catch(() => { /* ignore */ });
+            body: JSON.stringify({ message_ids: unreadMsgs.map((m) => m.id) }),
+          })
+            .then(() => {
+              patchCacheAsRead(mobileNo);
+              refreshUnreadCount(organizationId);
+            })
+            .catch(() => { /* ignore */ });
         }
       }
     } catch {
@@ -481,6 +512,8 @@ export default function InboxChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message_ids: r.unread_message_ids }),
       });
+      patchCacheAsRead(targetMobile);
+      refreshUnreadCount(organizationId);
       setRecipients((prev) =>
         prev.map((rec) =>
           rec.mobile_no === targetMobile ? { ...rec, has_unread: false, unread_message_ids: [] } : rec,
@@ -508,7 +541,14 @@ export default function InboxChatPage() {
         {/* Conversations Sidebar */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-900 mb-3">Conversations</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="font-semibold text-gray-900">Conversations</h2>
+              {totalUnreadCount > 0 && (
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center leading-none">
+                  {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+                </span>
+              )}
+            </div>
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -560,8 +600,10 @@ export default function InboxChatPage() {
                     <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gray-200">
                       <User className="h-5 w-5 text-gray-500" />
                     </div>
-                    {recipient.has_unread && (
-                      <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-white" />
+                    {recipient.unread_message_ids.length > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-white text-white text-[10px] font-semibold flex items-center justify-center leading-none">
+                        {recipient.unread_message_ids.length > 99 ? "99+" : recipient.unread_message_ids.length}
+                      </span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">

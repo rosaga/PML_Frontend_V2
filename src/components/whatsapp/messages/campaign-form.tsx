@@ -16,6 +16,7 @@ import {
 } from "@/components/whatsapp/ui/select";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
+import { getTokenEmail } from "@/lib/whatsapp/auth";
 import { getTemplates, type Template } from "@/lib/whatsapp/whatsapp-api";
 import { Users, Upload, Send, Download, CheckCircle, PlusCircle, Loader2, Clock } from "lucide-react";
 import { Switch } from "@/components/whatsapp/ui/switch";
@@ -389,6 +390,14 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
     try {
       setLoading(true);
 
+      const token = localStorage.getItem("token") || "";
+      const createdBy = getTokenEmail(token);
+
+      if (!createdBy) {
+        signalPmlUnauthorized();
+        throw new Error("Unable to identify the campaign creator from the access token");
+      }
+
       // Validate required config fields
       if (!config.phoneNumberId || !config.apiKey || !displayPhoneNumber) {
         toast({
@@ -467,6 +476,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
         parameter_mapping: parameterMapping,
         organization_external_id: organizationExternalId,
         organization_id: organizationId,
+        created_by: createdBy,
         ...(scheduleEnabled && scheduledDate && scheduledTime && {
           scheduled_at: toIsoWithOffset(scheduledDate, scheduledTime),
           batch_size: batchSize || 100,
@@ -477,10 +487,12 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-auth-token": token,
         },
         body: JSON.stringify(campaignPayload),
       });
 
+      if (response.status === 401) { signalPmlUnauthorized(); return; }
       const data = await response.json();
 
       if (!response.ok) {

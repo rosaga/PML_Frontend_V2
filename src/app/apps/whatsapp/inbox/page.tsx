@@ -46,7 +46,7 @@ type ReadFilter = "all" | "unread" | "read";
 function InboxContent() {
   const router = useRouter();
   const { organizationId, pmlOrganizationId, isLoading: contextLoading, signalPmlUnauthorized } = useConfig();
-  const { hasNewMessage, setHasNewMessage } = useMessageNotification();
+  const { hasNewMessage, setHasNewMessage, refreshUnreadCount } = useMessageNotification();
   const { tags, getTagsForContact, addContactToTag, removeContactFromTag } = useTags();
 
   const [conversations, setConversations] = useState<Recipient[]>([]);
@@ -61,6 +61,20 @@ function InboxContent() {
   const [tagDialogMobile, setTagDialogMobile] = useState<string | null>(null);
 
   const nameFetchedRef = useRef<Set<string>>(new Set());
+
+  const patchCacheAsRead = useCallback((targetMobile: string) => {
+    if (!organizationId) return;
+    const cache = readCache(organizationId);
+    if (!cache) return;
+    writeCache(organizationId, {
+      ...cache,
+      conversations: cache.conversations.map((r) =>
+        r.mobile_no === targetMobile
+          ? { ...r, has_unread: false, unread_message_ids: [] }
+          : r
+      ),
+    });
+  }, [organizationId]);
   const newestAtRef    = useRef<string>("");
 
   // ── Derived counts — exact, from the full conversation list ──────────────
@@ -84,10 +98,11 @@ function InboxContent() {
       const sorted = sortedConversations(map);
       writeCache(organizationId, { conversations: sorted, newestMessageAt: newestAt, cachedAt: Date.now() });
       setConversations(hydrateNamesFromCache(sorted, organizationId));
+      refreshUnreadCount(organizationId);
     } catch { /* ignore */ } finally {
       setLoading(false);
     }
-  }, [organizationId]);
+  }, [organizationId, refreshUnreadCount]);
 
   // ── Incremental update: fetch only messages newer than last seen ──────────
   const incrementalUpdate = useCallback(async () => {
@@ -98,8 +113,10 @@ function InboxContent() {
       if (msgs.length === 0) return;
 
       setConversations((prev) => {
+        const latestCache = readCache(organizationId);
+        const baseline = latestCache ? latestCache.conversations : prev;
         const map = new Map<string, Recipient>();
-        for (const r of prev) map.set(r.mobile_no, { ...r });
+        for (const r of baseline) map.set(r.mobile_no, { ...r });
         const newestAt = applyMessages(map, msgs, newestAtRef.current);
         newestAtRef.current = newestAt;
 
@@ -107,10 +124,11 @@ function InboxContent() {
         writeCache(organizationId, { conversations: sorted, newestMessageAt: newestAt, cachedAt: Date.now() });
         return hydrateNamesFromCache(sorted, organizationId);
       });
+      refreshUnreadCount(organizationId);
     } catch { /* ignore */ } finally {
       setRefreshing(false);
     }
-  }, [organizationId]);
+  }, [organizationId, refreshUnreadCount]);
 
   // ── Bootstrap: cache hit → show immediately + background refresh ──────────
   useEffect(() => {
@@ -140,34 +158,20 @@ function InboxContent() {
   const markAsRead = useCallback((mobileNo: string) => {
     const conv = conversations.find((r) => r.mobile_no === mobileNo);
     if (!conv?.has_unread || conv.unread_message_ids.length === 0) return;
-    const ids = conv.unread_message_ids;
 
     // Write cache synchronously NOW — before router.push can navigate away
-    // (setConversations is async/batched and may not run before unmount)
-    const cache = readCache(organizationId);
-    if (cache) {
-      writeCache(organizationId, {
-        ...cache,
-        conversations: cache.conversations.map((r) =>
-          r.mobile_no === mobileNo ? { ...r, has_unread: false, unread_message_ids: [] } : r,
-        ),
-      });
-    }
+    patchCacheAsRead(mobileNo);
+    refreshUnreadCount(organizationId);
 
-    // Optimistic UI update
+    // Also update local state so the badge/row clears immediately
     setConversations((prev) =>
       prev.map((r) =>
-        r.mobile_no === mobileNo ? { ...r, has_unread: false, unread_message_ids: [] } : r,
+        r.mobile_no === mobileNo
+          ? { ...r, has_unread: false, unread_message_ids: [] }
+          : r,
       ),
     );
-
-    // Fire-and-forget the server call
-    fetch("/api/whatsapp/whatsapp-internal/messages/read", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message_ids: ids }),
-    }).catch(() => { /* ignore */ });
-  }, [conversations, organizationId]);
+  }, [conversations, organizationId, refreshUnreadCount, patchCacheAsRead]);
 
   const handleRecipientClick = (mobileNo: string) => {
     markAsRead(mobileNo);
@@ -391,8 +395,10 @@ function InboxContent() {
                             <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 bg-gray-200">
                               <User className="h-5 w-5 text-gray-500" />
                             </div>
-                            {unread && (
-                              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-white" />
+                            {recipient.unread_message_ids.length > 0 && (
+                              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-white text-white text-[10px] font-semibold flex items-center justify-center leading-none">
+                                {recipient.unread_message_ids.length > 99 ? "99+" : recipient.unread_message_ids.length}
+                              </span>
                             )}
                           </div>
                         </TableCell>
