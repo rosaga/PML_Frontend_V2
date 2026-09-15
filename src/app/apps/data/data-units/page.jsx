@@ -174,6 +174,7 @@ const DataUnits = () => {
     if (res?.data?.data) {
       const now = new Date();
       const activeOnly = res.data.data.filter(b => {
+        if (b?.service !== "DATA") return false;
         const v = b?.expires_on;
         if (!v) return true;
         const ts = new Date(typeof v === 'string' ? v.replace(' ', 'T') : v);

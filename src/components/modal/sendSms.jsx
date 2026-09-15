@@ -85,7 +85,7 @@ const SendSmsModal = ({ closeModal }) => {
     setIsButtonClicked(true);
 
     const originalContent = state.content;
-    const formattedContent = originalContent.replace(/\n/g, "\\n");
+    const formattedContent = originalContent.trimStart();
 
     const newSms = {
       destination: state.destination,
