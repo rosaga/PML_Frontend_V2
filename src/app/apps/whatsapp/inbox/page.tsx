@@ -113,10 +113,8 @@ function InboxContent() {
       if (msgs.length === 0) return;
 
       setConversations((prev) => {
-        const latestCache = readCache(organizationId);
-        const baseline = latestCache ? latestCache.conversations : prev;
         const map = new Map<string, Recipient>();
-        for (const r of baseline) map.set(r.mobile_no, { ...r });
+        for (const r of prev) map.set(r.mobile_no, { ...r });
         const newestAt = applyMessages(map, msgs, newestAtRef.current);
         newestAtRef.current = newestAt;
 
@@ -259,10 +257,11 @@ function InboxContent() {
           setConversations((prev) =>
             prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec),
           );
+          // Only persist when a name was actually found — persisting empty entries
+          // permanently blocks future retries for contacts not yet in PML
+          const stored = loadNames(organizationId);
+          persistNames(organizationId, { ...stored, [no]: { firstName, lastName, maybe } });
         }
-        // Always persist — marks this contact as "already checked" so future navigations skip the API
-        const stored = loadNames(organizationId);
-        persistNames(organizationId, { ...stored, [no]: { firstName, lastName, maybe } });
       } catch { /* ignore */ }
     });
   }, [pagedKeys, loading, pmlOrganizationId, organizationId, conversations, signalPmlUnauthorized]);

@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
           data.data.find((c: any) => c.status === "ACTIVE") ??
           data.data[0];
       }
-      // Cache both found contacts and genuine 404s (contact not found is stable)
-      cachePut(cKey, contact);
+      // Only cache found contacts — not-found results vary by number format so don't cache nulls
+      if (contact) cachePut(cKey, contact);
       return NextResponse.json(contact, { status: contact ? res.status : 404 });
     } catch (err: any) {
       return NextResponse.json({ error: err.message }, { status: 500 });
