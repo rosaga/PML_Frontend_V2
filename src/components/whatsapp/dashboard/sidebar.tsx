@@ -37,6 +37,7 @@ const messagesSubItems = [
   { name: "Templates", href: `${BASE}/templates`, icon: FileText },
   { name: "Send Message", href: `${BASE}/send`, icon: Send },
   { name: "Campaigns", href: `${BASE}/campaigns`, icon: Megaphone },
+  { name: "Meta Flows", href: `${BASE}/meta-flows`, icon: GitBranch },
   { name: "Reports", href: `${BASE}/messages`, icon: ClipboardList },
 ];
 
@@ -67,7 +68,7 @@ export function Sidebar({
   const { signOut } = useConfig();
   const { unreadCount } = useMessageNotification();
 
-  const isMessagesActive = pathname.startsWith(`${BASE}/templates`) || pathname.startsWith(`${BASE}/send`) || pathname.startsWith(`${BASE}/campaigns`);
+  const isMessagesActive = pathname.startsWith(`${BASE}/templates`) || pathname.startsWith(`${BASE}/send`) || pathname.startsWith(`${BASE}/campaigns`) || pathname.startsWith(`${BASE}/meta-flows`);
   const isContactsActive =
     pathname.startsWith(`${BASE}/contacts`) ||
     pathname.startsWith(`${BASE}/tags`) ||
