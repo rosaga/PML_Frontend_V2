@@ -35,18 +35,26 @@ import {
   type MessagePayload,
   type Template,
 } from "@/lib/whatsapp/whatsapp-api";
-import { Send, Loader2, ImageIcon, FileText, File, MessageSquare, X, Upload, Info } from "lucide-react";
+import { Send, Loader2, ImageIcon, FileText, File, MessageSquare, X, Upload, Info, GitBranch } from "lucide-react";
 import { WhatsAppPreview } from "@/components/whatsapp/templates/whatsapp-preview";
+import { getMetaFlows, sendMetaFlow, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 
-type MessageType = "text" | "image" | "document" | "template";
+type MessageType = "text" | "image" | "document" | "template" | "meta-flow";
+type TemplateMediaHeaderFormat = "IMAGE" | "VIDEO" | "DOCUMENT";
+
+function isTemplateMediaHeaderFormat(format?: string): format is TemplateMediaHeaderFormat {
+  return format === "IMAGE" || format === "VIDEO" || format === "DOCUMENT";
+}
 
 export function SendMessageForm() {
-  const { config, isConfigured, organizationId, isLoading: contextLoading } = useConfig();
+  const { config, isConfigured, organizationId, organizationExternalId, isLoading: contextLoading } = useConfig();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [metaFlows, setMetaFlows] = useState<MetaFlow[]>([]);
   const [messageType, setMessageType] = useState<MessageType>("text");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedMetaFlow, setSelectedMetaFlow] = useState<MetaFlow | null>(null);
   
   const [formData, setFormData] = useState({
     recipient: "",
@@ -69,6 +77,10 @@ export function SendMessageForm() {
     templateVideoUrl: "",
     // Template document header
     templateDocumentUrl: "",
+    // Meta Flow message
+    metaFlowId: "",
+    metaFlowBodyText: "",
+    metaFlowCta: "",
   });
 
   const [templateImageUploading, setTemplateImageUploading] = useState(false);
@@ -176,9 +188,22 @@ export function SendMessageForm() {
     }
   }, [config, isConfigured]);
 
+  const fetchMetaFlows = useCallback(async () => {
+    const effectiveOrganizationId = organizationExternalId || organizationId;
+    if (!effectiveOrganizationId) return;
+    const result = await getMetaFlows(effectiveOrganizationId);
+    if (result.success && result.data) {
+      setMetaFlows(result.data.data.filter((flow) => {
+        const status = flow.status?.toUpperCase();
+        return flow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
+      }));
+    }
+  }, [organizationExternalId, organizationId]);
+
   useEffect(() => {
     fetchTemplates();
-  }, [fetchTemplates]);
+    fetchMetaFlows();
+  }, [fetchTemplates, fetchMetaFlows]);
 
   // Handle template selection - auto-set language and parameters
   const handleTemplateSelect = (templateName: string) => {
@@ -212,6 +237,17 @@ export function SendMessageForm() {
     }
   };
 
+  const handleMetaFlowSelect = (flowId: string) => {
+    const flow = metaFlows.find((item) => item.flow_id === flowId);
+    setSelectedMetaFlow(flow || null);
+    setFormData((prev) => ({
+      ...prev,
+      metaFlowId: flow?.flow_id || "",
+      metaFlowCta: flow?.default_cta || "",
+      metaFlowBodyText: flow?.body_text || prev.metaFlowBodyText,
+    }));
+  };
+
   const handleSend = async () => {
     if (contextLoading) {
       toast({
@@ -221,7 +257,9 @@ export function SendMessageForm() {
       return;
     }
 
-    if (!organizationId) {
+    const effectiveOrganizationId = organizationExternalId || organizationId;
+
+    if (!effectiveOrganizationId) {
       toast({
         title: "Configuration Required",
         description: "Organization ID not found. Please configure it in Settings.",
@@ -230,7 +268,7 @@ export function SendMessageForm() {
       return;
     }
 
-    if (!isConfigured) {
+    if (!isConfigured && messageType !== "meta-flow") {
       toast({
         title: "Configuration Required",
         description: "Please configure your API settings first.",
@@ -249,6 +287,53 @@ export function SendMessageForm() {
     }
 
     setLoading(true);
+
+    if (messageType === "meta-flow") {
+      if (!formData.metaFlowId) {
+        toast({ title: "Validation Error", description: "Please select a Meta Flow.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      if (!formData.metaFlowBodyText) {
+        toast({ title: "Validation Error", description: "Message body is required.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      if (!formData.metaFlowCta) {
+        toast({ title: "Validation Error", description: "Flow CTA is required.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      if (!selectedMetaFlow?.default_screen) {
+        toast({ title: "Validation Error", description: "Selected Meta Flow is missing a default screen.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      if (!config.phoneNumberId) {
+        toast({ title: "Configuration Required", description: "Phone Number ID not found. Please configure it in Settings.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      const result = await sendMetaFlow({
+        organization_id: effectiveOrganizationId,
+        to: formData.recipient,
+        phone_number_id: config.phoneNumberId,
+        meta_flow_id: formData.metaFlowId,
+        body_text: formData.metaFlowBodyText,
+        flow_cta: formData.metaFlowCta,
+        screen: selectedMetaFlow.default_screen,
+      });
+      setLoading(false);
+
+      if (result.success) {
+        toast({ title: "Success", description: "Meta Flow dispatch accepted." });
+        setFormData((prev) => ({ ...prev, metaFlowBodyText: "" }));
+      } else {
+        toast({ title: "Error", description: result.error || "Failed to send Meta Flow.", variant: "destructive" });
+      }
+      return;
+    }
 
     let message: MessagePayload;
 
@@ -409,7 +494,7 @@ export function SendMessageForm() {
         return;
     }
 
-    const result = await sendMessage(config, message, { organizationId });
+    const result = await sendMessage(config, message, { organizationId: effectiveOrganizationId });
     setLoading(false);
 
     if (result.success) {
@@ -466,7 +551,7 @@ export function SendMessageForm() {
 
         {/* Message Type Tabs */}
         <Tabs value={messageType} onValueChange={(v) => setMessageType(v as MessageType)}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="text" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Text</span>
@@ -482,6 +567,10 @@ export function SendMessageForm() {
             <TabsTrigger value="template" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Template</span>
+            </TabsTrigger>
+            <TabsTrigger value="meta-flow" className="flex items-center gap-2">
+              <GitBranch className="h-4 w-4" />
+              <span className="hidden sm:inline">Meta Flows</span>
             </TabsTrigger>
           </TabsList>
 
@@ -762,10 +851,67 @@ export function SendMessageForm() {
               </div>
             )}
           </TabsContent>
+          {/* Meta Flow Message */}
+          <TabsContent value="meta-flow" className="space-y-4 pt-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Meta Flow</Label>
+                <Select
+                  value={formData.metaFlowId}
+                  onValueChange={handleMetaFlowSelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a Meta Flow" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {metaFlows.map((flow) => (
+                      <SelectItem key={flow.id} value={flow.flow_id}>
+                        {flow.flow_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {metaFlows.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No active Meta Flows available.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="metaFlowCta">Flow CTA</Label>
+                <Input
+                  id="metaFlowCta"
+                  placeholder="OPEN FORM"
+                  value={formData.metaFlowCta}
+                  onChange={(e) => setFormData({ ...formData, metaFlowCta: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {selectedMetaFlow && (
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+                <div className="font-medium">{selectedMetaFlow.flow_name}</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Flow ID: {selectedMetaFlow.flow_id} - Default screen: {selectedMetaFlow.default_screen}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="metaFlowBodyText">Message Body</Label>
+              <Textarea
+                id="metaFlowBodyText"
+                placeholder="Hi Peak Customer, please fill this form!"
+                value={formData.metaFlowBodyText}
+                onChange={(e) => setFormData({ ...formData, metaFlowBodyText: e.target.value })}
+                rows={4}
+              />
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* Send Button */}
-        <Button onClick={handleSend} disabled={loading || !isConfigured || contextLoading} className="w-full">
+        <Button onClick={handleSend} disabled={loading || (!isConfigured && messageType !== "meta-flow") || contextLoading} className="w-full">
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

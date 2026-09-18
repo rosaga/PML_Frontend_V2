@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useToast } from "@/hooks/whatsapp/use-toast";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Input } from "@/components/whatsapp/ui/input";
 import { Label } from "@/components/whatsapp/ui/label";
@@ -15,15 +14,16 @@ import {
 } from "@/components/whatsapp/ui/select";
 import { Trash2, Plus, X } from "lucide-react";
 import type { FlowNode } from "./flow-types";
+import type { MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 
 interface NodeEditorProps {
   node: FlowNode | null;
+  metaFlows?: MetaFlow[];
   onSave?: (node: FlowNode) => void;
   onDelete?: () => void;
 }
 
-export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
-  const { toast } = useToast();
+export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEditorProps) {
   const [formData, setFormData] = React.useState<FlowNode>(
     node || {
       name: "New Node",
@@ -45,6 +45,49 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
   const updateField = (updated: FlowNode) => {
     setFormData(updated);
     onSave?.(updated);
+  };
+
+  const handleTypeChange = (value: FlowNode["node_type"]) => {
+    if (value === "META_FLOW") {
+      updateField({
+        ...formData,
+        node_type: value,
+        backend_enabled: false,
+        exit_enabled: true,
+        extra_data: {
+          position: formData.extra_data?.position,
+          meta_flow_id: formData.extra_data?.meta_flow_id,
+          meta_flow_name: formData.extra_data?.meta_flow_name,
+        },
+      });
+      return;
+    }
+    updateField({
+      ...formData,
+      node_type: value,
+      extra_data: {
+        ...formData.extra_data,
+        meta_flow_id: undefined,
+        meta_flow_name: undefined,
+      },
+    });
+  };
+
+  const handleMetaFlowSelect = (metaFlowId: string) => {
+    const selectedMetaFlow = metaFlows.find((flow) => flow.flow_id === metaFlowId);
+    updateField({
+      ...formData,
+      name: selectedMetaFlow?.flow_name || formData.name,
+      header_text_template: {
+        ...formData.header_text_template,
+        text: selectedMetaFlow ? `Open ${selectedMetaFlow.flow_name}` : formData.header_text_template.text,
+      },
+      extra_data: {
+        ...formData.extra_data,
+        meta_flow_id: metaFlowId,
+        meta_flow_name: selectedMetaFlow?.flow_name || "",
+      },
+    });
   };
 
   type Option = { value: string; target_index: number | null };
@@ -79,9 +122,7 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
         <Label>Node Type</Label>
         <Select
           value={formData.node_type}
-          onValueChange={(value) =>
-            updateField({ ...formData, node_type: value as FlowNode["node_type"] })
-          }
+          onValueChange={(value) => handleTypeChange(value as FlowNode["node_type"])}
         >
           <SelectTrigger>
             <SelectValue />
@@ -92,25 +133,53 @@ export function NodeEditor({ node, onSave, onDelete }: NodeEditorProps) {
             <SelectItem value="ROUTE">Route</SelectItem>
             <SelectItem value="NUMBER">Number</SelectItem>
             <SelectItem value="BUTTONS">Buttons</SelectItem>
+            <SelectItem value="META_FLOW">Meta Flow</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Message Text */}
-      <div className="space-y-1.5">
-        <Label>Message Text</Label>
-        <Textarea
-          value={formData.header_text_template.text}
-          onChange={(e) =>
-            updateField({
-              ...formData,
-              header_text_template: { ...formData.header_text_template, text: e.target.value },
-            })
-          }
-          placeholder="Enter message text"
-          rows={3}
-        />
-      </div>
+      {/* META_FLOW: flow selector */}
+      {formData.node_type === "META_FLOW" && (
+        <div className="space-y-1.5">
+          <Label>Meta Flow</Label>
+          <Select
+            value={formData.extra_data?.meta_flow_id || ""}
+            onValueChange={handleMetaFlowSelect}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a Meta Flow" />
+            </SelectTrigger>
+            <SelectContent>
+              {metaFlows.filter((flow) => flow.flow_id).map((flow) => (
+                <SelectItem key={flow.id} value={flow.flow_id}>
+                  {flow.flow_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {metaFlows.length === 0 && (
+            <p className="text-xs text-muted-foreground">No live Meta Flows available.</p>
+          )}
+        </div>
+      )}
+
+      {/* Message Text — hidden for META_FLOW nodes */}
+      {formData.node_type !== "META_FLOW" && (
+        <div className="space-y-1.5">
+          <Label>Message Text</Label>
+          <Textarea
+            value={formData.header_text_template.text}
+            onChange={(e) =>
+              updateField({
+                ...formData,
+                header_text_template: { ...formData.header_text_template, text: e.target.value },
+              })
+            }
+            placeholder="Enter message text"
+            rows={3}
+          />
+        </div>
+      )}
 
       {/* LIST / ROUTE / BUTTONS: shared options editor */}
       {(formData.node_type === "LIST" || formData.node_type === "ROUTE" || formData.node_type === "BUTTONS") && (
