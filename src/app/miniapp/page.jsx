@@ -100,7 +100,7 @@ const MiniApp = () => {
   const [navigating, setNavigating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState("");
 
   const router = useRouter();
 
@@ -112,7 +112,7 @@ const MiniApp = () => {
     const token = getToken();
 
     setIsAdmin(hasRole(token, "SuperAdmin"));
-    setOrganizationId(orgId || "");
+    setSelectedAccountId(orgId || "");
 
     if (orgName) {
       setOrganizationName(orgName);
@@ -200,7 +200,7 @@ const MiniApp = () => {
 
   const servicesForOrganization = services.filter((service) => {
     if (!service.restrictedToOrganizationId) return true;
-    return organizationId === service.restrictedToOrganizationId;
+    return selectedAccountId === service.restrictedToOrganizationId;
   });
 
   const visibleServices = isAdmin ? [...servicesForOrganization, adminService] : servicesForOrganization;
