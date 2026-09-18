@@ -7,6 +7,8 @@ import { hasRole } from '../../utils/decodeToken';
 import { GetSenderId } from "../api/actions/senderId/senderId";
 import "./miniapp.css";
 
+const TECH_PROVIDER_ORGANIZATION_ID = "58045135-f272-4879-be0f-2559d836fdba";
+
 const services = [
   {
     id: "data",
@@ -64,6 +66,19 @@ const services = [
       </svg>
     ),
   },
+  {
+    id: "tech-provider",
+    title: "Tech Provider",
+    desc: "Connect WhatsApp Business for provider tools",
+    iconBg: "#E7F8EF",
+    restrictedToOrganizationId: TECH_PROVIDER_ORGANIZATION_ID,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#25D366" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        <path d="M9.5 8.5c.35 2.2 1.8 3.65 4 4" />
+      </svg>
+    ),
+  },
 ];
 
 const adminService = {
@@ -85,6 +100,7 @@ const MiniApp = () => {
   const [navigating, setNavigating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
 
   const router = useRouter();
 
@@ -96,6 +112,7 @@ const MiniApp = () => {
     const token = getToken();
 
     setIsAdmin(hasRole(token, "SuperAdmin"));
+    setOrganizationId(orgId || "");
 
     if (orgName) {
       setOrganizationName(orgName);
@@ -153,6 +170,10 @@ const MiniApp = () => {
           break;
         }
 
+        case "tech-provider":
+          router.push("/apps/tech-provider");
+          break;
+
         case "admin":
           if (isAdmin) router.push("/apps/admin/dashboard");
           break;
@@ -177,7 +198,12 @@ const MiniApp = () => {
     router.back();
   };
 
-  const visibleServices = isAdmin ? [...services, adminService] : services;
+  const servicesForOrganization = services.filter((service) => {
+    if (!service.restrictedToOrganizationId) return true;
+    return organizationId === service.restrictedToOrganizationId;
+  });
+
+  const visibleServices = isAdmin ? [...servicesForOrganization, adminService] : servicesForOrganization;
 
   return (
     <div className="miniapp-page">
