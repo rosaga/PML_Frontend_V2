@@ -15,23 +15,27 @@ interface FlowNodeData {
   type: string;
   headerText?: string;
   options?: Option[];
+  metaFlowId?: string;
+  metaFlowName?: string;
   selected?: boolean;
   onDelete?: () => void;
   onClick?: () => void;
 }
 
 const NODE_COLORS: Record<string, { card: string; badge: string }> = {
-  TEXT:    { card: "bg-blue-50 border-blue-200",    badge: "bg-blue-100 text-blue-800" },
-  LIST:    { card: "bg-purple-50 border-purple-200", badge: "bg-purple-100 text-purple-800" },
-  ROUTE:   { card: "bg-orange-50 border-orange-200", badge: "bg-orange-100 text-orange-800" },
-  NUMBER:  { card: "bg-yellow-50 border-yellow-200", badge: "bg-yellow-100 text-yellow-800" },
-  BUTTONS: { card: "bg-green-50 border-green-200",   badge: "bg-green-100 text-green-800" },
+  TEXT:      { card: "bg-blue-50 border-blue-200",    badge: "bg-blue-100 text-blue-800" },
+  LIST:      { card: "bg-purple-50 border-purple-200", badge: "bg-purple-100 text-purple-800" },
+  ROUTE:     { card: "bg-orange-50 border-orange-200", badge: "bg-orange-100 text-orange-800" },
+  NUMBER:    { card: "bg-yellow-50 border-yellow-200", badge: "bg-yellow-100 text-yellow-800" },
+  BUTTONS:   { card: "bg-green-50 border-green-200",   badge: "bg-green-100 text-green-800" },
+  META_FLOW: { card: "bg-cyan-50 border-cyan-200",     badge: "bg-cyan-100 text-cyan-800" },
 };
 
 export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
   const colors = NODE_COLORS[data.type] || { card: "bg-gray-50 border-gray-200", badge: "bg-gray-100 text-gray-800" };
   const isRoute = data.type === "ROUTE";
   const isButtons = data.type === "BUTTONS";
+  const isMetaFlow = data.type === "META_FLOW";
   const options = (data.options || []).filter((o) => o.value?.trim());
 
   return (
@@ -49,6 +53,16 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
           {data.headerText && (
             <div className="text-xs text-muted-foreground line-clamp-2 italic">
               {data.headerText}
+            </div>
+          )}
+
+          {/* META_FLOW: show selected flow name/id */}
+          {isMetaFlow && (
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div className="line-clamp-1">{data.metaFlowName || "No Meta Flow selected"}</div>
+              {data.metaFlowId && (
+                <div className="font-mono text-[10px] line-clamp-1">{data.metaFlowId}</div>
+              )}
             </div>
           )}
 
@@ -143,7 +157,7 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
             </div>
           );
         })
-      ) : !data.type?.includes("LIST") && !isButtons ? (
+      ) : !data.type?.includes("LIST") && !isButtons && !isMetaFlow ? (
         <Handle type="source" position={Position.Bottom} />
       ) : isButtons ? (
         <Handle type="source" position={Position.Bottom} />
