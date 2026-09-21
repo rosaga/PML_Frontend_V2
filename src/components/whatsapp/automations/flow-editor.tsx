@@ -5,7 +5,7 @@ import { useConfig } from "@/lib/whatsapp/config-context";
 import { useFlows } from "@/lib/whatsapp/use-flows";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { FLOWBOT_BASE_URL, flowbotHeaders } from "@/lib/whatsapp/flowbot-api";
-import { getMetaFlows, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
+import { getMetaFlowResources, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 import { Button } from "@/components/whatsapp/ui/button";
 import { ArrowLeft, Save } from "lucide-react";
 import { FlowCanvas } from "./flow-canvas";
@@ -66,6 +66,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
   const { toast } = useToast();
   const effectiveOrganizationId = organizationExternalId || organizationId;
   const [metaFlows, setMetaFlows] = useState<MetaFlow[]>([]);
+  const [catalogues, setCatalogues] = useState<MetaFlow[]>([]);
 
   const [flow, setFlow] = useState({
     name: "",
@@ -101,6 +102,8 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
       options: node.extra_data?.options || [],
       metaFlowId: node.extra_data?.meta_flow_id,
       metaFlowName: node.extra_data?.meta_flow_name,
+      catalogueId: node.extra_data?.catalogue_id,
+      catalogueName: node.extra_data?.catalogue_name,
     },
     position: node.extra_data?.position || { x: 100 + index * 280, y: 100 + (index % 3) * 160 },
     type: "flowNode",
@@ -133,12 +136,14 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
   useEffect(() => {
     if (!effectiveOrganizationId) return;
     const fetchMetaFlowsData = async () => {
-      const result = await getMetaFlows(effectiveOrganizationId);
+      const result = await getMetaFlowResources(effectiveOrganizationId);
       if (result.success && result.data) {
-        setMetaFlows(result.data.data.filter((metaFlow) => {
-          const status = metaFlow.status?.toUpperCase();
-          return metaFlow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
-        }));
+        const liveResources = result.data.data.filter((resource) => {
+          const status = resource.status?.toUpperCase();
+          return resource.is_active !== false && (status === "ACTIVE" || status === "LIVE");
+        });
+        setMetaFlows(liveResources.filter((resource) => resource.resource_type === "META_FLOW"));
+        setCatalogues(liveResources.filter((resource) => resource.resource_type === "CATALOGUE"));
       }
     };
     fetchMetaFlowsData();
@@ -241,7 +246,6 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
           return;
         }
 
-        const metaFlowNode = metaFlowNodes[0];
         const terminalNode = terminalNodes[0];
         if (terminalNode) {
           const terminalNodeId = String(terminalNode.id);
@@ -264,6 +268,11 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
             setSaving(false);
             return;
           }
+          if (terminalNode.node_type === "CATALOGUE" && !terminalNode.extra_data?.catalogue_id) {
+            toast({ title: "Validation Error", description: "Select a Catalogue for the Catalogue node before saving.", variant: "destructive" });
+            setSaving(false);
+            return;
+          }
         }
 
         // Terminal handoff node always goes last so parent_index resolves correctly
@@ -275,6 +284,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
         const nodesPayload = orderedNodes.map((n, nodeIndex) => {
           const isLastNode = nodeIndex === lastIndex;
           const isMetaFlowNode = n.node_type === "META_FLOW";
+          const isCatalogueNode = n.node_type === "CATALOGUE";
           const isTerminalNode = TERMINAL_NODE_TYPES.includes(n.node_type);
           const isApiId = typeof n.id === "number" || (typeof n.id === "string" && /^\d+$/.test(n.id));
           const nodeStringId = String(n.id);
@@ -322,6 +332,10 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
             extra_data.meta_flow_id = n.extra_data?.meta_flow_id;
             extra_data.meta_flow_name = n.extra_data?.meta_flow_name;
           }
+          if (isCatalogueNode) {
+            extra_data.catalogue_id = n.extra_data?.catalogue_id;
+            extra_data.catalogue_name = n.extra_data?.catalogue_name;
+          }
 
           const base = {
             name: n.name,
@@ -339,6 +353,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
             created_by: n.created_by || "",
             updated_by: "",
             ...(isMetaFlowNode ? { meta_flow_id: n.extra_data?.meta_flow_id } : {}),
+            ...(isCatalogueNode ? { catalogue_id: n.extra_data?.catalogue_id } : {}),
           };
           return isApiId ? { ...base, id: Number(n.id) } : base;
         });
@@ -493,6 +508,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
         <NodeEditor
           node={selectedNode}
           metaFlows={metaFlows}
+          catalogues={catalogues}
           onSave={handleNodeSave}
           onDelete={() => selectedNodeId && handleDeleteNode(selectedNodeId)}
         />

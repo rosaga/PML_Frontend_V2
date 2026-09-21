@@ -17,6 +17,8 @@ interface FlowNodeData {
   options?: Option[];
   metaFlowId?: string;
   metaFlowName?: string;
+  catalogueId?: string;
+  catalogueName?: string;
   selected?: boolean;
   onDelete?: () => void;
   onClick?: () => void;
@@ -64,6 +66,15 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
               <div className="line-clamp-1">{data.metaFlowName || "No Meta Flow selected"}</div>
               {data.metaFlowId && (
                 <div className="font-mono text-[10px] line-clamp-1">{data.metaFlowId}</div>
+              )}
+            </div>
+          )}
+
+          {data.type === "CATALOGUE" && (
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div className="line-clamp-1">{data.catalogueName || "No Catalogue selected"}</div>
+              {data.catalogueId && (
+                <div className="font-mono text-[10px] line-clamp-1">{data.catalogueId}</div>
               )}
             </div>
           )}
