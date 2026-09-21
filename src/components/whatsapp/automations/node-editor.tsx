@@ -16,6 +16,8 @@ import { Trash2, Plus, X } from "lucide-react";
 import type { FlowNode } from "./flow-types";
 import type { MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 
+const TERMINAL_NODE_TYPES: FlowNode["node_type"][] = ["META_FLOW", "CATALOGUE"];
+
 interface NodeEditorProps {
   node: FlowNode | null;
   metaFlows?: MetaFlow[];
@@ -48,7 +50,7 @@ export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEdito
   };
 
   const handleTypeChange = (value: FlowNode["node_type"]) => {
-    if (value === "META_FLOW") {
+    if (TERMINAL_NODE_TYPES.includes(value)) {
       updateField({
         ...formData,
         node_type: value,
@@ -134,6 +136,7 @@ export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEdito
             <SelectItem value="NUMBER">Number</SelectItem>
             <SelectItem value="BUTTONS">Buttons</SelectItem>
             <SelectItem value="META_FLOW">Meta Flow</SelectItem>
+            <SelectItem value="CATALOGUE">Catalogue</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -163,8 +166,8 @@ export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEdito
         </div>
       )}
 
-      {/* Message Text — hidden for META_FLOW nodes */}
-      {formData.node_type !== "META_FLOW" && (
+      {/* Message Text — hidden for terminal handoff nodes */}
+      {!TERMINAL_NODE_TYPES.includes(formData.node_type) && (
         <div className="space-y-1.5">
           <Label>Message Text</Label>
           <Textarea

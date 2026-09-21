@@ -29,6 +29,7 @@ const NODE_COLORS: Record<string, { card: string; badge: string }> = {
   NUMBER:    { card: "bg-yellow-50 border-yellow-200", badge: "bg-yellow-100 text-yellow-800" },
   BUTTONS:   { card: "bg-green-50 border-green-200",   badge: "bg-green-100 text-green-800" },
   META_FLOW: { card: "bg-cyan-50 border-cyan-200",     badge: "bg-cyan-100 text-cyan-800" },
+  CATALOGUE: { card: "bg-rose-50 border-rose-200",      badge: "bg-rose-100 text-rose-800" },
 };
 
 export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
@@ -36,6 +37,7 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
   const isRoute = data.type === "ROUTE";
   const isButtons = data.type === "BUTTONS";
   const isMetaFlow = data.type === "META_FLOW";
+  const isTerminal = isMetaFlow || data.type === "CATALOGUE";
   const options = (data.options || []).filter((o) => o.value?.trim());
 
   return (
@@ -157,7 +159,7 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
             </div>
           );
         })
-      ) : !data.type?.includes("LIST") && !isButtons && !isMetaFlow ? (
+      ) : !data.type?.includes("LIST") && !isButtons && !isTerminal ? (
         <Handle type="source" position={Position.Bottom} />
       ) : isButtons ? (
         <Handle type="source" position={Position.Bottom} />
