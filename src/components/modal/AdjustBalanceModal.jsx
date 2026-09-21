@@ -1,20 +1,27 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  AdjustAdminOrganizationBalance,
-  AutoProvisionAdminBalance,
-} from "@/app/api/actions/admin/admin";
+import { AutoProvisionAdminBalance } from "@/app/api/actions/admin/admin";
 import { provisionSmsUnits } from "@/app/api/actions/reward/reward";
 
 const SMS_PACKAGE = "@1 Persms";
+const DATA_BUNDLE_OPTIONS = [
+  "10",
+  "20",
+  "50",
+  "100",
+  "150",
+  "200",
+  "500",
+  "1000",
+  "1024",
+  "1025",
+];
 
 const DEFAULT_FORM = {
-  mode: "provision",
   service: "DATA",
   module: "",
   units: "",
-  reason: "",
 };
 
 const AdjustBalanceModal = ({
@@ -97,7 +104,6 @@ const AdjustBalanceModal = ({
   const isData = form.service === "DATA";
   const isAirtime = form.service === "AIRTIME";
   const isSms = form.service === "SMS";
-  const isReduce = form.mode === "reduce";
 
   const shouldShowProvisionModuleFields = isData;
 
@@ -142,62 +148,41 @@ const AdjustBalanceModal = ({
       return;
     }
 
-    if (form.mode === "provision" && isData && !form.module.trim()) {
-      setErrorMessage("Please enter a package or module.");
+    if (isData && !form.module.trim()) {
+      setErrorMessage("Please select a bundle size.");
       return;
     }
 
-    if (form.mode === "provision" && isSms && !applicationId) {
+    if (isSms && !applicationId) {
       setErrorMessage("SMS application ID is missing.");
-      return;
-    }
-
-    if (isReduce && isData && !form.module.trim()) {
-      setErrorMessage("Please select a data module.");
-      return;
-    }
-
-    if (isReduce && !form.reason.trim()) {
-      setErrorMessage("Reason is required when reducing balance.");
       return;
     }
 
     try {
       setSubmitting(true);
 
-      if (form.mode === "provision") {
-        if (isSms) {
-          const response = await provisionSmsUnits({
-            newRequest: {
-              package: SMS_PACKAGE,
-              units: Math.floor(unitsNumber),
-              application_id: applicationId,
-            },
-          });
-
-          if (response?.errors?._error) {
-            throw new Error(response.errors._error);
-          }
-        } else {
-          await AutoProvisionAdminBalance({
-            package: isAirtime ? null : form.module.trim(),
+      if (isSms) {
+        const response = await provisionSmsUnits({
+          newRequest: {
+            package: SMS_PACKAGE,
             units: Math.floor(unitsNumber),
-            service: form.service,
-            org_id: orgId,
-          });
-        }
-
-        setSuccessMessage("Balance provisioned successfully.");
-      } else {
-        await AdjustAdminOrganizationBalance(orgId, {
-          module: isData ? form.module.trim() : form.module.trim() || "",
-          service: form.service,
-          units: unitsNumber,
-          reason: form.reason.trim(),
+            application_id: applicationId,
+          },
         });
 
-        setSuccessMessage("Balance reduced successfully.");
+        if (response?.errors?._error) {
+          throw new Error(response.errors._error);
+        }
+      } else {
+        await AutoProvisionAdminBalance({
+          package: isAirtime ? null : form.module.trim(),
+          units: Math.floor(unitsNumber),
+          service: form.service,
+          org_id: orgId,
+        });
       }
+
+      setSuccessMessage("Balance provisioned successfully.");
 
       if (onSuccess) {
         await onSuccess();
@@ -220,27 +205,6 @@ const AdjustBalanceModal = ({
   };
 
   if (!open) return null;
-
-  const TabButton = ({ id, label }) => (
-    <button
-      type="button"
-      onClick={() =>
-        setForm((prev) => ({
-          ...prev,
-          mode: id,
-          reason: id === "reduce" ? prev.reason : "",
-        }))
-      }
-      className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
-        form.mode === id
-          ? "text-orange-600 border-orange-600 bg-orange-50"
-          : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-      }`}
-      disabled={submitting}
-    >
-      {label}
-    </button>
-  );
 
   return (
     <div
@@ -317,7 +281,7 @@ const AdjustBalanceModal = ({
             <>
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Adjust Balance
+                  Provision Balance
                 </h3>
 
                 <button
@@ -335,13 +299,6 @@ const AdjustBalanceModal = ({
                     />
                   </svg>
                 </button>
-              </div>
-
-              <div className="px-4 pt-4">
-                <div className="flex space-x-1 border-b border-gray-200">
-                  <TabButton id="provision" label="Provision / Add" />
-                  <TabButton id="reduce" label="Reduce" />
-                </div>
               </div>
 
               <form onSubmit={handleSubmit} className="p-6">
@@ -394,81 +351,28 @@ const AdjustBalanceModal = ({
                     </div>
                   </div>
 
-                  {form.mode === "reduce" ? (
+                  {shouldShowProvisionModuleFields ? (
                     <div>
                       <label className="block mb-2 text-sm font-medium text-gray-900">
-                        {isData ? "Module" : "Module (optional)"}
+                        Bundle Size
                       </label>
 
                       <select
                         value={form.module}
                         onChange={handleChange("module")}
-                        disabled={submitting || !isData}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 disabled:bg-gray-100"
+                        disabled={submitting}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
                       >
-                        <option value="">
-                          {isData ? "Select module..." : "Not required"}
-                        </option>
+                        <option value="">Select bundle size...</option>
 
-                        {filteredModules.map((acc) => (
-                          <option key={acc.id} value={acc.module || ""}>
-                            {acc.module || "Unnamed module"} (
-                            {Number(acc.units || 0).toLocaleString()} units)
+                        {DATA_BUNDLE_OPTIONS.map((bundleSize) => (
+                          <option key={bundleSize} value={bundleSize}>
+                            {bundleSize} MB
                           </option>
                         ))}
                       </select>
                     </div>
-                  ) : (
-                    <>
-                      {shouldShowProvisionModuleFields ? (
-                        <>
-                          {filteredModules.length > 0 ? (
-                            <div>
-                              <label className="block mb-2 text-sm font-medium text-gray-900">
-                                Use Existing Module
-                              </label>
-
-                              <select
-                                value={
-                                  filteredModules.some(
-                                    (acc) => acc.module === form.module
-                                  )
-                                    ? form.module
-                                    : ""
-                                }
-                                onChange={handleChange("module")}
-                                disabled={submitting}
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
-                              >
-                                <option value="">Custom / New Module</option>
-
-                                {filteredModules.map((acc) => (
-                                  <option key={acc.id} value={acc.module || ""}>
-                                    {acc.module || "Unnamed module"}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          ) : null}
-
-                          <div>
-                            <label className="block mb-2 text-sm font-medium text-gray-900">
-                              Package / Module
-                            </label>
-
-                            <input
-                              type="text"
-                              value={form.module}
-                              onChange={handleChange("module")}
-                              placeholder="e.g. 5GB"
-                              disabled={submitting}
-                              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
-                            />
-                          </div>
-                        </>
-                      ) : null}
-                    </>
-                  )}
+                  ) : null}
 
                   <div>
                     <label className="block mb-2 text-sm font-medium text-gray-900">
@@ -482,32 +386,7 @@ const AdjustBalanceModal = ({
                       onChange={handleChange("units")}
                       disabled={submitting}
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5"
-                      placeholder={
-                        isAirtime
-                          ? "Enter airtime units"
-                          : isSms
-                          ? "Enter SMS units"
-                          : "Enter units"
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-900">
-                      Reason {isReduce ? "*" : ""}
-                    </label>
-
-                    <textarea
-                      value={form.reason}
-                      onChange={handleChange("reason")}
-                      disabled={submitting || !isReduce}
-                      rows={3}
-                      placeholder={
-                        isReduce
-                          ? "Required when reducing balance"
-                          : "Optional for provisioning"
-                      }
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 disabled:bg-gray-100"
+                      placeholder="Number of units"
                     />
                   </div>
 
@@ -547,11 +426,7 @@ const AdjustBalanceModal = ({
                           : "bg-orange-500 hover:bg-orange-600 focus:ring-orange-300"
                       }`}
                     >
-                      {submitting
-                        ? "Saving..."
-                        : form.mode === "provision"
-                        ? "Provision Balance"
-                        : "Reduce Balance"}
+                      {submitting ? "Saving..." : "Provision Balance"}
                     </button>
                   </div>
                 </div>
