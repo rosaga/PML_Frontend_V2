@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getToken } from '@/utils/auth';
 import { hasRole } from '../../utils/decodeToken';
 import { GetSenderId } from "../api/actions/senderId/senderId";
+import Profile from "@/components/profile/profile";
 import "./miniapp.css";
 
 const services = [
@@ -183,14 +184,16 @@ const MiniApp = () => {
     <div className="miniapp-page">
       {/* ── Header ── */}
       <div className="miniapp-header">
-        <div className="miniapp-header-inner">
-          <div>
+        <div className="miniapp-topbar">
             <img
               src="/images/Peakwhite.png"
               alt="Peak Mobile"
               className="miniapp-logo-img"
             />
-
+            <Profile />
+        </div>
+        <div className="miniapp-header-inner">
+          <div>
             <div className="miniapp-headline">
               <h1>
                 Welcome,{" "}

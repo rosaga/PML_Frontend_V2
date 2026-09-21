@@ -1,18 +1,7 @@
-/* app/login/login.css */
-
-.login-container {
-    display: flex;
-    justify-content: center;
-    /* align-items: center; */
-    height: 100vh;
-    background-color: #f0f0f0;
-  }
-  
-  .login-form {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  
+.signin-page .signup-story-photo {
+  background-image: url('/images/miniapp_background.jpeg');
+  background-size: max(259%, 141vh) auto;
+}
+.signin-page .signup-story::after { display: none; }
+.signin-content { max-width: 440px; }
+.signin-recovery { display: flex; justify-content: flex-end; margin-top: -8px; }
