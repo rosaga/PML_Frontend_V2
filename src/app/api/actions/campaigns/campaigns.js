@@ -7,7 +7,6 @@ export async function CreateCampaign(formValues) {
         name: formValues.name,
         group_id: formValues.group_id,
         bundle_size: formValues.bundle_size,
-        product: "VAS",
         content_message: formValues.content_message,
         sender_id: formValues.sender_id,
         description: formValues.description,

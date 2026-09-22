@@ -70,9 +70,6 @@ export function FlowCanvas({
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      const sourceNode = nodes.find((node) => node.id === connection.source);
-      if (sourceNode?.data?.type === "META_FLOW") return;
-
       const newEdges = addEdge(
         {
           ...connection,
@@ -84,7 +81,7 @@ export function FlowCanvas({
       setEdges(newEdges);
       onEdgesChange(newEdges);
     },
-    [edges, nodes, setEdges, onEdgesChange]
+    [edges, setEdges, onEdgesChange]
   );
 
   const handleNodesChange = useCallback(
@@ -110,7 +107,7 @@ export function FlowCanvas({
       <div className="flex items-center gap-2 p-4 border-b flex-wrap">
         <div className="text-sm text-muted-foreground mr-2">Add node:</div>
         <div className="flex gap-2 flex-wrap">
-          {["TEXT", "LIST", "ROUTE", "NUMBER", "BUTTONS", "META_FLOW"].map((type) => (
+          {["TEXT", "LIST", "ROUTE", "NUMBER", "BUTTONS"].map((type) => (
             <Button
               key={type}
               size="sm"
