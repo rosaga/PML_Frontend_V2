@@ -307,17 +307,6 @@ export default function InboxChatPage() {
     if (!contextLoading && organizationId) loadSidebarFromCache();
   }, [contextLoading, organizationId, loadSidebarFromCache]);
 
-  // ── Live polling: keep the conversation sidebar (and badge) fresh while
-  // a chat is open, so a new message from someone else shows up without
-  // needing to click into their thread or reload the page ─────────────────
-  useEffect(() => {
-    if (contextLoading || !organizationId) return;
-    const interval = setInterval(() => {
-      loadSidebarFromCache();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [contextLoading, organizationId, loadSidebarFromCache]);
-
   const fetchMessages = async () => {
     try {
       if (!organizationId) {
@@ -547,18 +536,16 @@ export default function InboxChatPage() {
           rec.mobile_no === targetMobile ? { ...rec, has_unread: false, unread_message_ids: [] } : rec,
         ),
       );
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   };
 
-  const sidebarFiltered =
+  const sidebarFiltered = (
     sidebarReadFilter === "unread"
       ? filteredRecipients.filter((r) => r.has_unread)
       : sidebarReadFilter === "read"
       ? filteredRecipients.filter((r) => !r.has_unread)
-      : filteredRecipients;
-
+      : filteredRecipients
+  );
   const sidebarTotalPages = Math.max(1, Math.ceil(sidebarFiltered.length / sidebarPageSize));
   const displayedRecipients = sidebarFiltered.slice(
     (sidebarPage - 1) * sidebarPageSize,

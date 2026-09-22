@@ -1,27 +1,24 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { GetNotifications } from "@/app/api/actions/notifications/notifications";
+import {GetNotifications} from "@/app/api/actions/notifications/notifications";
+
+
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState({ data: [] });
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
     page: 0,
   });
+  let org_id = null;
+  if (typeof window !== 'undefined') {
+    org_id = localStorage.getItem('selectedAccountId');
+  }
 
   const fetchNotifications = async () => {
     try {
-      const org_id =
-        typeof window !== "undefined"
-          ? localStorage.getItem("selectedAccountId")
-          : null;
-
-      const res = await GetNotifications(
-        org_id,
-        paginationModel.page + 1,
-        paginationModel.pageSize,
-      );
+      const res = await GetNotifications(org_id, paginationModel.page+1, paginationModel.pageSize,)
       setNotifications(res.data);
       setLoading(false);
     } catch (err) {
@@ -35,10 +32,7 @@ const Notifications = () => {
   }, []);
 
   const markAllAsRead = () => {
-    // Everything up to right now is considered "read"
-    localStorage.setItem("notificationsLastReadAt", new Date().toISOString());
-    // Tell the navbar (and anything else listening) to refresh the badge
-    window.dispatchEvent(new Event("notifications-updated"));
+    // Implement the mark all as read functionality
   };
 
   return (
@@ -60,15 +54,13 @@ const Notifications = () => {
               <p className="text-center">Loading...</p>
             ) : (
               <div className="space-y-4">
-                {!notifications?.data || notifications.data.length === 0 ? (
+                {notifications.data.length === 0 ? (
                   <p className="text-center">No notifications</p>
                 ) : (
                   notifications.data.map((notification, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow dark:bg-gray-700"
-                    >
+                    <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow dark:bg-gray-700">
                       <div className="flex items-center space-x-4">
+                        {/* Replace the SVG placeholder with your actual SVG image */}
                         <div className="bg-gray-200 w-10 h-10 rounded-full flex items-center justify-center">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -94,6 +86,11 @@ const Notifications = () => {
                           </p>
                         </div>
                       </div>
+                      {/* <button
+                        className="mt-2 sm:mt-0 text-sm sm:text-base bg-[#090A29] text-white rounded px-4 py-2 hover:bg-[#0a0b2f] dark:bg-[#090A29] dark:text-white dark:hover:bg-[#0a0b2f]"
+                      >
+                        Go to Page
+                      </button> */}
                     </div>
                   ))
                 )}

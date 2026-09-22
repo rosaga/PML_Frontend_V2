@@ -110,21 +110,18 @@ function InboxContent() {
     setRefreshing(true);
     try {
       const msgs = await fetchInboxMessages(organizationId, { gt__created_at: newestAtRef.current });
-      if (msgs.length > 0) {
-        setConversations((prev) => {
-          const map = new Map<string, Recipient>();
-          for (const r of prev) map.set(r.mobile_no, { ...r });
-          const newestAt = applyMessages(map, msgs, newestAtRef.current);
-          newestAtRef.current = newestAt;
+      if (msgs.length === 0) return;
 
-          const sorted = sortedConversations(map);
-          writeCache(organizationId, { conversations: sorted, newestMessageAt: newestAt, cachedAt: Date.now() });
-          return hydrateNamesFromCache(sorted, organizationId);
-        });
-      }
-      // Always resync the badge, even when there were no new messages this
-      // round — otherwise a fresh mount with an up-to-date cache never
-      // tells the sidebar/header what the current unread count actually is.
+      setConversations((prev) => {
+        const map = new Map<string, Recipient>();
+        for (const r of prev) map.set(r.mobile_no, { ...r });
+        const newestAt = applyMessages(map, msgs, newestAtRef.current);
+        newestAtRef.current = newestAt;
+
+        const sorted = sortedConversations(map);
+        writeCache(organizationId, { conversations: sorted, newestMessageAt: newestAt, cachedAt: Date.now() });
+        return hydrateNamesFromCache(sorted, organizationId);
+      });
       refreshUnreadCount(organizationId);
     } catch { /* ignore */ } finally {
       setRefreshing(false);
@@ -154,15 +151,6 @@ function InboxContent() {
       setHasNewMessage(false);
     }
   }, [hasNewMessage, setHasNewMessage, incrementalUpdate]);
-
-  // ── Live polling: keep the list (and badge) fresh while this page is open ─
-  useEffect(() => {
-    if (contextLoading || !organizationId) return;
-    const interval = setInterval(() => {
-      incrementalUpdate();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [contextLoading, organizationId, incrementalUpdate]);
 
   // ── Mark as read ──────────────────────────────────────────────────────────
   const markAsRead = useCallback((mobileNo: string) => {
@@ -535,7 +523,7 @@ function InboxContent() {
         )}
       </div>
 
-      <AlertDialog open={!!tagDialogMobile} onOpenChange={(v: boolean) => { if (!v) setTagDialogMobile(null); }}>
+      <AlertDialog open={!!tagDialogMobile} onOpenChange={(v) => { if (!v) setTagDialogMobile(null); }}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Tag contact</AlertDialogTitle>
