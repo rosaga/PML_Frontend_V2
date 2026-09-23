@@ -1,7 +1,7 @@
 export interface FlowNode {
   id?: string | number;
   name: string;
-  node_type: "TEXT" | "LIST" | "ROUTE" | "NUMBER" | "BUTTONS";
+  node_type: "TEXT" | "LIST" | "ROUTE" | "NUMBER" | "BUTTONS" | "META_FLOW";
   header_text_template: {
     id?: number;
     language: string;
