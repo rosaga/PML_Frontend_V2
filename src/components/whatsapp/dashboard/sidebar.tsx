@@ -65,8 +65,8 @@ export function Sidebar({
   onMobileClose?: () => void;
 }) {
   const pathname = usePathname();
-  const { signOut } = useConfig();
-  const { unreadCount } = useMessageNotification();
+  const { signOut, organizationId } = useConfig();
+  const { unreadCount, pollUnread } = useMessageNotification();
 
   const isMessagesActive = pathname.startsWith(`${BASE}/templates`) || pathname.startsWith(`${BASE}/send`) || pathname.startsWith(`${BASE}/campaigns`) || pathname.startsWith(`${BASE}/meta-flows`);
   const isContactsActive =
@@ -86,6 +86,17 @@ export function Sidebar({
     const token = getToken();
     setIsAdmin(hasRole(token, "SuperAdmin"));
   }, []);
+
+  // Global unread badge sync — runs on every page the sidebar mounts on,
+  // not just the inbox pages, and keeps polling for new messages.
+  useEffect(() => {
+    if (!organizationId) return;
+    pollUnread(organizationId);
+    const interval = setInterval(() => {
+      pollUnread(organizationId);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [organizationId, pollUnread]);
 
   const settingsSubItems = allSettingsSubItems.filter(
     (item) => !item.adminOnly || isAdmin
@@ -193,7 +204,7 @@ export function Sidebar({
             <div className="flex items-center gap-2">
               <span>Inbox</span>
               {unreadCount > 0 && (
-                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-green-500 text-white text-xs font-semibold flex items-center justify-center leading-none">
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center leading-none">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
