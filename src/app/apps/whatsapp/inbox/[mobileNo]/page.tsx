@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useConfig } from "@/lib/whatsapp/config-context";
+import { sendMessage, type MessagePayload } from "@/lib/whatsapp/whatsapp-api";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Card } from "@/components/whatsapp/ui/card";
 import { Input } from "@/components/whatsapp/ui/input";
@@ -57,7 +58,7 @@ export default function InboxChatPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { organizationId, pmlOrganizationId, isLoading: contextLoading } = useConfig();
+  const { config, isConfigured, organizationId, organizationExternalId, pmlOrganizationId, isLoading: contextLoading } = useConfig();
   const { refreshUnreadCount } = useMessageNotification();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +81,6 @@ export default function InboxChatPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState("");
-  const [config, setConfig] = useState({ apiKey: "", wabaId: "", phoneNumberId: "" });
 
   // ── Unread tracking for the open conversation ─────────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
@@ -108,16 +108,6 @@ export default function InboxChatPage() {
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("whatsapp-api-config");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.apiKey && parsed.phoneNumberId) setConfig(parsed);
-      } catch { /* ignore */ }
-    }
-  }, []);
 
   useEffect(() => {
     setUnreadCount(0);
@@ -432,7 +422,18 @@ export default function InboxChatPage() {
     try {
       setSending(true);
 
-      let payload: object;
+      const effectiveOrganizationId = organizationExternalId || organizationId;
+      if (contextLoading) {
+        throw new Error("Please wait while configuration is loading.");
+      }
+      if (!effectiveOrganizationId) {
+        throw new Error("Organization ID not found. Please configure it in Settings.");
+      }
+      if (!isConfigured) {
+        throw new Error("Please configure your API settings first.");
+      }
+
+      let payload: MessagePayload;
       if (mediaAttachment) {
         payload = {
           messaging_product: "whatsapp",
@@ -458,20 +459,9 @@ export default function InboxChatPage() {
         };
       }
 
-      const response = await fetch("/api/whatsapp/whatsapp-internal/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": config.apiKey,
-          "x-phone-number-id": config.phoneNumberId,
-          "x-organization-id": organizationId || "",
-        },
-        body: JSON.stringify(payload),
-      });
+      const result = await sendMessage(config, payload, { organizationId: effectiveOrganizationId });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (result.success) {
         toast({ title: "Message sent", description: "Your message has been sent successfully" });
         setMessageText("");
         setMediaAttachment(null);
@@ -480,7 +470,7 @@ export default function InboxChatPage() {
           loadSidebarFromCache();
         }, 1000);
       } else {
-        throw new Error(data.error?.message || "Failed to send message");
+        throw new Error(result.error || "Failed to send message");
       }
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to send message", variant: "destructive" });
