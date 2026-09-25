@@ -159,16 +159,12 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
                 return (
                   <TableRow key={flow.id}>
                     <TableCell className="font-medium">
-                      {isMetaFlow ? (
-                        <Link
-                          href={`/apps/whatsapp/meta-flows/${encodeURIComponent(String(recordId))}/submissions?flowName=${encodeURIComponent(flow.flow_name)}&flowId=${encodeURIComponent(flow.flow_id)}`}
-                          className="text-primary hover:underline"
-                        >
-                          {flow.flow_name}
-                        </Link>
-                      ) : (
-                        <span>{flow.flow_name}</span>
-                      )}
+                      <Link
+                        href={`/apps/whatsapp/meta-flows/${encodeURIComponent(String(recordId))}/submissions?flowName=${encodeURIComponent(flow.flow_name)}${flow.flow_id ? `&flowId=${encodeURIComponent(flow.flow_id)}` : ""}`}
+                        className="text-primary hover:underline"
+                      >
+                        {flow.flow_name}
+                      </Link>
                       {flow.description ? (
                         <div className="mt-1 max-w-sm truncate text-xs font-normal text-muted-foreground">
                           {flow.description}
