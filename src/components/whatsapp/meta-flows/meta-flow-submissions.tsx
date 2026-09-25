@@ -61,6 +61,14 @@ function formatAnswerValue(value: unknown) {
   return String(value);
 }
 
+function formatArrayItem(value: unknown) {
+  if (value !== null && typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+
+  return String(value).replace(/^\d+_/, "").replace(/_/g, " ");
+}
+
 function ResponseJsonView({ response }: { response?: Record<string, unknown> }) {
   const entries = useMemo(
     () => Object.entries(response || {}).filter(([key]) => key !== "flow_token"),
@@ -81,11 +89,17 @@ function ResponseJsonView({ response }: { response?: Record<string, unknown> }) 
               {humanizeResponseKey(key)}
             </div>
             {Array.isArray(formattedValue) ? (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 space-y-2">
                 {formattedValue.map((item, index) => (
-                  <Badge key={`${key}-${index}`} variant="secondary">
-                    {String(item).replace(/^\d+_/, "").replace(/_/g, " ")}
-                  </Badge>
+                  item !== null && typeof item === "object" ? (
+                    <pre key={`${key}-${index}`} className="overflow-auto rounded-md bg-muted p-3 text-xs">
+                      {formatArrayItem(item)}
+                    </pre>
+                  ) : (
+                    <Badge key={`${key}-${index}`} variant="secondary">
+                      {formatArrayItem(item)}
+                    </Badge>
+                  )
                 ))}
               </div>
             ) : (
@@ -177,7 +191,7 @@ export function MetaFlowSubmissions({ flowId, flowName, metaFlowId }: MetaFlowSu
         <div>
           <Button variant="ghost" size="sm" onClick={() => router.push("/apps/whatsapp/meta-flows")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Meta Flows
+            Back to Meta Flows &amp; Catalogues
           </Button>
           <h2 className="mt-3 text-xl font-semibold">{displayFlowName}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -217,7 +231,7 @@ export function MetaFlowSubmissions({ flowId, flowName, metaFlowId }: MetaFlowSu
         </div>
         <div className="space-y-2">
           <Label>Limit</Label>
-          <Select value={filters.limit} onValueChange={(limit) => setFilters({ ...filters, limit })}>
+          <Select value={filters.limit} onValueChange={(limit: string) => setFilters({ ...filters, limit })}>
             <SelectTrigger className="w-[100px]">
               <SelectValue />
             </SelectTrigger>
@@ -336,8 +350,8 @@ export function MetaFlowSubmissions({ flowId, flowName, metaFlowId }: MetaFlowSu
                   <div className="font-medium">{selectedSubmission.mobile_no}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Flow Name</div>
-                  <div className="font-medium">{selectedSubmission.flow_name}</div>
+                  <div className="text-xs text-muted-foreground">Item Name</div>
+                  <div className="font-medium">{selectedSubmission.flow_name || flowName || "-"}</div>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Submitted At</div>
