@@ -11,6 +11,14 @@ import {
 } from "@/components/whatsapp/ui/card";
 import { Input } from "@/components/whatsapp/ui/input";
 import { Label } from "@/components/whatsapp/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/whatsapp/ui/select";
+import { Textarea } from "@/components/whatsapp/ui/textarea";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { createMetaFlow } from "@/lib/whatsapp/meta-flows-api";
@@ -20,18 +28,25 @@ interface MetaFlowFormProps {
   onSuccess?: () => void;
 }
 
+type ManagedAssetType = "META_FLOW" | "CATALOGUE";
+
+const initialFormData = {
+  type: "META_FLOW" as ManagedAssetType,
+  flow_id: "",
+  flow_name: "",
+  description: "",
+  default_cta: "Start Form",
+  default_screen: "",
+};
+
 export function MetaFlowForm({ onSuccess }: MetaFlowFormProps) {
   const { organizationExternalId, organizationId, isLoading } = useConfig();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    flow_id: "",
-    flow_name: "",
-    default_cta: "Start Form",
-    default_screen: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const effectiveOrganizationId = organizationExternalId || organizationId;
+  const isCatalogue = formData.type === "CATALOGUE";
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -53,10 +68,28 @@ export function MetaFlowForm({ onSuccess }: MetaFlowFormProps) {
       return;
     }
 
-    if (!formData.flow_id || !formData.flow_name || !formData.default_cta || !formData.default_screen) {
+    if (!formData.flow_name.trim()) {
       toast({
         title: "Validation Error",
-        description: "Flow ID, flow name, CTA, and default screen are required.",
+        description: `${isCatalogue ? "Catalogue" : "Flow"} name is required.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isCatalogue && !formData.description.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Catalogue description is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isCatalogue && (!formData.flow_id.trim() || !formData.default_cta.trim() || !formData.default_screen.trim())) {
+      toast({
+        title: "Validation Error",
+        description: "Flow ID, CTA, and default screen are required for Meta Flows.",
         variant: "destructive",
       });
       return;
@@ -69,19 +102,14 @@ export function MetaFlowForm({ onSuccess }: MetaFlowFormProps) {
     if (result.success) {
       toast({
         title: "Success",
-        description: "Meta Flow saved successfully.",
+        description: `${isCatalogue ? "Catalogue" : "Meta Flow"} saved successfully.`,
       });
-      setFormData({
-        flow_id: "",
-        flow_name: "",
-        default_cta: "Start Form",
-        default_screen: "",
-      });
+      setFormData({ ...initialFormData, type: formData.type });
       onSuccess?.();
     } else {
       toast({
         title: "Error",
-        description: result.error || "Failed to save Meta Flow.",
+        description: result.error || `Failed to save ${isCatalogue ? "Catalogue" : "Meta Flow"}.`,
         variant: "destructive",
       });
     }
@@ -90,53 +118,83 @@ export function MetaFlowForm({ onSuccess }: MetaFlowFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create Meta Flow</CardTitle>
+        <CardTitle>Create Meta Flow or Catalogue</CardTitle>
         <CardDescription>
-          Add a Meta-created WhatsApp Flow so it can be managed and sent from this platform
+          Add a Meta-created WhatsApp Flow or catalogue so it can be managed from this platform
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="flow_id">Flow ID</Label>
-              <Input
-                id="flow_id"
-                placeholder="1604544051264070"
-                value={formData.flow_id}
-                onChange={(e) => setFormData({ ...formData, flow_id: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="default_screen">Default Screen</Label>
-              <Input
-                id="default_screen"
-                placeholder="QUESTION_ONE"
-                value={formData.default_screen}
-                onChange={(e) => setFormData({ ...formData, default_screen: e.target.value })}
-              />
-            </div>
+          <div className="space-y-2 sm:max-w-xs">
+            <Label>Type</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(type: ManagedAssetType) => setFormData({ ...formData, type })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="META_FLOW">Meta Flow</SelectItem>
+                <SelectItem value="CATALOGUE">Catalogue</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="flow_name">Flow Name</Label>
+            <Label htmlFor="flow_name">{isCatalogue ? "Catalogue Name" : "Flow Name"}</Label>
             <Input
               id="flow_name"
-              placeholder="Message templates_request_quotation_MARKETING_34f2c"
+              placeholder={isCatalogue ? "Message templates_order_form_MARKETING_df6d7" : "Customer order flow"}
               value={formData.flow_name}
               onChange={(e) => setFormData({ ...formData, flow_name: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="default_cta">Default CTA</Label>
-            <Input
-              id="default_cta"
-              placeholder="Start Form"
-              value={formData.default_cta}
-              onChange={(e) => setFormData({ ...formData, default_cta: e.target.value })}
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder={isCatalogue ? "Nyumbani Greens Catalogue" : "Collects customer order details"}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
+
+          {!isCatalogue && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="flow_id">Meta Flow ID</Label>
+                  <Input
+                    id="flow_id"
+                    placeholder="123456789012345"
+                    value={formData.flow_id}
+                    onChange={(e) => setFormData({ ...formData, flow_id: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="default_screen">Default Screen</Label>
+                  <Input
+                    id="default_screen"
+                    placeholder="ORDER_DETAILS"
+                    value={formData.default_screen}
+                    onChange={(e) => setFormData({ ...formData, default_screen: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="default_cta">Flow CTA</Label>
+                <Input
+                  id="default_cta"
+                  placeholder="Start Form"
+                  value={formData.default_cta}
+                  onChange={(e) => setFormData({ ...formData, default_cta: e.target.value })}
+                />
+              </div>
+            </>
+          )}
 
           <Button type="submit" disabled={loading || isLoading} className="w-full sm:w-auto">
             {loading ? (
@@ -147,7 +205,7 @@ export function MetaFlowForm({ onSuccess }: MetaFlowFormProps) {
             ) : (
               <>
                 <Plus className="mr-2 h-4 w-4" />
-                Save Meta Flow
+                Save {isCatalogue ? "Catalogue" : "Meta Flow"}
               </>
             )}
           </Button>
