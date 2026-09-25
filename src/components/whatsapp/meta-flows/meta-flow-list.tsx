@@ -57,9 +57,8 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
     const term = searchName.trim().toLowerCase();
     if (!term) return flows;
     return flows.filter((flow) =>
-      [flow.flow_name, flow.flow_id, flow.default_cta, flow.default_screen, flow.status]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(term))
+      [flow.flow_name, flow.flow_id, flow.description, flow.type, flow.default_cta, flow.default_screen, flow.status]
+        .some((value) => String(value || "").toLowerCase().includes(term))
     );
   }, [flows, searchName]);
 
@@ -99,7 +98,7 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search Meta Flows..."
+            placeholder="Search Meta Flows and Catalogues..."
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
             className="pl-9"
@@ -121,7 +120,7 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {filteredFlows.length} Meta Flow{filteredFlows.length !== 1 ? "s" : ""} found
+          {filteredFlows.length} item{filteredFlows.length !== 1 ? "s" : ""} found
           {hasActiveFilters && " (filtered)"}
         </p>
       </div>
@@ -133,9 +132,9 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
       ) : filteredFlows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <FileText className="h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-medium text-foreground">No Meta Flows</h3>
+          <h3 className="mt-4 text-lg font-medium text-foreground">No Meta Flows or Catalogues</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {hasActiveFilters ? "No Meta Flows match your search." : "Add your first Meta Flow to get started."}
+            {hasActiveFilters ? "No items match your search." : "Add your first Meta Flow or Catalogue to get started."}
           </p>
         </div>
       ) : (
@@ -144,7 +143,8 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Flow ID</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Meta Flow ID</TableHead>
                 <TableHead>CTA</TableHead>
                 <TableHead>Default Screen</TableHead>
                 <TableHead>Status</TableHead>
@@ -152,29 +152,48 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredFlows.map((flow) => (
-                <TableRow key={flow.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/apps/whatsapp/meta-flows/${encodeURIComponent(String(flow.id))}/submissions?flowName=${encodeURIComponent(flow.flow_name)}&flowId=${encodeURIComponent(flow.flow_id)}`}
-                      className="text-primary hover:underline"
-                    >
-                      {flow.flow_name}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{flow.flow_id}</TableCell>
-                  <TableCell>{flow.default_cta}</TableCell>
-                  <TableCell>{flow.default_screen}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(flow.status)}>
-                      {flow.status || "Unknown"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {flow.created_at ? new Date(flow.created_at).toLocaleDateString() : "-"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filteredFlows.map((flow) => {
+                const isMetaFlow = flow.type === "META_FLOW";
+                const recordId = flow.meta_flow_record_id || flow.id;
+
+                return (
+                  <TableRow key={flow.id}>
+                    <TableCell className="font-medium">
+                      {isMetaFlow ? (
+                        <Link
+                          href={`/apps/whatsapp/meta-flows/${encodeURIComponent(String(recordId))}/submissions?flowName=${encodeURIComponent(flow.flow_name)}&flowId=${encodeURIComponent(flow.flow_id)}`}
+                          className="text-primary hover:underline"
+                        >
+                          {flow.flow_name}
+                        </Link>
+                      ) : (
+                        <span>{flow.flow_name}</span>
+                      )}
+                      {flow.description ? (
+                        <div className="mt-1 max-w-sm truncate text-xs font-normal text-muted-foreground">
+                          {flow.description}
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={isMetaFlow ? "default" : "secondary"}>
+                        {isMetaFlow ? "Meta Flow" : "Catalogue"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{flow.flow_id || "-"}</TableCell>
+                    <TableCell>{flow.default_cta || "-"}</TableCell>
+                    <TableCell>{flow.default_screen || "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(flow.status)}>
+                        {flow.status || (flow.is_active === false ? "Inactive" : "Unknown")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {flow.created_at ? new Date(flow.created_at).toLocaleDateString() : "-"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

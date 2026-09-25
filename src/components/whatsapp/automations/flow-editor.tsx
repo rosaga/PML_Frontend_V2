@@ -135,7 +135,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
       if (result.success && result.data) {
         setMetaFlows(result.data.data.filter((metaFlow) => {
           const status = metaFlow.status?.toUpperCase();
-          return metaFlow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
+          return metaFlow.type === "META_FLOW" && metaFlow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
         }));
       }
     };
