@@ -1,168 +1,92 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState } from "react";
-
-import { Card, CardContent } from "@mui/material";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { ArrowRight } from "lucide-react";
 import { setToken } from "@/utils/auth";
 import { ToastContainer, toast } from "react-toastify";
 import apiUrl from "../api/utils/apiUtils/apiUrl";
 import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import Modal from "@mui/material/Modal";
-import "../../app/globals.css";
+import "../globals.css";
+import "../signup/signup.css";
 import "react-toastify/dist/ReactToastify.css";
-import { GetSenderId } from "../api/actions/senderId/senderId";
 
-const SignIn = () => {
- 
+export default function SignIn() {
   const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-
-    useEffect(() => {
+  useEffect(() => {
     if (sessionStorage.getItem("passwordUpdateSuccess") === "true") {
       sessionStorage.removeItem("passwordUpdateSuccess");
       toast.success("Password updated. Please sign in again.");
     }
   }, []);
 
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-
-
-
-  const handleSignIn = async (e) => {
-    e.preventDefault();
+  const handleSignIn = async (event) => {
+    event.preventDefault();
+    if (isLoading) return;
     setIsLoading(true);
-    const signinPayload = {
-      username,
-      password,
-    };
-
     try {
-      const res = await axios.post(apiUrl.SIGN_IN, signinPayload);
-      if (res.status === 200) {
-        setIsLoading(false);
-        toast.success("LOGIN SUCCESS");
+      const res = await axios.post(apiUrl.SIGN_IN, { username, password });
+      if (res.status === 200 && res.data.access_token) {
         setToken(res.data.access_token);
-        router.push("/user-orgs"); 
+        router.push("/user-orgs");
       } else {
+        toast.error("Unable to sign in. Please check your email and password.");
         setIsLoading(false);
-        toast.error("WRONG USERNAME/PASSWORD");
       }
-    } catch (error) {
+    } catch {
+      toast.error("Unable to sign in. Please check your email and password.");
       setIsLoading(false);
-      toast.error("WRONG USERNAME/PASSWORD");
     }
   };
 
-  const handleRegister = () => {
-    router.push("/signup");
-  };
-
-  const handleForgetPassword = () => {
-    router.push("/reset");
-  };
-
-
   return (
     <>
-
       <ToastContainer />
-      <div
-        className="relative h-screen w-full flex flex-col sm:flex-row"
-        style={{
-          backgroundImage: "url('/images/miniapp_background.jpeg')",
-          backgroundSize: "cover",
-          backgroundPosition: 'relative',
-        }}
-      >
-        <div className="hidden sm:block sm:w-2/5 h-full"></div>
-        <div className="w-full sm:w-3/5 h-full flex items-center justify-center p-4">
-          <Card
-            sx={{
-              borderRadius: "lg",
-              boxShadow: "md",
-              width: "90%",
-              maxWidth: "500px", // Max width to keep it compact on larger screens
-              padding: 0,
-            }}
-          >
-            <CardContent>
-              <div className="flex flex-col">
-                <p className="text-xl font-lg mb-4 mt-2 text-center sm:text-left">Welcome Back!</p>
-                <div className="mb-4">
-                  <input
-                    type="email"
-                    placeholder="Your Email *"
-                    className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                  />
-                  
-                  <div className="relative w-full">
-                    <input
-                      type={isPasswordVisible ? "text" : "password"}
-                      placeholder="Your Password *"
-                      className="w-full bg-[#F1F2F3] p-2.5 mb-1 rounded-md border-white pr-10"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                      sx={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", padding: "4px" }}
-                    >
-                      {isPasswordVisible ? (
-                        <VisibilityIcon />
-                      ) : (
-                        <VisibilityOffIcon />
-                      )}
-                    </IconButton>
-                  </div>
-                </div>
-                <button
-                  className="bg-[#001F3D] w-full p-2 text-white text-lg rounded-md mt-2"
-                  onClick={handleSignIn}
-                >
-                  {isLoading ? "Please wait..." : "Sign In"}
-                </button>
-                <div className="flex flex-col sm:flex-row justify-between mt-4 text-sm">
-                  <p className="flex items-center justify-start mb-2 sm:mb-0">
-                    Don&apos;t have an account?{" "}
-                    <span
-                      className="text-[#E88A17] cursor-pointer ml-2"
-                      onClick={handleRegister}
-                    >
-                      Register
-                    </span>
-                  </p>
-                  <p className="flex items-center justify-start">
-                    Forgot Password?
-                    <span
-                      className="text-[#E88A17] cursor-pointer ml-2"
-                      onClick={handleForgetPassword}
-                    >
-                      Click here
-                    </span>
-                  </p>
+      <main className="signup-page signin-page">
+        <aside className="signup-story" aria-hidden="true">
+          <div className="signup-story-photo" />
+        </aside>
+        <div className="signup-main">
+          <header className="signup-topbar">
+            <Image src="/images/peaklogo.png" alt="Peak Mobile" width={112} height={63} className="signup-mobile-logo" />
+            <p>Don’t have an account? <Link href="/signup">Register <ArrowRight size={15} /></Link></p>
+          </header>
+          <div className="signup-content signin-content">
+            <header className="signup-heading">
+              <h1>Welcome back</h1>
+            </header>
+            <form onSubmit={handleSignIn} className="signup-form" aria-busy={isLoading}>
+              <div className="signup-field">
+                <label htmlFor="signin-email">Email address</label>
+                <input id="signin-email" name="email" type="email" autoComplete="username" required value={username} onChange={(event) => setUsername(event.target.value)} />
+              </div>
+              <div className="signup-field">
+                <label htmlFor="signin-password">Password</label>
+                <div className="signup-password">
+                  <input id="signin-password" name="password" type={isPasswordVisible ? "text" : "password"} autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+                  <IconButton type="button" aria-label={isPasswordVisible ? "Hide password" : "Show password"} aria-pressed={isPasswordVisible} onClick={() => setIsPasswordVisible(!isPasswordVisible)} size="small">
+                    {isPasswordVisible ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
+                  </IconButton>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="signin-recovery"><Link href="/reset" className="signup-text-button">Forgot password?</Link></div>
+              <button type="submit" className="signup-submit" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign in"} {!isLoading && <ArrowRight size={18} />}
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
-
-      {/* Modal for success */}
-    
+      </main>
     </>
   );
-};
-
-
-export default SignIn;
+}

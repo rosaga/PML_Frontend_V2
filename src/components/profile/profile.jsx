@@ -4,7 +4,9 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { getUserInfo } from "../../utils/decodeToken";
 import { getToken, clearToken } from "@/utils/auth";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Building2 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import ChangePasswordModal from "../modal/changePassword";
@@ -12,6 +14,11 @@ import { FaChevronDown, FaExchangeAlt, FaKey, FaSignOutAlt, FaThLarge } from "re
 
 const Profile = () => {
   const router = useRouter();
+  const pathname = usePathname();
+  const product = pathname.split("/")[2];
+  const profileHref = ["data", "airtime", "sms", "flowbot", "admin"].includes(product)
+    ? `/apps/${product}/profile`
+    : "/profile";
   const [userInfo, setUserInfo] = useState({ name: "", email: "" });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -88,6 +95,9 @@ const Profile = () => {
     <div className="relative profile-container">
       {/* Profile button with dropdown icon */}
       <button
+        type="button"
+        aria-label="Open profile menu"
+        aria-expanded={isDropdownOpen}
         className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
       >
@@ -108,6 +118,16 @@ const Profile = () => {
           <div className="px-6 py-4 text-sm text-gray-900 dark:text-white border-b border-gray-200">
             <p className="font-medium text-base">Welcome</p>
             <p className="truncate mt-1">{userInfo.email || "email@domain.com"}</p>
+          </div>
+          <div className="py-1">
+            <Link
+              href={profileHref}
+              onClick={() => setIsDropdownOpen(false)}
+              className="w-full text-left px-6 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white flex items-center"
+            >
+              <Building2 className="mr-3 text-gray-500" size={18} />
+              <span>Company profile</span>
+            </Link>
           </div>
           <div className="py-1">
             <button

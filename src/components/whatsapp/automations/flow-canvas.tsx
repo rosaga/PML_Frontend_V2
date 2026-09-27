@@ -22,6 +22,9 @@ import { FlowNode } from "./flow-node";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Plus } from "lucide-react";
 
+const TERMINAL_NODE_TYPES = ["META_FLOW", "CATALOGUE"];
+const ADDABLE_NODE_TYPES = ["TEXT", "LIST", "ROUTE", "NUMBER", "BUTTONS", "META_FLOW", "CATALOGUE"];
+
 interface FlowCanvasProps {
   nodes: Node[];
   edges: Edge[];
@@ -71,7 +74,7 @@ export function FlowCanvas({
   const onConnect = useCallback(
     (connection: Connection) => {
       const sourceNode = nodes.find((node) => node.id === connection.source);
-      if (sourceNode?.data?.type === "META_FLOW") return;
+      if (TERMINAL_NODE_TYPES.includes(sourceNode?.data?.type)) return;
 
       const newEdges = addEdge(
         {
@@ -110,7 +113,7 @@ export function FlowCanvas({
       <div className="flex items-center gap-2 p-4 border-b flex-wrap">
         <div className="text-sm text-muted-foreground mr-2">Add node:</div>
         <div className="flex gap-2 flex-wrap">
-          {["TEXT", "LIST", "ROUTE", "NUMBER", "BUTTONS", "META_FLOW"].map((type) => (
+          {ADDABLE_NODE_TYPES.map((type) => (
             <Button
               key={type}
               size="sm"
