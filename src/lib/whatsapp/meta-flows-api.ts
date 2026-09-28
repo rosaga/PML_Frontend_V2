@@ -9,6 +9,8 @@ const META_FLOW_RECORDS_URL =
 
 export interface MetaFlow {
   id: number | string;
+  type: "META_FLOW" | "CATALOGUE";
+  meta_flow_record_id?: number | string;
   organization_id: number | string;
   organization_external_id: string;
   phone_number_id: string;
@@ -34,6 +36,7 @@ export interface MetaFlow {
 }
 
 export interface CreateMetaFlowPayload {
+  type: "META_FLOW" | "CATALOGUE";
   flow_id: string;
   flow_name: string;
   default_cta: string;
@@ -114,6 +117,8 @@ export interface ApiResponse<T = unknown> {
 
 interface FlowbotMetaFlow {
   id?: number | string;
+  type?: "META_FLOW" | "CATALOGUE";
+  meta_flow_record_id?: number | string;
   organization_id?: number | string;
   organization_external_id?: string;
   phone_number_id?: string;
@@ -168,9 +173,12 @@ function normalizeMetaFlow(flow: FlowbotMetaFlow): MetaFlow {
   const flowId = flow.flow_id || flow.meta_flow_id || catalogueId || "";
   const flowName = flow.flow_name || flow.catalogue_name || flow.catalog_name || flow.name || "";
   const defaultCta = flow.default_cta || flow.flow_cta || "";
+  const type = flow.type === "CATALOGUE" ? "CATALOGUE" : "META_FLOW";
 
   return {
     id: flow.id || flowId,
+    type,
+    meta_flow_record_id: flow.meta_flow_record_id || flow.id,
     organization_id: flow.organization_id || flow.organization_external_id || "",
     organization_external_id: flow.organization_external_id || String(flow.organization_id || ""),
     phone_number_id: flow.phone_number_id || "",
@@ -357,19 +365,28 @@ export async function createMetaFlow(
   flow: CreateMetaFlowPayload
 ): Promise<ApiResponse<{ data: MetaFlow }>> {
   try {
-    const payload = {
-      organization_id: organizationExternalId,
-      channel_id: flow.channel_id || 1,
-      name: flow.flow_name,
-      description: flow.description || flow.flow_name,
-      meta_flow_id: flow.flow_id,
-      flow_message_version: flow.flow_message_version || "3",
-      default_screen: flow.default_screen,
-      flow_cta: flow.default_cta,
-      body_text: flow.body_text || "Let's get started with our new form.",
-      status: flow.status || "LIVE",
-      is_active: flow.is_active ?? true,
-    };
+    const payload =
+      flow.type === "CATALOGUE"
+        ? {
+            organization_id: organizationExternalId,
+            name: flow.flow_name,
+            description: flow.description || flow.flow_name,
+            type: "CATALOGUE",
+          }
+        : {
+            organization_id: organizationExternalId,
+            channel_id: flow.channel_id || 1,
+            name: flow.flow_name,
+            description: flow.description || flow.flow_name,
+            type: "META_FLOW",
+            meta_flow_id: flow.flow_id,
+            flow_message_version: flow.flow_message_version || "3",
+            default_screen: flow.default_screen,
+            flow_cta: flow.default_cta,
+            body_text: flow.body_text || "Let's get started with our new form.",
+            status: flow.status || "LIVE",
+            is_active: flow.is_active ?? true,
+          };
 
     const response = await fetch(META_FLOWS_BASE_URL, {
       method: "POST",
