@@ -53,6 +53,17 @@ function signalPmlUnauthorized() {
 
 type ReadFilter = "all" | "unread" | "read";
 
+// Safe decode — Next.js already decodes route params, and a stray "%" would
+// otherwise throw a URIError during render.
+function safeDecode(value: string | undefined): string {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export default function InboxChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -60,8 +71,9 @@ export default function InboxChatPage() {
   const { organizationId, pmlOrganizationId, isLoading: contextLoading } = useConfig();
   const { refreshUnreadCount } = useMessageNotification();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const mobileNo = decodeURIComponent(params.mobileNo as string);
+  const mobileNo = safeDecode(params.mobileNo as string | undefined);
   const { tags, getTagsForContact, addContactToTag, removeContactFromTag } = useTags();
   const contactTags = getTagsForContact(mobileNo);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
@@ -75,7 +87,6 @@ export default function InboxChatPage() {
   const [contactNameLoaded, setContactNameLoaded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
-  const [filteredRecipients, setFilteredRecipients] = useState<Recipient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -147,36 +158,48 @@ export default function InboxChatPage() {
       setContactNameLoaded(false);
     }
     if (!contextLoading && organizationId) fetchMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileNo, contextLoading, organizationId, pmlOrganizationId]);
 
-  // Scroll to first unread on open (WhatsApp-style), then smooth-scroll on new messages
+  // Scroll to first unread on open (WhatsApp-style), then smooth-scroll on new
+  // messages — but only if the user is already near the bottom.
   useLayoutEffect(() => {
     if (loading || messages.length === 0) return;
 
     if (!hasScrolledToUnreadRef.current) {
       hasScrolledToUnreadRef.current = true;
       if (firstUnreadId && messageRefs.current[firstUnreadId]) {
-        messageRefs.current[firstUnreadId]?.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
+        messageRefs.current[firstUnreadId]?.scrollIntoView({
+          behavior: "instant" as ScrollBehavior,
+          block: "start",
+        });
         return;
       }
       messagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
       return;
     }
 
-    scrollToBottom();
+    const el = messagesContainerRef.current;
+    if (el) {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distanceFromBottom < 150) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, loading, firstUnreadId]);
 
-  useEffect(() => {
-    if (searchQuery) {
-      setFilteredRecipients(
-        recipients.filter((r) =>
-          r.mobile_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    } else {
-      setFilteredRecipients(recipients);
-    }
+  // Derive the filtered list — avoids the stale/race condition that existed
+  // when it was duplicated in state and clobbered by the poll.
+  const filteredRecipients = useMemo(() => {
+    if (!searchQuery) return recipients;
+    const q = searchQuery.toLowerCase();
+    return recipients.filter(
+      (r) =>
+        r.mobile_no.toLowerCase().includes(q) ||
+        (r.name || "").toLowerCase().includes(q)
+    );
   }, [searchQuery, recipients]);
 
   // Reset sidebar to page 1 when filter, search, or page size changes
@@ -187,17 +210,22 @@ export default function InboxChatPage() {
     [recipients],
   );
 
-  // Lazy-load names only for visible sidebar contacts
-  const visibleSidebarKeys = (
-    sidebarReadFilter === "unread"
-      ? filteredRecipients.filter((r) => r.has_unread)
-      : sidebarReadFilter === "read"
-      ? filteredRecipients.filter((r) => !r.has_unread)
-      : filteredRecipients
-  ).slice(0, sidebarPageSize).map((r) => r.mobile_no).join(",");
+  // Lazy-load names only for the visible page of sidebar contacts
+  const visibleSidebarKeys = useMemo(() => {
+    const base =
+      sidebarReadFilter === "unread"
+        ? filteredRecipients.filter((r) => r.has_unread)
+        : sidebarReadFilter === "read"
+        ? filteredRecipients.filter((r) => !r.has_unread)
+        : filteredRecipients;
+    return base
+      .slice((sidebarPage - 1) * sidebarPageSize, sidebarPage * sidebarPageSize)
+      .map((r) => r.mobile_no)
+      .join(",");
+  }, [filteredRecipients, sidebarReadFilter, sidebarPage, sidebarPageSize]);
 
   useEffect(() => {
-    if (!pmlOrganizationId) return;
+    if (!pmlOrganizationId || !organizationId) return;
     const authToken = localStorage.getItem("token") ?? "";
     if (!authToken) return;
 
@@ -237,7 +265,6 @@ export default function InboxChatPage() {
         const name = raw ? (maybe ? `Maybe: ${raw}` : raw) : "";
         if (name) {
           setRecipients((prev) => prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec));
-          setFilteredRecipients((prev) => prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec));
           // Only persist when a name was found — empty entries permanently block future retries
           const stored = loadNames(organizationId);
           persistNames(organizationId, { ...stored, [no]: { firstName, lastName, maybe } });
@@ -258,21 +285,15 @@ export default function InboxChatPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showAttachMenu]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   // Load sidebar conversations from shared cache (same data as inbox list page)
   const loadSidebarFromCache = useCallback(async () => {
     if (!organizationId) return;
-    sidebarNameFetchedRef.current = new Set();
 
     const cache = readCache(organizationId);
     if (cache && cache.conversations.length > 0) {
       sidebarNewestAtRef.current = cache.newestMessageAt;
       const hydrated = hydrateNamesFromCache(cache.conversations, organizationId);
       setRecipients(hydrated);
-      setFilteredRecipients(hydrated);
       refreshUnreadCount(organizationId);
       // Background: fetch new messages since cache was built
       try {
@@ -285,7 +306,6 @@ export default function InboxChatPage() {
           const sorted = hydrateNamesFromCache(sortedConversations(map), organizationId);
           writeCache(organizationId, { conversations: sortedConversations(map), newestMessageAt: newestAt, cachedAt: Date.now() });
           setRecipients(sorted);
-          setFilteredRecipients(sorted);
           refreshUnreadCount(organizationId);
         }
       } catch { /* ignore */ }
@@ -296,9 +316,8 @@ export default function InboxChatPage() {
       const newestAt = applyMessages(map, msgs, "");
       sidebarNewestAtRef.current = newestAt;
       const sorted = hydrateNamesFromCache(sortedConversations(map), organizationId);
-      writeCache(organizationId, { conversations: sortedConversations(map), newestMessageAt: newestAt, cachedAt: Date.now() });
+      writeCache(organizationId, { conversations: sorted, newestMessageAt: newestAt, cachedAt: Date.now() });
       setRecipients(sorted);
-      setFilteredRecipients(sorted);
       refreshUnreadCount(organizationId);
     }
   }, [organizationId, refreshUnreadCount]);
@@ -333,11 +352,11 @@ export default function InboxChatPage() {
       const data = await response.json();
 
       if (data?.data && Array.isArray(data.data)) {
-        const sorted = (data.data as Message[]).sort(
-          (a, b) =>
-            new Date(a.created_at || a.updated_at || "").getTime() -
-            new Date(b.created_at || b.updated_at || "").getTime()
-        );
+        const sorted = (data.data as Message[]).sort((a, b) => {
+          const at = new Date(a.created_at || a.updated_at || "").getTime();
+          const bt = new Date(b.created_at || b.updated_at || "").getTime();
+          return at - bt;
+        });
         setMessages(sorted);
         setLoading(false); // Show messages immediately — don't wait for contact name
 
@@ -417,8 +436,9 @@ export default function InboxChatPage() {
       if (!res.ok) throw new Error((await res.json()).error || "Upload failed");
       const data = await res.json();
       setMediaAttachment({ type, url: data.url, filename: type === "document" ? file.name : undefined });
-    } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      toast({ title: "Upload failed", description: msg, variant: "destructive" });
     } finally {
       setMediaUploading(false);
       if (imageInputRef.current) imageInputRef.current.value = "";
@@ -482,8 +502,9 @@ export default function InboxChatPage() {
       } else {
         throw new Error(data.error?.message || "Failed to send message");
       }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to send message", variant: "destructive" });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to send message";
+      toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -533,7 +554,7 @@ export default function InboxChatPage() {
 
   const markSidebarAsRead = async (targetMobile: string) => {
     const r = recipients.find((rec) => rec.mobile_no === targetMobile);
-    if (!r?.has_unread || r.unread_message_ids.length === 0) return;
+    if (!r?.has_unread || !r.unread_message_ids?.length) return;
     try {
       await fetch("/api/whatsapp/whatsapp-internal/messages/read", {
         method: "POST",
@@ -614,60 +635,58 @@ export default function InboxChatPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto min-h-0">
-            {displayedRecipients.map((recipient) => (
-              <div
-                key={recipient.mobile_no}
-                onClick={() => {
-                  markSidebarAsRead(recipient.mobile_no);
-                  router.push(`/apps/whatsapp/inbox/${encodeURIComponent(recipient.mobile_no)}`);
-                }}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  recipient.mobile_no === mobileNo ? "bg-blue-50" : ""
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="relative inline-block shrink-0">
-                    <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gray-200">
-                      <User className="h-5 w-5 text-gray-500" />
-                    </div>
-                    {recipient.unread_message_ids.length > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-white text-white text-[10px] font-semibold flex items-center justify-center leading-none">
-                        {recipient.unread_message_ids.length > 99 ? "99+" : recipient.unread_message_ids.length}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className={`text-sm text-gray-900 truncate ${recipient.has_unread ? "font-semibold" : "font-medium"}`}>
-                        {recipient.name || recipient.mobile_no}
-                      </p>
-                      <Badge variant={recipient.has_unread ? "default" : "secondary"} className="text-xs shrink-0">
-                        {recipient.message_count}
-                      </Badge>
-                    </div>
-                    {getTagsForContact(recipient.mobile_no).length > 0 && (
-                      <div className="flex items-center gap-1 mb-1 flex-wrap">
-                        {getTagsForContact(recipient.mobile_no).map((t) => (
-                          <span
-                            key={t.id}
-                            className="px-1.5 rounded-full text-[9px] font-medium text-white leading-4"
-                            style={{ backgroundColor: t.color }}
-                          >
-                            {t.name}
-                          </span>
-                        ))}
+            {displayedRecipients.map((recipient) => {
+              const unreadIds = recipient.unread_message_ids ?? [];
+              return (
+                <div
+                  key={recipient.mobile_no}
+                  onClick={() => {
+                    markSidebarAsRead(recipient.mobile_no);
+                    router.push(`/apps/whatsapp/inbox/${encodeURIComponent(recipient.mobile_no)}`);
+                  }}
+                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                    recipient.mobile_no === mobileNo ? "bg-blue-50" : ""
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="relative inline-block shrink-0">
+                      <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gray-200">
+                        <User className="h-5 w-5 text-gray-500" />
                       </div>
-                    )}
-                    {recipient.name && (
-                      <p className="text-xs text-gray-400 font-mono truncate">{recipient.mobile_no}</p>
-                    )}
-                    <p className="text-xs text-gray-500 truncate">
-                      {recipient.last_message ? truncateMessage(recipient.last_message) : "No messages"}
-                    </p>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className={`text-sm text-gray-900 truncate ${recipient.has_unread ? "font-semibold" : "font-medium"}`}>
+                          {recipient.name || recipient.mobile_no}
+                        </p>
+                        <Badge variant={recipient.has_unread ? "default" : "secondary"} className="text-xs shrink-0">
+                          {unreadIds.length}
+                        </Badge>
+                      </div>
+                      {getTagsForContact(recipient.mobile_no).length > 0 && (
+                        <div className="flex items-center gap-1 mb-1 flex-wrap">
+                          {getTagsForContact(recipient.mobile_no).map((t) => (
+                            <span
+                              key={t.id}
+                              className="px-1.5 rounded-full text-[9px] font-medium text-white leading-4"
+                              style={{ backgroundColor: t.color }}
+                            >
+                              {t.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {recipient.name && (
+                        <p className="text-xs text-gray-400 font-mono truncate">{recipient.mobile_no}</p>
+                      )}
+                      <p className="text-xs text-gray-500 truncate">
+                        {recipient.last_message ? truncateMessage(recipient.last_message) : "No messages"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Sidebar pagination */}
@@ -719,6 +738,11 @@ export default function InboxChatPage() {
                   {contactNameLoaded && contactName && (
                     <span className="text-xs text-gray-400 font-mono">{mobileNo}</span>
                   )}
+                  {unreadCount > 0 && (
+                    <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center leading-none">
+                      {unreadCount > 99 ? "99+" : unreadCount} unread
+                    </span>
+                  )}
                   {contactTags.map((t) => (
                     <span
                       key={t.id}
@@ -745,7 +769,7 @@ export default function InboxChatPage() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-gray-50 p-4">
             {loading ? (
               <div className="text-center py-12 text-gray-500">Loading messages...</div>
             ) : messages.length === 0 ? (
@@ -786,6 +810,7 @@ export default function InboxChatPage() {
                       return (
                         <div
                           key={message.id}
+                          ref={(el) => { messageRefs.current[message.id] = el; }}
                           className={`flex ${isOutgoing ? "justify-end" : "justify-start"} mb-2`}
                         >
                           <div
