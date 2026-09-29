@@ -6,9 +6,8 @@ import { useConfig } from "@/lib/whatsapp/config-context";
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { CheckCircle, XCircle, Menu, ChevronDown, LayoutGrid, ArrowLeftRight, KeyRound, LogOut, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { getToken, clearToken } from "@/utils/auth";
+import { getToken, signOutUser } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
-import { signOut } from "next-auth/react";
 import dynamic from "next/dynamic";
 
 const ConfirmSignOutModal = dynamic(() => import("@/components/modal/confirmSignout"), { ssr: false });
@@ -49,17 +48,11 @@ export function Header({ title, description }: HeaderProps) {
   };
 
   const handleSignOut = () => {
-    clearToken();
-    signOut({ callbackUrl: "/signin" });
+    signOutUser();
   };
 
-  const handlePasswordUpdated = async () => {
-    clearToken();
-    try {
-      await signOut({ callbackUrl: "/signin" });
-    } catch {
-      window.location.replace("/signin");
-    }
+  const handlePasswordUpdated = () => {
+    signOutUser();
   };
 
   return (

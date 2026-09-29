@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { getUserInfo } from "../../utils/decodeToken";
-import { getToken, clearToken } from "@/utils/auth";
+import { getToken, signOutUser } from "@/utils/auth";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import ChangePasswordModal from "../modal/changePassword";
 import { FaChevronDown, FaExchangeAlt, FaKey, FaSignOutAlt, FaThLarge } from "react-icons/fa";
@@ -57,10 +56,7 @@ const Profile = () => {
   };
 
   const handleSignOut = () => {
-    if (typeof window !== "undefined") {
-      clearToken();
-    }
-    signOut({ callbackUrl: "/signin" });
+    signOutUser();
   };
 
   const handleConfirmLogout = () => {
@@ -72,16 +68,11 @@ const Profile = () => {
     setModalOpen(false);
   };
 
-  const handlePasswordUpdated = async () => {
+  const handlePasswordUpdated = () => {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("passwordUpdateSuccess", "true");
-      clearToken();
     }
-    try {
-      await signOut({ callbackUrl: "/signin" });
-    } catch {
-      window.location.replace("/signin");
-    }
+    signOutUser();
   };
 
   return (
