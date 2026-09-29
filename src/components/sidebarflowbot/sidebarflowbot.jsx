@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { signOut } from "next-auth/react";
-import { clearToken } from "@/utils/auth";
+import { signOutUser } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import Joyride from "react-joyride";
@@ -49,8 +48,7 @@ const SidebarFlowBot = () => {
   const handleSwitchAccount = () => router.push("/user-orgs");
 
   const handleSignOut = () => {
-    if (typeof window !== "undefined") clearToken();
-    signOut({ callbackUrl: "/signin" });
+    signOutUser();
   };
 
   const handleCloseModal = () => setModalOpen(false);
