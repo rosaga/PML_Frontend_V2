@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getToken } from '@/utils/auth';
 import { hasRole } from '../../utils/decodeToken';
 import { GetSenderId } from "../api/actions/senderId/senderId";
+import Profile from "@/components/profile/profile";
 import "./miniapp.css";
 
 const TECH_PROVIDER_ORGANIZATION_ID = "58045135-f272-4879-be0f-2559d836fdba";
@@ -100,7 +101,7 @@ const MiniApp = () => {
   const [navigating, setNavigating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState("");
 
   const router = useRouter();
 
@@ -112,7 +113,7 @@ const MiniApp = () => {
     const token = getToken();
 
     setIsAdmin(hasRole(token, "SuperAdmin"));
-    setOrganizationId(orgId || "");
+    setSelectedAccountId(orgId || "");
 
     if (orgName) {
       setOrganizationName(orgName);
@@ -200,7 +201,7 @@ const MiniApp = () => {
 
   const servicesForOrganization = services.filter((service) => {
     if (!service.restrictedToOrganizationId) return true;
-    return organizationId === service.restrictedToOrganizationId;
+    return selectedAccountId === service.restrictedToOrganizationId;
   });
 
   const visibleServices = isAdmin ? [...servicesForOrganization, adminService] : servicesForOrganization;
@@ -209,14 +210,16 @@ const MiniApp = () => {
     <div className="miniapp-page">
       {/* ── Header ── */}
       <div className="miniapp-header">
-        <div className="miniapp-header-inner">
-          <div>
+        <div className="miniapp-topbar">
             <img
               src="/images/Peakwhite.png"
               alt="Peak Mobile"
               className="miniapp-logo-img"
             />
-
+            <Profile />
+        </div>
+        <div className="miniapp-header-inner">
+          <div>
             <div className="miniapp-headline">
               <h1>
                 Welcome,{" "}
