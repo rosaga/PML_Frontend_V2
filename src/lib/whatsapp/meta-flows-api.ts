@@ -117,6 +117,7 @@ export interface ApiResponse<T = unknown> {
 
 interface FlowbotMetaFlow {
   id?: number | string;
+  type?: "META_FLOW" | "CATALOGUE";
   meta_flow_record_id?: number | string;
   organization_id?: number | string;
   organization_external_id?: string;

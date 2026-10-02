@@ -138,12 +138,10 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
     const fetchMetaFlowsData = async () => {
       const result = await getMetaFlowResources(effectiveOrganizationId);
       if (result.success && result.data) {
-        const liveResources = result.data.data.filter((resource) => {
-          const status = resource.status?.toUpperCase();
-          return resource.is_active !== false && (status === "ACTIVE" || status === "LIVE");
-        });
-        setMetaFlows(liveResources.filter((resource) => resource.resource_type === "META_FLOW"));
-        setCatalogues(liveResources.filter((resource) => resource.resource_type === "CATALOGUE"));
+        setMetaFlows(result.data.data.filter((metaFlow) => {
+          const status = metaFlow.status?.toUpperCase();
+          return metaFlow.type === "META_FLOW" && metaFlow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
+        }));
       }
     };
     fetchMetaFlowsData();
