@@ -55,6 +55,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [selectedTemplateObj, setSelectedTemplateObj] = useState<Template | null>(null);
+  const [templateParamsInput, setTemplateParamsInput] = useState("");
   const [templateParams, setTemplateParams] = useState<string[]>([]);
   const [campaignName, setCampaignName] = useState("");
   const [sendSuccess, setSendSuccess] = useState(false);
@@ -73,7 +74,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const fetchTemplates = useCallback(async () => {
     if (!isConfigured) return;
-    const result = await getTemplates(config);
+    const result = await getTemplates(config, { limit: 1000 });
     if (result.success && result.data?.data) {
       setTemplates(result.data.data.filter((t) => t.status?.toUpperCase() === "APPROVED"));
     }
@@ -299,6 +300,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
     const template = templates.find((t) => t.name === templateName);
     setSelectedTemplateObj(template || null);
     // Reset parameters and media when template changes
+    setTemplateParamsInput("");
     setTemplateParams([]);
     setTemplateImageUrl("");
     setTemplateVideoUrl("");
@@ -332,6 +334,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
       return;
     }
     
+    setTemplateParamsInput(value);
     setTemplateParams(params);
   };
 
@@ -511,6 +514,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
       // Reset form
       setSelectedGroupId("");
       setSelectedTemplate("");
+      setTemplateParamsInput("");
       setTemplateParams([]);
       setCampaignName("");
       setScheduleEnabled(false);
@@ -673,7 +677,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
                 <Input
                   id="params-existing"
                   placeholder="e.g., firstname, lastname"
-                  value={templateParams.join(", ")}
+                  value={templateParamsInput}
                   onChange={(e) => handleParameterChange(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
