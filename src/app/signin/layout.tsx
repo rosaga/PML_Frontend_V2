@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: "#0a0a1a",
 };
 
