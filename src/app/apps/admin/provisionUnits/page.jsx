@@ -1,17 +1,24 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   GetAdminOrganizations,
   GetAdminOrganizationProfile,
   GetAdminAllRecharges,
 } from "@/app/api/actions/admin/admin";
 import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
+import WhatsAppProvisioning from "@/components/admin/whatsapp/provisioning";
 
 const DEFAULT_ORG_PAGE_SIZE = 10;
 
 const ProvisionUnitsPage = () => {
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const requestedOrganization = searchParams.get("organization") || "";
   const [isClient, setIsClient] = useState(false);
+  const [activeTab, setActiveTab] = useState("services");
+  const [whatsappOrganizationId, setWhatsappOrganizationId] = useState("");
 
   const [organizations, setOrganizations] = useState([]);
   const [recentProvisions, setRecentProvisions] = useState([]);
@@ -37,6 +44,11 @@ const ProvisionUnitsPage = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    setActiveTab(requestedTab === "whatsapp" ? "whatsapp" : "services");
+    setWhatsappOrganizationId(requestedOrganization);
+  }, [requestedTab, requestedOrganization]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -450,19 +462,46 @@ const ProvisionUnitsPage = () => {
               Provision Units
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Search organizations, then provision or reduce DATA, AIRTIME, and SMS balances.
+              {activeTab === "whatsapp"
+                ? "Provision WhatsApp credits and view organization top up history."
+                : "Search organizations, then provision or reduce DATA, AIRTIME, and SMS balances."}
             </p>
           </div>
 
-          <button
+          {activeTab !== "whatsapp" && <button
             type="button"
             onClick={fetchProvisionPageData}
             className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             Refresh
-          </button>
+          </button>}
         </div>
 
+        <div className="mb-6 inline-flex flex-wrap gap-1 rounded-2xl bg-gray-200 p-1" aria-label="Provision views">
+          {[
+            { id: "services", label: "Service Units" },
+            { id: "whatsapp", label: "WhatsApp Credits" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              aria-pressed={activeTab === tab.id}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                activeTab === tab.id
+                  ? "bg-white text-gray-900 shadow-[0_0_0_2px_rgba(0,0,0,0.25),0_2px_6px_rgba(0,0,0,0.12)]"
+                  : "text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "whatsapp" ? (
+          <WhatsAppProvisioning key={whatsappOrganizationId} initialOrganizationId={whatsappOrganizationId} />
+        ) : (
+          <>
         {pageError ? (
           <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {pageError}
@@ -754,6 +793,8 @@ const ProvisionUnitsPage = () => {
             </table>
           </div>
         </div>
+          </>
+        )}
       </div>
 
       <AdjustBalanceModal
