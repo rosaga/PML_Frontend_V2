@@ -12,6 +12,7 @@ import { FlowCanvas } from "./flow-canvas";
 import { NodeEditor } from "./node-editor";
 import type { Edge, Node } from "reactflow";
 import type { FlowNode } from "./flow-types";
+import { isTerminalNodeType } from "./flow-types";
 
 interface FlowEditorProps {
   flowId?: number;
@@ -99,28 +100,12 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
       options: node.extra_data?.options || [],
       metaFlowId: node.extra_data?.meta_flow_id,
       metaFlowName: node.extra_data?.meta_flow_name,
+      catalogueId: node.extra_data?.catalogue_id,
+      catalogueName: node.extra_data?.catalogue_name,
     },
     position: node.extra_data?.position || { x: 100 + index * 280, y: 100 + (index % 3) * 160 },
     type: "flowNode",
   }));
-
-  // Derive edges from parent_index — each node with a parent_index connects from that parent
-  const reactFlowEdges: Edge[] = nodes
-    .filter((node) => node.parent_index !== undefined && node.parent_index !== null)
-    .map((node) => {
-      const parentNode = nodes[node.parent_index!];
-      if (!parentNode) return null;
-      const sourceId = String(parentNode.id);
-      const targetId = String(node.id);
-      return {
-        id: `edge-${sourceId}-${targetId}`,
-        source: sourceId,
-        target: targetId,
-        type: "smoothstep",
-        animated: false,
-      };
-    })
-    .filter(Boolean) as Edge[];
 
   useEffect(() => {
     if (flowId) {
@@ -135,7 +120,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
       if (result.success && result.data) {
         setMetaFlows(result.data.data.filter((metaFlow) => {
           const status = metaFlow.status?.toUpperCase();
-          return metaFlow.type === "META_FLOW" && metaFlow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
+          return isTerminalNodeType(metaFlow.type) && metaFlow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
         }));
       }
     };
@@ -225,46 +210,51 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
         // edges state is the single source of truth — seeded on load, updated on canvas interaction
         const uniqueEdges = edges;
 
-        // Validate META_FLOW node constraints
-        const metaFlowNodes = nodes.filter((node) => node.node_type === "META_FLOW");
-        if (metaFlowNodes.length > 1) {
-          toast({ title: "Validation Error", description: "Only one Meta Flow node can be used in a flow.", variant: "destructive" });
+        // The batch API accepts one final interactive node, of either type.
+        const terminalNodes = nodes.filter((node) => isTerminalNodeType(node.node_type));
+        if (terminalNodes.length > 1) {
+          toast({ title: "Validation Error", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
           setSaving(false);
           return;
         }
 
-        const metaFlowNode = metaFlowNodes[0];
-        if (metaFlowNode) {
-          const metaFlowNodeId = String(metaFlowNode.id);
-          const hasOutgoingEdge = edges.some((edge) => edge.source === metaFlowNodeId);
-          const hasIncomingEdge = edges.some((edge) => edge.target === metaFlowNodeId);
+        const terminalNode = terminalNodes[0];
+        if (terminalNode) {
+          const terminalNodeId = String(terminalNode.id);
+          const terminalLabel = terminalNode.node_type === "CATALOGUE" ? "Catalogue" : "Meta Flow";
+          const hasOutgoingEdge = edges.some((edge) => edge.source === terminalNodeId);
+          const hasIncomingEdge = edges.some((edge) => edge.target === terminalNodeId);
 
           if (hasOutgoingEdge) {
-            toast({ title: "Validation Error", description: "A Meta Flow node must be the last node and cannot have child nodes.", variant: "destructive" });
+            toast({ title: "Validation Error", description: `A ${terminalLabel} node must be the last node and cannot have child nodes.`, variant: "destructive" });
             setSaving(false);
             return;
           }
           if (nodes.length > 1 && !hasIncomingEdge) {
-            toast({ title: "Validation Error", description: "Connect a parent node into the Meta Flow node before saving.", variant: "destructive" });
+            toast({ title: "Validation Error", description: `Connect a parent node into the ${terminalLabel} node before saving.`, variant: "destructive" });
             setSaving(false);
             return;
           }
-          if (!metaFlowNode.extra_data?.meta_flow_id) {
-            toast({ title: "Validation Error", description: "Select a Meta Flow for the Meta Flow node before saving.", variant: "destructive" });
+          const assetId = terminalNode.node_type === "CATALOGUE"
+            ? terminalNode.extra_data?.catalogue_id
+            : terminalNode.extra_data?.meta_flow_id;
+          if (!assetId) {
+            toast({ title: "Validation Error", description: `Select a ${terminalLabel} for the ${terminalLabel} node before saving.`, variant: "destructive" });
             setSaving(false);
             return;
           }
         }
 
-        // META_FLOW node always goes last so parent_index resolves correctly
-        const orderedNodes = metaFlowNode
-          ? [...nodes.filter((node) => node.node_type !== "META_FLOW"), metaFlowNode]
+        // Terminal nodes must be last in the batch payload.
+        const orderedNodes = terminalNode
+          ? [...nodes.filter((node) => !isTerminalNodeType(node.node_type)), terminalNode]
           : nodes;
         const lastIndex = orderedNodes.length - 1;
 
         const nodesPayload = orderedNodes.map((n, nodeIndex) => {
           const isLastNode = nodeIndex === lastIndex;
           const isMetaFlowNode = n.node_type === "META_FLOW";
+          const isCatalogueNode = n.node_type === "CATALOGUE";
           const isApiId = typeof n.id === "number" || (typeof n.id === "string" && /^\d+$/.test(n.id));
           const nodeStringId = String(n.id);
 
@@ -311,6 +301,11 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
             extra_data.meta_flow_id = n.extra_data?.meta_flow_id;
             extra_data.meta_flow_name = n.extra_data?.meta_flow_name;
           }
+          if (isCatalogueNode) {
+            extra_data.catalogue_id = n.extra_data?.catalogue_id;
+            extra_data.catalogue_name = n.extra_data?.catalogue_name;
+            extra_data.catalogue_db_id = n.extra_data?.catalogue_db_id;
+          }
 
           const base = {
             name: n.name,
@@ -320,7 +315,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
               text: n.header_text_template?.text || "",
             },
             backend_enabled: n.backend_enabled ?? false,
-            exit_enabled: isLastNode || isMetaFlowNode ? true : (n.exit_enabled ?? false),
+            exit_enabled: isLastNode || isTerminalNodeType(n.node_type) ? true : (n.exit_enabled ?? false),
             extra_data,
             parent_index: parentIndex,
             created_at: n.created_at || now,
@@ -358,17 +353,17 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
   };
 
   const handleAddNode = (type: string) => {
-    if (type === "META_FLOW" && nodes.some((node) => node.node_type === "META_FLOW")) {
-      toast({ title: "Meta Flow Already Added", description: "Only one Meta Flow node can be used in a flow.", variant: "destructive" });
+    if (isTerminalNodeType(type) && nodes.some((node) => isTerminalNodeType(node.node_type))) {
+      toast({ title: "Terminal Node Already Added", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
       return;
     }
     const newNode: FlowNode = {
       id: `node-${Date.now()}`,
       name: `New ${type} Node`,
       node_type: type as FlowNode["node_type"],
-      header_text_template: { language: "en", text: type === "META_FLOW" ? "Open Meta Flow" : "Click to edit" },
+      header_text_template: { language: "en", text: type === "META_FLOW" ? "Open Meta Flow" : type === "CATALOGUE" ? "Browse our catalogue" : "Click to edit" },
       backend_enabled: false,
-      exit_enabled: type === "META_FLOW",
+      exit_enabled: isTerminalNodeType(type),
       extra_data: { position: { x: 100 + nodes.length * 50, y: 100 + nodes.length * 50 } },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -386,16 +381,16 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
 
   const handleNodeSave = (updatedNode: FlowNode) => {
     if (
-      updatedNode.node_type === "META_FLOW" &&
-      nodes.some((node) => String(node.id) !== selectedNodeId && node.node_type === "META_FLOW")
+      isTerminalNodeType(updatedNode.node_type) &&
+      nodes.some((node) => String(node.id) !== selectedNodeId && isTerminalNodeType(node.node_type))
     ) {
-      toast({ title: "Meta Flow Already Added", description: "Only one Meta Flow node can be used in a flow.", variant: "destructive" });
-      return;
+      toast({ title: "Terminal Node Already Added", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
+      return false;
     }
 
     setNodes(nodes.map((node) => {
       if (String(node.id) !== selectedNodeId) return node;
-      if (updatedNode.node_type !== "META_FLOW") return updatedNode;
+      if (!isTerminalNodeType(updatedNode.node_type)) return updatedNode;
 
       return {
         ...updatedNode,
@@ -408,10 +403,11 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
       };
     }));
 
-    if (updatedNode.node_type === "META_FLOW" && updatedNode.id !== undefined) {
+    if (isTerminalNodeType(updatedNode.node_type) && updatedNode.id !== undefined) {
       const nodeId = String(updatedNode.id);
       setEdges(edges.filter((edge) => edge.source !== nodeId));
     }
+    return true;
   };
 
   const handleDeleteNode = (nodeId: string) => {
@@ -451,7 +447,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
         <div className="flex-1">
           <FlowCanvas
             nodes={reactFlowNodes}
-            edges={[...reactFlowEdges, ...edges]}
+            edges={edges}
             onNodesChange={(newNodes) => {
               const updatedNodes = nodes.map((node) => {
                 const newNode = newNodes.find((n) => n.id === String(node.id));
