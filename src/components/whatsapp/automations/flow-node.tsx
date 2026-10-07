@@ -4,6 +4,7 @@ import React from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { Card } from "@/components/whatsapp/ui/card";
 import { Badge } from "@/components/whatsapp/ui/badge";
+import { isTerminalNodeType } from "./flow-types";
 
 interface Option {
   value: string;
@@ -17,6 +18,8 @@ interface FlowNodeData {
   options?: Option[];
   metaFlowId?: string;
   metaFlowName?: string;
+  catalogueId?: string;
+  catalogueName?: string;
   selected?: boolean;
   onDelete?: () => void;
   onClick?: () => void;
@@ -29,13 +32,17 @@ const NODE_COLORS: Record<string, { card: string; badge: string }> = {
   NUMBER:    { card: "bg-yellow-50 border-yellow-200", badge: "bg-yellow-100 text-yellow-800" },
   BUTTONS:   { card: "bg-green-50 border-green-200",   badge: "bg-green-100 text-green-800" },
   META_FLOW: { card: "bg-cyan-50 border-cyan-200",     badge: "bg-cyan-100 text-cyan-800" },
+  CATALOGUE: { card: "bg-rose-50 border-rose-200",     badge: "bg-rose-100 text-rose-800" },
 };
 
 export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
   const colors = NODE_COLORS[data.type] || { card: "bg-gray-50 border-gray-200", badge: "bg-gray-100 text-gray-800" };
   const isRoute = data.type === "ROUTE";
   const isButtons = data.type === "BUTTONS";
-  const isMetaFlow = data.type === "META_FLOW";
+  const isTerminal = isTerminalNodeType(data.type);
+  const assetName = data.type === "CATALOGUE" ? data.catalogueName : data.metaFlowName;
+  const assetId = data.type === "CATALOGUE" ? data.catalogueId : data.metaFlowId;
+  const assetLabel = data.type === "CATALOGUE" ? "Catalogue" : "Meta Flow";
   const options = (data.options || []).filter((o) => o.value?.trim());
 
   return (
@@ -56,12 +63,12 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
             </div>
           )}
 
-          {/* META_FLOW: show selected flow name/id */}
-          {isMetaFlow && (
+          {/* Terminal nodes: show selected asset name/id */}
+          {isTerminal && (
             <div className="text-xs text-muted-foreground space-y-1">
-              <div className="line-clamp-1">{data.metaFlowName || "No Meta Flow selected"}</div>
-              {data.metaFlowId && (
-                <div className="font-mono text-[10px] line-clamp-1">{data.metaFlowId}</div>
+              <div className="line-clamp-1">{assetName || `No ${assetLabel} selected`}</div>
+              {assetId && (
+                <div className="font-mono text-[10px] line-clamp-1">{assetId}</div>
               )}
             </div>
           )}
@@ -157,7 +164,7 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
             </div>
           );
         })
-      ) : !data.type?.includes("LIST") && !isButtons && !isMetaFlow ? (
+      ) : !data.type?.includes("LIST") && !isButtons && !isTerminal ? (
         <Handle type="source" position={Position.Bottom} />
       ) : isButtons ? (
         <Handle type="source" position={Position.Bottom} />

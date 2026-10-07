@@ -1,7 +1,7 @@
 export interface FlowNode {
   id?: string | number;
   name: string;
-  node_type: "TEXT" | "LIST" | "ROUTE" | "NUMBER" | "BUTTONS" | "META_FLOW";
+  node_type: "TEXT" | "LIST" | "ROUTE" | "NUMBER" | "BUTTONS" | "META_FLOW" | "CATALOGUE";
   header_text_template: {
     id?: number;
     language: string;
@@ -20,4 +20,8 @@ export interface FlowNode {
   updated_at?: string;
   created_by?: string;
   updated_by?: string;
+}
+
+export function isTerminalNodeType(type: string): boolean {
+  return type === "META_FLOW" || type === "CATALOGUE";
 }
