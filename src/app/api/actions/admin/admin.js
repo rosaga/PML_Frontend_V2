@@ -287,6 +287,26 @@ export async function GetAdminSMSDashboardSummary() {
   }
 }
 
+export async function GetAdminSMSBalance(page = 1, size = 10, signal) {
+  const config = await authHeaders();
+  const query = new URLSearchParams({ page: String(page), size: String(size) });
+  const res = await axios.get(
+    `${apiUrl.MESSAGING_V2}/admin/sms/balance?${query}`,
+    { ...config, signal }
+  );
+  return res.data;
+}
+
+export async function CreateAdminSMSPurchase(payload) {
+  const config = await authHeaders();
+  const res = await axios.post(
+    `${apiUrl.MESSAGING_V2}/admin/sms/purchases`,
+    payload,
+    config
+  );
+  return res.data;
+}
+
 export async function GetAdminSMSCampaignSummaries(query = "") {
   const config = await authHeaders();
 
