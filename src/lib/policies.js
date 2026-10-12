@@ -17,13 +17,4 @@ export const POLICIES = [
     acknowledgement: "I have read and acknowledge the Privacy Policy.",
     icon: ShieldCheck,
   },
-  {
-    id: "processing",
-    title: "Data Processing Agreement",
-    description: "How personal data is handled on behalf of your organization.",
-    // Default document location; deployments can point to their hosted DPA.
-    href: process.env.NEXT_PUBLIC_DPA_URL || "/pdf/data-processing-agreement.pdf",
-    acknowledgement: "I have read and agree to the Data Processing Agreement.",
-    icon: Database,
-  },
 ];
