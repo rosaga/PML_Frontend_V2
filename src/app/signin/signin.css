@@ -1,7 +1,3 @@
-.signin-page .signup-story-photo {
-  background-image: url('/images/miniapp_background.jpeg');
-  background-size: max(259%, 141vh) auto;
-}
 .signin-page .signup-story::after { display: none; }
 .signin-content { max-width: 440px; }
 .signin-recovery { display: flex; justify-content: flex-end; margin-top: -8px; }
