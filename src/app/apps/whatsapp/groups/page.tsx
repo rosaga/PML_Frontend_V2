@@ -6,6 +6,8 @@ import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Header } from "@/components/whatsapp/dashboard/header";
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { Button } from "@/components/whatsapp/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/whatsapp/ui/dialog";
+import { CreateGroupForm } from "@/components/whatsapp/groups/create-group-form";
 import {
   Table,
   TableBody,
@@ -16,7 +18,7 @@ import {
 } from "@/components/whatsapp/ui/table";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
-import { Loader2, Users, RefreshCw, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import { Loader2, Users, RefreshCw, ChevronLeft, ChevronRight, Trash2, X, Plus } from "lucide-react";
 
 const PEAKDATA_BASE_URL = "https://peakdata-jja4kcvvdq-ez.a.run.app/api/v2";
 
@@ -132,6 +134,8 @@ function GroupsContent() {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
   const pageSize = 10;
 
   const fetchGroups = async (page: number = 1) => {
@@ -229,20 +233,42 @@ function GroupsContent() {
       />
 
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <p className="text-sm text-muted-foreground">
             Total Groups: {totalCount}
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchGroups(currentPage)}
-            disabled={loading}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchGroups(currentPage)}
+              disabled={loading}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <Button size="sm" onClick={() => setShowCreate(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Group
+            </Button>
+          </div>
         </div>
+
+        <Dialog open={showCreate} onOpenChange={(open) => {
+          if (creating) return;
+          setShowCreate(open);
+          if (!open) fetchGroups(currentPage);
+        }}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto" showCloseButton={!creating}>
+            <DialogHeader>
+              <DialogTitle>Create Group</DialogTitle>
+            </DialogHeader>
+            <CreateGroupForm onSubmittingChange={setCreating} onSuccess={() => {
+              setShowCreate(false);
+              fetchGroups(1);
+            }} />
+          </DialogContent>
+        </Dialog>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
