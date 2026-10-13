@@ -195,7 +195,7 @@ export function SendMessageForm() {
     if (result.success && result.data) {
       setMetaFlows(result.data.data.filter((flow) => {
         const status = flow.status?.toUpperCase();
-        return flow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
+        return flow.type === "META_FLOW" && flow.is_active !== false && (status === "ACTIVE" || status === "LIVE");
       }));
     }
   }, [organizationExternalId, organizationId]);

@@ -8,9 +8,8 @@ import { CheckCircle, XCircle, Menu, ChevronDown, LayoutGrid, ArrowLeftRight, Ke
 import Image from "next/image";
 import Link from "next/link";
 import { Building2 } from "lucide-react";
-import { getToken, clearToken } from "@/utils/auth";
+import { getToken, clearToken, signOutUser } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
-import { signOut } from "next-auth/react";
 import dynamic from "next/dynamic";
 
 const ConfirmSignOutModal = dynamic(() => import("@/components/modal/confirmSignout"), { ssr: false });
@@ -51,17 +50,11 @@ export function Header({ title, description }: HeaderProps) {
   };
 
   const handleSignOut = () => {
-    clearToken();
-    signOut({ callbackUrl: "/signin" });
+    signOutUser();
   };
 
-  const handlePasswordUpdated = async () => {
-    clearToken();
-    try {
-      await signOut({ callbackUrl: "/signin" });
-    } catch {
-      window.location.replace("/signin");
-    }
+  const handlePasswordUpdated = () => {
+    signOutUser();
   };
 
   return (

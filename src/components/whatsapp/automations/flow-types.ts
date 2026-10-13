@@ -21,3 +21,7 @@ export interface FlowNode {
   created_by?: string;
   updated_by?: string;
 }
+
+export function isTerminalNodeType(type: string): boolean {
+  return type === "META_FLOW" || type === "CATALOGUE";
+}

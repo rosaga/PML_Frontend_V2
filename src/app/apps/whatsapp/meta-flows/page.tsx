@@ -23,17 +23,17 @@ function MetaFlowsContent() {
   return (
     <div className="min-h-screen">
       <Header
-        title="Meta Flows"
-        description="Create and manage your WhatsApp Meta Flows"
+        title="Meta Flows & Catalogues"
+        description="Create and manage your WhatsApp Meta Flows and catalogues"
       />
 
       <div className="p-6">
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+        <Tabs value={viewMode} onValueChange={(v: string) => setViewMode(v as ViewMode)}>
           <div className="mb-6 flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="list" className="flex items-center gap-2">
                 <List className="h-4 w-4" />
-                All Meta Flows
+                All Items
               </TabsTrigger>
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -44,7 +44,7 @@ function MetaFlowsContent() {
             {viewMode === "list" && (
               <Button onClick={() => setViewMode("create")}>
                 <Plus className="mr-2 h-4 w-4" />
-                New Meta Flow
+                New Item
               </Button>
             )}
           </div>

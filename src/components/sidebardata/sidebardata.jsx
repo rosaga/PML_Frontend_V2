@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { signOut } from "next-auth/react";
-import { clearToken, getToken } from "@/utils/auth";
+import { getToken, signOutUser } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import Joyride from "react-joyride";
@@ -64,11 +63,6 @@ const SidebarData = () => {
     setActiveLink(href);
     router.push(href);
     closeSidebar();
-  };
-
-  const handleSignOut = () => {
-    if (typeof window !== "undefined") clearToken();
-    signOut({ callbackUrl: "/signin" });
   };
 
   const links = [
@@ -247,10 +241,7 @@ const SidebarData = () => {
       {modalOpen && (
         <ConfirmSignOutModal
           onClose={() => setModalOpen(false)}
-          onConfirm={() => {
-            clearToken();
-            router.push("/signin");
-          }}
+          onConfirm={signOutUser}
         />
       )}
     </>

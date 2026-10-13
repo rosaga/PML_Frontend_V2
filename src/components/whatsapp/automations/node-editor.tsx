@@ -14,6 +14,7 @@ import {
 } from "@/components/whatsapp/ui/select";
 import { Trash2, Plus, X } from "lucide-react";
 import type { FlowNode } from "./flow-types";
+import { isTerminalNodeType } from "./flow-types";
 import type { MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 
 const TERMINAL_NODE_TYPES: FlowNode["node_type"][] = ["META_FLOW", "CATALOGUE"];
@@ -21,8 +22,7 @@ const TERMINAL_NODE_TYPES: FlowNode["node_type"][] = ["META_FLOW", "CATALOGUE"];
 interface NodeEditorProps {
   node: FlowNode | null;
   metaFlows?: MetaFlow[];
-  catalogues?: MetaFlow[];
-  onSave?: (node: FlowNode) => void;
+  onSave?: (node: FlowNode) => void | boolean;
   onDelete?: () => void;
 }
 
@@ -46,13 +46,12 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
 
   // Update field and immediately propagate to canvas
   const updateField = (updated: FlowNode) => {
+    if (onSave?.(updated) === false) return;
     setFormData(updated);
-    onSave?.(updated);
   };
 
   const handleTypeChange = (value: FlowNode["node_type"]) => {
-    if (TERMINAL_NODE_TYPES.includes(value)) {
-      const isMetaFlow = value === "META_FLOW";
+    if (isTerminalNodeType(value)) {
       updateField({
         ...formData,
         node_type: value,
@@ -60,10 +59,8 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
         exit_enabled: true,
         extra_data: {
           position: formData.extra_data?.position,
-          meta_flow_id: isMetaFlow ? formData.extra_data?.meta_flow_id : undefined,
-          meta_flow_name: isMetaFlow ? formData.extra_data?.meta_flow_name : undefined,
-          catalogue_id: isMetaFlow ? undefined : formData.extra_data?.catalogue_id,
-          catalogue_name: isMetaFlow ? undefined : formData.extra_data?.catalogue_name,
+          ...(value === formData.node_type ? formData.extra_data : {}),
+          options: undefined,
         },
       });
       return;
@@ -77,23 +74,32 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
         meta_flow_name: undefined,
         catalogue_id: undefined,
         catalogue_name: undefined,
+        catalogue_db_id: undefined,
       },
     });
   };
 
-  const handleMetaFlowSelect = (metaFlowId: string) => {
-    const selectedMetaFlow = metaFlows.find((flow) => flow.flow_id === metaFlowId);
+  const handleAssetSelect = (assetId: string) => {
+    const selectedAsset = metaFlows.find((flow) => flow.type === formData.node_type && flow.flow_id === assetId);
     updateField({
       ...formData,
-      name: selectedMetaFlow?.flow_name || formData.name,
+      name: selectedAsset?.flow_name || formData.name,
       header_text_template: {
         ...formData.header_text_template,
-        text: selectedMetaFlow ? `Open ${selectedMetaFlow.flow_name}` : formData.header_text_template.text,
+        text: selectedAsset ? `Open ${selectedAsset.flow_name}` : formData.header_text_template.text,
       },
       extra_data: {
         ...formData.extra_data,
-        meta_flow_id: metaFlowId,
-        meta_flow_name: selectedMetaFlow?.flow_name || "",
+        ...(formData.node_type === "CATALOGUE"
+          ? {
+              catalogue_id: assetId,
+              catalogue_name: selectedAsset?.flow_name || "",
+              catalogue_db_id: selectedAsset?.id,
+            }
+          : {
+              meta_flow_id: assetId,
+              meta_flow_name: selectedAsset?.flow_name || "",
+            }),
       },
     });
   };
@@ -124,6 +130,8 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
   const options: Option[] = formData.extra_data?.options || [{ value: "", target_index: null }];
   const setOptions = (opts: Option[]) =>
     updateField({ ...formData, extra_data: { ...formData.extra_data, options: opts } });
+  const availableAssets = metaFlows.filter((flow) => flow.type === formData.node_type && flow.flow_id);
+  const assetLabel = formData.node_type === "CATALOGUE" ? "Catalogue" : "Meta Flow";
 
   if (!node) {
     return (
@@ -150,7 +158,7 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
         <Label>Node Type</Label>
         <Select
           value={formData.node_type}
-          onValueChange={(value) => handleTypeChange(value as FlowNode["node_type"])}
+          onValueChange={(value: string) => handleTypeChange(value as FlowNode["node_type"])}
         >
           <SelectTrigger>
             <SelectValue />
@@ -167,27 +175,27 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
         </Select>
       </div>
 
-      {/* META_FLOW: flow selector */}
-      {formData.node_type === "META_FLOW" && (
+      {/* Terminal node asset selector */}
+      {isTerminalNodeType(formData.node_type) && (
         <div className="space-y-1.5">
-          <Label>Meta Flow</Label>
+          <Label>{assetLabel}</Label>
           <Select
-            value={formData.extra_data?.meta_flow_id || ""}
-            onValueChange={handleMetaFlowSelect}
+            value={(formData.node_type === "CATALOGUE" ? formData.extra_data?.catalogue_id : formData.extra_data?.meta_flow_id) || ""}
+            onValueChange={handleAssetSelect}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select a Meta Flow" />
+              <SelectValue placeholder={`Select a ${assetLabel}`} />
             </SelectTrigger>
             <SelectContent>
-              {metaFlows.filter((flow) => flow.flow_id).map((flow) => (
+              {availableAssets.map((flow) => (
                 <SelectItem key={flow.id} value={flow.flow_id}>
                   {flow.flow_name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {metaFlows.length === 0 && (
-            <p className="text-xs text-muted-foreground">No live Meta Flows available.</p>
+          {availableAssets.length === 0 && (
+            <p className="text-xs text-muted-foreground">No live {assetLabel === "Catalogue" ? "catalogues" : "Meta Flows"} available.</p>
           )}
         </div>
       )}
