@@ -21,11 +21,12 @@ import {
 import { Textarea } from "@/components/whatsapp/ui/textarea";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
-import { createMetaFlow } from "@/lib/whatsapp/meta-flows-api";
+import { createMetaFlow, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 import { Loader2, Plus } from "lucide-react";
 
 interface MetaFlowFormProps {
-  onSuccess?: () => void;
+  initialType?: MetaFlow["type"];
+  onSuccess?: (type: MetaFlow["type"]) => void;
 }
 
 type ManagedAssetType = "META_FLOW" | "CATALOGUE";
@@ -39,11 +40,11 @@ const initialFormData = {
   default_screen: "",
 };
 
-export function MetaFlowForm({ onSuccess }: MetaFlowFormProps) {
+export function MetaFlowForm({ initialType = "META_FLOW", onSuccess }: MetaFlowFormProps) {
   const { organizationExternalId, organizationId, isLoading } = useConfig();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState(() => ({ ...initialFormData, type: initialType }));
 
   const effectiveOrganizationId = organizationExternalId || organizationId;
   const isCatalogue = formData.type === "CATALOGUE";
@@ -105,7 +106,7 @@ export function MetaFlowForm({ onSuccess }: MetaFlowFormProps) {
         description: `${isCatalogue ? "Catalogue" : "Meta Flow"} saved successfully.`,
       });
       setFormData({ ...initialFormData, type: formData.type });
-      onSuccess?.();
+      onSuccess?.(formData.type);
     } else {
       toast({
         title: "Error",

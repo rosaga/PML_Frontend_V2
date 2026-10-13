@@ -19,23 +19,25 @@ import { getMetaFlows, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 import { FileText, Loader2, RefreshCw, Search, X } from "lucide-react";
 
 interface MetaFlowListProps {
+  type: MetaFlow["type"];
   refreshTrigger?: number;
 }
 
-export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
+export function MetaFlowList({ type, refreshTrigger }: MetaFlowListProps) {
   const { organizationExternalId, organizationId, isLoading } = useConfig();
   const { toast } = useToast();
   const [flows, setFlows] = useState<MetaFlow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchName, setSearchName] = useState("");
 
   const effectiveOrganizationId = organizationExternalId || organizationId;
+  const assetLabel = type === "CATALOGUE" ? "Catalogues" : "Meta Flows";
 
   const fetchFlows = useCallback(async () => {
     if (!effectiveOrganizationId || isLoading) return;
 
     setLoading(true);
-    const result = await getMetaFlows(effectiveOrganizationId);
+    const result = await getMetaFlows(effectiveOrganizationId, type);
     setLoading(false);
 
     if (result.success && result.data) {
@@ -43,11 +45,11 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
     } else {
       toast({
         title: "Error",
-        description: result.error || "Failed to fetch Meta Flows.",
+        description: result.error || `Failed to fetch ${assetLabel}.`,
         variant: "destructive",
       });
     }
-  }, [effectiveOrganizationId, isLoading, toast]);
+  }, [effectiveOrganizationId, isLoading, toast, type, assetLabel]);
 
   useEffect(() => {
     fetchFlows();
@@ -98,7 +100,8 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search Meta Flows and Catalogues..."
+            placeholder={`Search ${assetLabel}...`}
+            aria-label={`Search ${assetLabel}`}
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
             className="pl-9"
@@ -132,9 +135,9 @@ export function MetaFlowList({ refreshTrigger }: MetaFlowListProps) {
       ) : filteredFlows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <FileText className="h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-medium text-foreground">No Meta Flows or Catalogues</h3>
+          <h3 className="mt-4 text-lg font-medium text-foreground">No {assetLabel}</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {hasActiveFilters ? "No items match your search." : "Add your first Meta Flow or Catalogue to get started."}
+            {hasActiveFilters ? "No items match your search." : `Add your first ${type === "CATALOGUE" ? "Catalogue" : "Meta Flow"} to get started.`}
           </p>
         </div>
       ) : (

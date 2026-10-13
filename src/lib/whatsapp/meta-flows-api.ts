@@ -309,11 +309,14 @@ async function parseApiResponse<T>(
 }
 
 export async function getMetaFlows(
-  organizationExternalId: string
+  organizationExternalId: string,
+  type?: MetaFlow["type"]
 ): Promise<ApiResponse<{ count: number; data: MetaFlow[] }>> {
   try {
+    const url = new URL(`${META_FLOWS_BASE_URL}/${encodeURIComponent(organizationExternalId)}`);
+    if (type) url.searchParams.set("eq__type", type);
     const response = await fetch(
-      `${META_FLOWS_BASE_URL}/${encodeURIComponent(organizationExternalId)}`,
+      url.toString(),
       { method: "GET" }
     );
     const result = await parseApiResponse<unknown>(response, "Failed to fetch Meta Flows");

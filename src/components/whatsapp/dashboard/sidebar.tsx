@@ -37,7 +37,7 @@ const messagesSubItems = [
   { name: "Templates", href: `${BASE}/templates`, icon: FileText },
   { name: "Send Message", href: `${BASE}/send`, icon: Send },
   { name: "Campaigns", href: `${BASE}/campaigns`, icon: Megaphone },
-  { name: "Meta Flows", href: `${BASE}/meta-flows`, icon: GitBranch },
+  { name: "Meta Flows/Catalogues", href: `${BASE}/meta-flows`, icon: GitBranch },
   { name: "Reports", href: `${BASE}/messages`, icon: ClipboardList },
 ];
 
@@ -152,8 +152,8 @@ export function Sidebar({
               const active = pathname === item.href;
               return (
                 <Link key={item.name} href={item.href} className={navLinkClass(active)}>
-                  <item.icon className={cn("h-4 w-4 transition-colors", active ? "text-white" : "group-hover:text-white")} />
-                  <span>{item.name}</span>
+                  <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-white" : "group-hover:text-white")} />
+                  <span className="min-w-0 flex-1 break-words">{item.name}</span>
                 </Link>
               );
             })}
