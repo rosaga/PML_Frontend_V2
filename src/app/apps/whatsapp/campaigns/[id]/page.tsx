@@ -9,6 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/whatsapp/
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { Button } from "@/components/whatsapp/ui/button";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/whatsapp/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/whatsapp/ui/dialog";
+import {
   PieChart,
   Pie,
   Cell,
@@ -25,6 +40,8 @@ import {
   Calendar,
   Layers,
   MousePointerClick,
+  AlertCircle,
+  Eye,
 } from "lucide-react";
 
 interface Campaign {
@@ -49,6 +66,20 @@ interface Campaign {
   created_at: string;
   updated_at: string;
   created_by: string;
+}
+
+interface CampaignButton {
+  button_text: string;
+  button_payload: string;
+  click_count: number;
+  unique_numbers: number;
+}
+
+interface ButtonClick {
+  mobile_no: string;
+  first_clicked_at: string;
+  clicked_at: string;
+  click_count: number;
 }
 
 function formatDate(dateString: string) {
@@ -101,6 +132,10 @@ function pct(n: number, total: number) {
   return `${((n / total) * 100).toFixed(1)}%`;
 }
 
+function getErrorMessage(data: any, fallback: string) {
+  return data?.error?.message || data?.message || data?.error || fallback;
+}
+
 function DeliveryBar({ campaign }: { campaign: Campaign }) {
   const total = campaign.total_messages;
   if (total === 0) return null;
@@ -145,11 +180,24 @@ const CHART_COLORS = ["#10b981", "#ef4444"];
 function CampaignDetailContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { organizationId, isLoading: contextLoading } = useConfig();
+  const {
+    organizationId,
+    organizationExternalId,
+    isLoading: contextLoading,
+  } = useConfig();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [buttons, setButtons] = useState<CampaignButton[]>([]);
+  const [buttonsLoading, setButtonsLoading] = useState(false);
+  const [buttonsError, setButtonsError] = useState("");
+  const [selectedButton, setSelectedButton] = useState<CampaignButton | null>(null);
+  const [buttonClicks, setButtonClicks] = useState<ButtonClick[]>([]);
+  const [clicksLoading, setClicksLoading] = useState(false);
+  const [clicksError, setClicksError] = useState("");
+
+  const effectiveOrganizationId = organizationExternalId || organizationId;
 
   useEffect(() => {
     if (contextLoading || !organizationId) return;
@@ -181,6 +229,70 @@ function CampaignDetailContent() {
 
     load();
   }, [contextLoading, organizationId, id]);
+
+  useEffect(() => {
+    if (contextLoading || !effectiveOrganizationId || !campaign) return;
+
+    async function loadButtons() {
+      setButtonsLoading(true);
+      setButtonsError("");
+      try {
+        const res = await fetch(
+          `/api/whatsapp/peakdata/campaign/${encodeURIComponent(String(id))}/buttons?organizationId=${encodeURIComponent(effectiveOrganizationId)}&limit=50&offset=0`,
+          {
+            cache: "no-store",
+            headers: { "x-auth-token": localStorage.getItem("token") || "" },
+          }
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(getErrorMessage(data, "Failed to load campaign buttons"));
+        }
+        setButtons(Array.isArray(data?.data) ? data.data : []);
+      } catch (err: any) {
+        setButtons([]);
+        setButtonsError(err?.message || "Failed to load campaign buttons");
+      } finally {
+        setButtonsLoading(false);
+      }
+    }
+
+    loadButtons();
+  }, [contextLoading, effectiveOrganizationId, campaign, id]);
+
+  async function loadButtonClicks(button: CampaignButton) {
+    if (!effectiveOrganizationId) return;
+
+    setSelectedButton(button);
+    setButtonClicks([]);
+    setClicksLoading(true);
+    setClicksError("");
+
+    try {
+      const url = new URL(
+        `/api/whatsapp/peakdata/campaign/${encodeURIComponent(String(id))}/button-clicks`,
+        window.location.origin
+      );
+      url.searchParams.set("organizationId", effectiveOrganizationId);
+      url.searchParams.set("button_text", button.button_text);
+      url.searchParams.set("button_payload", button.button_payload);
+
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: { "x-auth-token": localStorage.getItem("token") || "" },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(getErrorMessage(data, "Failed to load clicked numbers"));
+      }
+
+      setButtonClicks(Array.isArray(data?.data) ? data.data : []);
+    } catch (err: any) {
+      setClicksError(err?.message || "Failed to load clicked numbers");
+    } finally {
+      setClicksLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -370,6 +482,134 @@ function CampaignDetailContent() {
             </dl>
           </CardContent>
         </Card>
+
+        {/* Campaign buttons */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+              Campaign Buttons
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {buttonsLoading ? (
+              <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Loading buttons...
+              </div>
+            ) : buttonsError ? (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {buttonsError}
+              </div>
+            ) : buttons.length === 0 ? (
+              <div className="rounded-md border border-dashed py-8 text-center text-sm text-muted-foreground">
+                No button clicks found for this campaign.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Button Text</TableHead>
+                    <TableHead>Payload</TableHead>
+                    <TableHead className="text-right">Clicks</TableHead>
+                    <TableHead className="text-right">Unique Numbers</TableHead>
+                    <TableHead className="w-[120px] text-right">Numbers</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {buttons.map((button) => (
+                    <TableRow
+                      key={`${button.button_text}-${button.button_payload}`}
+                      className="cursor-pointer"
+                      onClick={() => loadButtonClicks(button)}
+                    >
+                      <TableCell className="font-medium">{button.button_text || "—"}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {button.button_payload || "—"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {(button.click_count ?? 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {(button.unique_numbers ?? 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            loadButtonClicks(button);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Dialog open={!!selectedButton} onOpenChange={(open) => !open && setSelectedButton(null)}>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedButton ? `Numbers that clicked "${selectedButton.button_text}"` : "Clicked Numbers"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedButton
+                  ? `${(selectedButton.unique_numbers ?? 0).toLocaleString()} unique numbers, ${(selectedButton.click_count ?? 0).toLocaleString()} total clicks`
+                  : "Numbers that clicked this campaign button"}
+              </DialogDescription>
+            </DialogHeader>
+
+            {clicksLoading ? (
+              <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Loading clicked numbers...
+              </div>
+            ) : clicksError ? (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {clicksError}
+              </div>
+            ) : buttonClicks.length === 0 ? (
+              <div className="rounded-md border border-dashed py-8 text-center text-sm text-muted-foreground">
+                No clicked numbers found for this button.
+              </div>
+            ) : (
+              <div className="max-h-[60vh] overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mobile Number</TableHead>
+                      <TableHead>First Clicked</TableHead>
+                      <TableHead>Last Clicked</TableHead>
+                      <TableHead className="text-right">Clicks</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {buttonClicks.map((click) => (
+                      <TableRow key={`${click.mobile_no}-${click.clicked_at}`}>
+                        <TableCell className="font-mono">{click.mobile_no}</TableCell>
+                        <TableCell>{formatDate(click.first_clicked_at)}</TableCell>
+                        <TableCell>{formatDate(click.clicked_at)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {(click.click_count ?? 0).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
