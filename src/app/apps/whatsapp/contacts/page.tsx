@@ -9,6 +9,8 @@ import { Card } from "@/components/whatsapp/ui/card";
 import { Input } from "@/components/whatsapp/ui/input";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Badge } from "@/components/whatsapp/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/whatsapp/ui/tabs";
+import { OptedOutContacts } from "./opted-out-contacts";
 import {
   Table,
   TableBody,
@@ -219,6 +221,12 @@ function ContactsContent() {
       />
 
       <div className="p-6">
+        <Tabs defaultValue="active">
+          <TabsList className="mb-5">
+            <TabsTrigger value="active">Active Contacts</TabsTrigger>
+            <TabsTrigger value="opted-out">Opted Out</TabsTrigger>
+          </TabsList>
+          <TabsContent value="active">
         {/* Search + tag filters */}
         <div className="mb-5 flex flex-col gap-3">
           <div className="flex items-center gap-3">
@@ -392,6 +400,11 @@ function ContactsContent() {
             </div>
           </>
         )}
+          </TabsContent>
+          <TabsContent value="opted-out">
+            <OptedOutContacts />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

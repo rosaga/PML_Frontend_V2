@@ -91,13 +91,12 @@ export function sortedConversations(map: Map<string, Recipient>): Recipient[] {
 export function hydrateNamesFromCache(list: Recipient[], orgId: string): Recipient[] {
   const nameCache = loadNames(orgId);
   return list.map((r) => {
-    if (r.name) return r;
     const c = nameCache[r.mobile_no];
+    if (r.name && !c?.maybe) return r;
     if (!c) return r;
     const raw = [c.firstName, c.lastName].filter(Boolean).join(" ");
     if (!raw) return r;
-    const name = c.maybe ? `Maybe: ${raw}` : raw;
-    return { ...r, name };
+    return { ...r, name: raw };
   });
 }
 
