@@ -194,12 +194,12 @@ export default function TechProviderPage() {
     }
 
     window.FB.login(
-      async (response) => {
+      (response) => {
         if (response.authResponse) {
           const code = response.authResponse.code;
           signupCodeRef.current = code || "";
           setSignupStatus("Authorization received; completing connection");
-          await completeSignupRef.current?.();
+          void completeSignupRef.current?.();
         } else {
           setSignupStatus("Signup was cancelled or did not return authorization");
         }

@@ -6,7 +6,9 @@ import { useConfig } from "@/lib/whatsapp/config-context";
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { CheckCircle, XCircle, Menu, ChevronDown, LayoutGrid, ArrowLeftRight, KeyRound, LogOut, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { getToken, signOutUser } from "@/utils/auth";
+import Link from "next/link";
+import { Building2 } from "lucide-react";
+import { getToken, clearToken, signOutUser } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
 import dynamic from "next/dynamic";
 
@@ -90,6 +92,9 @@ export function Header({ title, description }: HeaderProps) {
           {/* Profile dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
+              type="button"
+              aria-label="Open profile menu"
+              aria-expanded={isDropdownOpen}
               onClick={() => setIsDropdownOpen((v) => !v)}
               className="flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors"
             >
@@ -108,6 +113,17 @@ export function Header({ title, description }: HeaderProps) {
                 <div className="px-6 py-4 text-sm text-gray-900 border-b border-gray-200">
                   <p className="font-medium text-base">Welcome</p>
                   <p className="truncate mt-1 text-gray-600">{userEmail || "—"}</p>
+                </div>
+
+                <div className="py-1">
+                  <Link
+                    href="/apps/whatsapp/profile"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="w-full text-left px-6 py-3 text-sm hover:bg-gray-100 flex items-center gap-3 text-gray-700"
+                  >
+                    <Building2 className="h-4 w-4 text-gray-500" />
+                    Company profile
+                  </Link>
                 </div>
 
                 <div className="py-1">

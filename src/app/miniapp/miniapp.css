@@ -22,6 +22,16 @@
   justify-content: space-between;
   gap: 24px;
 }
+.miniapp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 10;
+}
+.miniapp-topbar .miniapp-logo-img { margin-bottom: 0; }
 .miniapp-wave {
   display: inline-block;
   transform-origin: 70% 70%;

@@ -23,6 +23,9 @@ import { isTerminalNodeType } from "./flow-types";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Plus } from "lucide-react";
 
+const TERMINAL_NODE_TYPES = ["META_FLOW", "CATALOGUE"];
+const ADDABLE_NODE_TYPES = ["TEXT", "LIST", "ROUTE", "NUMBER", "BUTTONS", "META_FLOW", "CATALOGUE"];
+
 interface FlowCanvasProps {
   nodes: Node[];
   edges: Edge[];

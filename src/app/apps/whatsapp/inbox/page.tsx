@@ -406,11 +406,6 @@ function InboxContent() {
                             <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 bg-gray-200">
                               <User className="h-5 w-5 text-gray-500" />
                             </div>
-                            {recipient.unread_message_ids.length > 0 && (
-                              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-white text-white text-[10px] font-semibold flex items-center justify-center leading-none">
-                                {recipient.unread_message_ids.length > 99 ? "99+" : recipient.unread_message_ids.length}
-                              </span>
-                            )}
                           </div>
                         </TableCell>
 
@@ -445,7 +440,7 @@ function InboxContent() {
 
                         <TableCell className="text-center">
                           <Badge variant={unread ? "default" : "secondary"}>
-                            {recipient.message_count}
+                            {recipient.unread_message_ids.length}
                           </Badge>
                         </TableCell>
 

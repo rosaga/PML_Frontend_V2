@@ -5,7 +5,7 @@ import { useConfig } from "@/lib/whatsapp/config-context";
 import { useFlows } from "@/lib/whatsapp/use-flows";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { FLOWBOT_BASE_URL, flowbotHeaders } from "@/lib/whatsapp/flowbot-api";
-import { getMetaFlows, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
+import { getMetaFlowResources, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 import { Button } from "@/components/whatsapp/ui/button";
 import { ArrowLeft, Save } from "lucide-react";
 import { FlowCanvas } from "./flow-canvas";
@@ -19,6 +19,8 @@ interface FlowEditorProps {
   onBack: () => void;
   initialTemplateNodes?: FlowNode[];
 }
+
+const TERMINAL_NODE_TYPES: FlowNode["node_type"][] = ["META_FLOW", "CATALOGUE"];
 
 // Build React Flow edges from a node list using parent_index and options[].target_index.
 // For ROUTE nodes, each child node gets the correct sourceHandle ("route-{optIdx}") by
@@ -65,6 +67,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
   const { toast } = useToast();
   const effectiveOrganizationId = organizationExternalId || organizationId;
   const [metaFlows, setMetaFlows] = useState<MetaFlow[]>([]);
+  const [catalogues, setCatalogues] = useState<MetaFlow[]>([]);
 
   const [flow, setFlow] = useState({
     name: "",
@@ -116,7 +119,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
   useEffect(() => {
     if (!effectiveOrganizationId) return;
     const fetchMetaFlowsData = async () => {
-      const result = await getMetaFlows(effectiveOrganizationId);
+      const result = await getMetaFlowResources(effectiveOrganizationId);
       if (result.success && result.data) {
         setMetaFlows(result.data.data.filter((metaFlow) => {
           const status = metaFlow.status?.toUpperCase();
@@ -217,6 +220,11 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
           setSaving(false);
           return;
         }
+        if (terminalNodes.length > 1) {
+          toast({ title: "Validation Error", description: "Only one terminal node can be used in a flow.", variant: "destructive" });
+          setSaving(false);
+          return;
+        }
 
         const terminalNode = terminalNodes[0];
         if (terminalNode) {
@@ -240,6 +248,11 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
             : terminalNode.extra_data?.meta_flow_id;
           if (!assetId) {
             toast({ title: "Validation Error", description: `Select a ${terminalLabel} for the ${terminalLabel} node before saving.`, variant: "destructive" });
+            setSaving(false);
+            return;
+          }
+          if (terminalNode.node_type === "CATALOGUE" && !terminalNode.extra_data?.catalogue_id) {
+            toast({ title: "Validation Error", description: "Select a Catalogue for the Catalogue node before saving.", variant: "destructive" });
             setSaving(false);
             return;
           }
@@ -323,6 +336,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
             created_by: n.created_by || "",
             updated_by: "",
             ...(isMetaFlowNode ? { meta_flow_id: n.extra_data?.meta_flow_id } : {}),
+            ...(isCatalogueNode ? { catalogue_id: n.extra_data?.catalogue_id } : {}),
           };
           return isApiId ? { ...base, id: Number(n.id) } : base;
         });
@@ -357,6 +371,10 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
       toast({ title: "Terminal Node Already Added", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
       return;
     }
+    if (TERMINAL_NODE_TYPES.includes(type as FlowNode["node_type"]) && nodes.some((node) => TERMINAL_NODE_TYPES.includes(node.node_type))) {
+      toast({ title: "Terminal Node Already Added", description: "Only one terminal node can be used in a flow.", variant: "destructive" });
+      return;
+    }
     const newNode: FlowNode = {
       id: `node-${Date.now()}`,
       name: `New ${type} Node`,
@@ -386,6 +404,13 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
     ) {
       toast({ title: "Terminal Node Already Added", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
       return false;
+    }
+    if (
+      TERMINAL_NODE_TYPES.includes(updatedNode.node_type) &&
+      nodes.some((node) => String(node.id) !== selectedNodeId && TERMINAL_NODE_TYPES.includes(node.node_type))
+    ) {
+      toast({ title: "Terminal Node Already Added", description: "Only one terminal node can be used in a flow.", variant: "destructive" });
+      return;
     }
 
     setNodes(nodes.map((node) => {
@@ -467,6 +492,7 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
         <NodeEditor
           node={selectedNode}
           metaFlows={metaFlows}
+          catalogues={catalogues}
           onSave={handleNodeSave}
           onDelete={() => selectedNodeId && handleDeleteNode(selectedNodeId)}
         />
