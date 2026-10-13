@@ -121,8 +121,7 @@ export default function InboxChatPage() {
         if (mobileNo in cached) {
           const c = cached[mobileNo];
           const raw = [c.firstName, c.lastName].filter(Boolean).join(" ");
-          const name = (raw && c.maybe) ? `Maybe: ${raw}` : raw;
-          setContactName(name);
+          setContactName(raw);
           setContactNameLoaded(true);
         } else {
           setContactName("");
@@ -224,7 +223,7 @@ export default function InboxChatPage() {
           }
         }
         const raw = [firstName, lastName].filter(Boolean).join(" ");
-        const name = raw ? (maybe ? `Maybe: ${raw}` : raw) : "";
+        const name = raw;
         if (name) {
           setRecipients((prev) => prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec));
           setFilteredRecipients((prev) => prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec));
@@ -363,7 +362,7 @@ export default function InboxChatPage() {
                 }
               }
               const raw = [firstName, lastName].filter(Boolean).join(" ");
-              if (raw) setContactName(maybe ? `Maybe: ${raw}` : raw);
+              if (raw) setContactName(raw);
               // Always persist — marks contact as "already checked" for future navigations
               const stored = loadNames(organizationId);
               persistNames(organizationId, { ...stored, [mobileNo]: { firstName, lastName, maybe } });

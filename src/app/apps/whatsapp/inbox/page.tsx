@@ -256,7 +256,7 @@ function InboxContent() {
           if (realFirst || realLast) {
             firstName = realFirst; lastName = realLast;
           } else {
-            // Fallback to metadata — shown as "Maybe: Name" like iPhone caller ID
+            // Fall back to metadata when contact name fields are empty.
             firstName = c?.metadata?.FIRSTNAME || "";
             lastName  = c?.metadata?.LASTNAME  || "";
             maybe = !!(firstName || lastName);
@@ -264,7 +264,7 @@ function InboxContent() {
         }
 
         const raw = [firstName, lastName].filter(Boolean).join(" ");
-        const name = raw ? (maybe ? `Maybe: ${raw}` : raw) : "";
+        const name = raw;
         if (name) {
           setConversations((prev) =>
             prev.map((rec) => rec.mobile_no === no ? { ...rec, name } : rec),
