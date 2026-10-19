@@ -3,13 +3,13 @@
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getToken } from "@/utils/auth";
 import {
   Activity,
   ArrowLeft,
   CheckCircle2,
   ChevronRight,
   Home,
-  KeyRound,
   Loader2,
   MessageCircle,
   PhoneCall,
@@ -26,8 +26,8 @@ const FACEBOOK_GRAPH_API_VERSION = process.env.NEXT_PUBLIC_FACEBOOK_GRAPH_API_VE
 const WHATSAPP_CONFIG_ID =
   process.env.NEXT_PUBLIC_WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID || "1085280167192120";
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_FLOWBOT_API_BASE_URL ||
-  "https://flowbot-1048592730476.europe-west4.run.app";
+  (process.env.NEXT_PUBLIC_PEAKWHATSAPP_API_BASE_URL ||
+    "https://peakwhatsappdev-1048592730476.europe-west4.run.app").replace(/\/+$/, "");
 
 const sidebarItems = [
   { label: "Overview", icon: Home, active: true },
@@ -50,12 +50,14 @@ export default function TechProviderPage() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [sdkReady, setSdkReady] = useState(false);
   const [signupStatus, setSignupStatus] = useState("Waiting for WhatsApp connection");
-  const [pin, setPin] = useState("");
   const [isCompleting, setIsCompleting] = useState(false);
   const [connectionComplete, setConnectionComplete] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const signupCodeRef = useRef("");
   const signupDataRef = useRef(null);
-  const pinRef = useRef("");
+  const signupOrganizationRef = useRef("");
+  const signupActiveRef = useRef(false);
+  const signupAttemptRef = useRef(0);
   const completionInFlightRef = useRef(false);
   const completeSignupRef = useRef(null);
   const isConfigured = Boolean(FACEBOOK_APP_ID && WHATSAPP_CONFIG_ID && FACEBOOK_GRAPH_API_VERSION);
@@ -74,15 +76,22 @@ export default function TechProviderPage() {
 
   useEffect(() => {
     const postJson = async (path, body) => {
+      const token = getToken();
+      if (!token) throw new Error("Please sign in again to connect WhatsApp.");
+
       const response = await fetch(`${API_BASE_URL}${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(body),
       });
 
       if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(errorBody || `Request failed with status ${response.status}`);
+        const errorBody = await response.json().catch(() => null);
+        const message = errorBody?.error?.message || `Request failed with status ${response.status}`;
+        throw new Error(errorBody?.error?.code ? `${message} (${errorBody.error.code})` : message);
       }
 
       const contentType = response.headers.get("content-type") || "";
@@ -92,19 +101,24 @@ export default function TechProviderPage() {
     const completeSignup = async () => {
       const code = signupCodeRef.current;
       const data = signupDataRef.current;
-      const currentPin = pinRef.current;
 
-      if (!code || !data || !/^\d{6}$/.test(currentPin) || completionInFlightRef.current) return;
+      if (!signupActiveRef.current || !code || !data || completionInFlightRef.current) return;
 
       completionInFlightRef.current = true;
       setIsCompleting(true);
       setSignupStatus("Completing WhatsApp connection");
 
       try {
-        await postJson("/api/v1/meta/embedded-signup/complete", {
-          organization_id: ALLOWED_ORGANIZATION_ID,
+        const organizationId = signupOrganizationRef.current;
+        if (window.localStorage.getItem("selectedAccountId") !== organizationId) {
+          throw new Error("Your selected organization changed. Start WhatsApp signup again.");
+        }
+
+        // A signup code may be consumed even when the HTTP response is lost.
+        signupCodeRef.current = "";
+        const result = await postJson("/api/v2/meta/embedded-signup/complete", {
+          organization_id: organizationId,
           code,
-          pin: currentPin,
           configuration_id: WHATSAPP_CONFIG_ID,
           data: {
             phone_number_id: data.phone_number_id,
@@ -112,13 +126,18 @@ export default function TechProviderPage() {
             business_id: data.business_id,
           },
         });
+        if (result?.status !== "active" || result?.connection?.status !== "ACTIVE") {
+          throw new Error("WhatsApp connection is not active yet. Check the connection status before trying again.");
+        }
         setConnectionComplete(true);
         setSignupStatus("WhatsApp Business connected successfully");
-        signupCodeRef.current = "";
       } catch (error) {
-        completionInFlightRef.current = false;
         setSignupStatus(error instanceof Error ? error.message : "Could not complete WhatsApp connection");
       } finally {
+        signupActiveRef.current = false;
+        signupCodeRef.current = "";
+        signupDataRef.current = null;
+        setIsSigningUp(false);
         setIsCompleting(false);
       }
     };
@@ -152,23 +171,48 @@ export default function TechProviderPage() {
         return;
       }
 
-      if (hostname !== "facebook.com" && !hostname.endsWith(".facebook.com")) return;
+      if (!event.origin.startsWith("https://") ||
+          (hostname !== "facebook.com" && !hostname.endsWith(".facebook.com"))) return;
+      if (!signupActiveRef.current || completionInFlightRef.current) return;
 
       try {
         const message = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
 
         if (message?.type !== "WA_EMBEDDED_SIGNUP") return;
 
-        await postJson("/api/v1/meta/embedded-signup-events", message);
+        // Reporting is independent of completion, including when it fails or stalls.
+        void postJson("/api/v2/meta/embedded-signup-events", {
+          type: message.type,
+          event: message.event,
+          organization_id: signupOrganizationRef.current,
+          data: {
+            business_id: message.data?.business_id,
+            waba_id: message.data?.waba_id,
+            phone_number_id: message.data?.phone_number_id,
+          },
+        }).catch(() => {});
 
         if (message.event === "FINISH") {
+          const missingAssets = ["business_id", "waba_id", "phone_number_id"].filter(
+            (key) => typeof message.data?.[key] !== "string" || !/^\d{1,64}$/.test(message.data[key]),
+          );
+          if (missingAssets.length) {
+            signupActiveRef.current = false;
+            signupCodeRef.current = "";
+            signupDataRef.current = null;
+            setIsSigningUp(false);
+            setSignupStatus(`Meta did not return all required account details: ${missingAssets.join(", ")}. Please complete signup with a phone number.`);
+            return;
+          }
           signupDataRef.current = message.data;
           setSignupStatus("Signup details received");
           await completeSignup();
-        } else if (message.event === "CANCEL") {
-          setSignupStatus("WhatsApp signup was cancelled");
-        } else {
-          setSignupStatus(`Embedded signup event: ${message.event || "received"}`);
+        } else if (message.event === "CANCEL" || message.event === "ERROR") {
+          signupActiveRef.current = false;
+          signupCodeRef.current = "";
+          signupDataRef.current = null;
+          setIsSigningUp(false);
+          setSignupStatus(message.event === "CANCEL" ? "WhatsApp signup was cancelled" : "Meta could not complete signup. Please try again.");
         }
       } catch (error) {
         setSignupStatus(error instanceof Error ? error.message : "Could not process signup event");
@@ -178,47 +222,68 @@ export default function TechProviderPage() {
     window.addEventListener("message", handleSignupMessage);
     return () => {
       completeSignupRef.current = null;
+      signupActiveRef.current = false;
+      signupCodeRef.current = "";
+      signupDataRef.current = null;
       window.removeEventListener("message", handleSignupMessage);
     };
   }, []);
 
   const launchWhatsAppSignup = () => {
-    if (!/^\d{6}$/.test(pin)) {
-      setSignupStatus("Enter a valid six-digit PIN before connecting");
-      return;
-    }
-
+    if (!authorized || signupActiveRef.current || connectionComplete) return;
     if (!window.FB || !sdkReady || !isConfigured) {
       setSignupStatus("Facebook SDK or signup configuration is not ready yet");
       return;
     }
 
-    window.FB.login(
-      async (response) => {
-        if (response.authResponse) {
-          const code = response.authResponse.code;
-          signupCodeRef.current = code || "";
-          setSignupStatus("Authorization received; completing connection");
-          await completeSignupRef.current?.();
-        } else {
-          setSignupStatus("Signup was cancelled or did not return authorization");
-        }
-      },
-      {
-        config_id: WHATSAPP_CONFIG_ID,
-        response_type: "code",
-        override_default_response_type: true,
-        extras: {
-          setup: {},
-        },
-      },
-    );
-  };
+    const organizationId = window.localStorage.getItem("selectedAccountId");
+    if (organizationId !== ALLOWED_ORGANIZATION_ID) {
+      router.replace("/miniapp");
+      return;
+    }
+    if (!getToken()) return;
 
-  const handlePinChange = (event) => {
-    const nextPin = event.target.value.replace(/\D/g, "").slice(0, 6);
-    pinRef.current = nextPin;
-    setPin(nextPin);
+    signupCodeRef.current = "";
+    signupDataRef.current = null;
+    signupOrganizationRef.current = organizationId;
+    completionInFlightRef.current = false;
+    signupActiveRef.current = true;
+    const attempt = ++signupAttemptRef.current;
+    setIsSigningUp(true);
+    setSignupStatus("Complete WhatsApp signup in the Meta window");
+
+    try {
+      window.FB.login(
+        // The Facebook SDK rejects AsyncFunction callbacks.
+        (response) => {
+          if (attempt !== signupAttemptRef.current || !signupActiveRef.current || completionInFlightRef.current) return;
+          if (response.authResponse?.code) {
+            const code = response.authResponse.code;
+            signupCodeRef.current = code || "";
+            setSignupStatus("Authorization received; completing connection");
+            void completeSignupRef.current?.();
+          } else {
+            signupActiveRef.current = false;
+            signupCodeRef.current = "";
+            signupDataRef.current = null;
+            setIsSigningUp(false);
+            setSignupStatus("Signup was cancelled or did not return authorization");
+          }
+        },
+        {
+          config_id: WHATSAPP_CONFIG_ID,
+          response_type: "code",
+          override_default_response_type: true,
+          extras: {
+            setup: {},
+          },
+        },
+      );
+    } catch {
+      signupActiveRef.current = false;
+      setIsSigningUp(false);
+      setSignupStatus("Could not open Meta signup. Please try again.");
+    }
   };
 
   const readinessItems = useMemo(
@@ -356,34 +421,11 @@ export default function TechProviderPage() {
               </div>
 
               <div className="mt-8 border-t border-[#e4f1ea] pt-6">
-                <label htmlFor="whatsapp-pin" className="text-sm font-semibold text-[#375348]">
-                  Registration PIN
-                </label>
-                <div className="mt-2 flex max-w-md items-center rounded-lg border border-[#c9dfd3] bg-white px-3 focus-within:border-[#25D366] focus-within:ring-2 focus-within:ring-[#25D366]/20">
-                  <KeyRound className="h-5 w-5 text-[#0b7a43]" />
-                  <input
-                    id="whatsapp-pin"
-                    type="password"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={pin}
-                    onChange={handlePinChange}
-                    disabled={isCompleting || connectionComplete}
-                    placeholder="Six-digit PIN"
-                    aria-describedby="whatsapp-pin-hint"
-                    className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold tracking-widest text-[#12382c] outline-none placeholder:font-normal placeholder:tracking-normal placeholder:text-[#91a69d]"
-                  />
-                  <span className="text-xs font-semibold text-[#789087]">{pin.length}/6</span>
-                </div>
-                <p id="whatsapp-pin-hint" className="mt-2 text-xs text-[#61756d]">
-                  Used to register the phone number after signup.
-                </p>
-
-                <div className="mt-5 flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={launchWhatsAppSignup}
-                    disabled={!sdkReady || !isConfigured || isCompleting || connectionComplete}
+                    disabled={!sdkReady || !isConfigured || isSigningUp || isCompleting || connectionComplete}
                     className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#1877f2] px-5 text-sm font-bold text-white transition hover:bg-[#0f66d4] disabled:cursor-not-allowed disabled:bg-[#a9bfdc]"
                   >
                     {isCompleting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Smartphone className="h-5 w-5" />}
