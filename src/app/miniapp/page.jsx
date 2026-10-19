@@ -7,7 +7,7 @@ import { hasRole } from '../../utils/decodeToken';
 import { GetSenderId } from "../api/actions/senderId/senderId";
 import "./miniapp.css";
 
-const TECH_PROVIDER_ORGANIZATION_ID = "58045135-f272-4879-be0f-2559d836fdba";
+const TECH_PROVIDER_ORGANIZATION_ID = "5bf6749b-881c-4fe2-94d2-977a6796e9bd";
 
 const services = [
   {
