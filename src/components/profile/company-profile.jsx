@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, Mail, UserRound, Files, ExternalLink, ArrowLeft, RefreshCw } from "lucide-react";
+import { Building2, Mail, UserRound, ExternalLink, ArrowLeft } from "lucide-react";
+import CircularProgress from "@mui/material/CircularProgress";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import PeakButton from "@/components/button/button";
 import { GetAccounts } from "@/app/api/actions/accounts/accounts";
 import { getToken } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
 import { POLICIES } from "@/lib/policies";
-import styles from "./company-profile.module.css";
+import ProfileResources from "./profile-resources";
 
 function displayValue(value) {
   if (Array.isArray(value)) return value.filter((item) => typeof item === "string").join(", ");
@@ -69,62 +73,86 @@ export default function CompanyProfile({ withinDashboard = false }) {
   ];
 
   return (
-    <div className={`${styles.page} ${withinDashboard ? "" : styles.withSidebar}`}>
-      <div className={styles.container}>
-        <Link href={backHref} className={styles.back}><ArrowLeft size={16} /> {product ? "Back to dashboard" : "Back to products"}</Link>
-        <header className={styles.heading}>
-          <h1>Company profile</h1>
-          <p>Your company details and documents, in one place.</p>
+    <div className={`min-h-screen p-4 text-gray-900 ${withinDashboard ? "" : "lg:ml-64"}`}>
+      <div className="min-w-0 space-y-6 p-4">
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#E88A17] focus-visible:outline-[#E88A17]">
+          <ArrowLeft size={16} /> {product ? "Back to dashboard" : "Back to products"}
+        </Link>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-lg font-medium">Company Profile</h1>
+            <p className="mt-1 text-sm text-gray-500">Your company details, groups, sender names, and documents.</p>
+          </div>
+          <PeakButton
+            buttonText="Switch Account"
+            icon={SwapHorizIcon}
+            className="h-10 w-fit rounded-xl bg-[#090A29] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus-visible:outline-[#E88A17]"
+            onClick={() => router.push("/user-orgs")}
+          />
         </header>
 
-        <section className={styles.companyBanner} aria-label="Current company">
-          <div className={styles.companyIcon}><Building2 size={27} strokeWidth={1.6} /></div>
-          <div>
-            <span className={styles.eyebrow}>YOUR COMPANY</span>
-            <h2>{loading ? "Loading company..." : company?.name || "Company account"}</h2>
-          </div>
-          <Link href="/user-orgs" className={styles.switchAccount}>Switch account <ArrowLeft size={15} className={styles.switchArrow} /></Link>
-        </section>
-
-        <div className={styles.overview}>
-          <section className={styles.card} aria-labelledby="company-details-title" aria-busy={loading}>
-            <header className={styles.cardHeading}><Building2 size={19} /><h2 id="company-details-title">Company details</h2></header>
-            {loading ? <p className={styles.notice} role="status">Loading company details...</p> : error ? (
-              <div className={styles.notice} role="alert">
+        <div className="grid gap-4 xl:grid-cols-3">
+          <section className="min-w-0 rounded-lg border-[1.5px] border-gray-200 bg-white p-6 shadow-sm xl:col-span-2" aria-labelledby="company-details-title" aria-busy={loading}>
+            <header className="mb-6 flex items-center gap-2">
+              <Building2 size={20} className="text-[#E88A17]" />
+              <h2 id="company-details-title" className="text-lg font-medium">Company Details</h2>
+            </header>
+            {loading ? (
+              <div className="flex min-h-[120px] items-center justify-center" role="status">
+                <CircularProgress size={30} style={{ color: "#E88A17" }} />
+                <span className="sr-only">Loading company details...</span>
+              </div>
+            ) : error ? (
+              <div className="text-sm text-red-600" role="alert">
                 <p>{error}</p>
-                <button className={styles.retry} onClick={() => setAttempt((value) => value + 1)}><RefreshCw size={15} /> Try again</button>
-                <Link href="/user-orgs" className={styles.retry}>Select account</Link>
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <PeakButton buttonText="Try Again" icon={RefreshIcon} className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus-visible:outline-[#E88A17]" onClick={() => setAttempt((value) => value + 1)} />
+                  <Link href="/user-orgs" className="text-[#E88A17] hover:underline">Select account</Link>
+                </div>
               </div>
             ) : (
-              <dl className={styles.details}>
-                {details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || <span className={styles.empty}>Not provided</span>}</dd></div>)}
+              <dl className="grid gap-6 sm:grid-cols-2">
+                {details.map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <dt className="text-sm text-gray-500">{label}</dt>
+                    <dd className="mt-2 whitespace-pre-line text-sm leading-6 break-words">{value || <span className="text-gray-400">Not provided</span>}</dd>
+                  </div>
+                ))}
               </dl>
             )}
           </section>
-          <section className={styles.card} aria-labelledby="your-profile-title">
-            <header className={styles.cardHeading}><UserRound size={19} /><h2 id="your-profile-title">Your profile</h2></header>
-            <div className={styles.userInfo}>
-              <div className={styles.avatar} aria-hidden="true">{user?.name?.trim().charAt(0).toUpperCase() || <UserRound size={24} />}</div>
-              <h3>{user?.name || "Account user"}</h3>
-              <p><Mail size={15} /> {user?.email || "Not provided"}</p>
+          <section className="min-w-0 rounded-lg border-[1.5px] border-gray-200 bg-white p-6 shadow-sm" aria-labelledby="your-profile-title">
+            <header className="mb-6 flex items-center gap-2">
+              <UserRound size={20} className="text-[#E88A17]" />
+              <h2 id="your-profile-title" className="text-lg font-medium">Your Profile</h2>
+            </header>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-lg font-medium text-gray-600" aria-hidden="true">
+              {user?.name?.trim().charAt(0).toUpperCase() || <UserRound size={24} />}
             </div>
+            <h3 className="mt-4 text-sm font-medium break-words">{user?.name || "Account user"}</h3>
+            <p className="mt-2 flex items-start gap-2 text-sm text-gray-500"><Mail size={16} className="mt-0.5 shrink-0" /><span className="min-w-0 break-words">{user?.email || "Not provided"}</span></p>
           </section>
         </div>
 
-        <section className={styles.documents} aria-labelledby="documents-title">
-          <header className={styles.documentsHeading}>
-            <div><h2 id="documents-title"><Files size={21} /> Documents</h2><p>Access the terms and policies for your Peak Mobile account.</p></div>
-            <span className={styles.documentCount}>{POLICIES.length} documents</span>
+        {company && !loading && !error && <ProfileResources key={company.id} accountId={company.id} />}
+
+        <section aria-labelledby="documents-title">
+          <header className="mb-4">
+            <h2 id="documents-title" className="text-lg font-medium">Documents</h2>
+            <p className="mt-1 text-sm text-gray-500">Access the terms and policies for your Peak Mobile account.</p>
           </header>
-          <div className={styles.documentGrid}>
+          <div className="grid gap-4 md:grid-cols-2">
             {POLICIES.map((document) => {
               const Icon = document.icon;
               return (
-                <article key={document.id} className={styles.documentCard}>
-                  <div className={styles.documentTop}><span className={styles.documentIcon}><Icon size={23} strokeWidth={1.6} /></span><span className={styles.fileType}>PDF</span></div>
-                  <h3>{document.title}</h3>
-                  <p>{document.description}</p>
-                  <a href={document.href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${document.title} in a new tab`}>Read document <ExternalLink size={15} /></a>
+                <article key={document.id} className="flex min-w-0 flex-col rounded-lg border-[1.5px] border-gray-200 bg-white p-6 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <Icon size={24} className="text-[#E88A17]" />
+                    <span className="rounded bg-[#F1F2F3] px-2 py-1 text-xs text-gray-500">PDF</span>
+                  </div>
+                  <h3 className="font-medium">{document.title}</h3>
+                  <p className="mt-2 mb-4 flex-1 text-sm leading-6 text-gray-500">{document.description}</p>
+                  <a href={document.href} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-xl bg-[#090A29] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus-visible:outline-[#E88A17]" aria-label={`Open ${document.title} in a new tab`}>Read Document <ExternalLink size={15} /></a>
                 </article>
               );
             })}
