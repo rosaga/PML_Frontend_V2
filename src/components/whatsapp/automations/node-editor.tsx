@@ -17,8 +17,6 @@ import type { FlowNode } from "./flow-types";
 import { isTerminalNodeType } from "./flow-types";
 import type { MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 
-const TERMINAL_NODE_TYPES: FlowNode["node_type"][] = ["META_FLOW", "CATALOGUE"];
-
 interface NodeEditorProps {
   node: FlowNode | null;
   metaFlows?: MetaFlow[];
@@ -26,7 +24,7 @@ interface NodeEditorProps {
   onDelete?: () => void;
 }
 
-export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDelete }: NodeEditorProps) {
+export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEditorProps) {
   const [formData, setFormData] = React.useState<FlowNode>(
     node || {
       name: "New Node",
@@ -100,26 +98,6 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
               meta_flow_id: assetId,
               meta_flow_name: selectedAsset?.flow_name || "",
             }),
-      },
-    });
-  };
-
-  const handleCatalogueSelect = (catalogueId: string) => {
-    const selectedCatalogue = catalogues.find(
-      (catalogue) => (catalogue.catalogue_id || catalogue.flow_id) === catalogueId
-    );
-    const catalogueName = selectedCatalogue?.catalogue_name || selectedCatalogue?.flow_name || "";
-    updateField({
-      ...formData,
-      name: catalogueName || formData.name,
-      header_text_template: {
-        ...formData.header_text_template,
-        text: catalogueName ? `Open ${catalogueName}` : formData.header_text_template.text,
-      },
-      extra_data: {
-        ...formData.extra_data,
-        catalogue_id: catalogueId,
-        catalogue_name: catalogueName,
       },
     });
   };
@@ -200,35 +178,8 @@ export function NodeEditor({ node, metaFlows = [], catalogues = [], onSave, onDe
         </div>
       )}
 
-      {formData.node_type === "CATALOGUE" && (
-        <div className="space-y-1.5">
-          <Label>Catalogue</Label>
-          <Select
-            value={formData.extra_data?.catalogue_id || ""}
-            onValueChange={handleCatalogueSelect}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a Catalogue" />
-            </SelectTrigger>
-            <SelectContent>
-              {catalogues.filter((catalogue) => catalogue.catalogue_id || catalogue.flow_id).map((catalogue) => {
-                const catalogueId = catalogue.catalogue_id || catalogue.flow_id;
-                return (
-                  <SelectItem key={catalogue.id} value={catalogueId}>
-                    {catalogue.catalogue_name || catalogue.flow_name}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-          {catalogues.length === 0 && (
-            <p className="text-xs text-muted-foreground">No live Catalogues available.</p>
-          )}
-        </div>
-      )}
-
-      {/* Message Text — hidden for terminal handoff nodes */}
-      {!TERMINAL_NODE_TYPES.includes(formData.node_type) && (
+      {/* Message Text — hidden for META_FLOW nodes */}
+      {formData.node_type !== "META_FLOW" && (
         <div className="space-y-1.5">
           <Label>Message Text</Label>
           <Textarea

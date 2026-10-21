@@ -22,9 +22,6 @@ export interface MetaFlow {
   is_active?: boolean;
   description?: string;
   meta_flow_id?: string;
-  catalogue_id?: string;
-  catalogue_name?: string;
-  resource_type: "META_FLOW" | "CATALOGUE";
   flow_message_version?: string;
   flow_cta?: string;
   body_text?: string;
@@ -132,14 +129,6 @@ interface FlowbotMetaFlow {
   is_active?: boolean;
   description?: string;
   meta_flow_id?: string;
-  catalogue_id?: string;
-  catalog_id?: string;
-  catalogue_name?: string;
-  catalog_name?: string;
-  resource_type?: string;
-  flow_type?: string;
-  type?: string;
-  node_type?: string;
   flow_message_version?: string;
   body_text?: string;
   forward_to_chatbot?: boolean;
@@ -165,13 +154,8 @@ interface FlowbotMetaFlowResponse {
 }
 
 function normalizeMetaFlow(flow: FlowbotMetaFlow): MetaFlow {
-  const catalogueId = flow.catalogue_id || flow.catalog_id || "";
-  const resourceType = [flow.resource_type, flow.flow_type, flow.type, flow.node_type]
-    .find(Boolean)
-    ?.toUpperCase();
-  const isCatalogue = resourceType === "CATALOGUE" || resourceType === "CATALOG" || Boolean(catalogueId);
-  const flowId = flow.flow_id || flow.meta_flow_id || catalogueId || "";
-  const flowName = flow.flow_name || flow.catalogue_name || flow.catalog_name || flow.name || "";
+  const flowId = flow.flow_id || flow.meta_flow_id || "";
+  const flowName = flow.flow_name || flow.name || "";
   const defaultCta = flow.default_cta || flow.flow_cta || "";
   const type = flow.type === "CATALOGUE" ? "CATALOGUE" : "META_FLOW";
 
@@ -190,9 +174,6 @@ function normalizeMetaFlow(flow: FlowbotMetaFlow): MetaFlow {
     is_active: flow.is_active,
     description: flow.description,
     meta_flow_id: flow.meta_flow_id,
-    catalogue_id: catalogueId || undefined,
-    catalogue_name: isCatalogue ? flowName : undefined,
-    resource_type: isCatalogue ? "CATALOGUE" : "META_FLOW",
     flow_message_version: flow.flow_message_version,
     flow_cta: flow.flow_cta,
     body_text: flow.body_text,
@@ -327,12 +308,15 @@ async function parseApiResponse<T>(
   return { success: true, data };
 }
 
-export async function getMetaFlowResources(
-  organizationExternalId: string
+export async function getMetaFlows(
+  organizationExternalId: string,
+  type?: MetaFlow["type"]
 ): Promise<ApiResponse<{ count: number; data: MetaFlow[] }>> {
   try {
+    const url = new URL(`${META_FLOWS_BASE_URL}/${encodeURIComponent(organizationExternalId)}`);
+    if (type) url.searchParams.set("eq__type", type);
     const response = await fetch(
-      `${META_FLOWS_BASE_URL}/${encodeURIComponent(organizationExternalId)}`,
+      url.toString(),
       { method: "GET" }
     );
     const result = await parseApiResponse<unknown>(response, "Failed to fetch Meta Flows");
@@ -345,19 +329,6 @@ export async function getMetaFlowResources(
   } catch (error) {
     return { success: false, error: String(error) };
   }
-}
-
-export async function getMetaFlows(
-  organizationExternalId: string
-): Promise<ApiResponse<{ count: number; data: MetaFlow[] }>> {
-  const result = await getMetaFlowResources(organizationExternalId);
-  if (!result.success || !result.data) return result;
-
-  const metaFlows = result.data.data.filter((resource) => resource.resource_type === "META_FLOW");
-  return {
-    success: true,
-    data: { count: metaFlows.length, data: metaFlows },
-  };
 }
 
 export async function createMetaFlow(
