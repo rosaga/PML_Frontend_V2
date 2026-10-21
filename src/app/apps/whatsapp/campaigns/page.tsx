@@ -192,7 +192,7 @@ function CampaignsContent() {
                 </TableHeader>
                 <TableBody>
                   {campaigns.map((c) => {
-                    const sentTotal = c.sent_count + c.delivered_count;
+                    const sentTotal = c.sent_count + c.delivered_count + c.campaign_read_count;
                     return (
                     <TableRow
                       key={c.id}

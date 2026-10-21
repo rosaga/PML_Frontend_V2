@@ -62,3 +62,10 @@ export const clearToken = () => {
     localStorage.removeItem('sideTourActive');
   }
 };
+
+export const signOutUser = () => {
+  if (typeof window === 'undefined') return;
+
+  clearToken();
+  window.location.replace('/signin');
+};

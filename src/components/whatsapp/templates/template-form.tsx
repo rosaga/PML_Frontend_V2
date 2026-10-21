@@ -33,6 +33,8 @@ interface TemplateFormProps {
   mode?: "create" | "edit";
 }
 
+const MARKETING_FOOTER = "reply STOP to opt out";
+
 export function TemplateForm({ onSuccess, initialData, mode = "create" }: TemplateFormProps) {
   const { config, isConfigured } = useConfig();
   const { toast } = useToast();
@@ -96,6 +98,9 @@ export function TemplateForm({ onSuccess, initialData, mode = "create" }: Templa
     buttons: initialButtons as Array<{ type: string; text: string; url?: string; phone?: string }>,
   });
 
+  const isMarketing = formData.category === "MARKETING";
+  const footerText = isMarketing ? MARKETING_FOOTER : formData.footerText;
+
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
@@ -142,7 +147,7 @@ export function TemplateForm({ onSuccess, initialData, mode = "create" }: Templa
   }, [initialData]);
 
   const saveDraft = () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...formData, footerText }));
     setDraftSaved(true);
     toast({
       title: "Draft Saved",
@@ -308,10 +313,10 @@ export function TemplateForm({ onSuccess, initialData, mode = "create" }: Templa
     components.push(bodyComponent as unknown as TemplateComponent);
 
     // Add footer if present
-    if (formData.footerText) {
+    if (footerText) {
       components.push({
         type: "footer",
-        text: formData.footerText,
+        text: footerText,
       } as unknown as TemplateComponent);
     }
 
@@ -420,10 +425,10 @@ export function TemplateForm({ onSuccess, initialData, mode = "create" }: Templa
   }
 
   // Add footer to preview
-  if (formData.footerText) {
+  if (footerText) {
     previewTemplate.components.push({
       type: "FOOTER",
-      text: formData.footerText,
+      text: footerText,
     } as unknown as TemplateComponent);
   }
 
@@ -703,7 +708,7 @@ export function TemplateForm({ onSuccess, initialData, mode = "create" }: Templa
       {formData.category !== "AUTHENTICATION" && (
       <Card>
         <CardHeader>
-          <CardTitle>Footer (Optional)</CardTitle>
+          <CardTitle>{isMarketing ? "Footer (Required)" : "Footer (Optional)"}</CardTitle>
           <CardDescription>
             Add a footer to your template message
           </CardDescription>
@@ -711,7 +716,8 @@ export function TemplateForm({ onSuccess, initialData, mode = "create" }: Templa
         <CardContent>
           <Input
             placeholder="Reply STOP to unsubscribe"
-            value={formData.footerText}
+            value={footerText}
+            readOnly={isMarketing}
             onChange={(e) => setFormData({ ...formData, footerText: e.target.value })}
           />
         </CardContent>

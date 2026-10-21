@@ -45,7 +45,7 @@ interface Campaign {
   text_count: number;
   success_rate: number;
   failure_rate: number;
-  button_clicks_count: number;
+  button_click_count: number;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -106,6 +106,7 @@ function DeliveryBar({ campaign }: { campaign: Campaign }) {
   if (total === 0) return null;
 
   const segments = [
+    { label: "Read", count: campaign.campaign_read_count, color: "bg-blue-500" },
     { label: "Delivered", count: campaign.delivered_count, color: "bg-emerald-500" },
     { label: "Sent", count: campaign.sent_count, color: "bg-amber-400" },
   ];
@@ -213,7 +214,7 @@ function CampaignDetailContent() {
     { name: "Failed", value: campaign.failure_rate },
   ].filter((d) => d.value > 0);
 
-  const sentTotal = campaign.sent_count + campaign.delivered_count;
+  const sentTotal = campaign.sent_count + campaign.delivered_count + campaign.campaign_read_count;
 
   const isCompleted =
     campaign.total_messages > 0 &&
@@ -279,8 +280,8 @@ function CampaignDetailContent() {
           <StatCard
             icon={MousePointerClick}
             label="Button Clicks"
-            value={(campaign.button_clicks_count ?? 0).toLocaleString()}
-            sub={pct(campaign.button_clicks_count ?? 0, campaign.total_messages) + " of total"}
+            value={(campaign.button_click_count ?? 0).toLocaleString()}
+            sub={pct(campaign.button_click_count ?? 0, campaign.total_messages) + " of total"}
             color="#f59e0b"
           />
         </div>

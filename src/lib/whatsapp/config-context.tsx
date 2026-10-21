@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import type { ApiConfig } from "./whatsapp-api";
+import { signOutUser } from "@/utils/auth";
 
 // Reads PML auth directly from localStorage — no postMessage needed since
 // the WhatsApp module now lives inside the PML application.
@@ -87,7 +88,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId));
     }
     LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
-    window.location.href = "/signin";
+    signOutUser();
   }, []);
 
   useEffect(() => {

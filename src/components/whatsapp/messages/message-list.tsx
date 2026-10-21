@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/whatsapp/ui/table";
 import { Label } from "@/components/whatsapp/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/whatsapp/ui/tooltip";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { getTemplates } from "@/lib/whatsapp/whatsapp-api";
 import {
@@ -82,6 +83,12 @@ interface Filters {
 interface Template {
   id: string;
   name: string;
+}
+
+function getMessageDescription(message: Message) {
+  return message.status.toUpperCase() === "FAILED"
+    ? message.error_description || "NA"
+    : "NA";
 }
 
 export function MessageList() {
@@ -517,47 +524,68 @@ export function MessageList() {
                 <TableHead>Template</TableHead>
                 <TableHead>Campaign</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     <RefreshCw className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : messages.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                     No messages found
                   </TableCell>
                 </TableRow>
               ) : (
-                messages.map((message) => (
-                  <TableRow key={message.id}>
-                    <TableCell>{getDirectionIcon(message.direction)}</TableCell>
-                    <TableCell className="font-mono text-sm">{message.mobile_no}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={message.content}>
-                      {message.content || "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-xs">
-                        {message.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {message.template_name || "-"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {message.campaign_name || "-"}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(message.status)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(message.created_at)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                messages.map((message) => {
+                  const description = getMessageDescription(message);
+
+                  return (
+                    <TableRow key={message.id}>
+                      <TableCell>{getDirectionIcon(message.direction)}</TableCell>
+                      <TableCell className="font-mono text-sm">{message.mobile_no}</TableCell>
+                      <TableCell className="max-w-[200px] truncate" title={message.content}>
+                        {message.content || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {message.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {message.template_name || "-"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {message.campaign_name || "-"}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(message.status)}</TableCell>
+                      <TableCell className="text-sm">
+                        {description === "NA" ? (
+                          "NA"
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} className="whitespace-nowrap">
+                                {description.length > 20 ? `${description.slice(0, 20)}...` : description}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs break-words whitespace-pre-wrap">
+                              {description}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(message.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

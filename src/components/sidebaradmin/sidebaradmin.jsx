@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { clearToken } from "@/utils/auth";
+
 import { usePathname, useRouter } from "next/navigation";
+import { signOutUser } from "@/utils/auth";
+
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import { X } from "lucide-react";
 
@@ -179,10 +181,7 @@ const SidebarAdmin = () => {
       {modalOpen && (
         <ConfirmSignOutModal
           onClose={() => setModalOpen(false)}
-          onConfirm={() => {
-            clearToken();
-            router.push("/signin");
-          }}
+          onConfirm={signOutUser}
         />
       )}
     </>
