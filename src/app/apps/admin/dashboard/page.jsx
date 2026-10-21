@@ -1,6 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { MessageSquare } from "lucide-react";
+import { useWhatsAppDemo } from "@/components/admin/whatsapp/demo-context";
+import { SampleDataBadge } from "@/components/admin/whatsapp/ui";
+import { RecentWhatsAppFailedDispatches } from "@/components/admin/whatsapp/failed-dispatches";
 import {
   GetAdminDashboardSummary,
   GetAdminBalancesSummary,
@@ -10,6 +15,7 @@ import {
 } from "@/app/api/actions/admin/admin";
 
 const DashboardPage = () => {
+  const { organizations: whatsappOrganizations } = useWhatsAppDemo();
   const [isClient, setIsClient] = useState(false);
   const [summary, setSummary] = useState(null);
   const [balances, setBalances] = useState(null);
@@ -216,8 +222,19 @@ const DashboardPage = () => {
           </svg>
         ),
       },
+      {
+        label: "Active WABA Accounts",
+        value: formatNumber(
+          whatsappOrganizations.filter((organization) => organization.status === "Active").length
+        ),
+        subtitle: "Connected WhatsApp business accounts",
+        iconBg: "#eef2ff",
+        iconColor: "#9ca3af",
+        icon: <MessageSquare size={22} strokeWidth={1.7} aria-hidden="true" />,
+        sample: false,
+      },
     ];
-  }, [summary, balances]);
+  }, [summary, balances, whatsappOrganizations]);
 
   const systemHealth = [
     {
@@ -397,45 +414,48 @@ const DashboardPage = () => {
           </div>
         ) : null}
 
+        <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {metrics.filter((metric) => !loading || metric.sample).map((metric) => (
+            <div
+              key={metric.label}
+              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[13px] font-medium text-gray-600">
+                    {metric.label}
+                  </p>
+                  {metric.sample ? (
+                    <div className="mt-2"><SampleDataBadge /></div>
+                  ) : null}
+                  <p className="mt-2 text-[18px] font-semibold leading-none text-gray-900">
+                    {metric.value}
+                  </p>
+                  <p className="mt-4 text-[13px] text-green-600">
+                    {metric.subtitle}
+                  </p>
+                </div>
+
+                <div
+                  className="flex h-11 w-11 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: metric.iconBg,
+                    color: metric.iconColor,
+                  }}
+                >
+                  {metric.icon}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
           </div>
         ) : (
           <>
-            <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {metrics.map((metric) => (
-                <div
-                  key={metric.label}
-                  className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[13px] font-medium text-gray-600">
-                        {metric.label}
-                      </p>
-                      <p className="mt-2 text-[18px] font-semibold leading-none text-gray-900">
-                        {metric.value}
-                      </p>
-                      <p className="mt-4 text-[13px] text-green-600">
-                        {metric.subtitle}
-                      </p>
-                    </div>
-
-                    <div
-                      className="flex h-11 w-11 items-center justify-center rounded-full"
-                      style={{
-                        backgroundColor: metric.iconBg,
-                        color: metric.iconColor,
-                      }}
-                    >
-                      {metric.icon}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
             <div className="mb-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
               <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="border-b border-gray-200 px-4 py-4">
@@ -581,9 +601,17 @@ const DashboardPage = () => {
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <h2 className="text-[18px] font-semibold text-gray-900">
-                Recent Failed Dispatches
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-[18px] font-semibold text-gray-900">
+                  Recent Failed Dispatches
+                </h2>
+                <Link
+                  href="/apps/admin/failed-dispatches"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  View All Failed Dispatches
+                </Link>
+              </div>
 
               <div className="mt-6 overflow-x-auto">
                 <table className="min-w-full">
@@ -642,6 +670,9 @@ const DashboardPage = () => {
             </div>
           </>
         )}
+        <div className="mt-5">
+          <RecentWhatsAppFailedDispatches />
+        </div>
       </div>
     </div>
   );

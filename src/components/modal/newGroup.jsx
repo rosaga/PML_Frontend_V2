@@ -11,10 +11,10 @@ const CSV_CHECKER_URL =
 
 const CSV_CHECKER_ORIGIN = new URL(CSV_CHECKER_URL).origin;
 
-const NewGroupModal = ({ closeModal }) => {
+const NewGroupModal = ({ closeModal, successActionLabel, onSuccessAction }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const [, , service] = pathname.split("/");
+  const [, , service = ""] = pathname.split("/");
 
   let org_id = null;
   if (typeof window !== "undefined") {
@@ -485,14 +485,13 @@ const NewGroupModal = ({ closeModal }) => {
                   }}
                   className="w-full px-5 py-2.5 text-sm font-medium text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300"
                 >
-                  Cancel
+                  Close
                 </button>
                 <button
-                  onClick={goToCampaign}
+                  onClick={onSuccessAction || goToCampaign}
                   className="w-full px-5 py-2.5 text-sm font-medium text-white bg-orange-400 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-300"
                 >
-                  Go to {service.charAt(0).toUpperCase() + service.slice(1)}{" "}
-                  Campaigns
+                  {successActionLabel || `Go to ${service.charAt(0).toUpperCase() + service.slice(1)} Campaigns`}
                 </button>
               </div>
             </div>

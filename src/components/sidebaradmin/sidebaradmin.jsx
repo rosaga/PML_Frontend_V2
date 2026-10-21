@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+
+import { usePathname, useRouter } from "next/navigation";
 import { signOutUser } from "@/utils/auth";
-import { useRouter } from "next/navigation";
+
 import ConfirmSignOutModal from "../modal/confirmSignout";
 import { X } from "lucide-react";
 
 const SidebarAdmin = () => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [activeLink, setActiveLink] = useState("");
+  const activeLink = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const router = useRouter();
@@ -22,15 +24,15 @@ const SidebarAdmin = () => {
   }, []);
 
   useEffect(() => {
-    setActiveLink(window.location.pathname);
-  }, []);
+    if (activeLink.startsWith("/apps/admin/services/")) setIsSettingsOpen(true);
+  }, [activeLink]);
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
 
   const handleLinkClick = (link) => {
-    setActiveLink(link);
+    router.push(link);
     closeSidebar();
   };
 
@@ -40,7 +42,6 @@ const SidebarAdmin = () => {
   };
 
   const handleSubMenuClick = (href) => {
-    setActiveLink(href);
     router.push(href);
     closeSidebar();
   };
@@ -58,7 +59,7 @@ const SidebarAdmin = () => {
       className: "settings",
       subLinks: [
         { href: "/apps/admin/services/sms", label: "Bulk SMS", className: "bulk-sms" },
-        // { href: "/apps/admin/services/bulk-whatsapp", label: "Bulk WhatsApp", className: "bulk-whatsapp" },
+        { href: "/apps/admin/services/whatsapp", label: "WhatsApp", className: "bulk-whatsapp" },
         { href: "/apps/admin/services/data", label: "Bulk Data", className: "bulk-data" },
         { href: "/apps/admin/services/airtime", label: "Bulk Airtime", className: "bulk-airtime" },
         // { href: "/apps/admin/services/ussd-flows", label: "USSD Flows", className: "ussd-flows" },
@@ -106,12 +107,14 @@ const SidebarAdmin = () => {
               <li key={link.href || link.label}>
                 <a
                   href={link.href || "#"}
+                  aria-current={activeLink === link.href ? "page" : undefined}
+                  aria-expanded={link.subLinks ? isSettingsOpen : undefined}
                   onClick={(e) => {
                     if (link.subLinks) {
                       toggleSettingsSubMenu(e);
-                    } else {
+                    } else if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                      e.preventDefault();
                       handleLinkClick(link.href);
-                      router.push(link.href);
                     }
                   }}
                   className={`icon-hover-parent flex items-center p-2 text-black rounded-lg dark:text-white ${
@@ -128,9 +131,9 @@ const SidebarAdmin = () => {
                   />
                   <span className="ms-3">{link.label}</span>
                   {link.subLinks && (
-                    <button onClick={toggleSettingsSubMenu} className="ml-auto text-white">
+                    <span className="ml-auto" aria-hidden="true">
                       {isSettingsOpen ? "▲" : "▼"}
-                    </button>
+                    </span>
                   )}
                 </a>
 
@@ -141,7 +144,12 @@ const SidebarAdmin = () => {
                       <li key={subLink.href}>
                         <a
                           href={subLink.href}
-                          onClick={() => handleSubMenuClick(subLink.href)}
+                          aria-current={activeLink === subLink.href ? "page" : undefined}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                            e.preventDefault();
+                            handleSubMenuClick(subLink.href);
+                          }}
                           className={`block p-2 text-gray-700 rounded-lg dark:text-gray-400 ${
                             activeLink === subLink.href ? "bg-[#001F3D] text-white" : "hover:bg-[#001F3D] hover:text-white dark:hover:bg-gray-700"
                           } ${subLink.className || ""}`}
