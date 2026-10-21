@@ -23,6 +23,8 @@ import {
 import { useTags } from "@/lib/whatsapp/tags-context";
 import { useMessageNotification } from "@/lib/whatsapp/message-context";
 import { persistNames, loadNames } from "@/lib/whatsapp/name-cache";
+import { getCatalogueOrder } from "@/lib/whatsapp/catalogue-order";
+import { CatalogueOrderCard } from "@/components/whatsapp/messages/catalogue-order-card";
 import {
   type Recipient,
   readCache,
@@ -42,6 +44,7 @@ interface Message {
   status: string;
   template_name?: string;
   content?: string;
+  metadata?: Record<string, unknown> | null;
   created_at?: string;
   updated_at?: string;
   read_at?: string;
@@ -750,6 +753,7 @@ export default function InboxChatPage() {
                     {msgs.map((message) => {
                       const isOutgoing = message.direction === "OUTBOUND";
                       const msgType = message.type?.toUpperCase() ?? "";
+                      const catalogueOrder = getCatalogueOrder(message.metadata);
 
                       // Extract image URL: inbound MEDIARESPONSE/IMAGERESPONSE has it as content directly;
                       // outbound image messages are stored as "Image:\n<url>" by the backend.
@@ -788,7 +792,9 @@ export default function InboxChatPage() {
                               </p>
                             )}
 
-                            {imageUrl ? (
+                            {catalogueOrder ? (
+                              <CatalogueOrderCard order={catalogueOrder} />
+                            ) : imageUrl ? (
                               <img
                                 src={imageUrl}
                                 alt="Image"
