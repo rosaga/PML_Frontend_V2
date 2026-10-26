@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "../../globals.css";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import { TechProviderShell } from "@/components/tech-provider/dashboard-shell";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,8 +13,8 @@ export const metadata = {
 export default function TechProviderLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <SessionProviderWrapper>{children}</SessionProviderWrapper>
+      <body className={`${inter.className} whatsapp-root`}>
+        <SessionProviderWrapper><TechProviderShell>{children}</TechProviderShell></SessionProviderWrapper>
       </body>
     </html>
   );
