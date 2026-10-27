@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Header } from "@/components/whatsapp/dashboard/header";
 import { ApiConfigSettings } from "@/components/whatsapp/settings/api-config";
 import { BusinessNameCard } from "@/components/whatsapp/settings/business-name";
+import { CallbackUrlSettings } from "@/components/whatsapp/settings/callback-url";
 import { getToken } from "@/utils/auth";
 import { hasRole } from "@/utils/decodeToken";
 import { ShieldOff } from "lucide-react";
@@ -31,6 +32,7 @@ function AccountContent() {
           <>
             <BusinessNameCard />
             <ApiConfigSettings />
+            <CallbackUrlSettings />
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
