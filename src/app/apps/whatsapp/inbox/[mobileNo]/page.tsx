@@ -10,7 +10,7 @@ import { Input } from "@/components/whatsapp/ui/input";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { Textarea } from "@/components/whatsapp/ui/textarea";
-import { ArrowLeft, Send, Phone, CheckCheck, Check, Search, Tag as TagIcon, User, Paperclip, ImageIcon, FileText, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Phone, CheckCheck, Check, CircleAlert, Search, Tag as TagIcon, User, Paperclip, ImageIcon, FileText, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import {
   AlertDialog,
@@ -42,6 +42,7 @@ interface Message {
   type: string;
   category: string;
   status: string;
+  error_description?: string | null;
   template_name?: string;
   content?: string;
   metadata?: Record<string, unknown> | null;
@@ -498,7 +499,13 @@ export default function InboxChatPage() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
+      case "FAILED": return (
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700">
+          <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          Failed to send
+        </span>
+      );
       case "READ": return <CheckCheck className="h-3 w-3 text-blue-500" />;
       case "DELIVERED": return <CheckCheck className="h-3 w-3 text-gray-500" />;
       case "SENT": return <Check className="h-3 w-3 text-gray-500" />;
@@ -752,6 +759,7 @@ export default function InboxChatPage() {
 
                     {msgs.map((message) => {
                       const isOutgoing = message.direction === "OUTBOUND";
+                      const isFailed = isOutgoing && message.status?.toUpperCase() === "FAILED";
                       const msgType = message.type?.toUpperCase() ?? "";
                       const catalogueOrder = getCatalogueOrder(message.metadata);
 
@@ -783,7 +791,9 @@ export default function InboxChatPage() {
                         >
                           <div
                             className={`max-w-[70%] rounded-lg overflow-hidden ${
-                              isOutgoing ? "bg-[#D9FDD3] text-gray-900" : "bg-white text-gray-900 shadow-sm"
+                              isFailed
+                                ? "bg-red-50 text-gray-900 border border-red-300"
+                                : isOutgoing ? "bg-[#D9FDD3] text-gray-900" : "bg-white text-gray-900 shadow-sm"
                             }`}
                           >
                             {message.template_name && (
@@ -820,7 +830,13 @@ export default function InboxChatPage() {
                               </p>
                             )}
 
-                            <div className="flex items-center justify-end gap-1 px-4 pb-2 mt-1">
+                            {isFailed && message.error_description && (
+                              <p className="text-xs text-red-700 break-words px-4 py-1">
+                                {message.error_description}
+                              </p>
+                            )}
+
+                            <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 px-4 pb-2 mt-1">
                               <span className="text-xs text-gray-500">
                                 {formatTime(message.created_at || message.updated_at)}
                               </span>

@@ -181,17 +181,19 @@ export function ApiConfigSettings() {
           </div>
         )}
 
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => handleVerifyAndSave(savedOrgId)}
-            disabled={loading || !savedOrgId}
-            className="flex items-center gap-2"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {loading ? "Connecting..." : "Re-verify Connection"}
-          </Button>
-        </div>
+        {isSuperAdmin && (
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => handleVerifyAndSave(savedOrgId)}
+              disabled={loading || !savedOrgId}
+              className="flex items-center gap-2"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {loading ? "Connecting..." : "Re-verify Connection"}
+            </Button>
+          </div>
+        )}
 
         {isSuperAdmin && (
           <div className="pt-4 border-t border-border space-y-3">
