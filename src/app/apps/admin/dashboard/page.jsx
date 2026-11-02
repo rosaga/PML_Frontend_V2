@@ -670,9 +670,7 @@ const DashboardPage = () => {
             </div>
           </>
         )}
-        <div className="mt-5">
-          <RecentWhatsAppFailedDispatches />
-        </div>
+
       </div>
     </div>
   );
