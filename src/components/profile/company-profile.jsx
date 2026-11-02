@@ -8,10 +8,11 @@ import CircularProgress from "@mui/material/CircularProgress";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import PeakButton from "@/components/button/button";
-import { GetAccounts } from "@/app/api/actions/accounts/accounts";
+import { GetAccounts, GetOrganization, UpdateOrganizationPhone } from "@/app/api/actions/accounts/accounts";
 import { getToken } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
 import { POLICIES } from "@/lib/policies";
+import { isValidPhoneNumber, PHONE_NUMBER_ERROR } from "@/utils/phone";
 import ProfileResources from "./profile-resources";
 
 function displayValue(value) {
@@ -27,6 +28,10 @@ export default function CompanyProfile({ withinDashboard = false }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneSaved, setPhoneSaved] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
   const product = pathname.split("/")[2];
   const backHref = product ? `/apps/${product}/dashboard` : "/miniapp";
 
@@ -51,11 +56,21 @@ export default function CompanyProfile({ withinDashboard = false }) {
       try {
         const response = await GetAccounts();
         if (response.errors || !Array.isArray(response.data)) throw new Error("Unable to load company details. Please try again.");
-        const account = response.data.find((item) => String(item.id) === accountId);
+        const account = response.data.find((item) => String(item.id) === accountId || item.external_id === accountId);
         if (!account) throw new Error("This company account is no longer available. Please select another account.");
-        if (!cancelled) setCompany(account);
+        if (!account.external_id) throw new Error("The organization external ID is unavailable. Please select another account.");
+        const organizationResponse = await GetOrganization(account.external_id);
+        const organization = organizationResponse.data?.data ?? organizationResponse.data;
+        if (!cancelled) {
+          const phone = organization.phone_number || "";
+          setCompany({ ...account, phone_number: phone });
+          setPhoneNumber(phone);
+          setPhoneError("");
+          setPhoneSaved(false);
+        }
       } catch (err) {
-        if (!cancelled) setError(err.message || "Unable to load company details. Please try again.");
+        const message = err.response?.data?.error || err.response?.data?.message || err.message;
+        if (!cancelled) setError((typeof message === "string" && message) || "Unable to load company details. Please try again.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -64,11 +79,40 @@ export default function CompanyProfile({ withinDashboard = false }) {
     return () => { cancelled = true; };
   }, [router, attempt]);
 
+  const handleSavePhone = async (event) => {
+    event.preventDefault();
+    if (savingPhone) return;
+    setPhoneSaved(false);
+    setPhoneError("");
+    if (!isValidPhoneNumber(phoneNumber)) {
+      setPhoneError(PHONE_NUMBER_ERROR);
+      return;
+    }
+    if (!getToken()) return;
+
+    const phone = phoneNumber.trim();
+    setSavingPhone(true);
+    try {
+      const response = await UpdateOrganizationPhone(company.external_id, phone);
+      const organization = response.data?.data ?? response.data;
+      const savedPhone = organization?.phone_number ?? phone;
+      setCompany((current) => ({ ...current, phone_number: savedPhone }));
+      setPhoneNumber(savedPhone);
+      setPhoneSaved(true);
+    } catch (err) {
+      const message = err.response?.data?.error || err.response?.data?.message || err.message;
+      setPhoneError((typeof message === "string" && message) || "Unable to update the phone number. Please try again.");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
   const attributes = company?.attributes || {};
   const details = [
     ["Company name", displayValue(company?.name)],
     ["Account ID", displayValue(company?.id)],
     ["Company email", displayValue(attributes.emails)],
+    ["Company phone", displayValue(company?.phone_number)],
     ["Description", displayValue(attributes.description)],
   ];
 
@@ -111,14 +155,44 @@ export default function CompanyProfile({ withinDashboard = false }) {
                 </div>
               </div>
             ) : (
-              <dl className="grid gap-6 sm:grid-cols-2">
-                {details.map(([label, value]) => (
-                  <div key={label} className="min-w-0">
-                    <dt className="text-sm text-gray-500">{label}</dt>
-                    <dd className="mt-2 whitespace-pre-line text-sm leading-6 break-words">{value || <span className="text-gray-400">Not provided</span>}</dd>
+              <>
+                <dl className="grid gap-6 sm:grid-cols-2">
+                  {details.map(([label, value]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="text-sm text-gray-500">{label}</dt>
+                      <dd className="mt-2 whitespace-pre-line text-sm leading-6 break-words">{value || <span className="text-gray-400">Not provided</span>}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <form onSubmit={handleSavePhone} noValidate className="mt-6 space-y-3 border-t border-gray-200 pt-6">
+                  <label htmlFor="company-phone-number" className="block text-sm font-medium">Phone number (optional)</label>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      id="company-phone-number"
+                      name="phone_number"
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="+254712345678"
+                      value={phoneNumber}
+                      disabled={savingPhone}
+                      onChange={(event) => {
+                        setPhoneNumber(event.target.value);
+                        setPhoneError("");
+                        setPhoneSaved(false);
+                      }}
+                      aria-invalid={!!phoneError}
+                      aria-describedby={`company-phone-help${phoneError ? " company-phone-error" : ""}`}
+                      className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white p-2.5 text-sm focus:border-[#E88A17] focus:outline-none focus:ring-1 focus:ring-[#E88A17] disabled:bg-gray-100"
+                    />
+                    <button type="submit" disabled={savingPhone || phoneNumber.trim() === company?.phone_number} className="h-10 rounded-xl bg-[#090A29] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus-visible:outline-[#E88A17] disabled:cursor-not-allowed disabled:opacity-60">
+                      {savingPhone ? "Saving..." : "Save phone number"}
+                    </button>
                   </div>
-                ))}
-              </dl>
+                  <p id="company-phone-help" className="text-xs text-gray-500">Use E.164 format, e.g. +254712345678. Leave blank to clear.</p>
+                  {phoneError && <p id="company-phone-error" className="text-sm text-red-600" role="alert">{phoneError}</p>}
+                  {phoneSaved && <p className="text-sm text-green-700" role="status">Phone number saved.</p>}
+                </form>
+              </>
             )}
           </section>
           <section className="min-w-0 rounded-lg border-[1.5px] border-gray-200 bg-white p-6 shadow-sm" aria-labelledby="your-profile-title">

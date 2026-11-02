@@ -3,6 +3,7 @@ import "../../../app/globals.css";
 import SidebarData from "@/components/sidebardata/sidebardata";
 import Navbar from "@/components/navbar/navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import TermsUpdateBanner from "@/components/terms-update-banner/terms-update-banner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,6 +20,9 @@ export default function RootLayout({ children }) {
           <div className="flex h-screen w-full overflow-hidden bg-gray-50">
             <SidebarData />
             <div className="flex flex-col flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden">
+              <div className="shrink-0 lg:pl-64">
+                <TermsUpdateBanner />
+              </div>
               <Navbar />
               <main className="flex-1 w-full relative">
                 {children}

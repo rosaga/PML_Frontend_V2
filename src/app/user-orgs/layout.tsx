@@ -2,6 +2,7 @@
 
 import { Inter } from "next/font/google";
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
+import TermsUpdateBanner from "@/components/terms-update-banner/terms-update-banner";
 // @ts-ignore: side-effect import of CSS file without type declarations
 import "./user-orgs.css";
 
@@ -17,6 +18,7 @@ export default function LoginLayout({
       <body className={inter.className}>
         <SessionProviderWrapper>
           <div>
+            <TermsUpdateBanner />
             {children}
           </div>
         </SessionProviderWrapper>

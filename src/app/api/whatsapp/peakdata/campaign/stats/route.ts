@@ -1,20 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const PEAKDATA_BASE_URL = "https://peakdata-1048592730476.europe-west4.run.app/api/v1";
-const DEFAULT_ORGANIZATION_ID = process.env.NEXT_PUBLIC_ORGANIZATION_ID || "58045135-f272-4879-be0f-2559d836fdba";
 
 export async function GET(request: NextRequest) {
-  try {
-    const organizationId =
-      request.nextUrl.searchParams.get("organizationId") || DEFAULT_ORGANIZATION_ID;
-    const page = request.nextUrl.searchParams.get("page") || "1";
-    const limit = request.nextUrl.searchParams.get("limit") || "10";
+  const organizationExternalId = request.nextUrl.searchParams.get("organizationExternalId")?.trim();
+  const token = request.headers.get("x-auth-token");
+  if (!organizationExternalId) {
+    return NextResponse.json({ error: { message: "An organization external ID is required" } }, { status: 400 });
+  }
+  if (!token) {
+    return NextResponse.json({ error: { message: "Authentication token is required" } }, { status: 401 });
+  }
 
-    const url = `${PEAKDATA_BASE_URL}/whatsapp/campaign/stats/${organizationId}?page=${page}&limit=${limit}`;
+  try {
+    const params = new URLSearchParams({
+      page: request.nextUrl.searchParams.get("page") || "1",
+      limit: request.nextUrl.searchParams.get("limit") || "10",
+    });
+    for (const key of ["search", "group_id"]) {
+      const value = request.nextUrl.searchParams.get(key)?.trim();
+      if (value) params.set(key, value);
+    }
+    const url = `${PEAKDATA_BASE_URL}/whatsapp/campaign/stats/${encodeURIComponent(organizationExternalId)}?${params}`;
 
     const response = await fetch(url, {
-      headers: { accept: "application/json" },
+      headers: { accept: "application/json", Authorization: `Bearer ${token}` },
       cache: "no-store",
+      signal: request.signal,
     });
 
     const text = await response.text();
@@ -26,18 +38,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (!response.ok) {
-      console.error("[campaign/stats] API error:", response.status, text);
       return NextResponse.json(
         { error: { message: "Failed to fetch campaign stats" } },
         { status: response.status }
       );
     }
 
-    return NextResponse.json(data);
-  } catch (error: any) {
+    return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
+  } catch {
     return NextResponse.json(
-      { error: { message: error.message || "Internal server error" } },
-      { status: 500 }
+      { error: { message: "Failed to fetch campaign stats" } },
+      { status: 502 }
     );
   }
 }
