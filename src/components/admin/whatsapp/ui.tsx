@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
-export const primaryButtonClass = "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#02051d] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#001F3D] disabled:cursor-not-allowed disabled:opacity-50";
-export const secondaryButtonClass = "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#001F3D] disabled:cursor-not-allowed disabled:opacity-50";
+export const primaryButtonClass = "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#02051d] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#001F3D] disabled:cursor-not-allowed disabled:opacity-50";
+export const secondaryButtonClass = "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#001F3D] disabled:cursor-not-allowed disabled:opacity-50";
 export const inputClass = "h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-[#001F3D] focus:ring-1 focus:ring-[#001F3D]";
 
 export function formatAmount(value: number) {
@@ -55,12 +55,17 @@ export function StatusBadge({ status }: { status: string }) {
 
 export type TableColumn<T> = { key: string; label: string; render?: (row: T) => ReactNode };
 
-export function AdminTable<T extends { id: string }>({ columns, rows, emptyMessage = "No records found.", pageSize = 5 }: { columns: TableColumn<T>[]; rows: T[]; emptyMessage?: string; pageSize?: number }) {
+type ServerPagination = { offset: number; limit: number; count: number; onPageChange: (offset: number) => void };
+
+export function AdminTable<T extends { id: string }>({ columns, rows, emptyMessage = "No records found.", pageSize = 5, pagination }: { columns: TableColumn<T>[]; rows: T[]; emptyMessage?: string; pageSize?: number; pagination?: ServerPagination }) {
   const [page, setPage] = useState(1);
-  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
-  const currentPage = Math.min(page, pageCount);
+  const size = pagination?.limit ?? pageSize;
+  const count = pagination?.count ?? rows.length;
+  const pageCount = Math.max(1, Math.ceil(count / size));
+  const currentPage = pagination ? Math.floor(pagination.offset / size) + 1 : Math.min(page, pageCount);
   useEffect(() => { setPage(1); }, [rows]);
-  const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visibleRows = pagination ? rows : rows.slice((currentPage - 1) * size, currentPage * size);
+  const changePage = (next: number) => pagination ? pagination.onPageChange((next - 1) * size) : setPage(next);
 
   return <>
     <div className="overflow-x-auto">
@@ -70,8 +75,8 @@ export function AdminTable<T extends { id: string }>({ columns, rows, emptyMessa
       </table>
     </div>
     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-xs text-gray-500 sm:px-6">
-      <p>{rows.length ? `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, rows.length)} of ${rows.length} records` : "0 records"}</p>
-      <div className="flex items-center gap-2"><button type="button" className={secondaryButtonClass} disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</button><span className="px-1">{currentPage} / {pageCount}</span><button type="button" className={secondaryButtonClass} disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Next</button></div>
+      <p>{count ? `${(currentPage - 1) * size + 1}–${Math.min((currentPage - 1) * size + visibleRows.length, count)} of ${count} records` : "0 records"}</p>
+      <div className="flex items-center gap-2"><button type="button" className={secondaryButtonClass} disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}>Previous</button><span className="px-1">{currentPage} / {pageCount}</span><button type="button" className={secondaryButtonClass} disabled={currentPage >= pageCount} onClick={() => changePage(currentPage + 1)}>Next</button></div>
     </div>
   </>;
 }

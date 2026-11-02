@@ -145,22 +145,22 @@ const CHART_COLORS = ["#10b981", "#ef4444"];
 function CampaignDetailContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { organizationId, isLoading: contextLoading } = useConfig();
+  const { organizationExternalId, isLoading: contextLoading } = useConfig();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (contextLoading || !organizationId) return;
+    if (contextLoading || !organizationExternalId) return;
 
     async function load() {
       setLoading(true);
       try {
         // Fetch all campaigns (use high limit) to find by ID
         const res = await fetch(
-          `/api/whatsapp/peakdata/campaign/stats?organizationId=${encodeURIComponent(organizationId)}&page=1&limit=100`,
-          { cache: "no-store" }
+          `/api/whatsapp/peakdata/campaign/stats?organizationExternalId=${encodeURIComponent(organizationExternalId)}&page=1&limit=100`,
+          { cache: "no-store", headers: { "x-auth-token": localStorage.getItem("token") || "" } }
         );
         const data = await res.json();
         if (Array.isArray(data?.data)) {
@@ -180,7 +180,7 @@ function CampaignDetailContent() {
     }
 
     load();
-  }, [contextLoading, organizationId, id]);
+  }, [contextLoading, organizationExternalId, id]);
 
   if (loading) {
     return (

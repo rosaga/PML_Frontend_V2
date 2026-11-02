@@ -11,6 +11,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import apiUrl from "../api/utils/apiUtils/apiUrl";
+import { isValidPhoneNumber, PHONE_NUMBER_ERROR } from "@/utils/phone";
 import PolicyReview, { POLICIES } from "./policies";
 import "react-toastify/dist/ReactToastify.css";
 import "../../app/globals.css";
@@ -20,6 +21,7 @@ const SignUp = () => {
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastName] = useState("");
   const [organization, setOrganization] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -85,6 +87,7 @@ const SignUp = () => {
     } else if (checkingOrg || orgAvailable === null) {
       newErrors.organization = "Please verify your organization name before continuing";
     }
+    if (!isValidPhoneNumber(phoneNumber)) newErrors.phone_number = PHONE_NUMBER_ERROR;
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(email)) {
@@ -126,6 +129,7 @@ const SignUp = () => {
       firstname,
       lastName: lastname,
       email,
+      phone_number: phoneNumber.trim(),
       credentials: [{ type: "password", value: password, temporary: false }],
       attributes: { ACCOUNT: [organization] },
     };
@@ -139,11 +143,11 @@ const SignUp = () => {
         toast.error("We couldn’t create your account. Please try again.");
       }
     } catch (error) {
-      const message = error.response?.data?.error;
+      const message = error.response?.data?.error || error.response?.data?.message;
       toast.error(
         message === "409 Conflict: User exists with same email"
           ? "An account with this email already exists. Please log in or use a different email."
-          : message || "We couldn’t create your account. Please try again."
+          : (typeof message === "string" && message) || "We couldn’t create your account. Please try again."
       );
     } finally {
       submittingRef.current = false;
@@ -254,6 +258,25 @@ const SignUp = () => {
                       <p className="signup-success">Organization name available</p>
                     ) : null}
                   </div>
+                </div>
+
+                <div className="signup-field">
+                  <label htmlFor="phone_number">Organization phone number (optional)</label>
+                  <input
+                    id="phone_number"
+                    name="phone_number"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="+254712345678"
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      setPhoneNumber(e.target.value);
+                      setErrors((previous) => ({ ...previous, phone_number: "" }));
+                    }}
+                    aria-invalid={!!errors.phone_number}
+                    aria-describedby={errors.phone_number ? "phone-number-error" : undefined}
+                  />
+                  {errors.phone_number && <p id="phone-number-error" className="signup-error">{errors.phone_number}</p>}
                 </div>
 
                 <div className="signup-field">

@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import TermsUpdateBanner from "@/components/terms-update-banner/terms-update-banner";
 import {
   Activity,
   ArrowLeft,
@@ -298,6 +299,7 @@ export default function TechProviderPage() {
         </aside>
 
         <main className="lg:pl-72">
+          <TermsUpdateBanner />
           <header className="border-b border-[#d9eee3] bg-white/85 px-5 py-4 backdrop-blur lg:px-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>

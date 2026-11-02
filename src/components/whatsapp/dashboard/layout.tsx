@@ -2,6 +2,7 @@
 
 import { Sidebar } from "./sidebar";
 import { Toaster } from "@/components/whatsapp/ui/toaster";
+import TermsUpdateBanner from "@/components/terms-update-banner/terms-update-banner";
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 
@@ -30,6 +31,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       />
 
       <main className="lg:pl-64">
+        <TermsUpdateBanner />
         {children}
       </main>
 
