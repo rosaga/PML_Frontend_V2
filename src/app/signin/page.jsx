@@ -12,6 +12,7 @@ import apiUrl from "../api/utils/apiUtils/apiUrl";
 import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import TermsUpdateBanner from "@/components/terms-update-banner/terms-update-banner";
 import "../globals.css";
 import "../signup/signup.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -132,6 +133,7 @@ export default function SignIn() {
             <Image src="/images/peaklogo.png" alt="Peak Mobile" width={112} height={63} className="signup-mobile-logo" />
             <p>Don’t have an account? <Link href="/signup">Register <ArrowRight size={15} /></Link></p>
           </header>
+          <TermsUpdateBanner />
           <div className="signup-content signin-content">
             <header className="signup-heading">
               <h1>Welcome back</h1>

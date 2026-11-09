@@ -51,6 +51,7 @@ const SidebarAdmin = () => {
     { href: "/apps/admin/organizations", src: "/images/Account.svg", alt: "Organizations", label: "Organizations" },
     { href: "/apps/admin/accounts", src: "/images/Account.svg", alt: "Accounts", label: "Accounts & Wallet" },
     { href: "/apps/admin/provisionUnits", src: "/images/dataunits.svg", alt: "Provision", label: "Provision Units" },
+    { href: "/apps/admin/approval-requests", src: "/images/dataunits.svg", alt: "Requests", label: "Requests" },
     {
       href: "/apps/admin/services",
       src: "/images/vector.svg",

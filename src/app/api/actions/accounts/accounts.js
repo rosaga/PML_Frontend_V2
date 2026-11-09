@@ -16,6 +16,15 @@ export async function UpdateOrganizationPhone(externalId, phoneNumber) {
   );
 }
 
+export async function UpdateOrganizationNotificationEmail(externalId, notificationEmail) {
+  const config = await authHeaders();
+  return axios.patch(
+    `${apiUrl.GET_ACCOUNTS}/${encodeURIComponent(externalId)}/notification-email`,
+    { notification_email: notificationEmail.trim() },
+    config
+  );
+}
+
 export async function GetAccounts() {
     const accountsUrl = `${apiUrl.GET_ACCOUNTS}`;
   

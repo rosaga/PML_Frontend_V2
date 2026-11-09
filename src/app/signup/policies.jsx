@@ -48,6 +48,7 @@ export default function PolicyReview({ acknowledged, onAcknowledge }) {
               <div className="signup-policy-copy">
                 <span className="signup-policy-title">{policy.title}</span>
                 <span className="signup-policy-description">{policy.description}</span>
+                <span className="signup-policy-description">Effective from {policy.effectiveDate}.</span>
                 <button
                   type="button"
                   className="signup-policy-action"
@@ -85,6 +86,7 @@ export default function PolicyReview({ acknowledged, onAcknowledge }) {
             <DialogTitle id="signup-reader-header" component="div" className="signup-reader-heading">
               <div>
                 <h2 id="signup-document-title">{activePolicy.title}</h2>
+                <p className="signup-policy-description">Effective from {activePolicy.effectiveDate}.</p>
                 <a href={activePolicy.href} target="_blank" rel="noopener noreferrer">
                   Open in a new tab <ExternalLink size={14} />
                 </a>

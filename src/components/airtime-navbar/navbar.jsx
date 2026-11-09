@@ -1,88 +1,30 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Profile from "../profile/profile";
 import { useRouter } from "next/navigation";
 import { Tooltip } from "@mui/material";
 import { Menu } from "lucide-react";
-import { GetNotifications } from "@/app/api/actions/notifications/notifications";
+import { GetAirtimeNotifications } from "@/app/api/actions/airtimeReward/airtimeSettings";
+import { useOrganizationQuery } from "@/lib/airtime/useOrganizationQuery";
 
 const Navbar = () => {
   const [accountName, setAccountName] = useState("");
-  const [notificationCount, setNotificationCount] = useState(0);
+  const load = useCallback(async (orgId) => (await GetAirtimeNotifications(orgId, 1, 20)).data.count, []);
+  const query = useOrganizationQuery(load, { pollInterval: 30000, events: "airtime-notifications-updated airtime-updated" });
+  // This feed has no read/unread contract; show the organization's total count.
+  const notificationCount = typeof query.data === "number" ? query.data : 0;
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setAccountName(localStorage.getItem("selectedAccountName") || "");
     }
-  }, []);
+  }, [query.orgId]);
 
   const openSidebar = () => {
     window.dispatchEvent(new Event("toggle-mobile-sidebar"));
   };
-
-  // Fetch notifications, count unread (created after lastReadAt),
-  // poll every 30s, refresh on tab focus AND on "notifications-updated"
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadCount = async () => {
-      try {
-        const orgId =
-          typeof window !== "undefined"
-            ? localStorage.getItem("selectedAccountId")
-            : null;
-
-        if (!orgId) {
-          if (!cancelled) setNotificationCount(0);
-          return;
-        }
-
-        const res = await GetNotifications(orgId);
-
-        // Shape confirmed by notifications page: res.data.data = [...]
-        const list = Array.isArray(res?.data?.data)
-          ? res.data.data
-          : Array.isArray(res?.data)
-          ? res.data
-          : [];
-
-        // Only count notifications created AFTER the last "mark all as read"
-        const lastReadAt =
-          typeof window !== "undefined"
-            ? localStorage.getItem("notificationsLastReadAt")
-            : null;
-
-        const unread = lastReadAt
-          ? list.filter((n) => {
-              const createdAt = n.created_at || n.createdAt || n.created;
-              if (!createdAt) return false;
-              return new Date(createdAt).getTime() > new Date(lastReadAt).getTime();
-            })
-          : list;
-
-        if (!cancelled) setNotificationCount(unread.length);
-      } catch {
-        if (!cancelled) setNotificationCount(0);
-      }
-    };
-
-    loadCount();
-    const id = setInterval(loadCount, 30000);
-    const onFocus = () => loadCount();
-    const onUpdated = () => loadCount(); // fired by "Mark all as read"
-
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("notifications-updated", onUpdated);
-
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("notifications-updated", onUpdated);
-    };
-  }, []);
 
   const handleNotificationClick = () => {
     router.push("/apps/airtime/notification");
