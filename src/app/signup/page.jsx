@@ -87,7 +87,11 @@ const SignUp = () => {
     } else if (checkingOrg || orgAvailable === null) {
       newErrors.organization = "Please verify your organization name before continuing";
     }
-    if (!isValidPhoneNumber(phoneNumber)) newErrors.phone_number = PHONE_NUMBER_ERROR;
+    if (!phoneNumber.trim()) {
+      newErrors.phone_number = "Organization phone number is required";
+    } else if (!isValidPhoneNumber(phoneNumber)) {
+      newErrors.phone_number = PHONE_NUMBER_ERROR;
+    }
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(email)) {
@@ -261,12 +265,13 @@ const SignUp = () => {
                 </div>
 
                 <div className="signup-field">
-                  <label htmlFor="phone_number">Organization phone number (optional)</label>
+                  <label htmlFor="phone_number">Organization phone number</label>
                   <input
                     id="phone_number"
                     name="phone_number"
                     type="tel"
                     autoComplete="tel"
+                    required
                     placeholder="+254712345678"
                     value={phoneNumber}
                     onChange={(e) => {
