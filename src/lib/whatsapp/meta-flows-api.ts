@@ -113,6 +113,7 @@ export interface ApiResponse<T = unknown> {
 }
 
 interface FlowbotMetaFlow {
+  type: string;
   id?: number | string;
   meta_flow_record_id?: number | string;
   organization_id?: number | string;
