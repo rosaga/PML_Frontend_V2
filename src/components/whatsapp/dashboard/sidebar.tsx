@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type ElementType } from "react";
 import { cn } from "@/lib/whatsapp/utils";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { useMessageNotification } from "@/lib/whatsapp/message-context";
@@ -18,7 +18,7 @@ import {
   BarChart3,
   Users,
   LogOut,
-  Zap,
+  Wallet,
   ChevronDown,
   GitBranch,
   PieChart,
@@ -33,7 +33,9 @@ import {
 
 const BASE = "/apps/whatsapp";
 
-const messagesSubItems = [
+type SubItem = { name: string; href: string; icon: ElementType };
+
+const messagesSubItems: SubItem[] = [
   { name: "Templates", href: `${BASE}/templates`, icon: FileText },
   { name: "Send Message", href: `${BASE}/send`, icon: Send },
   { name: "Campaigns", href: `${BASE}/campaigns`, icon: Megaphone },
@@ -41,21 +43,82 @@ const messagesSubItems = [
   { name: "Reports", href: `${BASE}/messages`, icon: ClipboardList },
 ];
 
-const contactsSubItems = [
+const contactsSubItems: SubItem[] = [
   { name: "Contact List", href: `${BASE}/contacts`, icon: BookUser },
   { name: "Tags", href: `${BASE}/tags`, icon: Tag },
   { name: "Groups", href: `${BASE}/groups`, icon: Users },
 ];
 
-const chatbotSubItems = [
+const chatbotSubItems: SubItem[] = [
   { name: "Flows", href: `${BASE}/automations`, icon: GitBranch },
   { name: "Reporting", href: `${BASE}/automations/reporting`, icon: PieChart },
 ];
 
-const allSettingsSubItems = [
+const allSettingsSubItems: (SubItem & { adminOnly: boolean })[] = [
   { name: "Account", href: `${BASE}/settings/account`, icon: Settings, adminOnly: true },
-  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap, adminOnly: false },
+  { name: "Wallet", href: `${BASE}/settings/topups`, icon: Wallet, adminOnly: false },
 ];
+
+const navLinkClass = (isActive: boolean) =>
+  cn(
+    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+    isActive
+      ? "bg-[#001F3D] text-white"
+      : "text-sidebar-foreground/70 hover:bg-[#001F3D] hover:text-white",
+  );
+
+const groupBtnClass = (isActive: boolean) =>
+  cn(
+    "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+    isActive
+      ? "bg-[#001F3D] text-white"
+      : "text-sidebar-foreground/70 hover:bg-[#001F3D] hover:text-white",
+  );
+
+const startsWithAny = (pathname: string, prefixes: string[]) =>
+  prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+// Defined OUTSIDE Sidebar so React keeps the same component identity across renders.
+function ExpandableGroup({
+  label,
+  Icon,
+  isActive,
+  isOpen,
+  setOpen,
+  subItems,
+  pathname,
+}: {
+  label: string;
+  Icon: ElementType;
+  isActive: boolean;
+  isOpen: boolean;
+  setOpen: (v: boolean) => void;
+  subItems: SubItem[];
+  pathname: string;
+}) {
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen(!isOpen)} className={groupBtnClass(isActive)}>
+        <Icon className={cn("h-5 w-5 transition-colors", isActive ? "text-white" : "group-hover:text-white")} />
+        <span className="flex-1 text-left">{label}</span>
+        <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", isOpen ? "rotate-180" : "")} />
+      </button>
+      {isOpen && (
+        <div className="mt-1 ml-4 space-y-1 border-l border-border pl-3">
+          {subItems.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link key={item.name} href={item.href} className={navLinkClass(active)}>
+                <item.icon className={cn("h-4 w-4 transition-colors", active ? "text-white" : "group-hover:text-white")} />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar({
   isMobileOpen = false,
@@ -64,17 +127,25 @@ export function Sidebar({
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const { signOut, organizationId } = useConfig();
   const { unreadCount, pollUnread } = useMessageNotification();
 
-  const isMessagesActive = pathname.startsWith(`${BASE}/templates`) || pathname.startsWith(`${BASE}/send`) || pathname.startsWith(`${BASE}/campaigns`) || pathname.startsWith(`${BASE}/meta-flows`);
-  const isContactsActive =
-    pathname.startsWith(`${BASE}/contacts`) ||
-    pathname.startsWith(`${BASE}/tags`) ||
-    pathname.startsWith(`${BASE}/groups`);
-  const isChatbotActive = pathname.startsWith(`${BASE}/automations`);
-  const isSettingsActive = pathname.startsWith(`${BASE}/settings`);
+  const isMessagesActive = startsWithAny(pathname, [
+    `${BASE}/templates`,
+    `${BASE}/send`,
+    `${BASE}/campaigns`,
+    `${BASE}/meta-flows`,
+    `${BASE}/messages`, // Reports — was missing
+  ]);
+  const isContactsActive = startsWithAny(pathname, [
+    `${BASE}/contacts`,
+    `${BASE}/tags`,
+    `${BASE}/groups`,
+  ]);
+  const isChatbotActive = startsWithAny(pathname, [`${BASE}/automations`]);
+  const isSettingsActive = startsWithAny(pathname, [`${BASE}/settings`]);
+  const isInboxActive = startsWithAny(pathname, [`${BASE}/inbox`]);
 
   const [messagesOpen, setMessagesOpen] = useState(isMessagesActive);
   const [contactsOpen, setContactsOpen] = useState(isContactsActive);
@@ -87,83 +158,33 @@ export function Sidebar({
     setIsAdmin(hasRole(token, "SuperAdmin"));
   }, []);
 
-  // Global unread badge sync — runs on every page the sidebar mounts on,
-  // not just the inbox pages, and keeps polling for new messages.
+  // Auto-expand the group containing the current page when navigating into it.
+  useEffect(() => {
+    if (isMessagesActive) setMessagesOpen(true);
+    if (isContactsActive) setContactsOpen(true);
+    if (isChatbotActive) setChatbotOpen(true);
+    if (isSettingsActive) setSettingsOpen(true);
+  }, [isMessagesActive, isContactsActive, isChatbotActive, isSettingsActive]);
+
+  // Global unread badge sync. NOTE: pollUnread must be wrapped in useCallback
+  // inside MessageNotificationProvider, or this effect re-runs on every poll.
   useEffect(() => {
     if (!organizationId) return;
     pollUnread(organizationId);
-    const interval = setInterval(() => {
-      pollUnread(organizationId);
-    }, 15000);
+    const interval = setInterval(() => pollUnread(organizationId), 15000);
     return () => clearInterval(interval);
   }, [organizationId, pollUnread]);
 
-  const settingsSubItems = allSettingsSubItems.filter(
-    (item) => !item.adminOnly || isAdmin
-  );
-
+  // Close the mobile drawer on route change, without stale closures.
+  const closeRef = useRef(onMobileClose);
+  const openRef = useRef(isMobileOpen);
+  closeRef.current = onMobileClose;
+  openRef.current = isMobileOpen;
   useEffect(() => {
-    if (isMobileOpen && onMobileClose) {
-      onMobileClose();
-    }
-  }, [pathname]); // close sidebar every time the route changes
+    if (openRef.current) closeRef.current?.();
+  }, [pathname]);
 
-  const navLinkClass = (isActive: boolean) =>
-    cn(
-      "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-      isActive
-        ? "bg-[#001F3D] text-white"
-        : "text-sidebar-foreground/70 hover:bg-[#001F3D] hover:text-white",
-    );
-
-  const groupBtnClass = (isActive: boolean) =>
-    cn(
-      "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-      isActive
-        ? "bg-[#001F3D] text-white"
-        : "text-sidebar-foreground/70 hover:bg-[#001F3D] hover:text-white",
-    );
-
-  function ExpandableGroup({
-    label,
-    Icon,
-    isActive,
-    isOpen,
-    setOpen,
-    subItems,
-  }: {
-    label: string;
-    Icon: React.ElementType;
-    isActive: boolean;
-    isOpen: boolean;
-    setOpen: (v: boolean) => void;
-    subItems: { name: string; href: string; icon: React.ElementType }[];
-  }) {
-    return (
-      <div>
-        <button onClick={() => setOpen(!isOpen)} className={groupBtnClass(isActive)}>
-          <Icon className={cn("h-5 w-5 transition-colors", isActive ? "text-white" : "group-hover:text-white")} />
-          <span className="flex-1 text-left">{label}</span>
-          <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", isOpen ? "rotate-180" : "")} />
-        </button>
-        {isOpen && (
-          <div className="mt-1 ml-4 space-y-1 border-l border-border pl-3">
-            {subItems.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link key={item.name} href={item.href} className={navLinkClass(active)}>
-                  <item.icon className={cn("h-4 w-4 transition-colors", active ? "text-white" : "group-hover:text-white")} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  const isInboxActive = pathname === `${BASE}/inbox` || pathname.startsWith(`${BASE}/inbox/`);
+  const settingsSubItems = allSettingsSubItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <aside
@@ -185,8 +206,10 @@ export function Sidebar({
             priority
           />
           <button
+            type="button"
             onClick={onMobileClose}
             className="lg:hidden p-1 text-gray-600 hover:bg-gray-200 rounded-md"
+            aria-label="Close sidebar"
           >
             <X size={26} />
           </button>
@@ -201,14 +224,14 @@ export function Sidebar({
 
           <Link href={`${BASE}/inbox`} className={navLinkClass(isInboxActive)}>
             <Inbox className={cn("h-5 w-5 transition-colors", isInboxActive ? "text-white" : "group-hover:text-white")} />
-            <div className="flex items-center gap-2">
+            <span className="flex items-center gap-2">
               <span>Inbox</span>
               {unreadCount > 0 && (
                 <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center leading-none">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
-            </div>
+            </span>
           </Link>
 
           <Link href={`${BASE}/dashboard`} className={navLinkClass(pathname === `${BASE}/dashboard`)}>
@@ -223,6 +246,7 @@ export function Sidebar({
             isOpen={messagesOpen}
             setOpen={setMessagesOpen}
             subItems={messagesSubItems}
+            pathname={pathname}
           />
 
           <ExpandableGroup
@@ -232,6 +256,7 @@ export function Sidebar({
             isOpen={contactsOpen}
             setOpen={setContactsOpen}
             subItems={contactsSubItems}
+            pathname={pathname}
           />
 
           <ExpandableGroup
@@ -241,6 +266,7 @@ export function Sidebar({
             isOpen={chatbotOpen}
             setOpen={setChatbotOpen}
             subItems={chatbotSubItems}
+            pathname={pathname}
           />
 
           <ExpandableGroup
@@ -250,12 +276,14 @@ export function Sidebar({
             isOpen={settingsOpen}
             setOpen={setSettingsOpen}
             subItems={settingsSubItems}
+            pathname={pathname}
           />
         </nav>
 
         {/* Sign Out */}
         <div className="border-t border-border p-3">
           <button
+            type="button"
             onClick={signOut}
             className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
