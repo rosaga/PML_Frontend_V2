@@ -4,7 +4,6 @@ import SidebarAdmin from "@/components/sidebaradmin/sidebaradmin";
 import AdminNavbar from "@/components/admin-navbar/adminnavbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import TermsUpdateBanner from "@/components/terms-update-banner/terms-update-banner";
-import { WhatsAppDemoProvider } from "@/components/admin/whatsapp/demo-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,20 +17,18 @@ export default function AdminLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <SessionProviderWrapper>
-          <WhatsAppDemoProvider>
-            <div className="flex h-screen w-full overflow-hidden bg-gray-50">
-              <SidebarAdmin />
-              <div className="flex flex-col flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden">
-                <div className="shrink-0 lg:pl-64">
-                  <TermsUpdateBanner />
-                </div>
-                <AdminNavbar />
-                <main className="flex-1 w-full relative">
-                  {children}
-                </main>
+          <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+            <SidebarAdmin />
+            <div className="flex flex-col flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden">
+              <div className="shrink-0 lg:pl-64">
+                <TermsUpdateBanner />
               </div>
+              <AdminNavbar />
+              <main className="flex-1 w-full relative">
+                {children}
+              </main>
             </div>
-          </WhatsAppDemoProvider>
+          </div>
         </SessionProviderWrapper>
       </body>
     </html>

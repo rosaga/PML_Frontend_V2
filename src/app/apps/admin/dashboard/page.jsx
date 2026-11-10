@@ -1,11 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { MessageSquare } from "lucide-react";
-import { useWhatsAppDemo } from "@/components/admin/whatsapp/demo-context";
-import { SampleDataBadge } from "@/components/admin/whatsapp/ui";
-import { RecentWhatsAppFailedDispatches } from "@/components/admin/whatsapp/failed-dispatches";
 import {
   GetAdminDashboardSummary,
   GetAdminBalancesSummary,
@@ -15,7 +10,6 @@ import {
 } from "@/app/api/actions/admin/admin";
 
 const DashboardPage = () => {
-  const { organizations: whatsappOrganizations } = useWhatsAppDemo();
   const [isClient, setIsClient] = useState(false);
   const [summary, setSummary] = useState(null);
   const [balances, setBalances] = useState(null);
@@ -222,19 +216,8 @@ const DashboardPage = () => {
           </svg>
         ),
       },
-      {
-        label: "Active WABA Accounts",
-        value: formatNumber(
-          whatsappOrganizations.filter((organization) => organization.status === "Active").length
-        ),
-        subtitle: "Connected WhatsApp business accounts",
-        iconBg: "#eef2ff",
-        iconColor: "#9ca3af",
-        icon: <MessageSquare size={22} strokeWidth={1.7} aria-hidden="true" />,
-        sample: false,
-      },
     ];
-  }, [summary, balances, whatsappOrganizations]);
+  }, [summary, balances]);
 
   const systemHealth = [
     {
@@ -414,8 +397,8 @@ const DashboardPage = () => {
           </div>
         ) : null}
 
-        <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {metrics.filter((metric) => !loading || metric.sample).map((metric) => (
+        <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {!loading && metrics.map((metric) => (
             <div
               key={metric.label}
               className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
@@ -425,9 +408,6 @@ const DashboardPage = () => {
                   <p className="text-[13px] font-medium text-gray-600">
                     {metric.label}
                   </p>
-                  {metric.sample ? (
-                    <div className="mt-2"><SampleDataBadge /></div>
-                  ) : null}
                   <p className="mt-2 text-[18px] font-semibold leading-none text-gray-900">
                     {metric.value}
                   </p>
@@ -605,12 +585,6 @@ const DashboardPage = () => {
                 <h2 className="text-[18px] font-semibold text-gray-900">
                   Recent Failed Dispatches
                 </h2>
-                <Link
-                  href="/apps/admin/failed-dispatches"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  View All Failed Dispatches
-                </Link>
               </div>
 
               <div className="mt-6 overflow-x-auto">

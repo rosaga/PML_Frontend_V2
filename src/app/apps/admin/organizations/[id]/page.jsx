@@ -15,10 +15,6 @@ import {
 } from "@/app/api/actions/admin/admin";
 import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
 import SenderNameAssignmentCard from "@/components/admin/SenderNameAssignmentCard";
-import {
-  OrganizationWhatsAppBalance,
-  OrganizationWhatsAppHistory,
-} from "@/components/admin/whatsapp/organization";
 
 const DEFAULT_RATE_FORM = {
   service: "",
@@ -926,7 +922,7 @@ const OrganizationDetailPage = () => {
               </div>
             </div>
 
-            <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
               {metricCards.map((item) => (
                 <div
                   key={item.label}
@@ -954,10 +950,6 @@ const OrganizationDetailPage = () => {
                   </div>
                 </div>
               ))}
-              <OrganizationWhatsAppBalance
-                organizationId={orgId}
-                organizationName={organization?.name || "Organization"}
-              />
             </div>
 
             <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -1029,7 +1021,6 @@ const OrganizationDetailPage = () => {
                     {[
                       { id: "DATA", label: "Data" },
                       { id: "SMS", label: "SMS" },
-                      { id: "WHATSAPP", label: "WhatsApp" },
                     ].map((filter) => {
                       const active = dispatchServiceFilter === filter.id;
 
@@ -1051,18 +1042,13 @@ const OrganizationDetailPage = () => {
                   </div>
                 </div>
 
-                {dispatchServiceFilter !== "WHATSAPP" && dispatchError ? (
+                {dispatchError ? (
                   <div className="mx-6 mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                     {dispatchError}
                   </div>
                 ) : null}
 
-                {dispatchServiceFilter === "WHATSAPP" ? (
-                  <OrganizationWhatsAppHistory
-                    organizationId={orgId}
-                    organizationName={organization?.name || "Organization"}
-                  />
-                ) : loadingDispatches ? (
+                {loadingDispatches ? (
                   <div className="flex justify-center py-12">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
                   </div>
@@ -1193,7 +1179,7 @@ const OrganizationDetailPage = () => {
                   </div>
                 )}
 
-                {dispatchServiceFilter !== "WHATSAPP" && visibleDispatchMeta ? (
+                {visibleDispatchMeta ? (
                   <div className="px-6 py-4 text-sm text-gray-500">
                     Page {visibleDispatchMeta.page} of {visibleDispatchMeta.total_pages || 1}
                     {" • "}Total: {visibleDispatchMeta.total_count || 0}
