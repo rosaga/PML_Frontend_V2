@@ -7,8 +7,6 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/whatsapp/utils";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { useMessageNotification } from "@/lib/whatsapp/message-context";
-import { getToken } from "@/utils/auth";
-import { hasRole } from "@/utils/decodeToken";
 import {
   LayoutDashboard,
   FileText,
@@ -37,7 +35,7 @@ const messagesSubItems = [
   { name: "Templates", href: `${BASE}/templates`, icon: FileText },
   { name: "Send Message", href: `${BASE}/send`, icon: Send },
   { name: "Campaigns", href: `${BASE}/campaigns`, icon: Megaphone },
-  { name: "Meta Flows", href: `${BASE}/meta-flows`, icon: GitBranch },
+  { name: "Meta Flows/Catalogues", href: `${BASE}/meta-flows`, icon: GitBranch },
   { name: "Reports", href: `${BASE}/messages`, icon: ClipboardList },
 ];
 
@@ -52,9 +50,9 @@ const chatbotSubItems = [
   { name: "Reporting", href: `${BASE}/automations/reporting`, icon: PieChart },
 ];
 
-const allSettingsSubItems = [
-  { name: "Account", href: `${BASE}/settings/account`, icon: Settings, adminOnly: true },
-  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap, adminOnly: false },
+const settingsSubItems = [
+  { name: "Account", href: `${BASE}/settings/account`, icon: Settings },
+  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap },
 ];
 
 export function Sidebar({
@@ -80,12 +78,6 @@ export function Sidebar({
   const [contactsOpen, setContactsOpen] = useState(isContactsActive);
   const [chatbotOpen, setChatbotOpen] = useState(isChatbotActive);
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const token = getToken();
-    setIsAdmin(hasRole(token, "SuperAdmin"));
-  }, []);
 
   // Global unread badge sync — runs on every page the sidebar mounts on,
   // not just the inbox pages, and keeps polling for new messages.
@@ -97,10 +89,6 @@ export function Sidebar({
     }, 15000);
     return () => clearInterval(interval);
   }, [organizationId, pollUnread]);
-
-  const settingsSubItems = allSettingsSubItems.filter(
-    (item) => !item.adminOnly || isAdmin
-  );
 
   useEffect(() => {
     if (isMobileOpen && onMobileClose) {
@@ -152,8 +140,8 @@ export function Sidebar({
               const active = pathname === item.href;
               return (
                 <Link key={item.name} href={item.href} className={navLinkClass(active)}>
-                  <item.icon className={cn("h-4 w-4 transition-colors", active ? "text-white" : "group-hover:text-white")} />
-                  <span>{item.name}</span>
+                  <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-white" : "group-hover:text-white")} />
+                  <span className="min-w-0 flex-1 break-words">{item.name}</span>
                 </Link>
               );
             })}

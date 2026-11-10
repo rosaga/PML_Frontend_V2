@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Input } from "@/components/whatsapp/ui/input";
 import { Label } from "@/components/whatsapp/ui/label";
-import { Textarea } from "@/components/whatsapp/ui/textarea";
+import { CreateGroupForm } from "@/components/whatsapp/groups/create-group-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/whatsapp/ui/tabs";
 import {
   Select,
@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { getTokenEmail } from "@/lib/whatsapp/auth";
 import { getTemplates, type Template } from "@/lib/whatsapp/whatsapp-api";
-import { Users, Upload, Send, Download, CheckCircle, PlusCircle, Loader2, Clock } from "lucide-react";
+import { Users, Send, CheckCircle, PlusCircle, Loader2, Clock } from "lucide-react";
 import { Switch } from "@/components/whatsapp/ui/switch";
 
 interface Group {
@@ -40,14 +40,8 @@ interface Component {
 export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
   const { config, isConfigured, displayPhoneNumber, organizationId, organizationExternalId, signalPmlUnauthorized } = useConfig();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<"new" | "existing">("existing");
   const [loading, setLoading] = useState(false);
-  
-  // Create new group state
-  const [groupName, setGroupName] = useState("");
-  const [groupDescription, setGroupDescription] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   // Send to existing group state
   const [groups, setGroups] = useState<Group[]>([]);
@@ -62,7 +56,8 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
-  const [batchSize, setBatchSize] = useState<number | "">(100);
+  const [dailyLimitEnabled, setDailyLimitEnabled] = useState(false);
+  const [batchSize, setBatchSize] = useState<number | "">("");
   
   // Template media header state
   const [templateImageUrl, setTemplateImageUrl] = useState("");
@@ -111,147 +106,6 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
     fetchTemplates();
     fetchGroups();
   }, [fetchTemplates, fetchGroups]);
-
-  const handleDownloadTemplate = () => {
-    const csvContent = `mobile,firstName,lastName
-254712345678,John,Doe
-254723456789,Jane,Smith
-254734567890,Bob,Johnson`;
-    
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "contacts_template.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Template Downloaded",
-      description: "CSV template has been downloaded successfully",
-    });
-  };
-
-  const handleCreateGroup = async () => {
-    if (!groupName.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Group name is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!selectedFile) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a CSV file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Step 1: Create group
-      const groupResponse = await fetch("/api/whatsapp/peakdata/groups", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": localStorage.getItem("token") || "",
-        },
-        body: JSON.stringify({
-          name: groupName,
-          description: groupDescription || groupName,
-          organizationExternalId,
-          metadata: {
-            source: "frontend",
-            purpose: "whatsapp_campaign",
-          },
-        }),
-      });
-
-      const groupData = await groupResponse.json();
-
-      if (!groupResponse.ok) {
-        throw new Error(groupData?.error?.message || "Failed to create group");
-      }
-
-      // API may return { id } or { data: { id } }
-      const createdGroupId = groupData?.data?.id ?? groupData?.id;
-      if (!createdGroupId) {
-        throw new Error("Group was created but no ID was returned");
-      }
-
-      toast({
-        title: "Group Created",
-        description: `Group "${groupName}" has been created successfully`,
-      });
-
-      // Step 2: Upload contacts to the created group
-      const effectiveOrgId = organizationExternalId || organizationId;
-      const formData = new FormData();
-      formData.append("contacts", selectedFile);
-      formData.append("group_id", String(createdGroupId));
-      formData.append("organizationExternalId", effectiveOrgId);
-
-      const contactsResponse = await fetch("/api/whatsapp/peakdata/contacts", {
-        method: "POST",
-        headers: {
-          "x-auth-token": localStorage.getItem("token") || "",
-        },
-        body: formData,
-      });
-
-      // Handle potential empty or non-JSON responses
-      const contactsText = await contactsResponse.text();
-      let contactsData;
-      
-      try {
-        contactsData = contactsText ? JSON.parse(contactsText) : { success: true };
-      } catch (e) {
-        // If we can't parse but status is OK, continue
-        if (contactsResponse.ok) {
-          contactsData = { success: true };
-        } else {
-          throw new Error("Invalid response from server when uploading contacts");
-        }
-      }
-
-      if (!contactsResponse.ok) {
-        throw new Error(contactsData?.error?.message || "Failed to upload contacts");
-      }
-
-      // Switch to existing groups tab and refresh groups
-      toast({
-        title: "Group Created Successfully",
-        description: "Group created and contacts uploaded. Switch to 'Send to Existing Group' to send messages.",
-      });
-      
-      // Reset form
-      setGroupName("");
-      setGroupDescription("");
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      
-      // Switch to existing groups tab
-      setActiveTab("existing");
-      fetchGroups();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create campaign",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleMediaUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>, mediaType: "image" | "video" | "document") => {
     const file = event.target.files?.[0];
@@ -338,21 +192,6 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
     setTemplateParams(params);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.name.endsWith(".csv")) {
-        toast({
-          title: "Invalid File",
-          description: "Please select a CSV file",
-          variant: "destructive",
-        });
-        return;
-      }
-      setSelectedFile(file);
-    }
-  };
-
   const toIsoWithOffset = (date: string, time: string): string => {
     const localDatetime = `${date}T${time}`;
     const d = new Date(localDatetime);
@@ -385,6 +224,16 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
       toast({
         title: "Validation Error",
         description: "Please select both a date and time to schedule the campaign",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (scheduleEnabled && dailyLimitEnabled &&
+      (typeof batchSize !== "number" || !Number.isSafeInteger(batchSize) || batchSize < 1)) {
+      toast({
+        title: "Validation Error",
+        description: "Enter a daily limit as a whole number of at least 1",
         variant: "destructive",
       });
       return;
@@ -482,7 +331,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
         created_by: createdBy,
         ...(scheduleEnabled && scheduledDate && scheduledTime && {
           scheduled_at: toIsoWithOffset(scheduledDate, scheduledTime),
-          batch_size: batchSize || 100,
+          ...(dailyLimitEnabled && { batch_size: batchSize }),
         }),
       };
 
@@ -520,7 +369,8 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
       setScheduleEnabled(false);
       setScheduledDate("");
       setScheduledTime("");
-      setBatchSize(100);
+      setDailyLimitEnabled(false);
+      setBatchSize("");
       onSuccess?.();
     } catch (error: any) {
       toast({
@@ -697,9 +547,10 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Schedule for later</span>
+                  <Label htmlFor="schedule-enabled" className="text-sm font-medium">Schedule for later</Label>
                 </div>
                 <Switch
+                  id="schedule-enabled"
                   checked={scheduleEnabled}
                   onCheckedChange={setScheduleEnabled}
                 />
@@ -707,7 +558,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
 
               {scheduleEnabled && (
                 <div className="space-y-3 pt-1">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="scheduled-date">Date</Label>
                       <Input
@@ -729,18 +580,48 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">Scheduled in your local timezone.</p>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="batch-size">Batch Size (messages per day)</Label>
-                    <Input
-                      id="batch-size"
-                      type="number"
-                      min={1}
-                      placeholder="e.g. 100"
-                      value={batchSize}
-                      onChange={(e) => setBatchSize(e.target.value === "" ? "" : parseInt(e.target.value))}
-                    />
-                    <p className="text-xs text-muted-foreground">How many messages to send per day until all contacts are reached.</p>
-                  </div>
+                  <fieldset className="space-y-2">
+                    <legend className="mb-2 text-sm font-medium">Delivery</legend>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="radio"
+                          name="campaign-delivery"
+                          value="all"
+                          checked={!dailyLimitEnabled}
+                          onChange={() => setDailyLimitEnabled(false)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        Send to all
+                      </label>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="radio"
+                          name="campaign-delivery"
+                          value="daily-limit"
+                          checked={dailyLimitEnabled}
+                          onChange={() => setDailyLimitEnabled(true)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        Set a daily limit
+                      </label>
+                    </div>
+                  </fieldset>
+                  {dailyLimitEnabled && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="batch-size">Messages per day</Label>
+                      <Input
+                        id="batch-size"
+                        type="number"
+                        min={1}
+                        step={1}
+                        required
+                        placeholder="e.g. 100"
+                        value={batchSize}
+                        onChange={(e) => setBatchSize(e.target.value === "" ? "" : Number(e.target.value))}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -780,61 +661,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="group-name">Group Name *</Label>
-              <Input
-                id="group-name"
-                placeholder="e.g., January Promotion Campaign"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="group-description">Description</Label>
-              <Textarea
-                id="group-description"
-                placeholder="Optional description for your campaign group"
-                value={groupDescription}
-                onChange={(e) => setGroupDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="csv-file">Upload Contacts CSV *</Label>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleDownloadTemplate}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Download Template
-                </Button>
-              </div>
-              <Input
-                ref={fileInputRef}
-                id="csv-file"
-                type="file"
-                accept=".csv"
-                onChange={handleFileSelect}
-              />
-              {selectedFile && (
-                <p className="text-sm text-muted-foreground">
-                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                CSV must have columns: <span className="font-mono">mobile, firstName, lastName</span>
-              </p>
-            </div>
-
-            <Button onClick={handleCreateGroup} disabled={loading || !selectedFile || !groupName.trim()} className="w-full">
-              {loading ? "Creating Group..." : "Create Group & Upload Contacts"}
-            </Button>
+            <CreateGroupForm onSuccess={() => { setActiveTab("existing"); fetchGroups(); }} />
           </CardContent>
         </Card>
       </TabsContent>

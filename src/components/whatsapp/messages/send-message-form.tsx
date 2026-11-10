@@ -30,20 +30,45 @@ import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { useCallback as useCallbackRef } from "react";
 import {
-  sendMessage,
   getTemplates,
   type MessagePayload,
   type Template,
 } from "@/lib/whatsapp/whatsapp-api";
 import { Send, Loader2, ImageIcon, FileText, File, MessageSquare, X, Upload, Info, GitBranch } from "lucide-react";
 import { WhatsAppPreview } from "@/components/whatsapp/templates/whatsapp-preview";
-import { getMetaFlows, sendMetaFlow, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
+import { getMetaFlows, type MetaFlow } from "@/lib/whatsapp/meta-flows-api";
+import { sendMessage, type SendMessageResponse } from "@/lib/whatsapp/peakdata-messages-api";
 
 type MessageType = "text" | "image" | "document" | "template" | "meta-flow";
 type TemplateMediaHeaderFormat = "IMAGE" | "VIDEO" | "DOCUMENT";
 
 function isTemplateMediaHeaderFormat(format?: string): format is TemplateMediaHeaderFormat {
   return format === "IMAGE" || format === "VIDEO" || format === "DOCUMENT";
+}
+
+function getSendFeedback(data?: SendMessageResponse) {
+  const status = (data?.status || data?.data?.status || "").toLowerCase();
+  if (status === "unknown") {
+    return {
+      title: "Send Unconfirmed",
+      description: data?.error_description || data?.data?.error_description || "The provider accepted the request, but sending is unconfirmed. Do not resend automatically.",
+    };
+  }
+
+  const messageId = data?.data?.message_id || data?.messages?.[0]?.id || data?.message_id;
+  if (status === "sent") {
+    return {
+      title: "Message Sent",
+      description: `Message sent successfully.${messageId ? ` ID: ${messageId}` : ""}`,
+    };
+  }
+
+  return {
+    title: "Message Submitted",
+    description: data?.message || (status
+      ? `Message status: ${status.toUpperCase()}${messageId ? `. ID: ${messageId}` : "."}`
+      : "Message request accepted."),
+  };
 }
 
 export function SendMessageForm() {
@@ -268,15 +293,6 @@ export function SendMessageForm() {
       return;
     }
 
-    if (!isConfigured && messageType !== "meta-flow") {
-      toast({
-        title: "Configuration Required",
-        description: "Please configure your API settings first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!formData.recipient) {
       toast({
         title: "Validation Error",
@@ -309,16 +325,8 @@ export function SendMessageForm() {
         setLoading(false);
         return;
       }
-      if (!config.phoneNumberId) {
-        toast({ title: "Configuration Required", description: "Phone Number ID not found. Please configure it in Settings.", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-
-      const result = await sendMetaFlow({
-        organization_id: effectiveOrganizationId,
+      const result = await sendMessage(effectiveOrganizationId, {
         to: formData.recipient,
-        phone_number_id: config.phoneNumberId,
         meta_flow_id: formData.metaFlowId,
         body_text: formData.metaFlowBodyText,
         flow_cta: formData.metaFlowCta,
@@ -327,7 +335,7 @@ export function SendMessageForm() {
       setLoading(false);
 
       if (result.success) {
-        toast({ title: "Success", description: "Meta Flow dispatch accepted." });
+        toast(getSendFeedback(result.data));
         setFormData((prev) => ({ ...prev, metaFlowBodyText: "" }));
       } else {
         toast({ title: "Error", description: result.error || "Failed to send Meta Flow.", variant: "destructive" });
@@ -481,6 +489,7 @@ export function SendMessageForm() {
           recipient_type: "individual",
           to: formData.recipient,
           type: "template",
+          category: selectedTemplate.category,
           template: {
             name: formData.templateName,
             language: { code: formData.templateLanguage },
@@ -494,14 +503,11 @@ export function SendMessageForm() {
         return;
     }
 
-    const result = await sendMessage(config, message, { organizationId: effectiveOrganizationId });
+    const result = await sendMessage(effectiveOrganizationId, message);
     setLoading(false);
 
     if (result.success) {
-      toast({
-        title: "Success",
-        description: `Message sent successfully! ID: ${result.data?.messages[0]?.id}`,
-      });
+      toast(getSendFeedback(result.data));
       setFormData((prev) => ({
         ...prev,
         textBody: "",
@@ -911,7 +917,7 @@ export function SendMessageForm() {
         </Tabs>
 
         {/* Send Button */}
-        <Button onClick={handleSend} disabled={loading || (!isConfigured && messageType !== "meta-flow") || contextLoading} className="w-full">
+        <Button onClick={handleSend} disabled={loading || contextLoading || imageUploading || documentUploading || templateImageUploading || templateVideoUploading || templateDocumentUploading || !(organizationExternalId || organizationId)} className="w-full">
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -925,9 +931,9 @@ export function SendMessageForm() {
           )}
         </Button>
 
-        {!isConfigured && (
+        {!isConfigured && messageType === "template" && (
           <p className="text-sm text-center text-muted-foreground">
-            Please configure your API settings in the Settings page first.
+            Please configure your API settings in the Settings page to load templates.
           </p>
         )}
       </CardContent>

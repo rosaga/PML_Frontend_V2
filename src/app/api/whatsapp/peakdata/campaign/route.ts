@@ -89,8 +89,18 @@ export async function POST(request: NextRequest) {
       updated_by: email,
     };
 
-    if (scheduled_at) campaignBody.scheduled_at = scheduled_at;
-    if (batch_size)   campaignBody.batch_size   = batch_size;
+    if (scheduled_at) {
+      campaignBody.scheduled_at = scheduled_at;
+      if (batch_size != null) {
+        if (!Number.isSafeInteger(batch_size) || batch_size < 1) {
+          return NextResponse.json(
+            { error: { message: "Daily limit must be a whole number of at least 1" } },
+            { status: 400 }
+          );
+        }
+        campaignBody.batch_size = batch_size;
+      }
+    }
 
     const response = await fetch(
       `${PEAKDATA_BASE_URL}/organization/${ORGANIZATION_ID}/whatsapp/campaign`,
