@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   GetAdminBalancesSummary,
   GetAdminDashboardSummary,
@@ -743,6 +744,10 @@ export default function BulkAirtimeManagementPage() {
             </p>
           </div>
 
+          <div className="flex flex-wrap gap-3">
+          <Link href="/apps/admin/approval-requests" className="rounded-xl bg-[#02051d] px-5 py-3 text-sm font-semibold text-white hover:opacity-95">
+            Approval Requests
+          </Link>
           <button
             type="button"
             onClick={fetchPageData}
@@ -750,6 +755,7 @@ export default function BulkAirtimeManagementPage() {
           >
             Refresh
           </button>
+          </div>
         </div>
 
         {pageError ? (

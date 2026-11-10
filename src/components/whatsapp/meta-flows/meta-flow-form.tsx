@@ -97,7 +97,10 @@ export function MetaFlowForm({ initialType = "META_FLOW", onSuccess }: MetaFlowF
     }
 
     setLoading(true);
-    const result = await createMetaFlow(effectiveOrganizationId, formData);
+    const result = await createMetaFlow(effectiveOrganizationId, {
+      ...formData,
+      type: "META_FLOW",
+    });
     setLoading(false);
 
     if (result.success) {

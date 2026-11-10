@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { createAccount } from "@/app/api/actions/accounts/accounts";
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import { isValidPhoneNumber, PHONE_NUMBER_ERROR } from "@/utils/phone";
 
 const NewAccountModal = ({ closeModal }) => {
 
@@ -14,12 +15,19 @@ const NewAccountModal = ({ closeModal }) => {
   const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [description, setDescription] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const handleCreate = (e) => {
     e.preventDefault();
+    if (!isValidPhoneNumber(phoneNumber)) {
+      setPhoneError(PHONE_NUMBER_ERROR);
+      return;
+    }
 
     const newAccount = {
       name: orgName,
+      phone_number: phoneNumber.trim(),
       attributes: {
         emails: [email],
         description: [description]
@@ -32,11 +40,12 @@ const NewAccountModal = ({ closeModal }) => {
         toast.success("CREATE ACCOUNT SUCCESS")
         closeModal();
       } else {
-        toast.error("CREATE ACCOUNT FAILED")
+        toast.error(res.errors?._error || "CREATE ACCOUNT FAILED")
       }
     })
     .catch((error) => {
-      console.log("Error:", error);
+      const message = error.response?.data?.error || error.response?.data?.message;
+      toast.error((typeof message === "string" && message) || "Unable to create account. Please try again.");
     });
 
     return res;
@@ -97,6 +106,27 @@ const NewAccountModal = ({ closeModal }) => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
+                  </div>
+                  <div className="mb-4">
+                    <label htmlFor="account-phone-number" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                      Organization phone number (optional)
+                    </label>
+                    <input
+                      id="account-phone-number"
+                      name="phone_number"
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="+254712345678"
+                      value={phoneNumber}
+                      onChange={(event) => {
+                        setPhoneNumber(event.target.value);
+                        setPhoneError("");
+                      }}
+                      aria-invalid={!!phoneError}
+                      aria-describedby={phoneError ? "account-phone-error" : undefined}
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    />
+                    {phoneError && <p id="account-phone-error" className="mt-1 text-xs text-red-600" role="alert">{phoneError}</p>}
                   </div>
                   <div className="mb-4">
                   <label

@@ -15,6 +15,10 @@ import {
 } from "@/app/api/actions/admin/admin";
 import AdjustBalanceModal from "@/components/modal/AdjustBalanceModal";
 import SenderNameAssignmentCard from "@/components/admin/SenderNameAssignmentCard";
+import {
+  OrganizationWhatsAppBalance,
+  OrganizationWhatsAppHistory,
+} from "@/components/admin/whatsapp/organization";
 
 const DEFAULT_RATE_FORM = {
   service: "",
@@ -764,29 +768,6 @@ const OrganizationDetailPage = () => {
         </svg>
       ),
     },
-    {
-      label: "Messages Sent Today",
-      value: formatNumber(profile?.sms?.messages_sent_today),
-      iconBg: "#f3e8ff",
-      iconColor: "#9333ea",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M4 6.8C4 5.11984 4 4.27976 4.32698 3.63803C4.6146 3.07354 5.07354 2.6146 5.63803 2.32698C6.27976 2 7.11984 2 8.8 2H15.2C16.8802 2 17.7202 2 18.362 2.32698C18.9265 2.6146 19.3854 3.07354 19.673 3.63803C20 4.27976 20 6.11984 20 6.8V12.2C20 13.8802 20 14.7202 19.673 15.362C19.3854 15.9265 18.9265 16.3854 18.362 16.673C17.7202 17 16.8802 17 15.2 17H9L4 21V6.8Z"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M8 7H16M8 11H13"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-          />
-        </svg>
-      ),
-    },
   ];
 
   if (!isClient) return null;
@@ -973,12 +954,26 @@ const OrganizationDetailPage = () => {
                   </div>
                 </div>
               ))}
+              <OrganizationWhatsAppBalance
+                organizationId={orgId}
+                organizationName={organization?.name || "Organization"}
+              />
             </div>
 
             <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="text-[18px] font-semibold text-gray-900">
-                Enabled Services
-              </h3>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <h3 className="text-[18px] font-semibold text-gray-900">
+                  Enabled Services
+                </h3>
+                <div className="sm:text-right">
+                  <p className="text-sm font-medium text-gray-600">
+                    SMS Messages Sent Today
+                  </p>
+                  <p className="mt-1 text-[22px] font-semibold text-gray-900">
+                    {formatNumber(profile?.sms?.messages_sent_today)}
+                  </p>
+                </div>
+              </div>
 
               <div className="mt-6 flex flex-wrap gap-2">
                 {enabledServices.length > 0 ? (
@@ -1034,6 +1029,7 @@ const OrganizationDetailPage = () => {
                     {[
                       { id: "DATA", label: "Data" },
                       { id: "SMS", label: "SMS" },
+                      { id: "WHATSAPP", label: "WhatsApp" },
                     ].map((filter) => {
                       const active = dispatchServiceFilter === filter.id;
 
@@ -1055,13 +1051,18 @@ const OrganizationDetailPage = () => {
                   </div>
                 </div>
 
-                {dispatchError ? (
+                {dispatchServiceFilter !== "WHATSAPP" && dispatchError ? (
                   <div className="mx-6 mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                     {dispatchError}
                   </div>
                 ) : null}
 
-                {loadingDispatches ? (
+                {dispatchServiceFilter === "WHATSAPP" ? (
+                  <OrganizationWhatsAppHistory
+                    organizationId={orgId}
+                    organizationName={organization?.name || "Organization"}
+                  />
+                ) : loadingDispatches ? (
                   <div className="flex justify-center py-12">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
                   </div>
@@ -1192,7 +1193,7 @@ const OrganizationDetailPage = () => {
                   </div>
                 )}
 
-                {visibleDispatchMeta ? (
+                {dispatchServiceFilter !== "WHATSAPP" && visibleDispatchMeta ? (
                   <div className="px-6 py-4 text-sm text-gray-500">
                     Page {visibleDispatchMeta.page} of {visibleDispatchMeta.total_pages || 1}
                     {" • "}Total: {visibleDispatchMeta.total_count || 0}

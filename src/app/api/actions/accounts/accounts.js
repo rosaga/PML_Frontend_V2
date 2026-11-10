@@ -2,6 +2,29 @@ import axios from 'axios';
 import apiUrl from "../../utils/apiUtils/apiUrl";
 import { authHeaders } from '../../../api/utils/headers/headers';
 
+export async function GetOrganization(externalId) {
+  const config = await authHeaders();
+  return axios.get(`${apiUrl.GET_ACCOUNTS}/${encodeURIComponent(externalId)}`, config);
+}
+
+export async function UpdateOrganizationPhone(externalId, phoneNumber) {
+  const config = await authHeaders();
+  return axios.patch(
+    `${apiUrl.GET_ACCOUNTS}/${encodeURIComponent(externalId)}`,
+    { phone_number: phoneNumber.trim() },
+    config
+  );
+}
+
+export async function UpdateOrganizationNotificationEmail(externalId, notificationEmail) {
+  const config = await authHeaders();
+  return axios.patch(
+    `${apiUrl.GET_ACCOUNTS}/${encodeURIComponent(externalId)}/notification-email`,
+    { notification_email: notificationEmail.trim() },
+    config
+  );
+}
+
 export async function GetAccounts() {
     const accountsUrl = `${apiUrl.GET_ACCOUNTS}`;
   

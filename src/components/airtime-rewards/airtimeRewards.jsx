@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { DataGrid, GridRowsProp, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import Image from "next/image";
 import Button from "@mui/material/Button";
@@ -6,7 +6,7 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import PeakButton from "../button/button";
 import AddIcon from "@mui/icons-material/Add";
 import PeakSearch from "../search/search";
-import axios from "axios";
+import { useOrganizationQuery } from "@/lib/airtime/useOrganizationQuery";
 import RequestUnitsModal from "../modal/requestUnits";
 import SendAirtimeRewardModal from "../modal/sendAirtimeReward"
 import SendAirtimeBatchRewardsModal from "../modal/sendBatchAirtimeRewards"
@@ -21,16 +21,8 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 const AirtimeRewardsTable = () => {
 
-  let org_id = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
-  }
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModalOpen1, setIsModalOpen1] = useState(false);
-    const [page, setPage] = useState(0); // Pagination state
-    const [loading, setLoading] = useState(true);
-    const [total, setTotal] = useState(0);
     const [searchParams, setSearchParams] = useState({});
     const [hidePhone, setHidePhone] = useState(true);
 
@@ -141,32 +133,18 @@ const AirtimeRewardsTable = () => {
   });
 
 
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [rewards, setRewards] = useState([]);
-
-  const getRewards = async () => {
-    try {
-      const res = await GetAirtimeRewards(org_id, paginationModel.page + 1, paginationModel.pageSize, searchParams);
-      if (res.errors) {
-        console.log("AN ERROR HAS OCCURRED");
-      } else {
-        setRewards(res.data.data.map(item => ({
-          ...item,
-          mobile_no: item.contact?.mobile_no || ""
-        })));
-        setTotal(res.data.count);
-        setIsLoaded(true);
-        setLoading(false);
-      
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  const load = useCallback(async (id) => {
+    const response = await GetAirtimeRewards(id, paginationModel.page + 1, paginationModel.pageSize, searchParams);
+    if (response.errors) throw new Error(response.errors._error);
+    return response.data;
+  }, [paginationModel.page, paginationModel.pageSize, searchParams]);
+  const query = useOrganizationQuery(load, { events: "airtime-updated" });
+  const org_id = query.orgId;
+  const rewards = (query.data?.data || []).map((item) => ({ ...item, mobile_no: item.contact?.mobile_no || item.msisdn || "" }));
 
   const fetchAllRewards = async () => {
     try {
-      const res = await GetAirtimeRewards(org_id, 1, total, searchParams);
+      const res = await GetAirtimeRewards(org_id, 1, query.data?.count || 20, searchParams);
       if (!res.errors) {
         return res.data.data.map((item) => ({
           "Request ID": item.id,
@@ -183,11 +161,6 @@ const AirtimeRewardsTable = () => {
       return [];
     }
   };
-
-  useEffect(() => {
-      getRewards();
-  }, [isModalOpen,isModalOpen1,paginationModel.page, paginationModel.pageSize, org_id, searchParams]);
-
 
   return (
     <>
@@ -218,15 +191,16 @@ const AirtimeRewardsTable = () => {
         </div>
       </div>
 
+      {query.error && <p role="alert" className="text-red-500">{query.error}</p>}
       <div className="mt-4">
         <div style={{ width: "100%" }}>
           <DataGrid
             rows={rewards}
             columns={columns}
-            loading={loading}
+            loading={query.loading}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
-            rowCount={total}
+            rowCount={query.data?.count || 0}
             paginationMode="server"
             sx={{
               "& .MuiDataGrid-columnHeader": {

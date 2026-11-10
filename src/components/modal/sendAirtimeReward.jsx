@@ -1,22 +1,30 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { fetchContacts } from "@/app/api/actions/contact/contact";
 import { sendAirtimeReward } from "@/app/api/actions/airtimeReward/airtimeReward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
-import { GetBalance } from "@/app/api/actions/reward/reward";
+import { useActiveOrganization } from "@/lib/airtime/useOrganizationQuery";
+import { getActiveOrganizationId } from "@/lib/airtime/organization";
+import { airtimePayload, interpretAirtimeResult } from "@/lib/airtime/result";
 import { sendSms } from "../../app/api/actions/messages/messagesAction";
-import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
 import InsufficientBalanceModal from "./insufficientBalance";
 import RequestAirtimeModal from "./requestAirtime";
 import RequestSmsUnitsModal from "./requestSmsUnits";
 import { isInsufficientBalanceError } from "@/utils/apiErrors";
 
-const SendAirtimeRewardModal = ({ closeModal }) => {
-  let org_id = null;
-  if (typeof window !== "undefined") {
-    org_id = localStorage.getItem("selectedAccountId");
-  }
+const SendAirtimeRewardModal = (props) => {
+  const orgId = useActiveOrganization();
+  return orgId ? <OrganizationSendAirtime key={orgId} {...props} org_id={orgId} /> : <p>Select an organization first.</p>;
+};
+
+const OrganizationSendAirtime = ({ closeModal, org_id }) => {
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const isCurrent = useCallback(() => mounted.current && getActiveOrganizationId() === org_id, [org_id]);
 
   const [selectedContact, setSelectedContact] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -27,7 +35,6 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [bundles, setBundles] = useState([]);
   const [selectedBundle, setSelectedBundle] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [contactSelected, setContactSelected] = useState(false);
@@ -39,6 +46,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
   const { v4: uuidv4 } = require("uuid");
 
   useEffect(() => {
+    let cancelled = false;
     if (searchQuery.trim().length === 0) {
       setFilteredContacts([]);
       setShowDropdown(false);
@@ -73,6 +81,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
           });
         }
 
+        if (cancelled || !isCurrent()) return;
         setFilteredContacts(contacts);
         setShowDropdown(contacts.length > 0);
         setContactSelected(false);
@@ -86,10 +95,12 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
             return mobile.includes(searchQuery.trim());
           });
           
+          if (cancelled || !isCurrent()) return;
           setFilteredContacts(filtered);
           setShowDropdown(filtered.length > 0);
         } catch (fallbackErr) {
           console.error("Fallback filtering also failed", fallbackErr);
+          if (cancelled || !isCurrent()) return;
           setFilteredContacts([]);
           setShowDropdown(false);
         }
@@ -97,8 +108,8 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
     };
 
     fetchAndFilterContacts();
-
-  }, [searchQuery, org_id, contactSelected]);
+    return () => { cancelled = true; };
+  }, [searchQuery, org_id, contactSelected, isCurrent]);
 
   const handleSelect = (contact) => {
     setSelectedContact(contact.mobile_no);
@@ -118,67 +129,56 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
-  
-    const newReward = {
-      request_id: uuidv4(),
-      airtime_amount: selectedBundle, 
-      msisdn: selectedContact,
-      sender_id: parseInt(selectedSenderName),
-      message: message,
-      postpay: true,
-    };
-  
-    console.log("New Airtime Reward Payload:", newReward);
-  
+    if (inFlight.current || !isCurrent()) return;
+    let newReward;
     try {
-      const airtimeRes = await sendAirtimeReward({ org_id, newReward });
-      if (airtimeRes.status === 200) {
-        setSuccessMessage("You have dispatched airtime successfully!");
-        setErrorMessage("");
-  
-        if (newReward.sender_id) {
-          const newSmsPayload = {
-            destination: selectedContact,
-            content: message,
-            requestid: newReward.request_id,
-            scheduled: new Date().toISOString(),
-            channel: "SENDERNAME",
-            organization_id: org_id,
-          };
-  
+      newReward = airtimePayload({
+        request_id: uuidv4(), airtime_amount: selectedBundle, msisdn: selectedContact || searchQuery,
+        ...(selectedSenderName ? { sender_id: Number(selectedSenderName) } : {}), message, postpay: true,
+      });
+    } catch (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+    inFlight.current = true;
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      const response = await sendAirtimeReward({ org_id, newReward });
+      if (!isCurrent()) return;
+      const result = interpretAirtimeResult(response);
+      if (result.outcome !== "success") {
+        setSuccessMessage("");
+        setErrorMessage(result.message);
+        setShowInsufficientBalanceModal(result.topUp);
+        return;
+      }
+      setSuccessMessage(result.message);
+      if (newReward.sender_id) {
+        try {
           const smsRes = await sendSms({
             selectedSenderId: newReward.sender_id,
-            newSms: newSmsPayload,
+            newSms: {
+              destination: newReward.msisdn, content: message, requestid: newReward.request_id,
+              scheduled: new Date().toISOString(), channel: "SENDERNAME", organization_id: org_id,
+            },
           });
-
-          if (isInsufficientBalanceError(smsRes)) {
-            setShowInsufficientSmsBalanceModal(true);
-          }
+          if (isCurrent() && isInsufficientBalanceError(smsRes)) setShowInsufficientSmsBalanceModal(true);
+        } catch {
+          if (isCurrent()) setSuccessMessage(result.message + " The notification SMS could not be confirmed.");
         }
-      } else if (isInsufficientBalanceError(airtimeRes)) {
-        setErrorMessage("");
-        setShowInsufficientBalanceModal(true);
-      } else {
-        setErrorMessage("An error occurred. Please try again.");
-        setSuccessMessage("");
       }
     } catch (error) {
-      if (isInsufficientBalanceError(error)) {
-        setErrorMessage("");
-        setShowInsufficientBalanceModal(true);
-      } else {
-        setErrorMessage(`Failed to send airtime reward: ${error.message}`);
-      }
-      setSuccessMessage("");
+      if (isCurrent()) setErrorMessage(error.message || "Delivery is unconfirmed. Review history before sending again.");
     } finally {
-      setSubmitting(false);
+      inFlight.current = false;
+      if (isCurrent()) setSubmitting(false);
     }
   };
-  
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (event.target.id === "authentication-modal") {
+      if (event.target.id === "authentication-modal" && !inFlight.current) {
         closeModal();
       }
     };
@@ -191,18 +191,12 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
   }, [closeModal]);
 
   useEffect(() => {
-    async function fetchBalance() {
-      const balanceData = await GetBalance(org_id);
-      if (balanceData) {
-        setBundles(balanceData.data.data);
-      }
-      const senderIdData = await GetActiveSenderId(org_id);
-      if (senderIdData) {
-        setSenderName(senderIdData.data);
-      }
-    }
-    fetchBalance();
-  }, [org_id]);
+    let cancelled = false;
+    GetActiveSenderId(org_id).then((response) => {
+      if (!cancelled && isCurrent()) setSenderName(Array.isArray(response?.data) ? response.data : []);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [org_id, isCurrent]);
 
   if (showRequestUnitsModal) {
     return (
@@ -240,6 +234,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
     return (
       <InsufficientBalanceModal
         service="AIRTIME"
+        description={errorMessage}
         onClose={() => setShowInsufficientBalanceModal(false)}
         onRequestUnits={() => {
           setShowInsufficientBalanceModal(false);
@@ -282,41 +277,21 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                   OK
                 </button>
               </div>
-            ) : errorMessage ? (
-              <div className="p-4 text-center">
-                <div className="mb-4 text-2xl font-semibold text-red-500">
-                  Oops!
-                </div>
-                <div className="mb-4 text-gray-900 dark:text-white">
-                  {errorMessage}
-                </div>
-                <button
-                  onClick={() => {
-                    setErrorMessage("");
-                  }}
-                  className="w-full text-white bg-orange-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                >
-                  OK
-                </button>
-              </div>
-            ) : submitting ? (
-              <Box className="flex justify-center items-center h-40">
-                <CircularProgress style={{ color: "#E88A17" }} />
-              </Box>
             ) : (
-              <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
+              <form className="space-y-2" onSubmit={handleSend}>
+                <fieldset disabled={submitting} className="space-y-2">
                 <div className="relative">
                   <label
                     htmlFor="mobile"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
-                    Enter at least 4 digits of phone number
+                    Recipient phone number
                   </label>
                   <input
                     id="mobile"
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => { setSearchQuery(e.target.value); setSelectedContact(""); setContactSelected(false); }}
                     onFocus={handleInputFocus}
                     className={`bg-gray-50 border ${contactSelected ? 'border-green-500' : 'border-gray-300'} text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5`}
                     placeholder="Search by phone number"
@@ -346,20 +321,10 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                   >
                     Airtime Amount
                   </label>
-                  <select
-                    id="airtime"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    value={selectedBundle}
-                    onChange={(e) => setSelectedBundle(e.target.value)}
-                  >
-                    <option value="">Select airtime amount</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="250">250</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                  </select>
+                  <input id="airtime" type="number" min="0.01" step="0.01" required
+                    placeholder="Enter amount in KES"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                    value={selectedBundle} onChange={(e) => setSelectedBundle(e.target.value)} />
                 </div>
 
                 <div className="mb-4">
@@ -403,7 +368,7 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                   </div>
                 )}
                 {errorMessage && (
-                  <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
+                  <div role="alert" className="text-red-500 text-sm mb-4">{errorMessage}</div>
                 )}
                 <div className="flex space-x-2">
                   <button
@@ -414,14 +379,14 @@ const SendAirtimeRewardModal = ({ closeModal }) => {
                     Cancel
                   </button>
                   <button
-                    type="button"
+                    type="submit"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
-                    onClick={handleSend}
-                    disabled={!selectedContact || !selectedBundle}
+                    disabled={submitting || !(selectedContact || searchQuery.trim()) || !selectedBundle}
                   >
-                    Submit
+                    {submitting ? "Sending…" : "Submit"}
                   </button>
                 </div>
+                </fieldset>
               </form>
             )}
           </div>

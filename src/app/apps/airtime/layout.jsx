@@ -1,8 +1,10 @@
+import AirtimeOrganizationScope from "@/components/airtime-rewards/organizationScope";
 import { Inter } from "next/font/google";
 import "../../../app/globals.css";
 import SidebarAirtime from "@/components/sidebarairtime/sidebarairtime";
 import Navbar from "@/components/airtime-navbar/navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import TermsUpdateBanner from "@/components/terms-update-banner/terms-update-banner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,15 +18,20 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <SessionProviderWrapper>
+          <AirtimeOrganizationScope>
           <div className="flex h-screen w-full overflow-hidden bg-gray-50">
             <SidebarAirtime />
             <div className="flex flex-col flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden">
+              <div className="shrink-0 lg:pl-64">
+                <TermsUpdateBanner />
+              </div>
               <Navbar />
               <main className="flex-1 w-full relative">
                 {children}
               </main>
             </div>
           </div>
+          </AirtimeOrganizationScope>
         </SessionProviderWrapper>
       </body>
     </html>

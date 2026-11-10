@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   AdjustAdminOrganizationBalance,
   AutoProvisionAdminBalance,
@@ -39,20 +40,6 @@ const AdjustBalanceModal = ({
       setErrorMessage("");
     }
   }, [open]);
-
-  useEffect(() => {
-    const onClick = (e) => {
-      if (e.target.id === "adjust-balance-modal" && !submitting) {
-        onClose();
-      }
-    };
-
-    if (open) {
-      window.addEventListener("click", onClick);
-    }
-
-    return () => window.removeEventListener("click", onClick);
-  }, [open, onClose, submitting]);
 
   const serviceOptions = useMemo(() => {
     const options = new Set(["DATA", "AIRTIME", "SMS"]);
@@ -243,13 +230,18 @@ const AdjustBalanceModal = ({
   );
 
   return (
-    <div
-      id="adjust-balance-modal"
-      tabIndex={-1}
-      aria-hidden="true"
-      className="fixed inset-0 z-50 flex items-center justify-center w-full h-screen bg-black/50"
-    >
-      <div className="relative w-full max-w-2xl p-4 max-h-full">
+    <Dialog.Root open={open} onOpenChange={(nextOpen) => { if (!nextOpen && !submitting) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50" />
+        <Dialog.Content
+          id="adjust-balance-modal"
+          className="fixed left-1/2 top-1/2 z-[61] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 focus:outline-none"
+          onEscapeKeyDown={(event) => { if (submitting) event.preventDefault(); }}
+          onPointerDownOutside={(event) => { if (submitting) event.preventDefault(); }}
+        >
+          <Dialog.Title className="sr-only">Adjust Balance</Dialog.Title>
+          <Dialog.Description className="sr-only">Provision or reduce an organization’s service balance.</Dialog.Description>
+      <div className="relative w-full max-h-full">
         <div className="bg-white rounded-lg shadow max-h-[90vh] overflow-y-auto">
           {successMessage ? (
             <div className="p-6 text-center">
@@ -560,7 +552,9 @@ const AdjustBalanceModal = ({
           )}
         </div>
       </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 };
 

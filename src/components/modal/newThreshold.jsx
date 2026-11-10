@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { CreateThreshold } from '../../../src/app/api/actions/threshold/threshold'; 
 import { GetBalance } from "@/app/api/actions/reward/reward";
+import NotificationEmailSetting from "@/components/notifications/notification-email-setting";
 
 const NewThreshold = ({ closeModal, threshold }) => {
   let org_id = null;
@@ -68,10 +69,12 @@ const NewThreshold = ({ closeModal, threshold }) => {
     <div
       id="authentication-modal"
       tabIndex="-1"
-      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notification-threshold-title"
       className="fixed inset-0 z-50 flex justify-center items-center w-full h-screen bg-black/50"
     >
-      <div className="relative p-4 w-full max-w-2xl max-h-full">
+      <div className="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
           {successMessage ? (
             <div className="p-4 text-center">
@@ -94,11 +97,12 @@ const NewThreshold = ({ closeModal, threshold }) => {
           ) : (
             <>
               <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h3 id="notification-threshold-title" className="text-xl font-semibold text-gray-900 dark:text-white">
                   {threshold ? "Edit Notification Threshold" : "Set Notification Threshold"}
                 </h3>
               </div>
               <div className="p-4 md:p-5">
+                <NotificationEmailSetting />
                 <form className="space-y-2" onSubmit={handleSubmit}>
                   <div>
                     <label
