@@ -61,7 +61,6 @@ function ThresholdForm({ orgId, threshold, closeModal, onSaved }) {
             <label htmlFor="thresholdValue" className="block text-sm font-medium text-gray-900 dark:text-white">Airtime balance threshold (KES)</label>
             <input id="thresholdValue" type="number" min="0" step="1" required value={value} onChange={(event) => setValue(event.target.value)} disabled={submitting}
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5" />
-            <p className="text-sm text-gray-500">Zero disables alerts. Alerts are sent when spending crosses a positive threshold.</p>
             {error && <p role="alert" className="text-red-500 text-sm">{error}</p>}
             <div className="flex gap-2">
               <button type="button" disabled={submitting} onClick={closeModal} className="w-full bg-gray-700 text-white rounded-lg p-2.5">Cancel</button>

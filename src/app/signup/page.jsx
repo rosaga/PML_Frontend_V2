@@ -88,7 +88,7 @@ const SignUp = () => {
       newErrors.organization = "Please verify your organization name before continuing";
     }
     if (!phoneNumber.trim()) {
-      newErrors.phone_number = "Organization phone number is required";
+      newErrors.phone_number = "Contact Person phone number is required";
     } else if (!isValidPhoneNumber(phoneNumber)) {
       newErrors.phone_number = PHONE_NUMBER_ERROR;
     }
@@ -265,7 +265,7 @@ const SignUp = () => {
                 </div>
 
                 <div className="signup-field">
-                  <label htmlFor="phone_number">Organization phone number</label>
+                  <label htmlFor="phone_number">Contact Person phone number</label>
                   <input
                     id="phone_number"
                     name="phone_number"

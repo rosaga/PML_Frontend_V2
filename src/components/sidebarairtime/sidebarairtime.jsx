@@ -171,13 +171,17 @@ const SidebarAirtime = () => {
         </div>
         
         <div className="px-3 pb-4 pt-2 shrink-0 bg-gray-50 dark:bg-gray-800">
-          <div
-            className="bg-[#F58426] text-white py-2 px-5 rounded-lg flex items-center justify-center cursor-pointer w-full gap-2"
-            onClick={() => router.push("/apps/airtime/airtime-topup")}
+          <button
+            type="button"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#F58426] px-4 text-white transition-colors hover:bg-[#e8751b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#001F3D]"
+            onClick={() => {
+              router.push("/apps/airtime/airtime-topup");
+              closeSidebar();
+            }}
           >
-            <img src="/images/topup.png" alt="Top Up" className="w-5 h-15" />
+            <Image src="/images/topup.png" alt="" aria-hidden="true" width={20} height={20} className="h-5 w-5 shrink-0 object-contain" />
             <span className="text-sm font-medium">Top Up</span>
-          </div>
+          </button>
         </div>
       </aside>
 
