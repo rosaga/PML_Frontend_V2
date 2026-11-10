@@ -215,7 +215,6 @@ export default function CompanyProfile({ withinDashboard = false }) {
                       {savingPhone ? "Saving..." : "Save phone number"}
                     </button>
                   </div>
-                  <p id="company-phone-help" className="text-xs text-gray-500">Use E.164 format, e.g. +254712345678. Leave blank to clear.</p>
                   {phoneError && <p id="company-phone-error" className="text-sm text-red-600" role="alert">{phoneError}</p>}
                   {phoneSaved && <p className="text-sm text-green-700" role="status">Phone number saved.</p>}
                 </form>
