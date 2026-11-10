@@ -11,6 +11,9 @@ import {
   CreateAdminSMSSenderID,
 } from "@/app/api/actions/admin/admin";
 import SenderNameAssignmentCard from "@/components/admin/SenderNameAssignmentCard";
+import GlobalSMSBalances from "@/components/admin/GlobalSMSBalances";
+import { getToken } from "@/utils/auth";
+import { hasRole } from "@/utils/decodeToken";
 
 const MetricCard = ({ title, value, subtitle, iconBg, iconColor, icon }) => {
   return (
@@ -40,12 +43,13 @@ const MetricCard = ({ title, value, subtitle, iconBg, iconColor, icon }) => {
 const Tabs = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: "campaigns", label: "Campaigns" },
+    { id: "globalBalances", label: "Global Balances" },
     { id: "senderIds", label: "Sender IDs" },
     { id: "usage", label: "Usage" },
   ];
 
   return (
-    <div className="mb-8 inline-flex rounded-full bg-gray-200 p-1">
+    <div className="mb-8 inline-flex max-w-full flex-wrap gap-1 rounded-2xl bg-gray-200 p-1 sm:rounded-full">
       {tabs.map((tab) => {
         const active = activeTab === tab.id;
 
@@ -53,6 +57,7 @@ const Tabs = ({ activeTab, setActiveTab }) => {
           <button
             key={tab.id}
             type="button"
+            aria-pressed={active}
             onClick={() => setActiveTab(tab.id)}
             className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
               active
@@ -313,8 +318,9 @@ const EditSenderIDModal = ({
 };
 
 export default function BulkSMSManagementPage() {
-  const [isClient, setIsClient] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(null);
   const [activeTab, setActiveTab] = useState("campaigns");
+  const [globalBalancesRefreshKey, setGlobalBalancesRefreshKey] = useState(0);
 
   const [summary, setSummary] = useState(null);
   const [organizations, setOrganizations] = useState([]);
@@ -362,16 +368,16 @@ export default function BulkSMSManagementPage() {
   });
 
   useEffect(() => {
-    setIsClient(true);
+    setIsAdmin(hasRole(getToken(), "SuperAdmin"));
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isAdmin) return;
     fetchInitialData();
-  }, [isClient]);
+  }, [isAdmin]);
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isAdmin) return;
 
   if (["campaigns", "usage"].includes(activeTab)) {
     fetchCampaigns();
@@ -381,7 +387,7 @@ export default function BulkSMSManagementPage() {
     }
   }, [
     activeTab,
-    isClient,
+    isAdmin,
     campaignPage,
     campaignPageSize,
     senderPage,
@@ -922,7 +928,10 @@ export default function BulkSMSManagementPage() {
 
   const loading = loadingSummary && !summary;
 
-  if (!isClient) return null;
+  if (isAdmin === null) return null;
+  if (!isAdmin) {
+    return <div role="alert" className="lg:ml-64 p-6 text-rose-700">You do not have permission to access SMS administration.</div>;
+  }
 
   return (
     <div className="lg:ml-64 min-h-screen bg-gray-50 p-6">
@@ -933,13 +942,17 @@ export default function BulkSMSManagementPage() {
               Bulk SMS Management
             </h1>
             <p className="mt-2 text-[16px] text-gray-600">
-              Monitor SMS campaigns, sender IDs, and approval status
+              Monitor SMS campaigns, global balances, expiry dates, and sender IDs
             </p>
           </div>
 
           <button
             type="button"
             onClick={() => {
+              if (activeTab === "globalBalances") {
+                setGlobalBalancesRefreshKey((key) => key + 1);
+                return;
+              }
               fetchSummary();
 
               if (activeTab === "campaigns") {
@@ -967,14 +980,18 @@ export default function BulkSMSManagementPage() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
           </div>
         ) : (
-          <>
             <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
               {metrics.map((metric) => (
                 <MetricCard key={metric.title} {...metric} />
               ))}
             </div>
+        )}
 
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+
+            <div hidden={activeTab !== "globalBalances"}>
+              <GlobalSMSBalances isActive={activeTab === "globalBalances"} refreshKey={globalBalancesRefreshKey} />
+            </div>
 
             {activeTab === "campaigns" && (
               <CardShell
@@ -1530,8 +1547,6 @@ export default function BulkSMSManagementPage() {
                 />
               </CardShell>
             )}
-          </>
-        )}
       </div>
 
       <EditSenderIDModal

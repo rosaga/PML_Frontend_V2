@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {GetNotifications} from "@/app/api/actions/notifications/notifications";
+import NotificationEmailSetting from "@/components/notifications/notification-email-setting";
 
 
 
@@ -48,6 +49,8 @@ const Notifications = () => {
               Mark all as read
             </button>
           </div>
+
+          <NotificationEmailSetting />
 
           <div className="mt-4">
             {loading ? (

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
 import Image from "next/image";
 import { format, parseISO } from "date-fns";
@@ -12,7 +12,7 @@ import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { GetAirtimeConsumed, GetAirtimeBalance, GetAirtimeReached } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";  
-import { GetDataBalance } from "@/app/api/actions/dashboard/dashboard";
+import { useOrganizationQuery } from "@/lib/airtime/useOrganizationQuery";
 
 
 interface AirtimeReward {
@@ -41,30 +41,14 @@ interface RewardsAPIResponse {
 
 const Dashboard = () => {
   const router = useRouter();
-  let org_id: string | null = null;
-  if (typeof window !== "undefined") {
-    org_id = localStorage.getItem("selectedAccountId");
-  }
-
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [hidePhone, setHidePhone] = useState(true);
 
-  const [rows, setRows] = useState<AirtimeReward[]>([]);
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
     page: 0,
   });
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  const [recipientsReached, setRecipientsReached] = useState(0);
-  const [consumedAirtime, setConsumedAirtime] = useState("");
-  const [airtimeBalance, setAirtimeBalance] = useState("");
-
-  // const [recipients, setRecipients] = useState<any[]>([]);
-
-
   // mask phone number function
   const maskPhone = (phone: string) => {
     if (phone && phone.length > 5) {
@@ -148,7 +132,7 @@ const Dashboard = () => {
     },
   ];
 
-  const buildDateQuery = (): Record<string, string> => {
+  const buildDateQuery = useCallback((): Record<string, string> => {
     const searchParams: Record<string, string> = {};
     if (!selectedYear) return searchParams;
 
@@ -165,85 +149,29 @@ const Dashboard = () => {
     searchParams["gte__created_at"] = startDate;
     searchParams["lte__created_at"] = endDate;
     return searchParams;
-  };
+  }, [selectedYear, selectedMonth]);
 
-  const fetchRewards = async () => {
-    if (!org_id) {
-      console.error("No organization ID found.");
-      return;
-    }
-    try {
-      setLoading(true);
-      const pageNumber = paginationModel.page + 1;
-      const pageSize = paginationModel.pageSize;
-      const dateQuery = buildDateQuery();
-      const response: RewardsAPIResponse = await GetAirtimeRewards(org_id, pageNumber, pageSize, dateQuery);
-      if (response.errors) {
-        console.error("API error:", response.errors._error);
-        setRows([]);
-        setTotal(0);
-        setLoading(false);
-        return;
-      }
-      if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
-        setRows([]);
-        setTotal(0);
-        setLoading(false);
-        return;
-      }
-      const rewardsArray = response.data.data;
-      setTotal(response.data.count || 0);
-      const finalRows = rewardsArray.map((item) => ({
-        ...item,
-        mobile_no: item.contact?.mobile_no || "",
-      }));
-      setRows(finalRows);
-      const successRewards = finalRows.filter((r) => r.status === "SUCCESS");
-      setRecipientsReached(successRewards.length);
-      
-      
-      const dateQueryString = Object.entries(dateQuery)
-        .map(([key, value]) => `${key}=${value}`)
-        .join('&');
-      
-      const consumed = await GetAirtimeConsumed(org_id);
-      setConsumedAirtime(consumed || "0");
-
-      const recipients = await GetAirtimeReached(org_id);
-      setRecipientsReached(recipients || "0");
-      
-      // const recs = successRewards
-      //   .filter((r) => r.contact && r.contact.mobile_no)
-      //   .map((r) => r.contact);
-      // setRecipients(recs);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching rewards:", error);
-      setRows([]);
-      setTotal(0);
-      setRecipientsReached(0);
-      setConsumedAirtime("");
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRewards();
-  }, [selectedYear, selectedMonth, paginationModel.page, paginationModel.pageSize, org_id]);
-
-  useEffect(() => {
-    const fetchAirtimeBalance = async () => {
-      if (!org_id) return;
-      try {
-        const balance = await GetAirtimeBalance(org_id);
-        setAirtimeBalance(balance);
-      } catch (error) {
-        console.error("Error fetching airtime balance:", error);
-        setAirtimeBalance("");
-      }
-    };
-    fetchAirtimeBalance();
-  }, [org_id]);
+  const loadRewards = useCallback(async (orgId: string) => {
+    const dateQuery = buildDateQuery();
+    const response: RewardsAPIResponse = await GetAirtimeRewards(orgId, paginationModel.page + 1, paginationModel.pageSize, dateQuery);
+    if (response.errors) throw new Error(response.errors._error);
+    if (!response.data || !Array.isArray(response.data.data)) throw new Error("Unable to load airtime history.");
+    const dateQueryString = new URLSearchParams(dateQuery).toString();
+    const [consumed, reached] = await Promise.all([
+      GetAirtimeConsumed(orgId, dateQueryString), GetAirtimeReached(orgId, dateQueryString),
+    ]);
+    return { ...response.data, consumed, reached };
+  }, [buildDateQuery, paginationModel.page, paginationModel.pageSize]);
+  const history = useOrganizationQuery(loadRewards, { events: "airtime-updated" });
+  const loadBalance = useCallback((id: string) => GetAirtimeBalance(id), []);
+  const balance = useOrganizationQuery(loadBalance, { events: "airtime-updated airtime-threshold-updated" });
+  const org_id = history.orgId;
+  const rows = (history.data?.data || []).map((item) => ({ ...item, mobile_no: item.contact?.mobile_no || "" }));
+  const total = history.data?.count || 0;
+  const loading = history.loading;
+  const recipientsReached = history.data?.reached ?? "—";
+  const consumedAirtime = history.data?.consumed ?? "—";
+  const airtimeBalance = balance.data ?? "—";
 
   const handleHelp = () => {
     router.push("/apps/airtime/help");
@@ -280,6 +208,7 @@ const Dashboard = () => {
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
             <h1 className="text-xl font-semibold mb-4">Airtime Rewards</h1>
+            {(history.error || balance.error) && <p role="alert" className="text-red-500">{history.error || balance.error}</p>}
 
             {/* Summary Tiles */}
             <div className="border-[1.5px] rounded-3xl mb-6">

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import WhatsAppWallets from "@/components/admin/whatsapp/wallets";
 import {
   GetAdminBalancesSummary,
   GetAdminAllRecharges,
@@ -22,6 +24,8 @@ const SERVICE_LABELS = {
 };
 
 const AccountsPage = () => {
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState("overview");
   const [isClient, setIsClient] = useState(false);
 
@@ -41,6 +45,10 @@ const AccountsPage = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    setActiveTab(requestedTab === "whatsapp" ? "whatsapp" : "overview");
+  }, [requestedTab]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -525,32 +533,33 @@ const AccountsPage = () => {
             </p>
           </div>
 
-          <button
+          {activeTab !== "whatsapp" && <button
             type="button"
             onClick={fetchPageData}
             className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             Refresh
-          </button>
+          </button>}
         </div>
 
-        {error ? (
+        {error && activeTab !== "whatsapp" ? (
           <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         ) : null}
 
-        {rechargesError ? (
+        {rechargesError && activeTab !== "whatsapp" ? (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             {rechargesError}
           </div>
         ) : null}
 
-        <div className="mb-5 inline-flex rounded-full bg-gray-200 p-1">
+        <div className="mb-5 inline-flex flex-wrap gap-1 rounded-2xl bg-gray-200 p-1" aria-label="Account views">
           {[
             { id: "overview", label: "Overview" },
             { id: "revenue", label: "Revenue" },
             { id: "expenditure", label: "Expenditure" },
+            { id: "whatsapp", label: "WhatsApp Wallet" },
           ].map((tab) => {
             const active = activeTab === tab.id;
 
@@ -559,6 +568,7 @@ const AccountsPage = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
+                aria-pressed={active}
                 className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
                   active
                     ? "bg-white text-gray-900 shadow-[0_0_0_2px_rgba(0,0,0,0.25),0_2px_6px_rgba(0,0,0,0.12)]"
@@ -571,7 +581,9 @@ const AccountsPage = () => {
           })}
         </div>
 
-        {loading ? (
+        {activeTab === "whatsapp" ? (
+          <WhatsAppWallets />
+        ) : loading ? (
           <div className="flex justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#02051d]" />
           </div>

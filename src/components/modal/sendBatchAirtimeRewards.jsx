@@ -1,9 +1,9 @@
 "use client";
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import axios from "axios";
-import { getToken } from "../../utils/auth";
 import { sendAirtimeReward } from "@/app/api/actions/airtimeReward/airtimeReward";
-import { GetBalance } from "@/app/api/actions/reward/reward";
+import { useActiveOrganization } from "@/lib/airtime/useOrganizationQuery";
+import { getActiveOrganizationId } from "@/lib/airtime/organization";
+import { interpretAirtimeResult, airtimePayload } from "@/lib/airtime/result";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 import { saveAs } from "file-saver";
 import { v4 as uuidv4 } from "uuid";
@@ -20,13 +20,21 @@ const CSV_CHECKER_URL =
 
 const CSV_CHECKER_ORIGIN = new URL(CSV_CHECKER_URL).origin;
 
-const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
-  let org_id = null;
-  if (typeof window !== "undefined") {
-    org_id = localStorage.getItem("selectedAccountId");
-  }
+const SendAirtimeBatchRewardsModal = (props) => {
+  const orgId = useActiveOrganization();
+  return orgId ? <OrganizationBatchRewards key={orgId} {...props} org_id={orgId} /> : <p>Select an organization first.</p>;
+};
 
-  const [bundles, setBundles] = useState([]);
+const OrganizationBatchRewards = ({ closeModal, org_id }) => {
+  const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const isCurrent = useCallback(() => mounted.current && getActiveOrganizationId() === org_id, [org_id]);
+
   const [selectedBundle, setSelectedBundle] = useState("");
   const [message, setMessage] = useState("");
   const [contactsFile, setContactsFile] = useState(null);
@@ -210,13 +218,19 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (inFlight.current || !isCurrent()) return;
     if (!contactsFile) {
       setErrorMessage("Please select a valid file.");
       return;
     }
 
+    inFlight.current = true;
+    setSubmitting(true);
+    setErrorMessage("");
     try {
+      airtimePayload({ msisdn: "validation", airtime_amount: selectedBundle });
       const parsedContacts = await parseCsvFile(contactsFile);
+      if (!isCurrent()) return;
       let hasInsufficientSmsBalance = false;
 
       if (parsedContacts.length === 0) {
@@ -225,6 +239,8 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
       }
 
       for (const contact of parsedContacts) {
+        if (!isCurrent()) return;
+        if (!contact.mobile?.trim()) throw new Error("A CSV recipient number is missing.");
         const rewardPayload = {
           request_id: uuidv4(),
           airtime_amount: String(selectedBundle),
@@ -236,23 +252,17 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
           postpay: true,
         };
 
-        console.log(
-          "Sending reward payload:",
-          JSON.stringify(rewardPayload, null, 2)
-        );
-        const res = await sendAirtimeReward({
-          org_id,
-          newReward: rewardPayload,
-        });
-        console.log("Response for", contact.mobile, ":", res.data);
-
-        if (isInsufficientBalanceError(res)) {
-          setShowInsufficientBalanceModal(true);
+        const res = await sendAirtimeReward({ org_id, newReward: rewardPayload });
+        if (!isCurrent()) return;
+        const result = interpretAirtimeResult(res);
+        if (result.outcome !== "success") {
+          setErrorMessage(result.message + " Review history for recipients already processed before submitting another batch.");
+          setShowInsufficientBalanceModal(result.topUp);
           return;
         }
 
         if (
-          res.status === 200 &&
+          result.outcome === "success" &&
           rewardPayload.sender_id &&
           !hasInsufficientSmsBalance
         ) {
@@ -269,7 +279,7 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
             selectedSenderId: rewardPayload.sender_id,
             newSms: smsPayload,
           });
-          console.log("SMS Response for", contact.mobile, ":", smsRes.data);
+          if (!isCurrent()) return;
 
           if (isInsufficientBalanceError(smsRes)) {
             hasInsufficientSmsBalance = true;
@@ -277,25 +287,23 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
         }
       }
 
+      if (!isCurrent()) return;
       setSuccessMessage("The batch airtime rewards have been sent successfully.");
       setErrorMessage("");
       if (hasInsufficientSmsBalance) {
         setShowInsufficientSmsBalanceModal(true);
       }
     } catch (error) {
-      console.error("Batch reward error:", error);
-      if (isInsufficientBalanceError(error)) {
-        setErrorMessage("");
-        setShowInsufficientBalanceModal(true);
-      } else {
-        setErrorMessage("An error occurred while processing batch rewards.");
-      }
+      if (isCurrent()) setErrorMessage((error.message || "Batch delivery could not be confirmed.") + " Review history before sending again.");
+    } finally {
+      inFlight.current = false;
+      if (isCurrent()) setSubmitting(false);
     }
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (event.target.id === "authentication-modal") {
+      if (event.target.id === "authentication-modal" && !inFlight.current) {
         closeCsvChecker();
         closeModal();
       }
@@ -308,18 +316,12 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
   }, [closeModal, closeCsvChecker]);
 
   useEffect(() => {
-    async function fetchBalance() {
-      const balanceData = await GetBalance(org_id);
-      if (balanceData) {
-        setBundles(balanceData.data.data);
-      }
-      const senderIdData = await GetActiveSenderId(org_id);
-      if (senderIdData) {
-        setSenderName(senderIdData.data);
-      }
-    }
-    fetchBalance();
-  }, [org_id]);
+    let cancelled = false;
+    GetActiveSenderId(org_id).then((response) => {
+      if (!cancelled && isCurrent()) setSenderName(Array.isArray(response?.data) ? response.data : []);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [org_id, isCurrent]);
 
   if (showRequestUnitsModal) {
     return (
@@ -357,6 +359,7 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
     return (
       <InsufficientBalanceModal
         service="AIRTIME"
+        description={errorMessage}
         onClose={() => setShowInsufficientBalanceModal(false)}
         onRequestUnits={() => {
           setShowInsufficientBalanceModal(false);
@@ -411,6 +414,7 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
               </div>
             ) : (
               <form className="space-y-2" onSubmit={handleSubmit}>
+                <fieldset disabled={submitting} className="space-y-2">
                 <div>
                   <label
                     htmlFor="airtime"
@@ -553,10 +557,12 @@ const SendAirtimeBatchRewardsModal = ({ closeModal }) => {
                     type="button"
                     className="w-full text-white bg-orange-400 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
                     onClick={handleSubmit}
+                    disabled={submitting}
                   >
-                    Submit
+                    {submitting ? "Sending…" : "Submit"}
                   </button>
                 </div>
+                </fieldset>
               </form>
             )}
           </div>

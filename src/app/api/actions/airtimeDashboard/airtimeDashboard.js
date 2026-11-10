@@ -1,29 +1,25 @@
-import axios from "axios";
+import { GetAirtimeAccounts } from "../airtimeReward/airtimeSettings";
+import { sendAirtimeReward } from "../airtimeReward/airtimeReward";
+import { interpretAirtimeResult } from "@/lib/airtime/result";
+import { resolveAirtimeOrganization } from "@/lib/airtime/organization";
 import apiUrl from "../../utils/apiUtils/apiUrl";
 import { authHeaders } from "../../../api/utils/headers/headers";
-import { GetAirtimeRewards } from "../airtimeReward/airtimeReward"; 
-import { GetAirtimeRecharges } from "../airtimeReward/airtimeReward";
 
 
 
 export async function SendAirtimeReward(org_id, payload) {
-  const airtimeSendUrl = `${apiUrl.GET_AIRTIME}/${org_id}/airtime`;
-  const config = await authHeaders();
-
-  try {
-    const res = await axios.post(airtimeSendUrl, payload, config);
-    return res.data;
-  } catch (error) {
-    console.error("Failed to send airtime reward:", error.message);
-    throw error;
-  }
+  const response = await sendAirtimeReward({ org_id, newReward: payload });
+  const result = interpretAirtimeResult(response);
+  if (result.outcome !== "success") throw new Error(result.message);
+  return response.data;
 }
 
 export async function GetAirtimeConsumed(org_id, dateQuery = "") {
   const config = await authHeaders();
 
   try {
-    let airtimeRewardsUrl = `${apiUrl.GET_AIRTIME}/${org_id}/airtime?size=10000`;
+    const externalId = await resolveAirtimeOrganization(org_id);
+    let airtimeRewardsUrl = `${apiUrl.GET_AIRTIME}/${encodeURIComponent(externalId)}/airtime?size=10000`;
     
     if (dateQuery) {
       airtimeRewardsUrl += `&${dateQuery}`;
@@ -52,7 +48,8 @@ export async function GetAirtimeReached(org_id, dateQuery = ""){
   const config = await authHeaders();
 
   try{
-    let receipientsreachedUrl = `${apiUrl.GET_AIRTIME}/${org_id}/airtime?size=10000`;
+    const externalId = await resolveAirtimeOrganization(org_id);
+    let receipientsreachedUrl = `${apiUrl.GET_AIRTIME}/${encodeURIComponent(externalId)}/airtime?size=10000`;
 
     if (dateQuery) {
       receipientsreachedUrl += `&${dateQuery}`;
@@ -75,68 +72,6 @@ export async function GetAirtimeReached(org_id, dateQuery = ""){
 }
 
 export async function GetAirtimeBalance(org_id) {
-  let unitsBoughtUrl = `${apiUrl.GET_CONTACTS}/${org_id}/rechargegroup?eq__status=APPROVED&eq__service=AIRTIME`;
-  let unitBalanceUrl = `${apiUrl.GET_ACCOUNTS}/balance/${org_id}`;
-
-  try {
-    const config = await authHeaders();
-
-    const requests = [
-      axios.get(unitsBoughtUrl, config),
-      axios.get(unitBalanceUrl, config),
-    ];
-
-    const [unitsBoughtRes, unitsBalanceRes] = await Promise.all(requests);
-
-    const unitsBalanceData = unitsBalanceRes.data.data.filter(
-      (account) => account.service && account.service === "AIRTIME"
-    );
-
-    const unitsBoughtData = unitsBoughtRes.data;
-
-    console.log("Units Bought: ", unitsBoughtData)
-
-    const dashboardSummary = unitsBalanceData.map(unitBalanceItem => {
-      const bundleModule = unitBalanceItem.module;
-      const id = unitBalanceItem.id;
-      const unitsBoughtItem = unitsBoughtData.find(
-        (item) => item.package && item.package.toLowerCase() === bundleModule.toLowerCase()
-      );
-      const unitsBought = unitsBoughtItem ? parseFloat(unitsBoughtItem.total) : 0;
-      const unitBalance = parseFloat(unitBalanceItem.units);
-      const progress = unitsBought > 0 ? ((unitsBought - unitBalance) / unitsBought) * 100 : 0;
-      return {
-        id: id,
-        module: bundleModule,
-        units_bought: unitsBought,
-        unit_balance: unitBalance,
-        progress: parseFloat(progress.toFixed(0)), 
-      };
-    });
-
-    if (dashboardSummary.length > 0) {
-      return dashboardSummary[0].unit_balance;
-    }
-    return 0;
-  } catch (error) {
-    if (error.response) {
-      return {
-        errors: {
-          _error: 'Airtime Balance could not be found.',
-        },
-      };
-    }
-    return {
-      errors: {
-        _error: 'Network error. Please try again.',
-      },
-    };
-  }
+  const accounts = await GetAirtimeAccounts(org_id);
+  return accounts[0]?.units ?? "0";
 }
-
-
-
-
-
-
-
