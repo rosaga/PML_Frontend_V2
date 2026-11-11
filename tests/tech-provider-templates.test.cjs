@@ -22,11 +22,13 @@ const template = {
 
 function api(fetch, { token = "current-session-token", env = {}, connectionId = "account-meta-connection" } = {}) {
   const config = loadModule("src/lib/tech-provider/config.ts", { process: { env } });
+  const draft = loadModule("src/lib/tech-provider/template-draft.ts", {});
   const client = loadModule("src/lib/tech-provider/templates-api.ts", {
     fetch,
     require(name) {
       if (name === "@/utils/auth") return { getToken: () => token };
       if (name === "./config") return config;
+      if (name === "./template-draft") return draft;
       throw new Error(`Unexpected runtime dependency: ${name}`);
     },
   });

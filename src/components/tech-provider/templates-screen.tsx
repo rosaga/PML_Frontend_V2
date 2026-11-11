@@ -14,7 +14,7 @@ import { WhatsAppPreview } from "@/components/whatsapp/templates/whatsapp-previe
 import { fetchTechProviderTemplates, type TechProviderTemplate, type TemplatesResponse } from "@/lib/tech-provider/templates-api";
 import { TechProviderHeader, useTechProviderWorkspace } from "./dashboard-shell";
 import { TECH_PROVIDER_BASE } from "./navigation";
-import { Choice, PreviewNotice } from "./preview-ui";
+import { Choice } from "./preview-ui";
 import { TemplateEditor } from "./template-editor";
 
 export function TemplatesScreen() {
@@ -103,7 +103,7 @@ export function TemplateBrowser({ connectionId }: { connectionId: string }) {
             </div>
           </Card>
         </TabsContent>
-        <TabsContent value="create" className="space-y-5"><PreviewNotice /><TemplateEditor /></TabsContent>
+        <TabsContent value="create" forceMount hidden={view !== "create"} className="space-y-5"><TemplateEditor connectionId={connectionId} onCreated={() => { setCursor({ page: 1 }); setRefresh((value) => value + 1); setSearch(""); setStatus("All Statuses"); setCategory("All Categories"); }} /></TabsContent>
       </Tabs>
     <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) setSelected(null); }}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
