@@ -38,7 +38,7 @@ function Quickstart() {
       {!accountLoading && (accountError ? <Button variant="outline" onClick={refreshAccount}>Retry account details</Button> : <Link href={`${BASE}/${connected ? "settings/account" : "embedded-signup"}`} className="inline-flex items-center gap-1 text-sm font-medium text-primary">{connected ? "View Connection" : "Connect Now"}<ArrowRight className="h-4 w-4" /></Link>)}
     </CardContent></Card>
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{quickstartFeatures.map((feature) => <Link key={feature.path} href={`${BASE}/${feature.path}`}><Card className="h-full transition-all hover:border-primary/50 hover:shadow-md"><CardHeader><div className={`flex h-12 w-12 items-center justify-center rounded-lg ${feature.color}`}><feature.icon className="h-6 w-6" /></div><CardTitle className="mt-4">{feature.name}</CardTitle><CardDescription>{feature.description}</CardDescription></CardHeader><CardContent><span className="flex items-center text-sm text-primary">{feature.path === "embedded-signup" ? "Connect" : "Open"}<ArrowRight className="ml-1 h-4 w-4" /></span></CardContent></Card></Link>)}</div>
-    <div role="note" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">Embedded signup, account details, and template creation are available. Sending and payments are coming soon.</div>
+    <div role="note" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">Embedded signup, account details, template creation, and single-recipient messaging are available. Bulk messaging, campaigns, and payments are coming soon.</div>
     <Accordion type="single" collapsible defaultValue="getting-started"><AccordionItem value="getting-started"><AccordionTrigger>Getting Started with WhatsApp</AccordionTrigger><AccordionContent className="space-y-4">
       <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800"><h4 className="font-semibold">Prerequisites</h4><p>You need administrator access to the Meta business portfolio and a phone number eligible for the signup flow.</p></div>
       <ol className="space-y-3">{["Open Embedded Signup and sign in to Meta.", "Select your existing business portfolio, then create or select a WhatsApp Business Account.", "Complete phone verification and finish Meta signup.", "Explore templates, messages, contacts, and automations as the remaining features become available."].map((step, index) => <li key={step} className="flex items-start gap-3 text-sm"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">{index + 1}</span><span className="text-muted-foreground">{step}</span></li>)}</ol>
@@ -181,7 +181,7 @@ export function TechProviderScreen({ page, initialTab }: { page: string; initial
     case "dashboard": return <Analytics />;
     case "inbox": case "recipients": return <InboxScreen />;
     case "templates": return <TemplatesScreen />;
-    case "send": case "bulk": return <Page title="Send Messages" description="Send individual or bulk WhatsApp messages"><MessageComposer initialTab={page === "bulk" ? "bulk" : initialTab} /></Page>;
+    case "send": case "bulk": return <Page title="Send Messages" description="Send WhatsApp text, attachments, or approved templates" live><MessageComposer initialTab={page === "bulk" ? "bulk" : initialTab} /></Page>;
     case "campaigns": return <Campaigns />;
     case "meta-flows": return <MetaFlows />;
     case "messages": return <Reports />;

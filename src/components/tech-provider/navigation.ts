@@ -56,5 +56,5 @@ export function resolveDetailRoute(segments: string[]) {
 export const quickstartFeatures = [
   { name: "WABA Application", description: "Connect your WhatsApp Business Account", path: "embedded-signup", icon: ExternalLink, color: "bg-blue-500/10 text-blue-600" },
   { name: "Templates", description: "Create and manage WhatsApp message templates", path: "templates", icon: FileText, color: "bg-chart-1/10 text-chart-1" },
-  { name: "Bulk Message", description: "Send messages to multiple recipients at once", path: "send?tab=bulk", icon: MessageSquare, color: "bg-chart-3/10 text-chart-3" },
+  { name: "Send Message", description: "Send text, attachments, or an approved template", path: "send", icon: MessageSquare, color: "bg-chart-3/10 text-chart-3" },
 ];

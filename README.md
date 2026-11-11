@@ -22,7 +22,7 @@ This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-opti
 
 ## Tech Provider
 
-Tech Provider is available to every signed-in user with a selected organization. Embedded signup, account details, and template browsing share the API base URL configured in `src/lib/tech-provider/config.ts`.
+Tech Provider is available to every signed-in user with a selected organization. Embedded signup, account details, templates, and messaging share the API base URL configured in `src/lib/tech-provider/config.ts`.
 
 Optional build-time environment variables:
 
@@ -34,7 +34,11 @@ This is the default base URL. Account details load from `/api/v2/accounts/{exter
 
 Templates load 25 at a time using the API's pagination cursors. Search and filters apply to the current page. Template creation supports text, JPEG/PNG, MP4, PDF, and copy-code authentication templates. Submission checks the live connection status and uses the selected account's Meta connection. Review samples are uploaded as raw files to `/template-media`; no browser Cloudinary credentials are used. Positional variables require review examples. Successful submission displays Meta's review status and refreshes the list; it does not imply approval. Uncertain outcomes are reconciled by name and language before any explicit retry, and creation POSTs are never automatically retried. Business profile editing remains in preview.
 
-Run the Tech Provider checks with `node --test tests/embedded-signup.test.cjs tests/tech-provider-ui.test.cjs tests/tech-provider-templates.test.cjs tests/tech-provider-account.test.cjs tests/tech-provider-creation.test.cjs`.
+Single-recipient messaging uses `/messages` for text, images, video, and documents, or `/messages/template` for approved templates, under the selected account's Meta connection. Local attachments upload as raw files to `/template-assets` before the send; the returned asset stays in draft state if sending fails and is reused for a manual retry. JPEG/PNG uploads are limited to 5 MiB, and MP4/PDF to 16 MiB. Hosted URLs or existing WhatsApp delivery-media IDs are also supported. Template selection loads approved templates with pagination and actual positional/named values; native component JSON supports advanced parameters and manual template selection without browsing permissions. Reply message IDs are optional.
+
+Sending requires `whatsapp:messages:send` when organization permissions are enabled. Connection lookup requires `whatsapp:connect`; attachment uploads additionally require `whatsapp:templates:write`, and template browsing requires `whatsapp:templates:read`. Send requests are never automatically retried. Uncertain outcomes lock the draft until explicitly resolved by the user; there is no delivery-status lookup or stored message history. A receipt means accepted, not delivered or read. Bulk messaging, campaigns, and inbox persistence remain in preview.
+
+Run the Tech Provider checks with `node --test tests/embedded-signup.test.cjs tests/tech-provider-ui.test.cjs tests/tech-provider-templates.test.cjs tests/tech-provider-account.test.cjs tests/tech-provider-creation.test.cjs tests/tech-provider-messages.test.cjs`.
 
 ## Learn More
 
