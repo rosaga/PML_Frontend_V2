@@ -13,7 +13,7 @@ const resolveLocal = (specifier, importer) => {
   return [base, ...[".tsx", ".ts", ".jsx", ".js"].map((extension) => base + extension)].find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
 };
 
-test("preview screens and all their local runtime imports contain no API transports or Bulk WhatsApp providers", () => {
+test("Tech Provider screens use only the dedicated templates transport and no Bulk WhatsApp providers", () => {
   const visited = new Set();
   function audit(filename) {
     if (visited.has(filename)) return;
@@ -36,7 +36,10 @@ test("preview screens and all their local runtime imports contain no API transpo
       }
       if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
         const expression = node.expression.getText(source);
-        assert.ok(!/(^|\.)(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)$/.test(expression), `Unexpected API transport ${expression} in ${filename}`);
+        if (/(^|\.)(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)$/.test(expression)) {
+          assert.equal(filename, path.join(root, "src/lib/tech-provider/templates-api.ts"), `Unexpected API transport ${expression} in ${filename}`);
+          assert.equal(expression, "fetch");
+        }
       }
       ts.forEachChild(node, visit);
     }

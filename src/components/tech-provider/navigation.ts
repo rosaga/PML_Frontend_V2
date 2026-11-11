@@ -4,7 +4,6 @@ import {
 } from "lucide-react";
 
 export const TECH_PROVIDER_BASE = "/apps/tech-provider";
-export const TECH_PROVIDER_ORGANIZATION_ID = "5bf6749b-881c-4fe2-94d2-977a6796e9bd";
 
 export const navigationGroups = [
   {
