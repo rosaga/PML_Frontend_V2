@@ -9,15 +9,12 @@ import { TechProviderHeader, useTechProviderWorkspace } from "./dashboard-shell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Badge } from "@/components/whatsapp/ui/badge";
-import { TECH_PROVIDER_ORGANIZATION_ID as ALLOWED_ORGANIZATION_ID } from "./navigation";
+import { TECH_PROVIDER_API_BASE_URL as API_BASE_URL } from "@/lib/tech-provider/config";
 
 const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || "1768412394357109";
 const FACEBOOK_GRAPH_API_VERSION = process.env.NEXT_PUBLIC_FACEBOOK_GRAPH_API_VERSION || "v26.0";
 const WHATSAPP_CONFIG_ID =
   process.env.NEXT_PUBLIC_WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID || "1085280167192120";
-const API_BASE_URL =
-  (process.env.NEXT_PUBLIC_PEAKWHATSAPP_API_BASE_URL ||
-    "https://peakwhatsappdev-1048592730476.europe-west4.run.app").replace(/\/+$/, "");
 const CALLBACK_WAIT_MS = 30000;
 const SIGNUP_EVENTS = new Set([
   "FINISH", "CANCEL", "ERROR", "FINISH_ONLY_WABA", "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING",
@@ -60,8 +57,8 @@ export function EmbeddedSignup({ onConnected } = {}) {
   useEffect(() => {
     const organizationId = window.localStorage.getItem("selectedAccountId");
 
-    if (organizationId !== ALLOWED_ORGANIZATION_ID) {
-      router.replace("/miniapp");
+    if (!organizationId) {
+      router.replace("/user-orgs");
       return;
     }
 
@@ -286,8 +283,8 @@ export function EmbeddedSignup({ onConnected } = {}) {
     }
 
     const organizationId = window.localStorage.getItem("selectedAccountId");
-    if (organizationId !== ALLOWED_ORGANIZATION_ID) {
-      router.replace("/miniapp");
+    if (!organizationId) {
+      router.replace("/user-orgs");
       return;
     }
     if (!getToken()) return;

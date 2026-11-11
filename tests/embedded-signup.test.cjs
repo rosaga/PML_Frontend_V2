@@ -13,8 +13,13 @@ const source = ts.transpileModule(
 const organization = "5bf6749b-881c-4fe2-94d2-977a6796e9bd";
 const assets = { business_id: "111", waba_id: "222", phone_number_id: "333" };
 const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(setImmediate); };
+const config = {};
+vm.runInNewContext(ts.transpileModule(
+  fs.readFileSync(path.join(__dirname, "../src/lib/tech-provider/config.ts"), "utf8"),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+).outputText, { exports: config, process: { env: {} } });
 
-function harness(respond) {
+function harness(respond, initialOrganization = organization) {
   const slots = [];
   const effects = [];
   const requests = [];
@@ -23,8 +28,9 @@ function harness(respond) {
   let timerId = 0;
   let listener;
   let login;
-  let selectedAccount = organization;
-  const router = { replace() {}, push() {} };
+  let selectedAccount = initialOrganization;
+  const redirects = [];
+  const router = { replace(target) { redirects.push(target); }, push() {} };
   const jsx = (type, props) => ({ type, props });
   const react = {
     useState(initial) {
@@ -72,7 +78,7 @@ function harness(respond) {
       if (name === "next/navigation") return { useRouter: () => router };
       if (name === "@/utils/auth") return { getToken: () => "test-access-token" };
       if (name === "@/components/whatsapp/ui/button") return { Button: "button" };
-      if (name === "./navigation") return { TECH_PROVIDER_ORGANIZATION_ID: organization };
+      if (name === "@/lib/tech-provider/config") return config;
       return {};
     },
   };
@@ -87,6 +93,7 @@ function harness(respond) {
   const button = () => nodes(render()).find((node) => node.type === "button" && /Connect WhatsApp|WhatsApp Connected/.test(texts(node)));
   return {
     requests,
+    redirects,
     completions: () => requests.filter((request) => request.url.endsWith("/complete")),
     launch: () => button().props.onClick(),
     button,
@@ -101,6 +108,24 @@ function harness(respond) {
     unmount: () => cleanups.forEach((cleanup) => cleanup?.()),
   };
 }
+
+test("any selected organization can complete signup using its own organization ID", async () => {
+  const h = harness(undefined, "another-organization");
+  h.launch();
+  h.authorize();
+  await h.event();
+  await flush();
+  assert.deepEqual(h.redirects, []);
+  assert.equal(h.completions().length, 1);
+  assert.equal(h.completions()[0].body.organization_id, "another-organization");
+});
+
+test("signup still requires a selected organization", () => {
+  const h = harness(undefined, null);
+  assert.equal(h.button(), undefined);
+  assert.deepEqual(h.redirects, ["/user-orgs"]);
+  assert.equal(h.requests.length, 0);
+});
 
 for (const order of ["code-first", "event-first"]) {
   test(`completes once with ${order} callbacks, without exposing the code`, async () => {

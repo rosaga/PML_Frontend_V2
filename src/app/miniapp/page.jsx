@@ -8,8 +8,6 @@ import { GetSenderId } from "../api/actions/senderId/senderId";
 import Profile from "@/components/profile/profile";
 import "./miniapp.css";
 
-const TECH_PROVIDER_ORGANIZATION_ID = "5bf6749b-881c-4fe2-94d2-977a6796e9bd";
-
 const services = [
   {
     id: "data",
@@ -72,7 +70,6 @@ const services = [
     title: "Tech Provider",
     desc: "Connect WhatsApp Business for provider tools",
     iconBg: "#E7F8EF",
-    restrictedToOrganizationId: TECH_PROVIDER_ORGANIZATION_ID,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#25D366" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -101,7 +98,6 @@ const MiniApp = () => {
   const [navigating, setNavigating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
-  const [selectedAccountId, setSelectedAccountId] = useState("");
 
   const router = useRouter();
 
@@ -113,7 +109,6 @@ const MiniApp = () => {
     const token = getToken();
 
     setIsAdmin(hasRole(token, "SuperAdmin"));
-    setSelectedAccountId(orgId || "");
 
     if (orgName) {
       setOrganizationName(orgName);
@@ -199,12 +194,7 @@ const MiniApp = () => {
     router.back();
   };
 
-  const servicesForOrganization = services.filter((service) => {
-    if (!service.restrictedToOrganizationId) return true;
-    return selectedAccountId === service.restrictedToOrganizationId;
-  });
-
-  const visibleServices = isAdmin ? [...servicesForOrganization, adminService] : servicesForOrganization;
+  const visibleServices = isAdmin ? [...services, adminService] : services;
 
   return (
     <div className="miniapp-page">

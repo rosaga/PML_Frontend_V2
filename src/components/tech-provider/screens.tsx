@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
   ArrowLeft, ArrowRight, BarChart3, BookUser, CheckCheck, CircleAlert, ClipboardList,
-  FileText, GitBranch, Inbox, Megaphone, MessageSquare, Plus, Send, Settings,
+  GitBranch, Inbox, Megaphone, MessageSquare, Plus, Send, Settings,
   Tag, Users, Wallet, Zap,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
@@ -18,7 +18,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { TechProviderHeader, useTechProviderWorkspace } from "./dashboard-shell";
 import { quickstartFeatures, TECH_PROVIDER_BASE as BASE } from "./navigation";
 import { Choice, EmptyTable, Field, PendingButton, PreviewNotice, SearchToolbar } from "./preview-ui";
-import { TemplateEditor } from "./template-editor";
+import { TemplatesScreen } from "./templates-screen";
 import { CampaignComposer, MessageComposer } from "./message-composer";
 import { AutomationEditor } from "./automation-editor";
 
@@ -35,7 +35,7 @@ function Quickstart() {
       <Link href={`${BASE}/embedded-signup`} className="inline-flex items-center gap-1 text-sm font-medium text-primary">{connected ? "View Connection" : "Connect Now"}<ArrowRight className="h-4 w-4" /></Link>
     </CardContent></Card>
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{quickstartFeatures.map((feature) => <Link key={feature.path} href={`${BASE}/${feature.path}`}><Card className="h-full transition-all hover:border-primary/50 hover:shadow-md"><CardHeader><div className={`flex h-12 w-12 items-center justify-center rounded-lg ${feature.color}`}><feature.icon className="h-6 w-6" /></div><CardTitle className="mt-4">{feature.name}</CardTitle><CardDescription>{feature.description}</CardDescription></CardHeader><CardContent><span className="flex items-center text-sm text-primary">{feature.path === "embedded-signup" ? "Connect" : "Open"}<ArrowRight className="ml-1 h-4 w-4" /></span></CardContent></Card></Link>)}</div>
-    <div role="note" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">Embedded signup is available. Other features are in preview; sending, saving, and payments are coming soon.</div>
+    <div role="note" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">Embedded signup and template browsing are available. Sending, saving, and payments are coming soon.</div>
     <Accordion type="single" collapsible defaultValue="getting-started"><AccordionItem value="getting-started"><AccordionTrigger>Getting Started with WhatsApp</AccordionTrigger><AccordionContent className="space-y-4">
       <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800"><h4 className="font-semibold">Prerequisites</h4><p>You need administrator access to the Meta business portfolio and a phone number eligible for the signup flow.</p></div>
       <ol className="space-y-3">{["Open Embedded Signup and sign in to Meta.", "Select your existing business portfolio, then create or select a WhatsApp Business Account.", "Complete phone verification and finish Meta signup.", "Explore templates, messages, contacts, and automations as the remaining features become available."].map((step, index) => <li key={step} className="flex items-start gap-3 text-sm"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">{index + 1}</span><span className="text-muted-foreground">{step}</span></li>)}</ol>
@@ -69,16 +69,6 @@ function InboxScreen() {
     <SearchToolbar placeholder="Search by name or mobile number..."><div className="w-40"><Choice label="Tag filter" options={["All tags"]} /></div></SearchToolbar>
     <Tabs value={filter} onValueChange={setFilter}><TabsList><TabsTrigger value="all">All</TabsTrigger><TabsTrigger value="unread">Unread</TabsTrigger><TabsTrigger value="read">Read</TabsTrigger></TabsList></Tabs>
     <EmptyTable columns={["Name", "Mobile Number", "Messages", "Last Message", "Last Activity", "Actions"]} title={filter === "unread" ? "No unread conversations" : "No conversations yet"} icon={Inbox} previewHref={`${BASE}/inbox/preview`} previewLabel="Preview conversation" />
-  </Page>;
-}
-
-function Templates() {
-  const [view, setView] = useState("list");
-  return <Page title="Message Templates" description="Create and manage your WhatsApp message templates">
-    <Tabs value={view} onValueChange={setView}><div className="mb-6 flex flex-wrap items-center justify-between gap-3"><TabsList><TabsTrigger value="list">All Templates</TabsTrigger><TabsTrigger value="create"><Plus className="mr-2 h-4 w-4" />Create New</TabsTrigger></TabsList>{view === "list" && <Button onClick={() => setView("create")}><Plus className="h-4 w-4" />New Template</Button>}</div>
-      <TabsContent value="list" className="space-y-5"><SearchToolbar placeholder="Search by name..."><div className="w-40"><Choice label="Status" options={["All Statuses", "Approved", "Pending", "Rejected", "Paused", "Disabled"]} /></div><div className="w-40"><Choice label="Category" options={["All Categories", "Marketing", "Utility", "Authentication"]} /></div></SearchToolbar><EmptyTable columns={["Name", "Category", "Language", "Status", "Actions"]} title="No Templates" icon={FileText} /></TabsContent>
-      <TabsContent value="create"><TemplateEditor /></TabsContent>
-    </Tabs>
   </Page>;
 }
 
@@ -188,7 +178,7 @@ export function TechProviderScreen({ page, initialTab }: { page: string; initial
     case "quickstart": return <Quickstart />;
     case "dashboard": return <Analytics />;
     case "inbox": case "recipients": return <InboxScreen />;
-    case "templates": return <Templates />;
+    case "templates": return <TemplatesScreen />;
     case "send": case "bulk": return <Page title="Send Messages" description="Send individual or bulk WhatsApp messages"><MessageComposer initialTab={page === "bulk" ? "bulk" : initialTab} /></Page>;
     case "campaigns": return <Campaigns />;
     case "meta-flows": return <MetaFlows />;

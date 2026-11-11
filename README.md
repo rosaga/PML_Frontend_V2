@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
+## Tech Provider
+
+Tech Provider is available to every signed-in user with a selected organization. Embedded signup and template browsing share the API base URL configured in `src/lib/tech-provider/config.ts`.
+
+Optional build-time environment variables:
+
+```dotenv
+NEXT_PUBLIC_PEAKWHATSAPP_API_BASE_URL=https://peakwhatsappdev-1048592730476.europe-west4.run.app
+NEXT_PUBLIC_TECH_PROVIDER_CONNECTION_ID=e1fb3299-cfda-4e3b-a78b-39b14cacb51b
+```
+
+These values are the defaults. Template browsing uses this configured connection and the current user's session bearer token; it does not embed a token or select a different connection per organization. Templates load 25 at a time using the API's pagination cursors. Search and filters apply to the current page. Template creation remains in preview.
+
+Run the Tech Provider checks with `node --test tests/embedded-signup.test.cjs tests/tech-provider-ui.test.cjs tests/tech-provider-templates.test.cjs`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

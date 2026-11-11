@@ -12,7 +12,7 @@ import { Badge } from "@/components/whatsapp/ui/badge";
 import { cn } from "@/lib/whatsapp/utils";
 import { getToken, signOutUser } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
-import { navigationGroups, TECH_PROVIDER_BASE as BASE, TECH_PROVIDER_ORGANIZATION_ID } from "./navigation";
+import { navigationGroups, TECH_PROVIDER_BASE as BASE } from "./navigation";
 
 const WorkspaceContext = createContext({ connected: false, markConnected: () => {} });
 export const useTechProviderWorkspace = () => useContext(WorkspaceContext);
@@ -29,8 +29,8 @@ export function TechProviderShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!getToken()) return;
-    if (localStorage.getItem("selectedAccountId") !== TECH_PROVIDER_ORGANIZATION_ID) {
-      router.replace("/miniapp");
+    if (!localStorage.getItem("selectedAccountId")) {
+      router.replace("/user-orgs");
       return;
     }
     setAuthorized(true);
