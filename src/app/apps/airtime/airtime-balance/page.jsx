@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import Image from "next/image";
 import { DataGrid, GridRowsProp, GridColDef , GridToolbar} from "@mui/x-data-grid";
@@ -16,40 +16,25 @@ import { hasRole } from "../../../../utils/decodeToken"
 import apiUrl from "../../../api/utils/apiUtils/apiUrl"
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
-import { GetBalance } from "@/app/api/actions/reward/reward";
-// New import for airtime balance
-import { GetAirtimeBalance } from "@/app/api/actions/airtimeDashboard/airtimeDashboard";
+import { GetAirtimeAccounts } from "@/app/api/actions/airtimeReward/airtimeSettings";
+import { useOrganizationQuery } from "@/lib/airtime/useOrganizationQuery";
+import AirtimeThreshold from "@/components/airtime-rewards/airtimeThreshold";
+
 
 const AirtimeBalance = () => {
 
-  let org_id = null;
-  let token = null;
-  if (typeof window !== 'undefined') {
-    org_id = localStorage.getItem('selectedAccountId');
-    token = getToken();
-  }
-  
+  const token = typeof window !== "undefined" ? getToken() : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [balances, setBalances] = useState([]);
-  const [recharges, setRecharges] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingData, setLoadingData] = useState(true);
-  const [isApproved, setIsApproved] = useState(false);
-  const [total, setTotal] = useState(0);
   const [searchParams, setSearchParams] = useState({});
 
   const [columns, setColumns] = useState([]);
 
-  // New state for dynamic airtime balance
-  const [airtimeBalance, setAirtimeBalance] = useState(0);
+  const [thresholdOpen, setThresholdOpen] = useState(false);
 
   const openModal = () => {
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
   const [paginationModel, setPaginationModel] = React.useState({
     pageSize: 10,
     page: 0,
@@ -70,7 +55,20 @@ const AirtimeBalance = () => {
   };
 
 
-  const handleApprove = async (id) => {
+  const loadAccounts = useCallback((id) => GetAirtimeAccounts(id), []);
+  const accountQuery = useOrganizationQuery(loadAccounts, { events: "airtime-updated airtime-threshold-updated" });
+  const account = accountQuery.data?.[0];
+  const loadRecharges = useCallback(async (id) => {
+    const response = await GetAirtimeRecharges(id, paginationModel.page + 1, paginationModel.pageSize, searchParams);
+    if (response.errors) throw new Error(response.errors._error);
+    return response.data;
+  }, [paginationModel.page, paginationModel.pageSize, searchParams]);
+  const rechargeQuery = useOrganizationQuery(loadRecharges, { events: "airtime-updated" });
+  const recharges = rechargeQuery.data?.data || [];
+  const total = rechargeQuery.data?.count || 0;
+  const refreshRecharges = rechargeQuery.refresh;
+
+  const handleApprove = useCallback(async (id) => {
     const approvalUrl = `${apiUrl.APPROVE_UNITS}/${id}`;
     try {
       const response = await axios.put(approvalUrl, {}, {
@@ -81,16 +79,16 @@ const AirtimeBalance = () => {
   
       if (response.status === 202) {
         toast.success("APPROVE SUCCESS!!!");
-        setIsApproved(true);
+        refreshRecharges();
       } else {
         toast.error("APPROVE FAILED");
-        setIsApproved(true);
+        refreshRecharges();
       }
     } catch (error) {
       toast.error("APPROVE FAILED");
-      setIsApproved(true);
+      refreshRecharges();
     }
-  };
+  }, [token, refreshRecharges]);
 
   useEffect(() => {
     const baseColumns = [
@@ -153,59 +151,12 @@ const AirtimeBalance = () => {
     }
 
     setColumns(baseColumns);
-  }, [token]);
-
-  const refreshPage = () => {
-    setIsModalOpen(false);
-    setLoadingData(true);
-  }
-
-  async function fetchBalance() {
-    const balanceData = await GetBalance(org_id);
-    if (balanceData) {
-      setBalances(balanceData.data.data);
-    }
-  }
-  const getRecharges = async () => {
-    try {
-      const res = await GetAirtimeRecharges(org_id, paginationModel.page+1, paginationModel.pageSize, searchParams);
-      if (res.errors) {
-        console.log("AN ERROR HAS OCCURRED");
-      } else {
-        setTotal(res.data.count);
-        setRecharges(res.data.data);
-        setLoading(false);
-        setLoadingData(false);
-      
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  useEffect(() => {
-      getRecharges();
-      fetchBalance();
-  }, [isModalOpen, org_id, isApproved, paginationModel.page, paginationModel.pageSize, searchParams]);
-
-  // New useEffect to fetch the dynamic airtime balance using GetAirtimeBalance
-  useEffect(() => {
-    const fetchAirtimeBalanceData = async () => {
-      if (!org_id) return;
-      try {
-        const balance = await GetAirtimeBalance(org_id);
-        setAirtimeBalance(balance);
-      } catch (error) {
-        console.error("Error fetching airtime balance:", error);
-        setAirtimeBalance(0);
-      }
-    };
-    fetchAirtimeBalanceData();
-  }, [org_id]);
+  }, [token, handleApprove]);
 
   return (
     <>
       <ToastContainer />
+      {thresholdOpen && <AirtimeThreshold threshold={account} closeModal={() => setThresholdOpen(false)} />}
       <div className="p-4 lg:ml-64 h-screen">
         <div className="p-4 h-full rounded-lg dark:border-gray-700">
           <div className="flex flex-col h-full">
@@ -213,9 +164,10 @@ const AirtimeBalance = () => {
               <p className="m-1 font-semibold text-lg">Airtime Balance</p>
             </div>
 
+            {(accountQuery.error || rechargeQuery.error) && <p role="alert" className="text-red-500 px-4">{accountQuery.error || rechargeQuery.error}</p>}
             <div className="p-2">
               <div className="flex flex-wrap justify-left">
-                {loading ? (
+                {accountQuery.loading && !accountQuery.data ? (
                   <p>Loading...</p>
                 ) : (
                     <div className="border-[1.5px] shadow-sm rounded-lg p-6 flex-shrink-0 w-60 m-2">
@@ -238,7 +190,9 @@ const AirtimeBalance = () => {
                         </div>
                       </div>
                       {/* Updated balance: dynamic airtime balance fetched from the API */}
-                      <div className="text-2xl font-bold">KES {airtimeBalance}</div>
+                      <div className="text-2xl font-bold">KES {account?.units ?? "—"}</div>
+                      <p className="text-sm text-gray-500 mt-2">Alert threshold: {account ? Number(account.threshold) === 0 ? "Disabled" : `KES ${account.threshold ?? "—"}` : "—"}</p>
+                      <button type="button" disabled={!account} onClick={() => setThresholdOpen(true)} className="mt-3 text-orange-600 underline text-sm disabled:opacity-50">Set notification threshold</button>
                     </div>
                 )}
               </div>
@@ -261,11 +215,12 @@ const AirtimeBalance = () => {
 
                 <div className="mt-4">
                   <div style={{ width: "100%" }}>
-                    {loadingData ? (
+                    {rechargeQuery.loading && !rechargeQuery.data ? (
                       <p>Loading...</p>
                     ) : (
                       <DataGrid
                         rows={recharges}
+                        loading={rechargeQuery.loading}
                         columns={columns}
                         paginationModel={paginationModel}
                         onPaginationModelChange={setPaginationModel}
@@ -288,7 +243,7 @@ const AirtimeBalance = () => {
             </div>
           </div>
         </div>
-        {isModalOpen && <RequestAirtimeUnitsModal closeModal={refreshPage} />}
+        {isModalOpen && <RequestAirtimeUnitsModal closeModal={() => { setIsModalOpen(false); accountQuery.refresh(); rechargeQuery.refresh(); }} />}
       </div>
     </>
   );

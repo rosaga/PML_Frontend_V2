@@ -109,7 +109,7 @@ const NewAccountModal = ({ closeModal }) => {
                   </div>
                   <div className="mb-4">
                     <label htmlFor="account-phone-number" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                      Organization phone number (optional)
+                      Contact Person phone number
                     </label>
                     <input
                       id="account-phone-number"

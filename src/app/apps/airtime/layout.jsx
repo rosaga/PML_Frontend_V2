@@ -1,3 +1,4 @@
+import AirtimeOrganizationScope from "@/components/airtime-rewards/organizationScope";
 import { Inter } from "next/font/google";
 import "../../../app/globals.css";
 import SidebarAirtime from "@/components/sidebarairtime/sidebarairtime";
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <SessionProviderWrapper>
+          <AirtimeOrganizationScope>
           <div className="flex h-screen w-full overflow-hidden bg-gray-50">
             <SidebarAirtime />
             <div className="flex flex-col flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden">
@@ -29,6 +31,7 @@ export default function RootLayout({ children }) {
               </main>
             </div>
           </div>
+          </AirtimeOrganizationScope>
         </SessionProviderWrapper>
       </body>
     </html>

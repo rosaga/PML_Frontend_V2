@@ -44,6 +44,7 @@ export interface MessagePayload {
   recipient_type?: "individual" | "INDIVIDUAL";
   to: string;
   type: "text" | "image" | "video" | "document" | "audio" | "template" | "interactive" | "location" | "contacts";
+  category?: Template["category"];
   // Type 1: Text Message
   text?: { body: string };
   // Type 3: Image Message

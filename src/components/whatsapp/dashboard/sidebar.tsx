@@ -7,8 +7,6 @@ import { useState, useEffect, useRef, type ElementType } from "react";
 import { cn } from "@/lib/whatsapp/utils";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { useMessageNotification } from "@/lib/whatsapp/message-context";
-import { getToken } from "@/utils/auth";
-import { hasRole } from "@/utils/decodeToken";
 import {
   LayoutDashboard,
   FileText,
@@ -39,7 +37,7 @@ const messagesSubItems: SubItem[] = [
   { name: "Templates", href: `${BASE}/templates`, icon: FileText },
   { name: "Send Message", href: `${BASE}/send`, icon: Send },
   { name: "Campaigns", href: `${BASE}/campaigns`, icon: Megaphone },
-  { name: "Meta Flows", href: `${BASE}/meta-flows`, icon: GitBranch },
+  { name: "Meta Flows/Catalogues", href: `${BASE}/meta-flows`, icon: GitBranch },
   { name: "Reports", href: `${BASE}/messages`, icon: ClipboardList },
 ];
 
@@ -54,9 +52,9 @@ const chatbotSubItems: SubItem[] = [
   { name: "Reporting", href: `${BASE}/automations/reporting`, icon: PieChart },
 ];
 
-const allSettingsSubItems: (SubItem & { adminOnly: boolean })[] = [
-  { name: "Account", href: `${BASE}/settings/account`, icon: Settings, adminOnly: true },
-  { name: "Wallet", href: `${BASE}/settings/topups`, icon: Wallet, adminOnly: false },
+const settingsSubItems = [
+  { name: "Account", href: `${BASE}/settings/account`, icon: Settings },
+  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap },
 ];
 
 const navLinkClass = (isActive: boolean) =>
@@ -151,12 +149,6 @@ export function Sidebar({
   const [contactsOpen, setContactsOpen] = useState(isContactsActive);
   const [chatbotOpen, setChatbotOpen] = useState(isChatbotActive);
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const token = getToken();
-    setIsAdmin(hasRole(token, "SuperAdmin"));
-  }, []);
 
   // Auto-expand the group containing the current page when navigating into it.
   useEffect(() => {
@@ -175,14 +167,66 @@ export function Sidebar({
     return () => clearInterval(interval);
   }, [organizationId, pollUnread]);
 
-  // Close the mobile drawer on route change, without stale closures.
-  const closeRef = useRef(onMobileClose);
-  const openRef = useRef(isMobileOpen);
-  closeRef.current = onMobileClose;
-  openRef.current = isMobileOpen;
   useEffect(() => {
-    if (openRef.current) closeRef.current?.();
-  }, [pathname]);
+    if (isMobileOpen && onMobileClose) {
+      onMobileClose();
+    }
+  }, [pathname]); // close sidebar every time the route changes
+
+  const navLinkClass = (isActive: boolean) =>
+    cn(
+      "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+      isActive
+        ? "bg-[#001F3D] text-white"
+        : "text-sidebar-foreground/70 hover:bg-[#001F3D] hover:text-white",
+    );
+
+  const groupBtnClass = (isActive: boolean) =>
+    cn(
+      "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+      isActive
+        ? "bg-[#001F3D] text-white"
+        : "text-sidebar-foreground/70 hover:bg-[#001F3D] hover:text-white",
+    );
+
+  function ExpandableGroup({
+    label,
+    Icon,
+    isActive,
+    isOpen,
+    setOpen,
+    subItems,
+  }: {
+    label: string;
+    Icon: React.ElementType;
+    isActive: boolean;
+    isOpen: boolean;
+    setOpen: (v: boolean) => void;
+    subItems: { name: string; href: string; icon: React.ElementType }[];
+  }) {
+    return (
+      <div>
+        <button onClick={() => setOpen(!isOpen)} className={groupBtnClass(isActive)}>
+          <Icon className={cn("h-5 w-5 transition-colors", isActive ? "text-white" : "group-hover:text-white")} />
+          <span className="flex-1 text-left">{label}</span>
+          <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", isOpen ? "rotate-180" : "")} />
+        </button>
+        {isOpen && (
+          <div className="mt-1 ml-4 space-y-1 border-l border-border pl-3">
+            {subItems.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link key={item.name} href={item.href} className={navLinkClass(active)}>
+                  <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-white" : "group-hover:text-white")} />
+                  <span className="min-w-0 flex-1 break-words">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const settingsSubItems = allSettingsSubItems.filter((item) => !item.adminOnly || isAdmin);
 

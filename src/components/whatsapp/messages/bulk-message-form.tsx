@@ -21,37 +21,34 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/whatsapp/ui/card";
-import { Progress } from "@/components/whatsapp/ui/progress";
 import { Badge } from "@/components/whatsapp/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/whatsapp/ui/tabs";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import {
-  sendBulkMessages,
   getTemplates,
+  type MessagePayload,
   type Template,
 } from "@/lib/whatsapp/whatsapp-api";
-import { Send, Loader2, Upload, Users, CheckCircle, XCircle, Download } from "lucide-react";
-
-interface BulkResult {
-  to: string;
-  success: boolean;
-  error?: string;
-}
+import { sendBulkMessages, type BulkMessageResult } from "@/lib/whatsapp/peakdata-messages-api";
+import { Send, Loader2, Upload, Users, CheckCircle, XCircle, Download, X, FileText } from "lucide-react";
 
 export function BulkMessageForm() {
-  const { config, isConfigured, organizationId } = useConfig();
+  const { config, isConfigured, organizationId, organizationExternalId, isLoading: contextLoading } = useConfig();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [results, setResults] = useState<BulkResult[]>([]);
-  const [progress, setProgress] = useState(0);
+  const [results, setResults] = useState<BulkMessageResult[]>([]);
+  const [sendSummary, setSendSummary] = useState("");
+  const [recipientFile, setRecipientFile] = useState<File | null>(null);
+  const [messageType, setMessageType] = useState<"template" | "text">("template");
   
   const [formData, setFormData] = useState({
     recipients: "",
+    textBody: "",
     templateName: "",
     templateLanguage: "en_US",
     templateParams: [] as string[],
-    campaignName: "",
     templateImageUrl: "",
     templateVideoUrl: "",
     templateDocumentUrl: "",
@@ -148,16 +145,17 @@ export function BulkMessageForm() {
   };
 
   const handleSend = async () => {
-    if (!isConfigured) {
+    const effectiveOrganizationId = organizationExternalId || organizationId;
+    if (contextLoading || !effectiveOrganizationId) {
       toast({
         title: "Configuration Required",
-        description: "Please configure your API settings first.",
+        description: "Please wait for your organization to load.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!formData.templateName) {
+    if (messageType === "template" && !formData.templateName) {
       toast({
         title: "Validation Error",
         description: "Please select a template.",
@@ -168,7 +166,7 @@ export function BulkMessageForm() {
 
     // Validate that the selected template exists and is approved
     const selectedTemplate = templates.find((t) => t.name === formData.templateName);
-    if (!selectedTemplate) {
+    if (messageType === "template" && !selectedTemplate) {
       toast({
         title: "Template Not Found",
         description: `The template "${formData.templateName}" no longer exists or is not approved. Please select a different template.`,
@@ -179,7 +177,7 @@ export function BulkMessageForm() {
 
     const recipients = parseRecipients(formData.recipients);
     
-    if (recipients.length === 0) {
+    if (!recipientFile && recipients.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please enter at least one recipient.",
@@ -188,16 +186,21 @@ export function BulkMessageForm() {
       return;
     }
 
+    if (messageType === "text" && !formData.textBody.trim()) {
+      toast({ title: "Validation Error", description: "Message body is required.", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
     setResults([]);
-    setProgress(0);
+    setSendSummary("");
 
     // Build template components with header if present
     const templateComponents = [];
     
     // Check if template has a media header
     const templateHeader = selectedTemplate?.components?.find((c) => c.type === "HEADER");
-    if (templateHeader && ["IMAGE", "VIDEO", "DOCUMENT"].includes(templateHeader.format ?? "")) {
+    if (messageType === "template" && templateHeader && ["IMAGE", "VIDEO", "DOCUMENT"].includes(templateHeader.format ?? "")) {
       // Determine which URL to use based on header format
       let uploadedUrl = "";
       if (templateHeader.format === "IMAGE") uploadedUrl = formData.templateImageUrl;
@@ -241,46 +244,38 @@ export function BulkMessageForm() {
       });
     }
 
-    const message = {
-      messaging_product: "whatsapp" as const,
-      recipient_type: "individual" as const,
-      type: "template" as const,
-      template: {
-        name: formData.templateName,
-        language: { code: formData.templateLanguage },
-        components: templateComponents.length > 0 ? templateComponents : undefined,
-      },
-    };
+    const message: Omit<MessagePayload, "to"> = messageType === "text"
+      ? {
+          messaging_product: "whatsapp",
+          type: "text",
+          text: { body: formData.textBody },
+        }
+      : {
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          type: "template",
+          category: selectedTemplate?.category,
+          template: {
+            name: formData.templateName,
+            language: { code: formData.templateLanguage },
+            components: templateComponents.length > 0 ? templateComponents : undefined,
+          },
+        };
 
-    // Process in batches to show progress
-    const batchSize = 10;
-    const allResults: BulkResult[] = [];
-    
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      const batch = recipients.slice(i, i + batchSize);
-      const result = await sendBulkMessages(config, batch, message, {
-        wabaNumber: config.phoneNumberId,
-        campaignName: formData.campaignName || undefined,
-        organizationId: organizationId || undefined,
-      });
-      
-      if (result.success && result.data) {
-        allResults.push(...result.data.results);
-      }
-      
-      setProgress(Math.min(100, Math.round(((i + batch.length) / recipients.length) * 100)));
-      setResults([...allResults]);
-    }
+    const result = await sendBulkMessages(effectiveOrganizationId, recipientFile || recipients, message);
 
     setLoading(false);
 
-    const sent = allResults.filter((r) => r.success).length;
-    const failed = allResults.filter((r) => !r.success).length;
-
-    toast({
-      title: "Bulk Send Complete",
-      description: `Sent: ${sent}, Failed: ${failed}`,
-    });
+    if (result.success) {
+      setResults(result.data?.results || []);
+      const summary = typeof result.data?.sent === "number" && typeof result.data?.failed === "number"
+        ? `Sent: ${result.data.sent}, Failed: ${result.data.failed}`
+        : result.data?.message || "Bulk message request accepted.";
+      setSendSummary(summary);
+      toast({ title: "Bulk Send", description: summary });
+    } else {
+      toast({ title: "Bulk Send Failed", description: result.error || "Failed to send bulk messages.", variant: "destructive" });
+    }
   };
 
   const handleDownloadTemplate = () => {
@@ -300,12 +295,8 @@ export function BulkMessageForm() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      setFormData((prev) => ({ ...prev, recipients: text }));
-    };
-    reader.readAsText(file);
+    setRecipientFile(file);
+    e.target.value = "";
   };
 
   const addTemplateParam = () => {
@@ -338,19 +329,21 @@ export function BulkMessageForm() {
         <CardHeader>
           <CardTitle>Bulk Message</CardTitle>
           <CardDescription>
-            Send templated messages to multiple recipients at once
+            Send WhatsApp messages to multiple recipients
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Recipients Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Label>Recipients</Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {!recipientFile && (
                 <Badge variant="outline" className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
                   {recipientCount} recipient{recipientCount !== 1 ? "s" : ""}
                 </Badge>
+                )}
                 <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
                   <Download className="mr-2 h-4 w-4" />
                   Download Template
@@ -365,13 +358,22 @@ export function BulkMessageForm() {
                   <Input
                     id="file-upload"
                     type="file"
-                    accept=".csv,.txt"
+                    accept=".csv,text/csv"
                     className="hidden"
                     onChange={handleFileUpload}
                   />
                 </Label>
               </div>
             </div>
+            {recipientFile ? (
+              <div className="flex items-center gap-2 border rounded-md p-3">
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1 break-all text-sm">{recipientFile.name}</span>
+                <Button variant="ghost" size="icon" onClick={() => setRecipientFile(null)} aria-label="Remove CSV" title="Remove CSV">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
             <Textarea
               placeholder="Enter phone numbers (one per line, or comma/semicolon separated)&#10;&#10;Example:&#10;254712345678&#10;254723456789&#10;254734567890"
               value={formData.recipients}
@@ -379,21 +381,23 @@ export function BulkMessageForm() {
               rows={6}
               className="font-mono text-sm"
             />
+            )}
           </div>
 
-          {/* Campaign Name */}
-          <div className="space-y-2">
-            <Label htmlFor="campaignName">Campaign Name (Optional)</Label>
-            <Input
-              id="campaignName"
-              placeholder="e.g., January Promotions, Welcome Messages"
-              value={formData.campaignName}
-              onChange={(e) => setFormData({ ...formData, campaignName: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">
-              A name to identify this bulk send in your message history
-            </p>
-          </div>
+          <Tabs value={messageType} onValueChange={(value) => setMessageType(value as "template" | "text")}>
+            <TabsList>
+              <TabsTrigger value="template">Template</TabsTrigger>
+              <TabsTrigger value="text">Text</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {messageType === "text" ? (
+            <div className="space-y-2">
+              <Label htmlFor="bulkTextBody">Message Body</Label>
+              <Textarea id="bulkTextBody" value={formData.textBody} onChange={(e) => setFormData({ ...formData, textBody: e.target.value })} rows={4} />
+            </div>
+          ) : (
+          <>
 
           {/* Template Selection */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -533,26 +537,23 @@ export function BulkMessageForm() {
               </div>
             )}
           </div>
+          </>
+          )}
 
           {/* Progress & Send */}
           {loading && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Sending messages...</span>
-                <span className="font-medium">{progress}%</span>
-              </div>
-              <Progress value={progress} />
-            </div>
+            <p role="status" className="text-sm text-muted-foreground">Submitting bulk messages...</p>
           )}
 
-          <Button onClick={handleSend} disabled={loading || !isConfigured} className="w-full">
+          <Button onClick={handleSend} disabled={loading || contextLoading || !(organizationExternalId || organizationId) || templateImageUploading || templateVideoUploading || templateDocumentUploading} className="w-full">
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Send to {recipientCount} Recipient{recipientCount !== 1 ? "s" : ""}
+            {recipientFile ? "Send CSV" : `Send to ${recipientCount} Recipient${recipientCount !== 1 ? "s" : ""}`}
           </Button>
+          {sendSummary && <p role="status" className="text-sm text-center text-success">{sendSummary}</p>}
         </CardContent>
       </Card>
 

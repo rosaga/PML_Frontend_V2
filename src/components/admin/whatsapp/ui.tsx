@@ -19,14 +19,6 @@ export function formatDate(value: string | null) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
 }
 
-export function SampleDataBadge() {
-  return <span className="inline-flex shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500">Sample data</span>;
-}
-
-export function DemoNotice({ children = "WhatsApp balances and activity are examples. Credit changes apply to this preview only." }: { children?: ReactNode }) {
-  return <div className="mb-5 flex flex-wrap items-center gap-3 text-sm text-gray-500"><SampleDataBadge /><span>{children}</span></div>;
-}
-
 export function AdminCard({ title, description, action, children }: { title: string; description?: string; action?: ReactNode; children: ReactNode }) {
   return <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 px-5 py-5 sm:px-6">

@@ -1,39 +1,27 @@
 import axios from "axios";
+import { airtimePayload, apiErrorMessage } from "@/lib/airtime/result";
+import { getActiveOrganizationId, refreshOrganization, resolveAirtimeOrganization } from "@/lib/airtime/organization";
 import apiUrl from "../../utils/apiUtils/apiUrl";
 import { authHeaders } from "../../../api/utils/headers/headers";
 
-export async function sendAirtimeReward(formValues) {
-  const sendAirtimeUrl = `${apiUrl.GET_AIRTIME}/${formValues.org_id}/airtime`;
+export async function sendAirtimeReward({ org_id, newReward }) {
+  const payload = airtimePayload(newReward);
+  const externalId = await resolveAirtimeOrganization(org_id);
+  const config = await authHeaders();
+  if (getActiveOrganizationId() !== org_id) throw new Error("The active organization changed. Review the selected account.");
   try {
-    const config = await authHeaders();
-    return axios
-      .post(sendAirtimeUrl, formValues.newReward, config)
-      .then((res) => {
-        if (res.data && res.status === 200) {
-          console.log("THE AIRTIME RESPONSE IS !!!!!!!", res);
-        }
-        return res;
-      });
+    return await axios.post(`${apiUrl.GET_AIRTIME}/${encodeURIComponent(externalId)}/airtime`, payload, config);
   } catch (error) {
-    console.error("Failed to send airtime reward:", error.message);
-    if (error.response) {
-      return {
-        errors: {
-          _error: "The airtime reward could not be sent.",
-        },
-      };
-    }
-    return {
-      errors: {
-        _error: "Network error. Please try again.",
-      },
-    };
+    // Preserve the parsed JSON on HTTP errors. Never retry a potentially delivered send.
+    return error.response ?? { status: 0, data: { message: "Network error. Airtime delivery could not be confirmed." } };
+  } finally {
+    refreshOrganization(org_id);
   }
 }
 
-
-export async function GetAirtimeRewards(org_id, page, pageSize, searchParams) {
-  let airtimeRewardsUrl = `${apiUrl.GET_AIRTIME}/${org_id}/airtime?orderby=created_at DESC`;
+export async function GetAirtimeRewards(org_id, page = 1, pageSize = 20, searchParams) {
+  const externalId = await resolveAirtimeOrganization(org_id);
+  let airtimeRewardsUrl = `${apiUrl.GET_AIRTIME}/${encodeURIComponent(externalId)}/airtime?orderby=created_at%20desc`;
 
   if (page) {
     airtimeRewardsUrl += `&page=${page}`;
@@ -50,10 +38,6 @@ export async function GetAirtimeRewards(org_id, page, pageSize, searchParams) {
     const config = await authHeaders();
     const res = await axios.get(airtimeRewardsUrl, config);
 
-    if (res.data && res.status === 200) {
-      console.log("THE AIRTIME REWARDS RESPONSE IS !!!!!!!", res);
-    }
-
     return res;
   } catch (error) {
     console.error("Failed to fetch airtime rewards:", error.message);
@@ -61,7 +45,7 @@ export async function GetAirtimeRewards(org_id, page, pageSize, searchParams) {
     if (error.response) {
       return {
         errors: {
-          _error: "The airtime rewards could not be returned.",
+          _error: apiErrorMessage(error, "The airtime rewards could not be returned."),
         },
       };
     }
@@ -121,7 +105,8 @@ export async function batchAirtimeReward({ org_id, newReward }) {
         'eq__service': 'AIRTIME'
     };
 
-    let rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${org_id}?page=${page}&size=${pageSize}&orderby=created_at DESC`;
+    const externalId = await resolveAirtimeOrganization(org_id);
+    let rechargeUrl = `${apiUrl.GET_BALANCE}/recharge/data/${encodeURIComponent(externalId)}?page=${page}&size=${pageSize}&orderby=created_at%20desc`;
 
     // Convert search params to URL string
     const searchParamsString = new URLSearchParams(airtimeSearchParams).toString();

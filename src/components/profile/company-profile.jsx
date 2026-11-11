@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
 import { Building2, Mail, UserRound, ExternalLink, ArrowLeft } from "lucide-react";
 import CircularProgress from "@mui/material/CircularProgress";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -10,10 +11,10 @@ import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import PeakButton from "@/components/button/button";
 import { GetAccounts, GetOrganization, UpdateOrganizationPhone } from "@/app/api/actions/accounts/accounts";
 import { getToken } from "@/utils/auth";
-import { getUserInfo } from "@/utils/decodeToken";
 import { POLICIES } from "@/lib/policies";
 import { isValidPhoneNumber, PHONE_NUMBER_ERROR } from "@/utils/phone";
 import ProfileResources from "./profile-resources";
+import NotificationEmailSetting from "@/components/notifications/notification-email-setting";
 
 function displayValue(value) {
   if (Array.isArray(value)) return value.filter((item) => typeof item === "string").join(", ");
@@ -41,7 +42,16 @@ export default function CompanyProfile({ withinDashboard = false }) {
       router.replace("/signin");
       return;
     }
-    setUser(getUserInfo(token));
+    try {
+      const claims = jwtDecode(token);
+      setUser({
+        name: displayValue(claims.name) || [claims.given_name, claims.family_name].filter((value) => typeof value === "string").join(" ") || displayValue(claims.preferred_username),
+        email: displayValue(claims.email),
+      });
+    } catch {
+      router.replace("/signin");
+      return;
+    }
     const accountId = localStorage.getItem("selectedAccountId");
     if (!accountId) {
       setLoading(false);
@@ -54,16 +64,33 @@ export default function CompanyProfile({ withinDashboard = false }) {
     setError("");
     async function loadCompany() {
       try {
-        const response = await GetAccounts();
-        if (response.errors || !Array.isArray(response.data)) throw new Error("Unable to load company details. Please try again.");
-        const account = response.data.find((item) => String(item.id) === accountId || item.external_id === accountId);
-        if (!account) throw new Error("This company account is no longer available. Please select another account.");
-        if (!account.external_id) throw new Error("The organization external ID is unavailable. Please select another account.");
-        const organizationResponse = await GetOrganization(account.external_id);
+        let account = null;
+        let externalId = accountId;
+        // Current selections already contain the external ID. Resolve only
+        // older numeric selections through the authenticated account list.
+        if (/^\d+$/.test(accountId)) {
+          const response = await GetAccounts();
+          if (response.errors || !Array.isArray(response.data)) throw new Error("Unable to load company details. Please try again.");
+          account = response.data.find((item) => String(item.id) === accountId);
+          if (!account) throw new Error("This company account is no longer available. Please select another account.");
+          if (!account.external_id) throw new Error("The organization external ID is unavailable. Please select another account.");
+          externalId = account.external_id;
+        }
+        const organizationResponse = await GetOrganization(externalId);
         const organization = organizationResponse.data?.data ?? organizationResponse.data;
+        if (!organization || typeof organization !== "object" || Array.isArray(organization) || organizationResponse.data?.error) {
+          throw new Error(organizationResponse.data?.error || "Unable to load company details. Please try again.");
+        }
         if (!cancelled) {
           const phone = organization.phone_number || "";
-          setCompany({ ...account, phone_number: phone });
+          setCompany({
+            ...account,
+            ...organization,
+            id: account?.id ?? accountId,
+            external_id: externalId,
+            name: organization.name || account?.name || localStorage.getItem("selectedAccountName"),
+            phone_number: phone,
+          });
           setPhoneNumber(phone);
           setPhoneError("");
           setPhoneSaved(false);
@@ -111,9 +138,9 @@ export default function CompanyProfile({ withinDashboard = false }) {
   const details = [
     ["Company name", displayValue(company?.name)],
     ["Account ID", displayValue(company?.id)],
-    ["Company email", displayValue(attributes.emails)],
+    ["Company email", displayValue(attributes.emails) || displayValue(company?.created_by)],
     ["Company phone", displayValue(company?.phone_number)],
-    ["Description", displayValue(attributes.description)],
+    ["Description", displayValue(attributes.description) || displayValue(company?.description)],
   ];
 
   return (
@@ -165,7 +192,7 @@ export default function CompanyProfile({ withinDashboard = false }) {
                   ))}
                 </dl>
                 <form onSubmit={handleSavePhone} noValidate className="mt-6 space-y-3 border-t border-gray-200 pt-6">
-                  <label htmlFor="company-phone-number" className="block text-sm font-medium">Phone number (optional)</label>
+                  <label htmlFor="company-phone-number" className="block text-sm font-medium">Phone number</label>
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <input
                       id="company-phone-number"
@@ -188,10 +215,10 @@ export default function CompanyProfile({ withinDashboard = false }) {
                       {savingPhone ? "Saving..." : "Save phone number"}
                     </button>
                   </div>
-                  <p id="company-phone-help" className="text-xs text-gray-500">Use E.164 format, e.g. +254712345678. Leave blank to clear.</p>
                   {phoneError && <p id="company-phone-error" className="text-sm text-red-600" role="alert">{phoneError}</p>}
                   {phoneSaved && <p className="text-sm text-green-700" role="status">Phone number saved.</p>}
                 </form>
+                <NotificationEmailSetting />
               </>
             )}
           </section>
@@ -225,6 +252,7 @@ export default function CompanyProfile({ withinDashboard = false }) {
                     <span className="rounded bg-[#F1F2F3] px-2 py-1 text-xs text-gray-500">PDF</span>
                   </div>
                   <h3 className="font-medium">{document.title}</h3>
+                  <p className="mt-2 text-sm text-gray-500">Effective from {document.effectiveDate}.</p>
                   <p className="mt-2 mb-4 flex-1 text-sm leading-6 text-gray-500">{document.description}</p>
                   <a href={document.href} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-xl bg-[#090A29] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus-visible:outline-[#E88A17]" aria-label={`Open ${document.title} in a new tab`}>Read Document <ExternalLink size={15} /></a>
                 </article>
