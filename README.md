@@ -32,9 +32,9 @@ NEXT_PUBLIC_PEAKWHATSAPP_API_BASE_URL=https://peakwhatsappdev-1048592730476.euro
 
 This is the default base URL. Account details load from `/api/v2/accounts/{external_id}`, where `external_id` is the selected account's `selectedAccountId`. The Account section displays the returned details, and template browsing uses that account's `meta_connection_id`. All requests use the current user's session bearer token. There is no fallback connection ID; organizations without a Meta connection are prompted to connect WhatsApp. Account details refresh after embedded signup and can also be refreshed manually. Switching organizations clears account details and templates from the previous organization.
 
-Templates load 25 at a time using the API's pagination cursors. Search and filters apply to the current page. Template creation and business profile editing remain in preview.
+Templates load 25 at a time using the API's pagination cursors. Search and filters apply to the current page. Template creation supports text, JPEG/PNG, MP4, PDF, and copy-code authentication templates. Submission checks the live connection status and uses the selected account's Meta connection. Review samples are uploaded as raw files to `/template-media`; no browser Cloudinary credentials are used. Positional variables require review examples. Successful submission displays Meta's review status and refreshes the list; it does not imply approval. Uncertain outcomes are reconciled by name and language before any explicit retry, and creation POSTs are never automatically retried. Business profile editing remains in preview.
 
-Run the Tech Provider checks with `node --test tests/embedded-signup.test.cjs tests/tech-provider-ui.test.cjs tests/tech-provider-templates.test.cjs tests/tech-provider-account.test.cjs`.
+Run the Tech Provider checks with `node --test tests/embedded-signup.test.cjs tests/tech-provider-ui.test.cjs tests/tech-provider-templates.test.cjs tests/tech-provider-account.test.cjs tests/tech-provider-creation.test.cjs`.
 
 ## Learn More
 
