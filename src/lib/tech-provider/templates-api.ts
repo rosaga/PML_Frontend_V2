@@ -1,6 +1,6 @@
 import { getToken } from "@/utils/auth";
 import type { Template } from "@/lib/whatsapp/whatsapp-api";
-import { TECH_PROVIDER_API_BASE_URL, TECH_PROVIDER_CONNECTION_ID } from "./config";
+import { TECH_PROVIDER_API_BASE_URL } from "./config";
 
 export type TechProviderTemplate = Template & {
   id: string;
@@ -22,15 +22,16 @@ export interface TemplatesResponse {
   paging: TemplatePaging;
 }
 
-export async function fetchTechProviderTemplates({ after, before, signal }: {
+export async function fetchTechProviderTemplates(connectionId: string, { after, before, signal }: {
   after?: string;
   before?: string;
   signal?: AbortSignal;
 } = {}): Promise<TemplatesResponse> {
+  if (!connectionId.trim()) throw new Error("This WhatsApp account does not have a Meta connection for templates.");
   const token = getToken();
   if (!token) throw new Error("Please sign in again to load templates.");
 
-  const url = new URL(`${TECH_PROVIDER_API_BASE_URL}/api/v2/meta/connections/${encodeURIComponent(TECH_PROVIDER_CONNECTION_ID)}/templates`);
+  const url = new URL(`${TECH_PROVIDER_API_BASE_URL}/api/v2/meta/connections/${encodeURIComponent(connectionId)}/templates`);
   url.searchParams.set("limit", "25");
   if (after) url.searchParams.set("after", after);
   else if (before) url.searchParams.set("before", before);

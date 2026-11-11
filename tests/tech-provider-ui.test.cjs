@@ -13,7 +13,7 @@ const resolveLocal = (specifier, importer) => {
   return [base, ...[".tsx", ".ts", ".jsx", ".js"].map((extension) => base + extension)].find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
 };
 
-test("Tech Provider screens use only the dedicated templates transport and no Bulk WhatsApp providers", () => {
+test("Tech Provider screens use only dedicated account and template transports and no Bulk WhatsApp providers", () => {
   const visited = new Set();
   function audit(filename) {
     if (visited.has(filename)) return;
@@ -37,7 +37,7 @@ test("Tech Provider screens use only the dedicated templates transport and no Bu
       if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
         const expression = node.expression.getText(source);
         if (/(^|\.)(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)$/.test(expression)) {
-          assert.equal(filename, path.join(root, "src/lib/tech-provider/templates-api.ts"), `Unexpected API transport ${expression} in ${filename}`);
+          assert.ok(["templates-api.ts", "account-api.ts"].some((name) => filename === path.join(root, "src/lib/tech-provider", name)), `Unexpected API transport ${expression} in ${filename}`);
           assert.equal(expression, "fetch");
         }
       }
