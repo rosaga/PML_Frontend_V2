@@ -119,12 +119,13 @@ export interface TemplatesResponse {
   paging: TemplatePaging;
 }
 
-export async function fetchTechProviderTemplates(connectionId: string, { after, before, signal, name, language }: {
+export async function fetchTechProviderTemplates(connectionId: string, { after, before, signal, name, language, status }: {
   after?: string;
   before?: string;
   signal?: AbortSignal;
   name?: string;
   language?: string;
+  status?: string;
 } = {}): Promise<TemplatesResponse> {
   if (!connectionId.trim()) throw new Error("This WhatsApp account does not have a Meta connection for templates.");
   const token = getToken();
@@ -134,6 +135,7 @@ export async function fetchTechProviderTemplates(connectionId: string, { after, 
   url.searchParams.set("limit", "25");
   if (name) url.searchParams.set("name", name);
   if (language) url.searchParams.set("language", language);
+  if (status) url.searchParams.set("status", status);
   if (after) url.searchParams.set("after", after);
   else if (before) url.searchParams.set("before", before);
 
