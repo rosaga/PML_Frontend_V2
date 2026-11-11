@@ -19,6 +19,7 @@ import { TechProviderHeader, useTechProviderWorkspace } from "./dashboard-shell"
 import { quickstartFeatures, TECH_PROVIDER_BASE as BASE } from "./navigation";
 import { Choice, EmptyTable, Field, PendingButton, PreviewNotice, SearchToolbar } from "./preview-ui";
 import { TemplatesScreen } from "./templates-screen";
+import { AccountDetails } from "./account-details";
 import { CampaignComposer, MessageComposer } from "./message-composer";
 import { AutomationEditor } from "./automation-editor";
 
@@ -27,12 +28,14 @@ function Page({ title, description, children, live = false }: { title: string; d
 }
 
 function Quickstart() {
-  const { connected } = useTechProviderWorkspace();
+  const { connected, accountLoading, accountError, refreshAccount } = useTechProviderWorkspace();
+  const connectionTitle = accountLoading ? "Checking WhatsApp account" : accountError ? "Could not load WhatsApp account" : connected ? "WhatsApp Connected" : "Connect WhatsApp Business";
+  const connectionDescription = accountLoading ? "Loading details for your selected organization." : accountError || (connected ? "Your WhatsApp Business account is connected. Explore your Tech Provider workspace below." : "Connect your business directly through Meta embedded signup.");
   return <Page title="Dashboard" description="WhatsApp Business Messaging Platform" live>
     <Card className="border-warning/50 bg-warning/5"><CardContent className="flex flex-wrap items-center gap-4">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/20"><Settings className="h-5 w-5 text-warning" /></div>
-      <div className="min-w-0 flex-1"><h3 className="font-medium">{connected ? "WhatsApp Connected" : "Connect WhatsApp Business"}</h3><p className="mt-1 text-sm text-muted-foreground">{connected ? "Embedded signup completed during this visit. Explore your Tech Provider workspace below." : "Connect your business directly through Meta embedded signup."}</p></div>
-      <Link href={`${BASE}/embedded-signup`} className="inline-flex items-center gap-1 text-sm font-medium text-primary">{connected ? "View Connection" : "Connect Now"}<ArrowRight className="h-4 w-4" /></Link>
+      <div className="min-w-0 flex-1"><h3 className="font-medium">{connectionTitle}</h3><p className="mt-1 text-sm text-muted-foreground">{connectionDescription}</p></div>
+      {!accountLoading && (accountError ? <Button variant="outline" onClick={refreshAccount}>Retry account details</Button> : <Link href={`${BASE}/${connected ? "settings/account" : "embedded-signup"}`} className="inline-flex items-center gap-1 text-sm font-medium text-primary">{connected ? "View Connection" : "Connect Now"}<ArrowRight className="h-4 w-4" /></Link>)}
     </CardContent></Card>
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{quickstartFeatures.map((feature) => <Link key={feature.path} href={`${BASE}/${feature.path}`}><Card className="h-full transition-all hover:border-primary/50 hover:shadow-md"><CardHeader><div className={`flex h-12 w-12 items-center justify-center rounded-lg ${feature.color}`}><feature.icon className="h-6 w-6" /></div><CardTitle className="mt-4">{feature.name}</CardTitle><CardDescription>{feature.description}</CardDescription></CardHeader><CardContent><span className="flex items-center text-sm text-primary">{feature.path === "embedded-signup" ? "Connect" : "Open"}<ArrowRight className="ml-1 h-4 w-4" /></span></CardContent></Card></Link>)}</div>
     <div role="note" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">Embedded signup and template browsing are available. Sending, saving, and payments are coming soon.</div>
@@ -158,9 +161,8 @@ function WebhookSettings() {
 }
 
 function AccountSettings() {
-  return <div className="max-w-2xl space-y-6"><Card><CardHeader><CardTitle>Business Information</CardTitle><CardDescription>Manage your WhatsApp business profile</CardDescription></CardHeader><CardContent className="space-y-5"><Field label="Business Name"><Input aria-label="Business Name" placeholder="Enter business name" /></Field><Field label="About"><Input aria-label="Business About" placeholder="A short introduction to your business" /></Field><Field label="Description"><Textarea aria-label="Business Description" placeholder="Describe your business" /></Field><Field label="Business Email"><Input type="email" aria-label="Business Email" placeholder="hello@example.com" /></Field><Field label="Website"><Input type="url" aria-label="Business Website" placeholder="https://example.com" /></Field><PendingButton>Save Changes</PendingButton></CardContent></Card>
+  return <div className="max-w-2xl space-y-6"><AccountDetails /><PreviewNotice /><Card><CardHeader><CardTitle>Business Information</CardTitle><CardDescription>Manage your WhatsApp business profile</CardDescription></CardHeader><CardContent className="space-y-5"><Field label="Business Name"><Input aria-label="Business Name" placeholder="Enter business name" /></Field><Field label="About"><Input aria-label="Business About" placeholder="A short introduction to your business" /></Field><Field label="Description"><Textarea aria-label="Business Description" placeholder="Describe your business" /></Field><Field label="Business Email"><Input type="email" aria-label="Business Email" placeholder="hello@example.com" /></Field><Field label="Website"><Input type="url" aria-label="Business Website" placeholder="https://example.com" /></Field><PendingButton>Save Changes</PendingButton></CardContent></Card>
     <Card><CardHeader><CardTitle>WhatsApp Connection</CardTitle><CardDescription>Connect directly to Meta using embedded signup</CardDescription></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Connect your business portfolio, WhatsApp Business Account, and phone number through Meta.</p><Button asChild><Link href={`${BASE}/embedded-signup`}>Open Embedded Signup<ArrowRight className="h-4 w-4" /></Link></Button></CardContent></Card>
-    <Card><CardHeader><CardTitle>Account Information</CardTitle></CardHeader><CardContent className="space-y-3">{["Business ID", "WABA ID", "Phone Number ID", "Display Phone Number", "Verified Name"].map((label) => <div key={label} className="flex items-center justify-between gap-3 border-b pb-3 text-sm"><span>{label}</span><span className="text-muted-foreground">—</span></div>)}<p className="text-xs text-muted-foreground">Account details will be available when account management is connected.</p></CardContent></Card>
   </div>;
 }
 
@@ -190,8 +192,8 @@ export function TechProviderScreen({ page, initialTab }: { page: string; initial
     case "automations/reporting": return <AutomationReporting />;
     case "settings/topups": return <TopUps />;
     case "webhook": return <Page title="Webhook Configuration" description="Configure webhook notifications for your WhatsApp account"><WebhookSettings /></Page>;
-    case "settings": return <Page title="Settings" description="Manage your account and WhatsApp preferences"><Tabs defaultValue="account"><TabsList className="mb-6"><TabsTrigger value="account">Account</TabsTrigger><TabsTrigger value="webhook">Webhooks</TabsTrigger></TabsList><TabsContent value="account"><AccountSettings /></TabsContent><TabsContent value="webhook"><WebhookSettings /></TabsContent></Tabs></Page>;
-    case "user": case "settings/account": return <Page title="Account Settings" description="Configure your WhatsApp account and business profile"><AccountSettings /></Page>;
+    case "settings": return <Page title="Settings" description="Manage your account and WhatsApp preferences" live><Tabs defaultValue="account"><TabsList className="mb-6"><TabsTrigger value="account">Account</TabsTrigger><TabsTrigger value="webhook">Webhooks</TabsTrigger></TabsList><TabsContent value="account"><AccountSettings /></TabsContent><TabsContent value="webhook" className="space-y-6"><PreviewNotice /><WebhookSettings /></TabsContent></Tabs></Page>;
+    case "user": case "settings/account": return <Page title="Account Settings" description="Configure your WhatsApp account and business profile" live><AccountSettings /></Page>;
     default: return null;
   }
 }

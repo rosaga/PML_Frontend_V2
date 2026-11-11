@@ -22,18 +22,19 @@ This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-opti
 
 ## Tech Provider
 
-Tech Provider is available to every signed-in user with a selected organization. Embedded signup and template browsing share the API base URL configured in `src/lib/tech-provider/config.ts`.
+Tech Provider is available to every signed-in user with a selected organization. Embedded signup, account details, and template browsing share the API base URL configured in `src/lib/tech-provider/config.ts`.
 
 Optional build-time environment variables:
 
 ```dotenv
 NEXT_PUBLIC_PEAKWHATSAPP_API_BASE_URL=https://peakwhatsappdev-1048592730476.europe-west4.run.app
-NEXT_PUBLIC_TECH_PROVIDER_CONNECTION_ID=e1fb3299-cfda-4e3b-a78b-39b14cacb51b
 ```
 
-These values are the defaults. Template browsing uses this configured connection and the current user's session bearer token; it does not embed a token or select a different connection per organization. Templates load 25 at a time using the API's pagination cursors. Search and filters apply to the current page. Template creation remains in preview.
+This is the default base URL. Account details load from `/api/v2/accounts/{external_id}`, where `external_id` is the selected account's `selectedAccountId`. The Account section displays the returned details, and template browsing uses that account's `meta_connection_id`. All requests use the current user's session bearer token. There is no fallback connection ID; organizations without a Meta connection are prompted to connect WhatsApp. Account details refresh after embedded signup and can also be refreshed manually. Switching organizations clears account details and templates from the previous organization.
 
-Run the Tech Provider checks with `node --test tests/embedded-signup.test.cjs tests/tech-provider-ui.test.cjs tests/tech-provider-templates.test.cjs`.
+Templates load 25 at a time using the API's pagination cursors. Search and filters apply to the current page. Template creation and business profile editing remain in preview.
+
+Run the Tech Provider checks with `node --test tests/embedded-signup.test.cjs tests/tech-provider-ui.test.cjs tests/tech-provider-templates.test.cjs tests/tech-provider-account.test.cjs`.
 
 ## Learn More
 

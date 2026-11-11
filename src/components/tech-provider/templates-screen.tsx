@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { Button } from "@/components/whatsapp/ui/button";
@@ -11,11 +12,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/whatsapp/ui/dialog";
 import { WhatsAppPreview } from "@/components/whatsapp/templates/whatsapp-preview";
 import { fetchTechProviderTemplates, type TechProviderTemplate, type TemplatesResponse } from "@/lib/tech-provider/templates-api";
-import { TechProviderHeader } from "./dashboard-shell";
+import { TechProviderHeader, useTechProviderWorkspace } from "./dashboard-shell";
+import { TECH_PROVIDER_BASE } from "./navigation";
 import { Choice, PreviewNotice } from "./preview-ui";
 import { TemplateEditor } from "./template-editor";
 
 export function TemplatesScreen() {
+  const { account, accountLoading, accountError, refreshAccount } = useTechProviderWorkspace();
+  let content;
+  if (accountLoading) {
+    content = <div role="status" className="flex items-center justify-center gap-2 py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Loading WhatsApp account…</div>;
+  } else if (accountError) {
+    content = <div role="alert" className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"><p>{accountError}</p><Button variant="outline" onClick={refreshAccount}>Retry account details</Button></div>;
+  } else if (!account?.meta_connection_id?.trim()) {
+    content = <Card className="space-y-4 p-6"><p className="font-medium">{account ? "No Meta connection available for this account." : "No WhatsApp account connected to this organization."}</p><p className="text-sm text-muted-foreground">Connect WhatsApp Business to browse your templates.</p><div className="flex flex-wrap gap-3"><Button asChild><Link href={`${TECH_PROVIDER_BASE}/embedded-signup`}>Connect WhatsApp</Link></Button><Button variant="outline" onClick={refreshAccount}>Refresh account details</Button></div></Card>;
+  } else {
+    content = <TemplateBrowser key={`${account.external_id}:${account.meta_connection_id}`} connectionId={account.meta_connection_id} />;
+  }
+  return <><TechProviderHeader title="Message Templates" description="Create and manage your WhatsApp message templates" /><div className="space-y-6 p-4 sm:p-6">{content}</div></>;
+}
+
+export function TemplateBrowser({ connectionId }: { connectionId: string }) {
   const [view, setView] = useState("list");
   const [data, setData] = useState<TemplatesResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,14 +49,14 @@ export function TemplatesScreen() {
     setLoading(true);
     setError("");
     setData(null);
-    fetchTechProviderTemplates({ ...cursor, signal: controller.signal })
+    fetchTechProviderTemplates(connectionId, { ...cursor, signal: controller.signal })
       .then((result) => { if (!controller.signal.aborted) setData(result); })
       .catch((reason) => {
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Could not load templates. Please try again.");
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [cursor, refresh]);
+  }, [connectionId, cursor, refresh]);
 
   const templates = data?.templates.filter((template) =>
     template.name.toLowerCase().includes(search.trim().toLowerCase()) &&
@@ -48,8 +65,6 @@ export function TemplatesScreen() {
   ) || [];
 
   return <>
-    <TechProviderHeader title="Message Templates" description="Create and manage your WhatsApp message templates" />
-    <div className="space-y-6 p-4 sm:p-6">
       <Tabs value={view} onValueChange={setView}>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <TabsList><TabsTrigger value="list">All Templates</TabsTrigger><TabsTrigger value="create"><Plus className="mr-2 h-4 w-4" />Create New</TabsTrigger></TabsList>
@@ -90,7 +105,6 @@ export function TemplatesScreen() {
         </TabsContent>
         <TabsContent value="create" className="space-y-5"><PreviewNotice /><TemplateEditor /></TabsContent>
       </Tabs>
-    </div>
     <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) setSelected(null); }}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{selected?.name || "Template details"}</DialogTitle><DialogDescription>{selected && `${selected.category} · ${selected.language} · ${selected.status}`}</DialogDescription></DialogHeader>

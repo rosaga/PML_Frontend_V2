@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftRight, BarChart3, CheckCircle, ChevronDown, Inbox, LayoutDashboard,
   KeyRound, LayoutGrid, Loader2, LogOut, Menu, PlugZap, X,
@@ -13,31 +13,52 @@ import { cn } from "@/lib/whatsapp/utils";
 import { getToken, signOutUser } from "@/utils/auth";
 import { getUserInfo } from "@/utils/decodeToken";
 import { navigationGroups, TECH_PROVIDER_BASE as BASE } from "./navigation";
+import { useTechProviderAccount } from "@/lib/tech-provider/use-account";
+import type { TechProviderAccount } from "@/lib/tech-provider/account-api";
 
-const WorkspaceContext = createContext({ connected: false, markConnected: () => {} });
+const WorkspaceContext = createContext<{
+  account: TechProviderAccount | null;
+  accountLoading: boolean;
+  accountError: string;
+  refreshAccount: () => void;
+  connected: boolean;
+  markConnected: () => void;
+}>({ account: null, accountLoading: true, accountError: "", refreshAccount: () => {}, connected: false, markConnected: () => {} });
 export const useTechProviderWorkspace = () => useContext(WorkspaceContext);
 
 // Deliberately independent of Bulk WhatsApp's account, polling and WebSocket providers.
 export function TechProviderShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
+  const [organizationId, setOrganizationId] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [connected, setConnected] = useState(false);
-  const markConnected = useCallback(() => setConnected(true), []);
+  const accountState = useTechProviderAccount(organizationId);
+  const connected = accountState.account?.is_active === true;
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (!getToken()) return;
-    if (!localStorage.getItem("selectedAccountId")) {
-      router.replace("/user-orgs");
-      return;
-    }
-    setAuthorized(true);
+    const syncOrganization = () => {
+      if (!getToken()) { setOrganizationId(""); return; }
+      const selected = localStorage.getItem("selectedAccountId") || "";
+      setOrganizationId(selected);
+      if (!selected) router.replace("/user-orgs");
+    };
+    syncOrganization();
+    window.addEventListener("storage", syncOrganization);
+    window.addEventListener("focus", syncOrganization);
+    window.addEventListener("pageshow", syncOrganization);
+    return () => {
+      window.removeEventListener("storage", syncOrganization);
+      window.removeEventListener("focus", syncOrganization);
+      window.removeEventListener("pageshow", syncOrganization);
+    };
+  }, [pathname, router]);
+
+  useEffect(() => {
     setMobileOpen(false);
     const activeGroup = navigationGroups.find((group) => group.items.some((item) => pathname === `${BASE}/${item.path}`));
     if (activeGroup) setExpanded((previous) => ({ ...previous, [activeGroup.label]: true }));
-  }, [pathname, router]);
+  }, [pathname]);
 
   useEffect(() => {
     const open = () => setMobileOpen(true);
@@ -57,7 +78,7 @@ export function TechProviderShell({ children }: { children: ReactNode }) {
     };
   }, [mobileOpen]);
 
-  if (!authorized) return <div className="flex min-h-screen items-center justify-center gap-2 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Checking access</div>;
+  if (!organizationId) return <div className="flex min-h-screen items-center justify-center gap-2 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Checking access</div>;
 
   const linkClass = (active: boolean) => cn(
     "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
@@ -66,7 +87,7 @@ export function TechProviderShell({ children }: { children: ReactNode }) {
   const quickstartActive = pathname === BASE || pathname === `${BASE}/quickstart`;
 
   return (
-    <WorkspaceContext.Provider value={{ connected, markConnected }}>
+    <WorkspaceContext.Provider key={organizationId} value={{ ...accountState, connected, markConnected: accountState.refreshAccount }}>
       <div className="min-h-screen bg-background">
         {mobileOpen && <button aria-label="Close navigation" className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />}
         <aside aria-label="Tech Provider navigation" className={cn("fixed left-0 top-0 z-50 h-dvh w-64 border-r border-border bg-sidebar shadow-lg transition-transform duration-300 lg:translate-x-0", mobileOpen ? "translate-x-0" : "-translate-x-full")}>

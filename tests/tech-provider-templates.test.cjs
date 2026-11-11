@@ -20,21 +20,22 @@ const template = {
   components: [{ type: "HEADER", format: "TEXT", text: "Rubedo Test" }, { type: "BODY", text: "This is an initial rubedo test template" }],
 };
 
-function api(fetch, { token = "current-session-token", env = {} } = {}) {
+function api(fetch, { token = "current-session-token", env = {}, connectionId = "account-meta-connection" } = {}) {
   const config = loadModule("src/lib/tech-provider/config.ts", { process: { env } });
-  return loadModule("src/lib/tech-provider/templates-api.ts", {
+  const client = loadModule("src/lib/tech-provider/templates-api.ts", {
     fetch,
     require(name) {
       if (name === "@/utils/auth") return { getToken: () => token };
       if (name === "./config") return config;
       throw new Error(`Unexpected runtime dependency: ${name}`);
     },
-  }).fetchTechProviderTemplates;
+  });
+  return (options) => client.fetchTechProviderTemplates(connectionId, options);
 }
 
-test("loads the supplied connection's templates with the current session token and preserves components", async () => {
+test("loads the account's connection templates with the current session token and preserves components", async () => {
   const fetchTemplates = api(async (url, options) => {
-    assert.equal(url, "https://peakwhatsappdev-1048592730476.europe-west4.run.app/api/v2/meta/connections/e1fb3299-cfda-4e3b-a78b-39b14cacb51b/templates?limit=25");
+    assert.equal(url, "https://peakwhatsappdev-1048592730476.europe-west4.run.app/api/v2/meta/connections/account-meta-connection/templates?limit=25");
     assert.equal(options.headers.Authorization, "Bearer current-session-token");
     assert.equal(options.cache, "no-store");
     return Response.json({ templates: [template], paging: { before: "first", after: "last", has_next: false, has_previous: false } });
@@ -57,13 +58,17 @@ test("supports forward and backward opaque cursors, cancellation, and configured
     assert.equal(url.searchParams.get(key), value);
     assert.equal(url.searchParams.has(key === "after" ? "before" : "after"), false);
     return Response.json({ templates: [], paging: { has_next: false, has_previous: true } });
-  }, { env: { NEXT_PUBLIC_PEAKWHATSAPP_API_BASE_URL: "https://provider.example///", NEXT_PUBLIC_TECH_PROVIDER_CONNECTION_ID: "configured-connection" } });
+  }, { connectionId: "configured-connection", env: { NEXT_PUBLIC_PEAKWHATSAPP_API_BASE_URL: "https://provider.example///" } });
   for (const cursor of cursors) await fetchTemplates({ ...cursor, signal: controller.signal });
   assert.equal(index, 2);
 });
 
 test("missing sessions prevent requests", async () => {
   await assert.rejects(api(() => assert.fail("Must not request without a session"), { token: null })(), /sign in again/);
+});
+
+test("a missing connection never falls back to another organization's connection", async () => {
+  await assert.rejects(api(() => assert.fail("Must not request without a connection"), { connectionId: "" })(), /does not have a Meta connection/);
 });
 
 test("API errors, invalid responses, network failures, and cancellation are not treated as empty lists", async () => {
@@ -104,14 +109,14 @@ function screenHarness() {
       }
     },
   };
-  const { TemplatesScreen } = loadModule("src/components/tech-provider/templates-screen.tsx", {
+  const { TemplateBrowser } = loadModule("src/components/tech-provider/templates-screen.tsx", {
     AbortController,
     require(name) {
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "fragment" };
       if (name === "@/lib/tech-provider/templates-api") return {
-        fetchTechProviderTemplates(options) {
-          return new Promise((resolve, reject) => requests.push({ options, resolve, reject }));
+        fetchTechProviderTemplates(connectionId, options) {
+          return new Promise((resolve, reject) => requests.push({ connectionId, options, resolve, reject }));
         },
       };
       return new Proxy({}, { get: (_target, key) => key });
@@ -121,11 +126,11 @@ function screenHarness() {
   const text = (node) => typeof node === "string" || typeof node === "number" ? String(node) : node && typeof node === "object" ? [node.props?.children].flat(Infinity).map(text).join(" ") : "";
   const render = () => {
     cursor = 0;
-    let tree = TemplatesScreen();
+    let tree = TemplateBrowser({ connectionId: "selected-account-connection" });
     if (effects.length) {
       effects.splice(0).forEach((effect) => effect());
       cursor = 0;
-      tree = TemplatesScreen();
+      tree = TemplateBrowser({ connectionId: "selected-account-connection" });
     }
     return tree;
   };
@@ -143,6 +148,7 @@ const flush = async () => { for (let i = 0; i < 4; i++) await new Promise(setImm
 test("template screen renders results, filters, previews components, and follows cursor paging", async () => {
   const h = screenHarness();
   assert.match(h.text(), /Loading templates/);
+  assert.equal(h.requests[0].connectionId, "selected-account-connection");
   h.requests[0].resolve({ templates: [template], paging: { after: "next-cursor", has_next: true, has_previous: false } });
   await flush();
   assert.match(h.text(), /rubedo_template.*MARKETING.*en.*APPROVED/);
