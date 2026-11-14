@@ -16,7 +16,6 @@ import {
   BarChart3,
   Users,
   LogOut,
-  Zap,
   ChevronDown,
   GitBranch,
   PieChart,
@@ -26,6 +25,7 @@ import {
   MessageSquare,
   ClipboardList,
   Megaphone,
+  Wallet,
   X,
 } from "lucide-react";
 
@@ -52,7 +52,7 @@ const chatbotSubItems = [
 
 const settingsSubItems = [
   { name: "Account", href: `${BASE}/settings/account`, icon: Settings },
-  { name: "Top Ups", href: `${BASE}/settings/topups`, icon: Zap },
+  { name: "Wallet", href: `${BASE}/settings/topups`, icon: Wallet },
 ];
 
 export function Sidebar({

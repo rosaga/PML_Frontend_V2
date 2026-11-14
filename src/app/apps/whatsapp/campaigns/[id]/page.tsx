@@ -136,6 +136,32 @@ function getErrorMessage(data: any, fallback: string) {
   return data?.error?.message || data?.message || data?.error || fallback;
 }
 
+// The stats endpoint has returned a few shapes over time; accept all of them.
+function extractCampaigns(data: any): Campaign[] {
+  const candidates = [
+    data?.data,
+    data?.data?.campaigns,
+    data?.data?.data,
+    data?.data?.items,
+    data?.campaigns,
+    data?.items,
+    data,
+  ];
+  for (const c of candidates) {
+    if (Array.isArray(c)) return c as Campaign[];
+  }
+  return [];
+}
+
+function extractTotalPages(data: any, limit: number): number | null {
+  const p = data?.pagination ?? data?.meta ?? data?.data?.pagination ?? data ?? {};
+  const totalPages = p.total_pages ?? p.totalPages ?? p.pages;
+  if (typeof totalPages === "number") return totalPages;
+  const total = p.total ?? p.total_count ?? p.totalCount ?? p.count;
+  if (typeof total === "number" && limit > 0) return Math.ceil(total / limit);
+  return null;
+}
+
 function DeliveryBar({ campaign }: { campaign: Campaign }) {
   const total = campaign.total_messages;
   if (total === 0) return null;
@@ -189,6 +215,7 @@ function CampaignDetailContent() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [buttons, setButtons] = useState<CampaignButton[]>([]);
   const [buttonsLoading, setButtonsLoading] = useState(false);
   const [buttonsError, setButtonsError] = useState("");
@@ -200,35 +227,78 @@ function CampaignDetailContent() {
   const effectiveOrganizationId = organizationExternalId || organizationId;
 
   useEffect(() => {
-    if (contextLoading || !organizationId) return;
+    if (contextLoading || !effectiveOrganizationId) return;
+
+    let cancelled = false;
+    const PAGE_SIZE = 100;
+    const MAX_PAGES = 50; // safety cap: up to 5,000 campaigns
 
     async function load() {
       setLoading(true);
+      setNotFound(false);
+      setLoadError("");
+      setCampaign(null);
+
       try {
-        // Fetch all campaigns (use high limit) to find by ID
-        const res = await fetch(
-          `/api/whatsapp/peakdata/campaign/stats?organizationId=${encodeURIComponent(organizationId)}&page=1&limit=100`,
-          { cache: "no-store" }
-        );
-        const data = await res.json();
-        if (Array.isArray(data?.data)) {
-          const found = data.data.find((c: Campaign) => String(c.id) === String(id));
-          if (found) {
-            setCampaign(found);
-          } else {
-            setNotFound(true);
+        // Walk every page of the stats endpoint until we find the campaign.
+        // Previously only page 1 was checked, so any campaign outside the
+        // first 100 (or any response not shaped as { data: [...] }) showed
+        // "Campaign not found".
+        for (let page = 1; page <= MAX_PAGES; page++) {
+          // The stats route rejects plain `organizationId` with
+          // "An organization external ID is required", so send the ID under
+          // every name the route might read (query params + header).
+          const params = new URLSearchParams({
+            organizationId: effectiveOrganizationId,
+            organizationExternalId: effectiveOrganizationId,
+            organization_external_id: effectiveOrganizationId,
+            externalId: effectiveOrganizationId,
+            page: String(page),
+            limit: String(PAGE_SIZE),
+          });
+          const res = await fetch(`/api/whatsapp/peakdata/campaign/stats?${params.toString()}`, {
+            cache: "no-store",
+            headers: {
+              "x-auth-token": localStorage.getItem("token") || "",
+              "x-organization-external-id": effectiveOrganizationId,
+              "x-organization-id": effectiveOrganizationId,
+            },
+          });
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            throw new Error(getErrorMessage(data, `Failed to load campaigns (HTTP ${res.status})`));
           }
+
+          const list = extractCampaigns(data);
+          const found = list.find((c) => String(c.id) === String(id));
+          if (found) {
+            if (!cancelled) setCampaign(found);
+            return;
+          }
+
+          const totalPages = extractTotalPages(data, PAGE_SIZE);
+          const isLastPage =
+            list.length === 0 ||
+            list.length < PAGE_SIZE ||
+            (totalPages !== null && page >= totalPages);
+          if (isLastPage) break;
         }
-      } catch (err) {
+
+        if (!cancelled) setNotFound(true);
+      } catch (err: any) {
         console.error("[campaign detail] error:", err);
-        setNotFound(true);
+        if (!cancelled) setLoadError(err?.message || "Failed to load campaign");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     load();
-  }, [contextLoading, organizationId, id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [contextLoading, effectiveOrganizationId, id]);
 
   useEffect(() => {
     if (contextLoading || !effectiveOrganizationId || !campaign) return;
@@ -306,12 +376,19 @@ function CampaignDetailContent() {
     );
   }
 
-  if (notFound || !campaign) {
+  if (loadError || notFound || !campaign) {
     return (
       <div className="min-h-screen">
         <Header title="Campaign Details" description="" />
         <div className="p-6">
-          <p className="text-muted-foreground text-sm">Campaign not found.</p>
+          {loadError ? (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {loadError}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">Campaign not found.</p>
+          )}
           <Button variant="ghost" size="sm" onClick={() => router.push("/apps/whatsapp/campaigns")} className="mt-3">
             <ArrowLeft className="h-4 w-4 mr-1.5" />
             Back to Campaigns
