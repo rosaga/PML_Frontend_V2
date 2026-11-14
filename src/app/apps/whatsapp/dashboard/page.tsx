@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Header } from "@/components/whatsapp/dashboard/header";
-import { BalanceCard } from "@/components/whatsapp/dashboard/balance-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { Input } from "@/components/whatsapp/ui/input";
@@ -182,9 +181,7 @@ function DashboardContent() {
         </div>
 
         {/* Hero Stat Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <BalanceCard />
-
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Total Sent", value: stats.totalSent, sub: "Outbound messages", color: "blue", icon: Send },
             { label: "Total Received", value: stats.totalReceived, sub: "Inbound messages", color: "purple", icon: MessageSquare },
