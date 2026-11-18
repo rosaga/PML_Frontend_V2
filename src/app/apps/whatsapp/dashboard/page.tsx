@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Header } from "@/components/whatsapp/dashboard/header";
@@ -64,11 +65,13 @@ function DashboardContent() {
     utility: 0, marketing: 0, authentication: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [messageError, setMessageError] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   const fetchStats = async (start?: string, end?: string) => {
     if (!organizationExternalId) return;
+    setMessageError("");
     setLoading(true);
     try {
       const formatDate = (d: string) => d ? new Date(d).toISOString() : "";
@@ -83,24 +86,24 @@ function DashboardContent() {
       const base = "/api/whatsapp/whatsapp-internal/messages/list";
 
       const responses = await Promise.all([
-        fetch(`${base}${buildQuery("")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__direction=OUTBOUND")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__direction=INBOUND")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__status=SENT")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__status=DELIVERED")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__status=READ")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__status=QUEUED")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__status=FAILED")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=SENT")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=DELIVERED")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=READ")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=FAILED")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__type=NOTIFICATION")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__type=FEEDBACK")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__type=RESPONSE")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__category=UTILITY")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__category=MARKETING")}`, { headers }),
-        fetch(`${base}${buildQuery("ilike__category=AUTHENTICATION")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__direction=OUTBOUND")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__direction=INBOUND")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__status=SENT")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__status=DELIVERED")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__status=READ")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__status=QUEUED")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__status=FAILED")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=SENT")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=DELIVERED")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=READ")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__direction=OUTBOUND&ilike__status=FAILED")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__type=NOTIFICATION")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__type=FEEDBACK")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__type=RESPONSE")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__category=UTILITY")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__category=MARKETING")}`, { headers }),
+        fetchMessageList(`${base}${buildQuery("ilike__category=AUTHENTICATION")}`, { headers }),
       ]);
 
       const data = await Promise.all(responses.map((r) => r.json()));
@@ -126,7 +129,7 @@ function DashboardContent() {
         authentication: data[17].count || 0,
       });
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      setMessageError(error instanceof Error ? error.message : "Failed to load message statistics.");
     } finally {
       setLoading(false);
     }
@@ -168,6 +171,7 @@ function DashboardContent() {
       <Header title="Message Analytics" description="Real-time WhatsApp message statistics with advanced filtering" />
 
       <div className="p-6 space-y-6">
+        {messageError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
         {/* Date Filters */}
         <div className="flex items-center gap-3 pb-4">
           <Input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} className="w-auto text-sm" />

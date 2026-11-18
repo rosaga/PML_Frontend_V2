@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
 import { useRouter } from "next/navigation";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
@@ -48,6 +49,7 @@ function ContactsContent() {
 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messageError, setMessageError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
@@ -58,10 +60,11 @@ function ContactsContent() {
 
   const fetchContacts = useCallback(async () => {
     if (!organizationId) return;
+    setMessageError("");
     setLoading(true);
     try {
       const apiSize = pageSize * 4;
-      const res = await fetch(
+      const res = await fetchMessageList(
         `/api/whatsapp/whatsapp-internal/messages/list?page=${page}&size=${apiSize}&orderby=created_at%20DESC`,
         { headers: { "x-organization-id": organizationId } },
       );
@@ -106,8 +109,10 @@ function ContactsContent() {
           (a, b) => new Date(b.last_active).getTime() - new Date(a.last_active).getTime(),
         ),
       );
-    } catch {
-      // ignore
+    } catch (error) {
+      setMessageError(error instanceof Error ? error.message : "Failed to load contact messages.");
+      setContacts([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -221,6 +226,7 @@ function ContactsContent() {
       />
 
       <div className="p-6">
+        {messageError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
         <Tabs defaultValue="active">
           <TabsList className="mb-5">
             <TabsTrigger value="active">Active Contacts</TabsTrigger>

@@ -158,10 +158,19 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     const autoVerify = async () => {
       setIsVerifying(true);
       try {
+        const token = getPmlToken();
+        if (!token) {
+          if (!cancelled) setPmlTokenExpired(true);
+          return;
+        }
         const peakResponse = await fetch(
-          `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?organization_external_id=${organizationId.trim()}`,
-          { method: "GET", headers: { "Content-Type": "application/json" } }
+          `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?organization_external_id=${encodeURIComponent(organizationId.trim())}`,
+          { method: "GET", cache: "no-store", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
         );
+        if (peakResponse.status === 401) {
+          if (!cancelled) setPmlTokenExpired(true);
+          return;
+        }
         const peakData = await peakResponse.json();
         if (!peakResponse.ok || peakData.status !== "success" || !peakData.data) return;
 

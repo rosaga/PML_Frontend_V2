@@ -1,3 +1,4 @@
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
 import { loadNames } from "@/lib/whatsapp/name-cache";
 
 export interface Recipient {
@@ -110,11 +111,9 @@ export async function fetchInboxMessages(
     orderby: "created_at DESC",
     ...extra,
   });
-  try {
-    const res = await fetch(`/api/whatsapp/whatsapp-internal/messages/list?${params}`, {
-      headers: { "x-organization-id": orgId },
-    });
-    const data = await res.json();
-    return Array.isArray(data?.data) ? data.data : [];
-  } catch { return []; }
+  const res = await fetchMessageList(`/api/whatsapp/whatsapp-internal/messages/list?${params}`, {
+    headers: { "x-organization-id": orgId },
+  });
+  const data = await res.json();
+  return Array.isArray(data?.data) ? data.data : [];
 }

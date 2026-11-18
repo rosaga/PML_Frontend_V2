@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
 import { useParams, useRouter } from "next/navigation";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
@@ -52,12 +53,14 @@ function ContactDetailContent() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [messageError, setMessageError] = useState("");
 
   const fetchMessages = useCallback(async () => {
     if (!organizationId) return;
+    setMessageError("");
     setLoadingMessages(true);
     try {
-      const res = await fetch(
+      const res = await fetchMessageList(
         `/api/whatsapp/whatsapp-internal/messages/list?eq__mobile_no=${encodeURIComponent(mobileNo)}&page=1&size=500`,
         { headers: { "x-organization-id": organizationId } },
       );
@@ -126,8 +129,9 @@ function ContactDetailContent() {
           }
         }
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      setMessageError(error instanceof Error ? error.message : "Failed to load contact messages.");
+      setMessages([]);
     } finally {
       setLoadingMessages(false);
     }
@@ -288,6 +292,7 @@ function ContactDetailContent() {
       </div>
 
       <div className="p-6 max-w-4xl mx-auto space-y-5">
+        {messageError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
 
         {/* ── Profile card ──────────────────────────────────────────────────────── */}
         <Card>

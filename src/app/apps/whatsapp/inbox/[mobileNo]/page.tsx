@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
 import { useParams, useRouter } from "next/navigation";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { sendMessage, type MessagePayload } from "@/lib/whatsapp/whatsapp-api";
@@ -94,6 +95,7 @@ export default function InboxChatPage() {
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [messageError, setMessageError] = useState("");
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState("");
 
@@ -301,7 +303,10 @@ export default function InboxChatPage() {
           setRecipients(sorted);
           refreshUnreadCount(organizationId);
         }
-      } catch { /* ignore */ }
+      } catch (error) {
+        setMessageError(error instanceof Error ? error.message : "Failed to load conversations.");
+        setRecipients([]);
+      }
     } else {
       // No cache — cold load
       const msgs = await fetchInboxMessages(organizationId);
@@ -316,7 +321,10 @@ export default function InboxChatPage() {
   }, [organizationId, refreshUnreadCount]);
 
   useEffect(() => {
-    if (!contextLoading && organizationId) loadSidebarFromCache();
+    if (!contextLoading && organizationId) loadSidebarFromCache().catch((error) => {
+      setMessageError(error instanceof Error ? error.message : "Failed to load conversations.");
+      setRecipients([]);
+    });
   }, [contextLoading, organizationId, loadSidebarFromCache]);
 
   // ── Live polling: keep the conversation sidebar (and badge) fresh while
@@ -325,12 +333,16 @@ export default function InboxChatPage() {
   useEffect(() => {
     if (contextLoading || !organizationId) return;
     const interval = setInterval(() => {
-      loadSidebarFromCache();
+      loadSidebarFromCache().catch((error) => {
+        setMessageError(error instanceof Error ? error.message : "Failed to load conversations.");
+        setRecipients([]);
+      });
     }, 15000);
     return () => clearInterval(interval);
   }, [contextLoading, organizationId, loadSidebarFromCache]);
 
   const fetchMessages = async () => {
+    setMessageError("");
     try {
       if (!organizationId) {
         setLoading(false);
@@ -338,7 +350,7 @@ export default function InboxChatPage() {
       }
 
       setLoading(true);
-      const response = await fetch(
+      const response = await fetchMessageList(
         `/api/whatsapp/whatsapp-internal/messages/list?eq__mobile_no=${encodeURIComponent(mobileNo)}&page=1&size=200&orderby=created_at DESC`,
         { headers: { "x-organization-id": organizationId } }
       );
@@ -409,8 +421,11 @@ export default function InboxChatPage() {
             .catch(() => { /* ignore */ });
         }
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to load messages", variant: "destructive" });
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Failed to load messages.";
+      setMessageError(description);
+      setMessages([]);
+      toast({ title: "Error", description, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -587,6 +602,7 @@ export default function InboxChatPage() {
 
   return (
     <DashboardLayout>
+      {messageError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
       <div className="h-[calc(100vh-2rem)] flex">
         {/* Conversations Sidebar */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">

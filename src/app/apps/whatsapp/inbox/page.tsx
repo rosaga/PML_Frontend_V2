@@ -50,6 +50,7 @@ function InboxContent() {
   const { tags, getTagsForContact, addContactToTag, removeContactFromTag } = useTags();
 
   const [conversations, setConversations] = useState<Recipient[]>([]);
+  const [messageError, setMessageError] = useState("");
   const [loading, setLoading]       = useState(true);    // cold-start only
   const [refreshing, setRefreshing] = useState(false);   // background incremental update
 
@@ -87,6 +88,7 @@ function InboxContent() {
   // ── Cold load: fetch everything, build cache ──────────────────────────────
   const coldLoad = useCallback(async () => {
     if (!organizationId) return;
+    setMessageError("");
     setLoading(true);
     try {
       const msgs = await fetchInboxMessages(organizationId);
@@ -99,7 +101,10 @@ function InboxContent() {
       writeCache(organizationId, { conversations: sorted, newestMessageAt: newestAt, cachedAt: Date.now() });
       setConversations(hydrateNamesFromCache(sorted, organizationId));
       refreshUnreadCount(organizationId);
-    } catch { /* ignore */ } finally {
+    } catch (error) {
+      setMessageError(error instanceof Error ? error.message : "Failed to load messages.");
+      setConversations([]);
+    } finally {
       setLoading(false);
     }
   }, [organizationId, refreshUnreadCount]);
@@ -107,6 +112,7 @@ function InboxContent() {
   // ── Incremental update: fetch only messages newer than last seen ──────────
   const incrementalUpdate = useCallback(async () => {
     if (!organizationId || !newestAtRef.current) return;
+    setMessageError("");
     setRefreshing(true);
     try {
       const msgs = await fetchInboxMessages(organizationId, { gt__created_at: newestAtRef.current });
@@ -126,7 +132,10 @@ function InboxContent() {
       // round — otherwise a fresh mount with an up-to-date cache never
       // tells the sidebar/header what the current unread count actually is.
       refreshUnreadCount(organizationId);
-    } catch { /* ignore */ } finally {
+    } catch (error) {
+      setMessageError(error instanceof Error ? error.message : "Failed to load messages.");
+      setConversations([]);
+    } finally {
       setRefreshing(false);
     }
   }, [organizationId, refreshUnreadCount]);
@@ -299,6 +308,7 @@ function InboxContent() {
       <Header title="Inbox" description="View and chat with all your WhatsApp conversations" />
 
       <div className="p-6">
+        {messageError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
         <div className="mb-5 flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="relative w-full max-w-md">
