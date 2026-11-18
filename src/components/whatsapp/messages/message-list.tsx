@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
 import { Input } from "@/components/whatsapp/ui/input";
@@ -141,7 +142,7 @@ export function MessageList() {
 
       const params = buildFilterParams({ page: page.toString(), size: size.toString() });
 
-      const response = await fetch(`/api/whatsapp/whatsapp-internal/messages/list?${params.toString()}`, {
+      const response = await fetchMessageList(`/api/whatsapp/whatsapp-internal/messages/list?${params.toString()}`, {
         headers: {
           "x-organization-id": organizationId,
         },
@@ -507,7 +508,7 @@ export function MessageList() {
 
         {/* Error State */}
         {error && (
-          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          <div role="alert" className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
             {error}
           </div>
         )}

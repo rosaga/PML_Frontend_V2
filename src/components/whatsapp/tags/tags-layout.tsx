@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/whatsapp/dashboard/header";
 import { Card } from "@/components/whatsapp/ui/card";
@@ -121,6 +122,7 @@ function AddContactDialog({
   const [tagId, setTagId] = useState(preselectedTagId ?? "");
   const [knownNumbers, setKnownNumbers] = useState<string[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [contactError, setContactError] = useState("");
 
   // Sync preselected tag when it changes
   useEffect(() => {
@@ -132,7 +134,8 @@ function AddContactDialog({
   useEffect(() => {
     if (!open || !organizationId) return;
     setLoadingContacts(true);
-    fetch("/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500&orderby=created_at%20DESC", {
+    setContactError("");
+    fetchMessageList("/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500&orderby=created_at%20DESC", {
       headers: { "x-organization-id": organizationId },
     })
       .then((r) => r.json())
@@ -144,7 +147,10 @@ function AddContactDialog({
           setKnownNumbers(nums);
         }
       })
-      .catch(() => {})
+      .catch((error) => {
+        setContactError(error instanceof Error ? error.message : "Failed to load contact messages.");
+        setKnownNumbers([]);
+      })
       .finally(() => setLoadingContacts(false));
   }, [open, organizationId]);
 
@@ -184,6 +190,7 @@ function AddContactDialog({
         </AlertDialogHeader>
 
         <div className="space-y-4 py-1">
+          {contactError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{contactError}</p>}
           {/* Tag picker — shown only when no tag is preselected */}
           {!preselectedTagId && (
             <div className="space-y-2">
@@ -289,7 +296,7 @@ function AddContactDialog({
 export function TagsLayout() {
   const router = useRouter();
   const { organizationId, isLoading: contextLoading } = useConfig();
-  const { tags, tagsLoading, getContactsForTag, getTagsForContact, removeTag, removeContactFromTag } = useTags();
+  const { tags, tagsLoading, tagsError, getContactsForTag, getTagsForContact, removeTag, removeContactFromTag } = useTags();
 
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [addTagOpen, setAddTagOpen] = useState(false);
@@ -298,14 +305,16 @@ export function TagsLayout() {
   const [search, setSearch] = useState("");
   const [contactDataMap, setContactDataMap] = useState<Map<string, ContactRow>>(new Map());
   const [contactLoading, setContactLoading] = useState(false);
+  const [messageError, setMessageError] = useState("");
 
   // Fetch message data to populate table columns
   // TODO: wire backend — replace with GET /api/tags/contacts when backend is ready
   const fetchContactData = useCallback(async () => {
     if (!organizationId || contextLoading) return;
     setContactLoading(true);
+    setMessageError("");
     try {
-      const res = await fetch(
+      const res = await fetchMessageList(
         "/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500&orderby=created_at%20DESC",
         { headers: { "x-organization-id": organizationId } },
       );
@@ -328,8 +337,9 @@ export function TagsLayout() {
         }
         setContactDataMap(map);
       }
-    } catch {
-      // silently fail — contact rows still show with N/A for message data
+    } catch (error) {
+      setMessageError(error instanceof Error ? error.message : "Failed to load contact messages.");
+      setContactDataMap(new Map());
     } finally {
       setContactLoading(false);
     }
@@ -398,6 +408,8 @@ export function TagsLayout() {
       />
 
       <div className="p-6 flex-1 space-y-6">
+        {tagsError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{tagsError}</p>}
+        {messageError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
         {/* ── Toolbar ── */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">

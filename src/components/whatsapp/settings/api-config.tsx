@@ -37,6 +37,7 @@ export function ApiConfigSettings() {
     setOrganizationExternalId: setSavedOrgExternalId,
     displayPhoneNumber: savedDisplayPhoneNumber,
     setDisplayPhoneNumber: setSavedDisplayPhoneNumber,
+    signalPmlUnauthorized,
   } = useConfig();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -48,12 +49,34 @@ export function ApiConfigSettings() {
     if (!orgId.trim()) return;
     setLoading(true);
     try {
+      const token = getToken();
+      if (!token) {
+        signalPmlUnauthorized();
+        return;
+      }
       const peakResponse = await fetch(
-        `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?organization_external_id=${orgId.trim()}`,
-        { method: "GET", headers: { "Content-Type": "application/json" } }
+        `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?organization_external_id=${encodeURIComponent(orgId.trim())}`,
+        { method: "GET", cache: "no-store", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
       );
+      if (peakResponse.status === 401) {
+        signalPmlUnauthorized();
+        toast({ title: "Sign in required", description: "Please sign in again to check this organization's WhatsApp account.", variant: "destructive" });
+        return;
+      }
+      if (peakResponse.status === 403) {
+        toast({ title: "Access denied", description: "You do not have permission to access this organization's WhatsApp account.", variant: "destructive" });
+        return;
+      }
+      if (!peakResponse.ok) {
+        toast({
+          title: peakResponse.status === 404 ? "Organization Not Found" : "Unable to load account",
+          description: peakResponse.status === 404 ? "Could not find WhatsApp account for this organization." : "Could not load this organization's WhatsApp account. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
       const peakData = await peakResponse.json();
-      if (!peakResponse.ok || peakData.status !== "success" || !peakData.data) {
+      if (peakData.status !== "success" || !peakData.data) {
         toast({ title: "Organization Not Found", description: "Could not find WhatsApp account for this organization.", variant: "destructive" });
         return;
       }
@@ -93,7 +116,7 @@ export function ApiConfigSettings() {
     } finally {
       setLoading(false);
     }
-  }, [setConfig, setSavedOrgId, setSavedOrgExternalId, setSavedDisplayPhoneNumber, toast]);
+  }, [setConfig, setSavedOrgId, setSavedOrgExternalId, setSavedDisplayPhoneNumber, signalPmlUnauthorized, toast]);
 
   useEffect(() => {
     setIsSuperAdmin(hasRole(getToken(), "SuperAdmin"));

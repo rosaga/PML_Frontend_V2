@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
+import { useConfig } from "@/lib/whatsapp/config-context";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Header } from "@/components/whatsapp/dashboard/header";
@@ -27,16 +29,14 @@ interface Recipient {
 
 function RecipientsContent() {
   const router = useRouter();
+  const { organizationId, isLoading: contextLoading } = useConfig();
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [filteredRecipients, setFilteredRecipients] = useState<Recipient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messageError, setMessageError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
-
-  useEffect(() => {
-    fetchRecipients();
-  }, []);
 
   useEffect(() => {
     if (searchQuery) {
@@ -51,11 +51,15 @@ function RecipientsContent() {
     setPage(1); // Reset to first page on search
   }, [searchQuery, recipients]);
 
-  const fetchRecipients = async () => {
+  const fetchRecipients = useCallback(async () => {
+    if (!organizationId) return;
+    setMessageError("");
     try {
       setLoading(true);
       // Fetch messages and extract unique recipients (fetch more messages to get more recipients)
-      const response = await fetch("/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500");
+      const response = await fetchMessageList("/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500", {
+        headers: { "x-organization-id": organizationId },
+      });
       const data = await response.json();
 
       if (data && data.data && Array.isArray(data.data)) {
@@ -94,11 +98,17 @@ function RecipientsContent() {
         setFilteredRecipients(uniqueRecipients);
       }
     } catch (error) {
-      console.error("Failed to fetch recipients:", error);
+      setMessageError(error instanceof Error ? error.message : "Failed to load recipients.");
+      setRecipients([]);
+      setFilteredRecipients([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId]);
+
+  useEffect(() => {
+    if (!contextLoading && organizationId) fetchRecipients();
+  }, [contextLoading, organizationId, fetchRecipients]);
 
   const handleRecipientClick = (mobileNo: string) => {
     router.push(`/recipients/${encodeURIComponent(mobileNo)}`);
@@ -128,6 +138,7 @@ function RecipientsContent() {
       />
 
       <div className="p-6">
+        {messageError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-md">

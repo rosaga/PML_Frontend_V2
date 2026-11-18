@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useConfig } from "./config-context";
+import { fetchMessageList } from "./message-list-api";
 
 export interface Tag {
   id: string;    // = label name (backend labels have no numeric IDs)
@@ -20,6 +21,7 @@ interface TagsContextType {
   tags: Tag[];
   tagContacts: TagContact[];
   tagsLoading: boolean;
+  tagsError: string;
   addTag: (name: string, color: string) => Tag;
   removeTag: (tagId: string) => void;
   addContactToTag: (mobileNo: string, tagId: string) => void;
@@ -48,11 +50,12 @@ function colorForIndex(i: number) {
 }
 
 export function TagsProvider({ children }: { children: ReactNode }) {
-  const { organizationId, isLoading: configLoading } = useConfig();
+  const { organizationId, isLoading: configLoading, signalPmlUnauthorized } = useConfig();
 
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagContacts, setTagContacts] = useState<TagContact[]>([]);
   const [tagsLoading, setTagsLoading] = useState(true);
+  const [tagsError, setTagsError] = useState("");
 
   // mobileNo → contact_id (needed for backend PATCH calls)
   const contactIdMapRef = useRef<Map<string, number>>(new Map());
@@ -86,20 +89,39 @@ export function TagsProvider({ children }: { children: ReactNode }) {
     if (organizationId) localStorage.setItem(`tag-assignments-${organizationId}`, JSON.stringify(tcs));
   }, [organizationId]);
 
+  const requestTags = useCallback(async (options: RequestInit = {}) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      signalPmlUnauthorized();
+      throw new Error("Please sign in again to manage WhatsApp tags.");
+    }
+    const headers = new Headers(options.headers);
+    headers.set("x-auth-token", token);
+    const response = await fetch(`/api/whatsapp/tags?organizationId=${encodeURIComponent(organizationId)}`, {
+      ...options, headers, cache: "no-store",
+    });
+    if (response.status === 401) signalPmlUnauthorized();
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(typeof data?.error === "string" ? data.error : `Unable to load or update WhatsApp tags (HTTP ${response.status}).`);
+    }
+    return data;
+  }, [organizationId, signalPmlUnauthorized]);
+
   // ── Load from backend + merge with localStorage ─────────────────────────────
 
   const loadFromBackend = useCallback(async () => {
     if (!organizationId) return;
     setTagsLoading(true);
+    setTagsError("");
     try {
       // 1. All label names for this org
-      const labelsRes = await fetch(`/api/whatsapp/tags?organizationId=${encodeURIComponent(organizationId)}`);
-      const labelsData = await labelsRes.json();
+      const labelsData = await requestTags();
       const labelNames: string[] = Array.isArray(labelsData?.data) ? labelsData.data : [];
 
       // 2. Recent messages → contactId map + single backend label per contact
-      const msgsRes = await fetch(
-        `/api/whatsapp/messages/list?page=1&size=500&orderby=created_at%20DESC`,
+      const msgsRes = await fetchMessageList(
+        `/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500&orderby=created_at%20DESC`,
         { headers: { "x-organization-id": organizationId } },
       );
       const msgsData = await msgsRes.json();
@@ -151,12 +173,13 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       saveAssignments(merged);
       setTagContacts(merged);
 
-    } catch {
+    } catch (error) {
+      setTagsError(error instanceof Error ? error.message : "Unable to load WhatsApp tags.");
       setTagContacts(getAssignments());
     } finally {
       setTagsLoading(false);
     }
-  }, [organizationId, getColors, getAssignments, saveAssignments]);
+  }, [organizationId, getColors, getAssignments, saveAssignments, requestTags]);
 
   useEffect(() => {
     if (!configLoading && organizationId) loadFromBackend();
@@ -209,14 +232,15 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       // TODO: Once backend supports multi-label, replace this single PATCH with
       //       POST /api/v1/organization/{orgId}/contact/{contactId}/labels { label: tagId }
       //       and remove the localStorage sync above entirely.
-      fetch(`/api/whatsapp/tags?organizationId=${encodeURIComponent(organizationId ?? "")}`, {
+      setTagsError("");
+      requestTags({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contact_id: contactId, label: tagId }),
       })
-        .catch(() => { /* ignore */ });
+        .catch((error) => setTagsError(error instanceof Error ? error.message : "Unable to update WhatsApp tags."));
     },
-    [organizationId, getAssignments, saveAssignments],
+    [getAssignments, saveAssignments, requestTags],
   );
 
   const removeContactFromTag = useCallback(
@@ -235,16 +259,15 @@ export function TagsProvider({ children }: { children: ReactNode }) {
       // TODO: Once backend supports multi-label, replace with
       //       DELETE /api/v1/organization/{orgId}/contact/{contactId}/labels/{tagId}
       const remainingTag = updated.find((tc) => tc.mobileNo === mobileNo)?.tagId ?? "";
-      fetch(`/api/whatsapp/tags?organizationId=${encodeURIComponent(organizationId ?? "")}`, {
+      setTagsError("");
+      requestTags({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contact_id: contactId, label: remainingTag }),
       })
-        .then((r) => r.json())
-        .then((d) => console.log("[TagsContext] Tag removal synced:", d))
-        .catch((err) => console.error("[TagsContext] removeContactFromTag error:", err));
+        .catch((error) => setTagsError(error instanceof Error ? error.message : "Unable to update WhatsApp tags."));
     },
-    [organizationId, getAssignments, saveAssignments],
+    [getAssignments, saveAssignments, requestTags],
   );
 
   // ── Derived getters ─────────────────────────────────────────────────────────
@@ -269,6 +292,7 @@ export function TagsProvider({ children }: { children: ReactNode }) {
         tags,
         tagContacts,
         tagsLoading,
+        tagsError,
         addTag,
         removeTag,
         addContactToTag,

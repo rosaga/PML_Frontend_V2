@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { fetchMessageList } from "@/lib/whatsapp/message-list-api";
+import { useConfig } from "@/lib/whatsapp/config-context";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Card } from "@/components/whatsapp/ui/card";
@@ -35,6 +37,7 @@ export default function RecipientChatPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { organizationId, isLoading: contextLoading } = useConfig();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const mobileNo = decodeURIComponent(params.mobileNo as string);
@@ -44,6 +47,7 @@ export default function RecipientChatPage() {
   const [filteredRecipients, setFilteredRecipients] = useState<Recipient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [messageError, setMessageError] = useState("");
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [config, setConfig] = useState({ apiKey: "", wabaId: "", phoneNumberId: "" });
@@ -62,11 +66,6 @@ export default function RecipientChatPage() {
       }
     }
   }, []);
-
-  useEffect(() => {
-    fetchMessages();
-    fetchRecipients();
-  }, [mobileNo]);
 
   useEffect(() => {
     scrollToBottom();
@@ -88,9 +87,12 @@ export default function RecipientChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchRecipients = async () => {
+  const fetchRecipients = useCallback(async () => {
+    if (!organizationId) return;
     try {
-      const response = await fetch("/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500");
+      const response = await fetchMessageList("/api/whatsapp/whatsapp-internal/messages/list?page=1&size=500", {
+        headers: { "x-organization-id": organizationId },
+      });
       const data = await response.json();
 
       if (data && data.data && Array.isArray(data.data)) {
@@ -126,15 +128,20 @@ export default function RecipientChatPage() {
         setFilteredRecipients(uniqueRecipients);
       }
     } catch (error) {
-      console.error("Failed to fetch recipients:", error);
+      setMessageError(error instanceof Error ? error.message : "Failed to load recipients.");
+      setRecipients([]);
+      setFilteredRecipients([]);
     }
-  };
+  }, [organizationId]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
+    if (!organizationId) return;
+    setMessageError("");
     try {
       setLoading(true);
-      const response = await fetch(
-        `/api/whatsapp/whatsapp-internal/messages/list?eq__mobile_no=${encodeURIComponent(mobileNo)}&page=1&size=1000`
+      const response = await fetchMessageList(
+        `/api/whatsapp/whatsapp-internal/messages/list?eq__mobile_no=${encodeURIComponent(mobileNo)}&page=1&size=1000`,
+        { headers: { "x-organization-id": organizationId } },
       );
       const data = await response.json();
 
@@ -147,16 +154,25 @@ export default function RecipientChatPage() {
         setMessages(sortedMessages);
       }
     } catch (error) {
-      console.error("Failed to fetch messages:", error);
+      const description = error instanceof Error ? error.message : "Failed to load messages.";
+      setMessageError(description);
+      setMessages([]);
       toast({
         title: "Error",
-        description: "Failed to load messages",
+        description,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId, mobileNo, toast]);
+
+  useEffect(() => {
+    if (!contextLoading && organizationId) {
+      fetchMessages();
+      fetchRecipients();
+    }
+  }, [contextLoading, organizationId, fetchMessages, fetchRecipients]);
 
   const handleSendMessage = async () => {
     if (!messageText.trim()) return;
@@ -259,6 +275,7 @@ export default function RecipientChatPage() {
 
   return (
     <DashboardLayout>
+      {messageError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{messageError}</p>}
       <div className="h-[calc(100vh-2rem)] flex">
         {/* Recipients Sidebar */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">

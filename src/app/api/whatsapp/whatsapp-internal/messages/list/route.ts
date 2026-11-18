@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { messageListErrorMessage } from "@/lib/whatsapp/message-list-errors";
 
 const PEAKDATA_BASE_URL = "https://peakdata-1048592730476.europe-west4.run.app";
 
 export async function GET(request: NextRequest) {
   try {
     // Accept either x-organization-id (legacy) or x-organization-external-id (new)
-    let organizationId = request.headers.get("x-organization-external-id") || 
-                          request.headers.get("x-organization-id");
+    const organizationId = request.headers.get("x-organization-external-id") ||
+      request.headers.get("x-organization-id");
     
     if (!organizationId) {
       return NextResponse.json(
         { error: { message: "Organization ID is required (x-organization-external-id or x-organization-id header)" } },
         { status: 400 }
       );
+    }
+
+    const token = request.headers.get("x-auth-token")?.trim();
+    const authorization = request.headers.get("authorization")?.trim() || (token ? `Bearer ${token}` : "");
+    if (!/^Bearer\s+\S+$/i.test(authorization)) {
+      return NextResponse.json({ error: { message: messageListErrorMessage(401) } }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -33,22 +40,31 @@ export async function GET(request: NextRequest) {
       queryParams.set("size", "10");
     }
     
-    const url = `${PEAKDATA_BASE_URL}/organization/${organizationId}/wa_message/list?${queryParams.toString()}`;
+    const url = `${PEAKDATA_BASE_URL}/organization/${encodeURIComponent(organizationId)}/wa_message/list?${queryParams.toString()}`;
     
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Authorization: authorization,
       },
+      cache: "no-store",
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      console.error("[API] PeakData list messages error:", data);
+      console.error("[API] PeakData list messages error:", { status: response.status });
       return NextResponse.json(
-        { error: { message: data.message || "Failed to fetch messages" } },
+        { error: { message: messageListErrorMessage(response.status, data) } },
         { status: response.status }
+      );
+    }
+
+    if (data === null) {
+      return NextResponse.json(
+        { error: { message: "The WhatsApp message service returned an invalid response." } },
+        { status: 502 }
       );
     }
 
@@ -56,8 +72,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("[API] Messages list error:", error);
     return NextResponse.json(
-      { error: { message: "Failed to fetch messages" } },
-      { status: 500 }
+      { error: { message: "Unable to reach the WhatsApp message service." } },
+      { status: 502 }
     );
   }
 }
