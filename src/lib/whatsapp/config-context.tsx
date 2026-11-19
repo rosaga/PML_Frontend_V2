@@ -112,7 +112,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(stored);
         if (parsed.wabaId && parsed.phoneNumberId) {
-          setConfigState(parsed);
+          setConfigState(parsed.apiKey ? parsed : { ...parsed, businessName: undefined });
           setIsConfigured(true);
         } else {
           setIsConfigured(false);

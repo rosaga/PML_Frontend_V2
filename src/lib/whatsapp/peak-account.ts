@@ -68,8 +68,23 @@ export async function verifyPeakAccount(organizationExternalId: string, token: s
     throw new PeakAccountVerificationError(502, "WhatsApp verification returned incomplete account details.");
   }
 
+  // Keep the existing provider-backed operations working for authorized accounts.
+  const accountResponse = await fetch(
+    `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?${params}`,
+    { method: "GET", cache: "no-store", headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (accountResponse.status === 401) {
+    throw new PeakAccountVerificationError(401, "Please sign in again to check this organization's WhatsApp account.");
+  }
+  const account = await accountResponse.json().catch(() => null);
+  const apiKey = accountResponse.ok ? getPeakAccountApiKey(account?.data || {}) : "";
+
   return {
-    config: { wabaId, phoneNumberId, businessName: clean(result.data[0].business_name) || clean(result.data[0].name) },
+    config: {
+      wabaId, phoneNumberId,
+      businessName: clean(result.data[0].business_name) || clean(result.data[0].name),
+      ...(apiKey ? { apiKey } : {}),
+    },
     organizationExternalId: clean(result.organization_external_id) || organizationExternalId.trim(),
     displayPhoneNumber: clean(result.display_phone_number),
   };
