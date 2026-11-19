@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/whatsapp/ui/button";
 import {
   Card,
@@ -9,50 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/whatsapp/ui/card";
-import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
-import { getUserDetails, getWabaInfo } from "@/lib/whatsapp/whatsapp-api";
 import { RefreshCw, Building, Loader2 } from "lucide-react";
 
-interface UserInfo {
-  id?: string;
-  name?: string;
-  phone_number?: string;
-  waba_id?: string;
-  business_name?: string;
-  [key: string]: unknown;
-}
-
 export function BusinessNameCard() {
-  const { config, isConfigured } = useConfig();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [businessName, setBusinessName] = useState<string | null>(null);
-
-  const fetchBusinessName = useCallback(async () => {
-    if (!isConfigured) return;
-
-    setLoading(true);
-
-    const userResult = await getUserDetails(config);
-
-    setLoading(false);
-
-    if (userResult.success && userResult.data) {
-      const userInfo = userResult.data as UserInfo;
-      setBusinessName(userInfo.business_name || userInfo.name || null);
-    } else {
-      toast({
-        title: "Error",
-        description: userResult.error || "Failed to fetch business name.",
-        variant: "destructive",
-      });
-    }
-  }, [config, isConfigured, toast]);
-
-  useEffect(() => {
-    fetchBusinessName();
-  }, [fetchBusinessName]);
+  const { config, setConfig, isConfigured, isVerifying: loading } = useConfig();
+  const businessName = config.businessName;
+  const fetchBusinessName = () => setConfig({ ...config, businessName: undefined });
 
   if (!isConfigured) {
     return (
@@ -103,7 +65,7 @@ export function BusinessNameCard() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Unable to fetch business name. Please check your API configuration.
+            Business name is unavailable.
           </p>
         )}
       </CardContent>

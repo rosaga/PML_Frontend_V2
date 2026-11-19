@@ -183,7 +183,7 @@ export default function RecipientChatPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": config.apiKey,
+          ...(config.apiKey ? { "x-api-key": config.apiKey } : {}),
           "x-phone-number-id": config.phoneNumberId,
         },
         body: JSON.stringify({
