@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Input } from "@/components/whatsapp/ui/input";
 import {
@@ -13,12 +13,12 @@ import {
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
+import { PeakAccountVerificationError, verifyPeakAccount } from "@/lib/whatsapp/peak-account";
 import { getToken } from "@/utils/auth";
 import { hasRole } from "@/utils/decodeToken";
 import { CheckCircle, Loader2, RefreshCw, Circle, Search } from "lucide-react";
 
 interface AccountDetails {
-  apiKey: string;
   wabaId: string;
   phoneNumberId: string;
   displayPhoneNumber: string;
@@ -44,9 +44,16 @@ export function ApiConfigSettings() {
   const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [overrideOrgId, setOverrideOrgId] = useState("");
+  const verificationRequest = useRef(0);
+
+  useEffect(() => {
+    setLoading(false);
+    return () => { verificationRequest.current += 1; };
+  }, [savedOrgId]);
 
   const handleVerifyAndSave = useCallback(async (orgId: string) => {
     if (!orgId.trim()) return;
+    const requestId = ++verificationRequest.current;
     setLoading(true);
     try {
       const token = getToken();
@@ -54,67 +61,30 @@ export function ApiConfigSettings() {
         signalPmlUnauthorized();
         return;
       }
-      const peakResponse = await fetch(
-        `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?organization_external_id=${encodeURIComponent(orgId.trim())}`,
-        { method: "GET", cache: "no-store", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
-      );
-      if (peakResponse.status === 401) {
-        signalPmlUnauthorized();
-        toast({ title: "Sign in required", description: "Please sign in again to check this organization's WhatsApp account.", variant: "destructive" });
-        return;
-      }
-      if (peakResponse.status === 403) {
-        toast({ title: "Access denied", description: "You do not have permission to access this organization's WhatsApp account.", variant: "destructive" });
-        return;
-      }
-      if (!peakResponse.ok) {
-        toast({
-          title: peakResponse.status === 404 ? "Organization Not Found" : "Unable to load account",
-          description: peakResponse.status === 404 ? "Could not find WhatsApp account for this organization." : "Could not load this organization's WhatsApp account. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const peakData = await peakResponse.json();
-      if (peakData.status !== "success" || !peakData.data) {
-        toast({ title: "Organization Not Found", description: "Could not find WhatsApp account for this organization.", variant: "destructive" });
-        return;
-      }
-      const account = peakData.data;
-      const apiKey = account.APIKey;
-
-      const verifyResponse = await fetch("/api/whatsapp/whatsapp-internal/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey }),
-      });
-      const verifyData = await verifyResponse.json();
-      if (!verifyResponse.ok) {
-        toast({ title: "Verification Failed", description: "Failed to verify WhatsApp account. Please contact support.", variant: "destructive" });
-        return;
-      }
-      const userData = verifyData.data?.[0];
-      if (!userData?.whatsapp_business_account_id || !userData?.phone_number_id) {
-        toast({ title: "Error", description: "Could not retrieve account details. Please contact support.", variant: "destructive" });
-        return;
-      }
+      const verified = await verifyPeakAccount(orgId, token);
+      if (requestId !== verificationRequest.current) return;
 
       setAccountDetails({
-        apiKey,
-        wabaId: userData.whatsapp_business_account_id,
-        phoneNumberId: userData.phone_number_id,
-        displayPhoneNumber: account.DisplayPhoneNumber || "",
-        organizationExternalId: account.OrganizationExternalID || "",
+        ...verified.config,
+        displayPhoneNumber: verified.displayPhoneNumber,
+        organizationExternalId: verified.organizationExternalId,
       });
-      setConfig({ apiKey, wabaId: userData.whatsapp_business_account_id, phoneNumberId: userData.phone_number_id });
       setSavedOrgId(orgId.trim());
-      setSavedOrgExternalId(account.OrganizationExternalID || "");
-      setSavedDisplayPhoneNumber(account.DisplayPhoneNumber || "");
+      setConfig(verified.config);
+      setSavedOrgExternalId(verified.organizationExternalId);
+      setSavedDisplayPhoneNumber(verified.displayPhoneNumber);
       toast({ title: "Connected", description: "WhatsApp account configured successfully." });
-    } catch {
-      toast({ title: "Error", description: "Failed to connect. Please try again.", variant: "destructive" });
+    } catch (error) {
+      if (requestId !== verificationRequest.current) return;
+      const status = error instanceof PeakAccountVerificationError ? error.status : 0;
+      if (status === 401) signalPmlUnauthorized();
+      toast({
+        title: status === 401 ? "Sign in required" : status === 403 ? "Access denied" : "Verification Failed",
+        description: error instanceof PeakAccountVerificationError ? error.message : "Failed to connect. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false);
+      if (requestId === verificationRequest.current) setLoading(false);
     }
   }, [setConfig, setSavedOrgId, setSavedOrgExternalId, setSavedDisplayPhoneNumber, signalPmlUnauthorized, toast]);
 
@@ -124,14 +94,15 @@ export function ApiConfigSettings() {
 
   // Populate account details from stored config on load
   useEffect(() => {
-    if (!isLoading && config.apiKey && config.wabaId && config.phoneNumberId) {
+    if (!isLoading && config.wabaId && config.phoneNumberId) {
       setAccountDetails({
-        apiKey: config.apiKey,
         wabaId: config.wabaId,
         phoneNumberId: config.phoneNumberId,
         displayPhoneNumber: savedDisplayPhoneNumber || "",
         organizationExternalId: savedOrgExternalId || "",
       });
+    } else {
+      setAccountDetails(null);
     }
   }, [config, isLoading, savedDisplayPhoneNumber, savedOrgExternalId]);
 

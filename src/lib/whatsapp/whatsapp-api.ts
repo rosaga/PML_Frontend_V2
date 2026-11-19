@@ -2,9 +2,10 @@
 // Uses local API routes to avoid CORS issues
 
 export interface ApiConfig {
-  apiKey: string;
+  apiKey?: string;
   wabaId: string;
   phoneNumberId: string;
+  businessName?: string;
   accessToken?: string;
 }
 
@@ -165,8 +166,8 @@ function buildHeaders(
   const { includeWaba = true, includePhoneNumber = false, wabaNumber, campaignName, organizationId } = options;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "x-api-key": config.apiKey,
   };
+  if (config.apiKey) headers["x-api-key"] = config.apiKey;
   if (includeWaba) {
     headers["x-waba-id"] = config.wabaId;
   }
@@ -496,7 +497,7 @@ export async function uploadMedia(
     const response = await fetch(url.toString(), {
       method: "POST",
       headers: {
-        "x-api-key": config.apiKey,
+        ...(config.apiKey ? { "x-api-key": config.apiKey } : {}),
       },
       body: fileBuffer,
     });

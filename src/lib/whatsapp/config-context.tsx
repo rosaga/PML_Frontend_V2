@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import type { ApiConfig } from "./whatsapp-api";
+import { PeakAccountVerificationError, verifyPeakAccount } from "./peak-account";
+import { toast } from "@/hooks/whatsapp/use-toast";
 import { signOutUser } from "@/utils/auth";
 
 // Reads PML auth directly from localStorage — no postMessage needed since
@@ -14,7 +16,7 @@ function getPmlToken(): string {
 function getPmlOrgId(): string {
   if (typeof window === "undefined") return "";
   // PML stores the selected org as selectedAccountId
-  return localStorage.getItem("selectedAccountId") || localStorage.getItem("orgId") || "";
+  return (localStorage.getItem("selectedAccountId") || localStorage.getItem("orgId") || "").trim();
 }
 
 function isPmlTokenExpired(): boolean {
@@ -64,12 +66,11 @@ const LEGACY_KEYS = [
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<ApiConfig>({
-    apiKey: "",
     wabaId: "",
     phoneNumberId: "",
-    accessToken: undefined,
   });
   const [organizationId, setOrganizationIdState] = useState("");
+  const organizationIdRef = useRef("");
   const [pmlOrganizationId, setPmlOrganizationIdState] = useState("");
   const [organizationExternalId, setOrganizationExternalIdState] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumberState] = useState("");
@@ -110,7 +111,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed.apiKey && parsed.wabaId && parsed.phoneNumberId) {
+        if (parsed.wabaId && parsed.phoneNumberId) {
           setConfigState(parsed);
           setIsConfigured(true);
         } else {
@@ -124,6 +125,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     }
 
     setOrganizationIdState(pmlOrgId);
+    organizationIdRef.current = pmlOrgId;
     setPmlOrganizationIdState(pmlOrgId);
     if (storedOrgExternalId) setOrganizationExternalIdState(storedOrgExternalId);
     if (storedDisplayPhone) setDisplayPhoneNumberState(storedDisplayPhone);
@@ -152,101 +154,86 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   // Auto-verify WhatsApp config when org ID is available
   useEffect(() => {
-    if (isLoading || isConfigured || !organizationId) return;
+    if (isLoading || !organizationId || (isConfigured && config.businessName !== undefined)) return;
     let cancelled = false;
+    const selectedOrgId = organizationId.trim();
+    const pmlOrgId = getPmlOrgId();
+    const isCurrent = () => !cancelled && organizationIdRef.current === selectedOrgId && getPmlOrgId() === pmlOrgId;
 
     const autoVerify = async () => {
       setIsVerifying(true);
       try {
         const token = getPmlToken();
         if (!token) {
-          if (!cancelled) setPmlTokenExpired(true);
+          if (isCurrent()) setPmlTokenExpired(true);
           return;
         }
-        const peakResponse = await fetch(
-          `https://peakdata-1048592730476.europe-west4.run.app/whatsapp/account?organization_external_id=${encodeURIComponent(organizationId.trim())}`,
-          { method: "GET", cache: "no-store", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
-        );
-        if (peakResponse.status === 401) {
-          if (!cancelled) setPmlTokenExpired(true);
-          return;
-        }
-        const peakData = await peakResponse.json();
-        if (!peakResponse.ok || peakData.status !== "success" || !peakData.data) return;
+        const verified = await verifyPeakAccount(selectedOrgId, token);
+        if (!isCurrent()) return;
 
-        const account = peakData.data;
-        const apiKey = account.APIKey;
-
-        const verifyResponse = await fetch("/api/whatsapp/whatsapp-internal/auth/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ apiKey }),
-        });
-        const verifyData = await verifyResponse.json();
-        if (!verifyResponse.ok) return;
-
-        const userData = verifyData.data?.[0];
-        if (!userData?.whatsapp_business_account_id || !userData?.phone_number_id) return;
-
-        if (cancelled) return;
-
-        const pmlOrgId = getPmlOrgId();
-        const newConfig = {
-          apiKey,
-          wabaId: userData.whatsapp_business_account_id,
-          phoneNumberId: userData.phone_number_id,
-          accessToken: account.AccessToken,
-        };
-        setConfigState(newConfig);
-        if (pmlOrgId) localStorage.setItem(orgKey(STORAGE_KEY_PREFIX, pmlOrgId), JSON.stringify(newConfig));
+        setConfigState(verified.config);
+        localStorage.setItem(orgKey(STORAGE_KEY_PREFIX, selectedOrgId), JSON.stringify(verified.config));
         setIsConfigured(true);
 
-        if (account.OrganizationExternalID) {
-          setOrganizationExternalIdState(account.OrganizationExternalID);
-          if (pmlOrgId) localStorage.setItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId), account.OrganizationExternalID);
+        setOrganizationExternalIdState(verified.organizationExternalId);
+        localStorage.setItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, selectedOrgId), verified.organizationExternalId);
+        setDisplayPhoneNumberState(verified.displayPhoneNumber);
+        localStorage.setItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, selectedOrgId), verified.displayPhoneNumber);
+      } catch (error) {
+        if (!isCurrent()) return;
+        if (error instanceof PeakAccountVerificationError && error.status === 401) {
+          setPmlTokenExpired(true);
+        } else {
+          toast({
+            title: error instanceof PeakAccountVerificationError && error.status === 403 ? "Access denied" : "Verification Failed",
+            description: error instanceof PeakAccountVerificationError ? error.message : "Failed to connect. Please try again.",
+            variant: "destructive",
+          });
         }
-        if (account.DisplayPhoneNumber) {
-          setDisplayPhoneNumberState(account.DisplayPhoneNumber);
-          if (pmlOrgId) localStorage.setItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId), account.DisplayPhoneNumber);
-        }
-      } catch {
-        // Silently fail — user can configure manually in settings
       } finally {
-        if (!cancelled) setIsVerifying(false);
+        if (isCurrent()) setIsVerifying(false);
       }
     };
 
     autoVerify();
     return () => { cancelled = true; };
-  }, [isLoading, isConfigured, organizationId]);
+  }, [isLoading, isConfigured, organizationId, config]);
 
   const setConfig = useCallback((newConfig: ApiConfig) => {
     setConfigState(newConfig);
-    const pmlOrgId = getPmlOrgId();
-    if (pmlOrgId) localStorage.setItem(orgKey(STORAGE_KEY_PREFIX, pmlOrgId), JSON.stringify(newConfig));
-    setIsConfigured(!!newConfig.apiKey && !!newConfig.wabaId && !!newConfig.phoneNumberId);
+    const selectedOrgId = organizationIdRef.current;
+    if (selectedOrgId) localStorage.setItem(orgKey(STORAGE_KEY_PREFIX, selectedOrgId), JSON.stringify(newConfig));
+    setIsConfigured(!!newConfig.wabaId && !!newConfig.phoneNumberId);
+    setIsVerifying(false);
   }, []);
 
   const setOrganizationId = useCallback((id: string) => {
-    // org ID always comes from PML's selectedAccountId — no separate localStorage entry needed
-    setOrganizationIdState(id);
+    const selectedOrgId = id.trim();
+    if (selectedOrgId === organizationIdRef.current) return;
+    organizationIdRef.current = selectedOrgId;
+    setOrganizationIdState(selectedOrgId);
+    setConfigState({ wabaId: "", phoneNumberId: "" });
+    setOrganizationExternalIdState("");
+    setDisplayPhoneNumberState("");
+    setIsConfigured(false);
+    setIsVerifying(false);
   }, []);
 
   const setOrganizationExternalId = useCallback((id: string) => {
     setOrganizationExternalIdState(id);
-    const pmlOrgId = getPmlOrgId();
-    if (pmlOrgId) {
-      if (id) localStorage.setItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId), id);
-      else localStorage.removeItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, pmlOrgId));
+    const selectedOrgId = organizationIdRef.current;
+    if (selectedOrgId) {
+      if (id) localStorage.setItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, selectedOrgId), id);
+      else localStorage.removeItem(orgKey(ORG_EXTERNAL_ID_KEY_PREFIX, selectedOrgId));
     }
   }, []);
 
   const setDisplayPhoneNumber = useCallback((number: string) => {
     setDisplayPhoneNumberState(number);
-    const pmlOrgId = getPmlOrgId();
-    if (pmlOrgId) {
-      if (number) localStorage.setItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId), number);
-      else localStorage.removeItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, pmlOrgId));
+    const selectedOrgId = organizationIdRef.current;
+    if (selectedOrgId) {
+      if (number) localStorage.setItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, selectedOrgId), number);
+      else localStorage.removeItem(orgKey(DISPLAY_PHONE_NUMBER_KEY_PREFIX, selectedOrgId));
     }
   }, []);
 
