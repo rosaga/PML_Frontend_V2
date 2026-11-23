@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { getToken } from "../../utils/auth";
+import { getToken, startSessionProcess } from "../../utils/auth";
 import { GetGroups, GetAllGroups } from "@/app/api/actions/group/group";
 import { GetRecharges, GetBalance } from "@/app/api/actions/reward/reward";
 import { CreateCampaign } from "@/app/api/actions/campaigns/campaigns";
@@ -105,6 +105,7 @@ const CreateCampaignModal = ({ closeModal }) => {
       repeat_interval: schedule ? repeatInterval : ""
     };
 
+    const finishSessionProcess = startSessionProcess();
     const res = await CreateCampaign(formData)
       .then((res) => {
         if (res.status === 202) {
@@ -131,6 +132,7 @@ const CreateCampaignModal = ({ closeModal }) => {
         }
       })
       .finally(() => {
+        finishSessionProcess();
         setSubmitting(false);
       });
 

@@ -1,3 +1,52 @@
+const SESSION_IDLE_MS = 60 * 60 * 1000;
+const activeProcesses = new Map();
+
+export const isSessionExpired = () => {
+  if (typeof window === 'undefined') return true;
+
+  const token = localStorage.getItem('token');
+  const expiry = Number(localStorage.getItem('tokenExpiration'));
+  const processing = [...activeProcesses.values()].some((process) => process.token === token);
+  return !token || !Number.isFinite(expiry) || expiry <= 0 || (Date.now() >= expiry && !processing);
+};
+
+export const keepSessionAlive = () => {
+  if (isSessionExpired()) return;
+
+  const expirationTime = Date.now() + SESSION_IDLE_MS;
+  // Limit storage writes from frequent pointer/scroll events to once per second.
+  if (expirationTime - Number(localStorage.getItem('tokenExpiration')) >= 1000) {
+    localStorage.setItem('tokenExpiration', expirationTime.toString());
+  }
+};
+
+// Call the returned cleanup in finally so failed or completed work stops keeping the session alive.
+export const startSessionProcess = () => {
+  if (isSessionExpired()) return () => {};
+
+  const token = localStorage.getItem('token');
+  const id = Symbol();
+  const finish = () => {
+    const process = activeProcesses.get(id);
+    if (!process) return;
+    if (localStorage.getItem('token') === token) keepSessionAlive();
+    window.clearInterval(process.interval);
+    activeProcesses.delete(id);
+  };
+  const interval = window.setInterval(() => {
+    if (localStorage.getItem('token') !== token) return finish();
+    keepSessionAlive();
+  }, 30 * 1000);
+  activeProcesses.set(id, { token, interval });
+  keepSessionAlive();
+  return finish;
+};
+
+const clearSessionProcesses = () => {
+  activeProcesses.forEach(({ interval }) => window.clearInterval(interval));
+  activeProcesses.clear();
+};
+
 export const getToken = () => {
   if (typeof window === 'undefined') return null;
 
@@ -8,9 +57,7 @@ export const getToken = () => {
   }
 
   const token           = localStorage.getItem('token');
-  const expiry          = localStorage.getItem('tokenExpiration');
-  const now             = Date.now();
-  const isExpired       = !token || !expiry || now > parseInt(expiry, 10);
+  const isExpired       = isSessionExpired();
 
   // if session has expired and no alert shown
   if (isExpired && !sessionStorage.getItem('expiredAlertShown')) {
@@ -35,7 +82,8 @@ export const getToken = () => {
 
 export const setToken = (token) => {
   if (typeof window !== 'undefined') {
-    const expirationTime = Date.now() + 3600000;
+    clearSessionProcesses();
+    const expirationTime = Date.now() + SESSION_IDLE_MS;
     localStorage.setItem('token', token);
     localStorage.setItem('tokenExpiration', expirationTime.toString());
 
@@ -53,6 +101,7 @@ export const setOrganisation = (orgId, orgName) => {
 
 export const clearToken = () => {
   if (typeof window !== 'undefined') {
+    clearSessionProcesses();
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiration');
     localStorage.removeItem('orgId');
