@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { getToken } from "../../utils/auth";
+import { getToken, startSessionProcess } from "../../utils/auth";
 import { GetAllGroups } from "@/app/api/actions/group/group";
 import { GetBalance } from "@/app/api/actions/reward/reward";
 import { CreateAirtimeCampaign } from "@/app/api/actions/campaigns/campaigns";
@@ -144,6 +144,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
     repeat_interval: schedule ? repeatInterval : ""
   };
 
+  const finishSessionProcess = startSessionProcess();
   const res = await CreateAirtimeCampaign(formData)
     .then((res) => {
       if (res.status === 202) {
@@ -170,6 +171,7 @@ const CreateAirtimeCampaignModal = ({ closeModal }) => {
       }
     })
     .finally(() => {
+      finishSessionProcess();
       setSubmitting(false);
     });
 

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
-import { getToken } from "../../utils/auth";
+import { getToken, startSessionProcess } from "../../utils/auth";
 import { batchReward, GetBalance } from "@/app/api/actions/reward/reward";
 import { GetActiveSenderId } from "@/app/api/actions/senderId/senderId";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -211,6 +211,7 @@ const SendBatchRewardsModal = ({ closeModal }) => {
       message: message?.trim() || null,
     };
 
+    const finishSessionProcess = startSessionProcess();
     try {
       const res = await batchReward({ org_id, newReward });
       if (res.status === 200) {
@@ -231,6 +232,7 @@ const SendBatchRewardsModal = ({ closeModal }) => {
         setErrorMessage("Failed to send data. Please try again.");
       }
     } finally {
+      finishSessionProcess();
       setSubmitting(false);
     }
   };

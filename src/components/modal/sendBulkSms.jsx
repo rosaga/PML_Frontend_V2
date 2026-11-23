@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { getToken } from "@/utils/auth";
+import { getToken, startSessionProcess } from "@/utils/auth";
 import { appservicesAction } from "../../app/api/actions/appservices/appservicesAction";
 import { GetGroups } from "../../components/../app/api/actions/group/group";
 import { broadcastMessages } from "../../app/api/actions/messages/messagesAction";
@@ -104,6 +104,7 @@ const SendBulkModal = ({ closeModal }) => {
   setErrorMessage("");
   setSuccessMessage("");
 
+  const finishSessionProcess = startSessionProcess();
   try {
     const originalContent = state.content;
     const formattedContent = originalContent.trimStart();
@@ -154,6 +155,7 @@ const SendBulkModal = ({ closeModal }) => {
       setErrorMessage("Failed to send SMS. Please try again.");
     }
   } finally {
+    finishSessionProcess();
     setIsButtonClicked(false);
   }
 };

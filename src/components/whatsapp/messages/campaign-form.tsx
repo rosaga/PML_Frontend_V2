@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/hooks/whatsapp/use-toast";
 import { useConfig } from "@/lib/whatsapp/config-context";
 import { getTokenEmail } from "@/lib/whatsapp/auth";
+import { startSessionProcess } from "@/utils/auth";
 import { getTemplates, type Template } from "@/lib/whatsapp/whatsapp-api";
 import { Users, Send, CheckCircle, PlusCircle, Loader2, Clock } from "lucide-react";
 import { Switch } from "@/components/whatsapp/ui/switch";
@@ -115,6 +116,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
     const setUrl = mediaType === "image" ? setTemplateImageUrl : mediaType === "video" ? setTemplateVideoUrl : setTemplateDocumentUrl;
 
     setUploading(true);
+    const finishSessionProcess = startSessionProcess();
     try {
       const uploadFormData = new FormData();
       uploadFormData.append("file", file);
@@ -145,6 +147,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
         variant: "destructive",
       });
     } finally {
+      finishSessionProcess();
       setUploading(false);
     }
   }, [toast]);
@@ -239,6 +242,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
       return;
     }
 
+    const finishSessionProcess = startSessionProcess();
     try {
       setLoading(true);
 
@@ -379,6 +383,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
         variant: "destructive",
       });
     } finally {
+      finishSessionProcess();
       setLoading(false);
     }
   };

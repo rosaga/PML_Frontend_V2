@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useConfig } from "@/lib/whatsapp/config-context";
+import { startSessionProcess } from "@/utils/auth";
 import { DashboardLayout } from "@/components/whatsapp/dashboard/layout";
 import { Header } from "@/components/whatsapp/dashboard/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
@@ -230,14 +231,18 @@ function CampaignDetailContent() {
     if (contextLoading || !effectiveOrganizationId) return;
 
     let cancelled = false;
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    let finishSessionProcess: (() => void) | undefined;
     const PAGE_SIZE = 100;
     const MAX_PAGES = 50; // safety cap: up to 5,000 campaigns
 
-    async function load() {
-      setLoading(true);
-      setNotFound(false);
-      setLoadError("");
-      setCampaign(null);
+    async function load(refresh = false) {
+      if (!refresh) {
+        setLoading(true);
+        setNotFound(false);
+        setLoadError("");
+        setCampaign(null);
+      }
 
       try {
         // Walk every page of the stats endpoint until we find the campaign.
@@ -273,7 +278,16 @@ function CampaignDetailContent() {
           const list = extractCampaigns(data);
           const found = list.find((c) => String(c.id) === String(id));
           if (found) {
-            if (!cancelled) setCampaign(found);
+            if (!cancelled) {
+              setCampaign(found);
+              if (found.total_messages > 0 && found.success_count + found.failed_count < found.total_messages) {
+                finishSessionProcess ??= startSessionProcess();
+                refreshTimer = setTimeout(() => { void load(true); }, 30 * 1000);
+              } else {
+                finishSessionProcess?.();
+                finishSessionProcess = undefined;
+              }
+            }
             return;
           }
 
@@ -285,10 +299,16 @@ function CampaignDetailContent() {
           if (isLastPage) break;
         }
 
-        if (!cancelled) setNotFound(true);
+        if (!cancelled) {
+          finishSessionProcess?.();
+          setNotFound(true);
+        }
       } catch (err: any) {
         console.error("[campaign detail] error:", err);
-        if (!cancelled) setLoadError(err?.message || "Failed to load campaign");
+        if (!cancelled) {
+          finishSessionProcess?.();
+          setLoadError(err?.message || "Failed to load campaign");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -297,6 +317,8 @@ function CampaignDetailContent() {
     load();
     return () => {
       cancelled = true;
+      clearTimeout(refreshTimer);
+      finishSessionProcess?.();
     };
   }, [contextLoading, effectiveOrganizationId, id]);
 

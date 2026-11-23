@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { startSessionProcess } from "@/utils/auth";
 import { sendAirtimeReward } from "@/app/api/actions/airtimeReward/airtimeReward";
 import { useActiveOrganization } from "@/lib/airtime/useOrganizationQuery";
 import { getActiveOrganizationId } from "@/lib/airtime/organization";
@@ -227,6 +228,7 @@ const OrganizationBatchRewards = ({ closeModal, org_id }) => {
     inFlight.current = true;
     setSubmitting(true);
     setErrorMessage("");
+    const finishSessionProcess = startSessionProcess();
     try {
       airtimePayload({ msisdn: "validation", airtime_amount: selectedBundle });
       const parsedContacts = await parseCsvFile(contactsFile);
@@ -296,6 +298,7 @@ const OrganizationBatchRewards = ({ closeModal, org_id }) => {
     } catch (error) {
       if (isCurrent()) setErrorMessage((error.message || "Batch delivery could not be confirmed.") + " Review history before sending again.");
     } finally {
+      finishSessionProcess();
       inFlight.current = false;
       if (isCurrent()) setSubmitting(false);
     }

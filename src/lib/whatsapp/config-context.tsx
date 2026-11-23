@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { ApiConfig } from "./whatsapp-api";
-import { signOutUser } from "@/utils/auth";
+import { isSessionExpired, signOutUser } from "@/utils/auth";
 
 // Reads PML auth directly from localStorage — no postMessage needed since
 // the WhatsApp module now lives inside the PML application.
@@ -15,12 +15,6 @@ function getPmlOrgId(): string {
   if (typeof window === "undefined") return "";
   // PML stores the selected org as selectedAccountId
   return localStorage.getItem("selectedAccountId") || localStorage.getItem("orgId") || "";
-}
-
-function isPmlTokenExpired(): boolean {
-  const expiry = localStorage.getItem("tokenExpiration");
-  if (!expiry) return false;
-  return Date.now() > parseInt(expiry, 10);
 }
 
 interface ConfigContextType {
@@ -77,8 +71,6 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [pmlTokenExpired, setPmlTokenExpired] = useState(false);
-  const lastActivityRef = useRef<number>(Date.now());
-  const INACTIVITY_MS = 20 * 60 * 1000;
 
   const signOut = useCallback(() => {
     const pmlOrgId = getPmlOrgId();
@@ -131,24 +123,14 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  // Track user activity
-  useEffect(() => {
-    const onActivity = () => { lastActivityRef.current = Date.now(); };
-    const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"];
-    events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
-    return () => events.forEach((e) => window.removeEventListener(e, onActivity));
-  }, []);
-
-  // Token expiry check every minute — only fires after 20 minutes of inactivity
   useEffect(() => {
     const interval = setInterval(() => {
-      const inactive = Date.now() - lastActivityRef.current;
-      if (inactive >= INACTIVITY_MS && isPmlTokenExpired()) {
+      if (isSessionExpired()) {
         setPmlTokenExpired(true);
       }
     }, 60 * 1000);
     return () => clearInterval(interval);
-  }, [INACTIVITY_MS]);
+  }, []);
 
   // Auto-verify WhatsApp config when org ID is available
   useEffect(() => {
