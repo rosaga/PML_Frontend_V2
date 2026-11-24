@@ -44,6 +44,10 @@ export async function POST(request: NextRequest) {
     });
 
     const sessionData = await sessionResponse.json();
+    console.log("[v0] Upload session response:", {
+      status: sessionResponse.status,
+      body: sessionData,
+    });
 
     if (!sessionResponse.ok) {
       console.error("[v0] Session creation failed:", sessionData);

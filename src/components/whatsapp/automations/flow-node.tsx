@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { Handle, Position, NodeProps, useUpdateNodeInternals } from "reactflow";
 import { Card } from "@/components/whatsapp/ui/card";
 import { Badge } from "@/components/whatsapp/ui/badge";
 import { isTerminalNodeType } from "./flow-types";
@@ -35,7 +35,7 @@ const NODE_COLORS: Record<string, { card: string; badge: string }> = {
   CATALOGUE: { card: "bg-rose-50 border-rose-200",     badge: "bg-rose-100 text-rose-800" },
 };
 
-export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
+export function FlowNode({ id, data, selected }: NodeProps<FlowNodeData>) {
   const colors = NODE_COLORS[data.type] || { card: "bg-gray-50 border-gray-200", badge: "bg-gray-100 text-gray-800" };
   const isRoute = data.type === "ROUTE";
   const isButtons = data.type === "BUTTONS";
@@ -43,7 +43,12 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
   const assetName = data.type === "CATALOGUE" ? data.catalogueName : data.metaFlowName;
   const assetId = data.type === "CATALOGUE" ? data.catalogueId : data.metaFlowId;
   const assetLabel = data.type === "CATALOGUE" ? "Catalogue" : "Meta Flow";
-  const options = (data.options || []).filter((o) => o.value?.trim());
+  const options = isRoute ? data.options ?? [] : (data.options ?? []).filter((o) => o.value?.trim());
+  const routeOptionCount = isRoute ? options.length : 0;
+  const updateNodeInternals = useUpdateNodeInternals();
+  React.useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, data.type, routeOptionCount, updateNodeInternals]);
 
   return (
     <div className="cursor-pointer" onClick={data.onClick}>
@@ -107,7 +112,7 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
                   <span className="w-4 h-4 rounded bg-orange-200 text-orange-800 text-[10px] flex items-center justify-center font-bold shrink-0">
                     {i + 1}
                   </span>
-                  <span className="line-clamp-1 text-muted-foreground">{opt.value}</span>
+                  <span className="line-clamp-1 text-muted-foreground">{opt.value.trim() || "Enter a label"}</span>
                 </div>
               ))}
             </div>
@@ -173,7 +178,7 @@ export function FlowNode({ data, selected }: NodeProps<FlowNodeData>) {
             </div>
           );
         })
-      ) : !data.type?.includes("LIST") && !isButtons && !isTerminal ? (
+      ) : !isRoute && !data.type?.includes("LIST") && !isButtons && !isTerminal ? (
         <Handle type="source" position={Position.Bottom} />
       ) : isButtons ? (
         <Handle type="source" position={Position.Bottom} />
