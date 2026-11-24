@@ -20,20 +20,19 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { FlowNode } from "./flow-node";
 import { isTerminalNodeType } from "./flow-types";
+import { connectionError, routeOptionIndex } from "./flow-validation";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Plus } from "lucide-react";
-
-const TERMINAL_NODE_TYPES = ["META_FLOW", "CATALOGUE"];
-const ADDABLE_NODE_TYPES = ["TEXT", "LIST", "ROUTE", "NUMBER", "BUTTONS", "META_FLOW", "CATALOGUE"];
 
 interface FlowCanvasProps {
   nodes: Node[];
   edges: Edge[];
   onNodesChange: (nodes: Node[]) => void;
   onEdgesChange: (edges: Edge[]) => void;
+  selectedNodeId: string | null;
   onNodeSelect?: (nodeId: string) => void;
   onAddNode?: (type: string) => void;
-  onDeleteNode?: (nodeId: string) => void;
+  onDeleteNodes?: (nodeIds: string[]) => void;
 }
 
 export function FlowCanvas({
@@ -41,14 +40,14 @@ export function FlowCanvas({
   edges: initialEdges,
   onNodesChange,
   onEdgesChange,
+  selectedNodeId,
   onNodeSelect,
   onAddNode,
-  onDeleteNode,
+  onDeleteNodes,
 }: FlowCanvasProps) {
   const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
-  const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null);
-
+  const [connectionMessage, setConnectionMessage] = React.useState<string>();
   const nodeTypes = useMemo<NodeTypes>(() => ({ flowNode: FlowNode }), []);
 
   // Sync ALL node data (label, headerText, type) whenever parent updates
@@ -57,14 +56,14 @@ export function FlowCanvas({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(initialNodes.map((n) => ({ id: n.id, data: n.data })))]);
 
-  // Sync edges when parent updates (new connections, derived edges)
+  // Option edits can move an edge to a different handle while keeping its ID.
   React.useEffect(() => {
     setEdges(initialEdges);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(initialEdges.map((e) => e.id))]);
+  }, [initialEdges, setEdges]);
 
   const handleEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
+      if (changes.some((change) => change.type === "remove")) setConnectionMessage(undefined);
       const updated = applyEdgeChanges(changes, edges);
       setEdges(updated);
       onEdgesChange(updated);
@@ -74,16 +73,33 @@ export function FlowCanvas({
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
       const sourceNode = nodes.find((node) => node.id === connection.source);
-      if (sourceNode && isTerminalNodeType(sourceNode.data.type)) return;
+      const targetNode = nodes.find((node) => node.id === connection.target);
+      if (!sourceNode || !targetNode) return;
 
+      const retainedEdges = sourceNode.data.type === "ROUTE" && connection.sourceHandle
+        ? edges.filter((edge) => edge.source !== connection.source || edge.sourceHandle !== connection.sourceHandle)
+        : edges;
+      const describe = (node: Node) => ({
+        id: node.id, name: node.data.label, type: node.data.type,
+        optionCount: node.data.options?.length ?? 0,
+      });
+      const startNode = nodes.find((node) => !isTerminalNodeType(node.data.type)) ?? nodes[0];
+      const error = connectionError(describe(sourceNode), describe(targetNode), connection.sourceHandle, startNode.id, retainedEdges);
+      if (error) {
+        setConnectionMessage(error);
+        return;
+      }
+
+      setConnectionMessage(undefined);
       const newEdges = addEdge(
         {
           ...connection,
           type: "smoothstep",
-          data: { index: edges.filter(e => e.source === connection.source).length }
+          data: { index: retainedEdges.filter(e => e.source === connection.source).length }
         },
-        edges
+        retainedEdges
       );
       setEdges(newEdges);
       onEdgesChange(newEdges);
@@ -103,11 +119,6 @@ export function FlowCanvas({
     },
     [nodes, setNodes, onNodesChange]
   );
-
-  const handleNodeClick = (nodeId: string) => {
-    setSelectedNodeId(nodeId);
-    onNodeSelect?.(nodeId);
-  };
 
   return (
     <div className="flex flex-col h-full w-full bg-background">
@@ -129,6 +140,9 @@ export function FlowCanvas({
         </div>
       </div>
 
+      {connectionMessage && (
+        <p role="alert" className="border-b px-4 py-2 text-sm text-destructive">{connectionMessage}</p>
+      )}
       <div className="flex-1 relative" style={{ minHeight: 400 }}>
         <ReactFlow
           nodes={nodes.map((node) => ({
@@ -138,8 +152,8 @@ export function FlowCanvas({
           }))}
           edges={edges.map((edge) => {
             // Extract route option number from sourceHandle (e.g., "route-0" -> "1")
-            const isRouteEdge = edge.sourceHandle?.startsWith("route-");
-            const optionNum = isRouteEdge ? parseInt(edge.sourceHandle!.split("-")[1]) + 1 : null;
+            const optionIndex = routeOptionIndex(edge.sourceHandle);
+            const optionNum = optionIndex === undefined ? null : optionIndex + 1;
             
             return {
               ...edge,
@@ -157,9 +171,10 @@ export function FlowCanvas({
             };
           })}
           onNodesChange={handleNodesChange}
+          onNodesDelete={(removed) => onDeleteNodes?.(removed.map((node) => node.id))}
           onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
-          onNodeClick={(_, node) => handleNodeClick(node.id)}
+          onNodeClick={(_, node) => onNodeSelect?.(node.id)}
           nodeTypes={nodeTypes}
           fitView={nodes.length > 0}
         >

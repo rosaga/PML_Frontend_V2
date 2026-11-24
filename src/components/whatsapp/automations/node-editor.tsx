@@ -20,7 +20,7 @@ import type { MetaFlow } from "@/lib/whatsapp/meta-flows-api";
 interface NodeEditorProps {
   node: FlowNode | null;
   metaFlows?: MetaFlow[];
-  onSave?: (node: FlowNode) => void | boolean;
+  onSave?: (node: FlowNode, removedOptionIndex?: number) => void | boolean;
   onDelete?: () => void;
 }
 
@@ -43,8 +43,8 @@ export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEdito
   }, [node]);
 
   // Update field and immediately propagate to canvas
-  const updateField = (updated: FlowNode) => {
-    if (onSave?.(updated) === false) return;
+  const updateField = (updated: FlowNode, removedOptionIndex?: number) => {
+    if (onSave?.(updated, removedOptionIndex) === false) return;
     setFormData(updated);
   };
 
@@ -106,8 +106,8 @@ export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEdito
 
   // Shared options helper for LIST and ROUTE
   const options: Option[] = formData.extra_data?.options || [{ value: "", target_index: null }];
-  const setOptions = (opts: Option[]) =>
-    updateField({ ...formData, extra_data: { ...formData.extra_data, options: opts } });
+  const setOptions = (opts: Option[], removedOptionIndex?: number) =>
+    updateField({ ...formData, extra_data: { ...formData.extra_data, options: opts } }, removedOptionIndex);
   const availableAssets = metaFlows.filter((flow) => flow.type === formData.node_type && flow.flow_id);
   const assetLabel = formData.node_type === "CATALOGUE" ? "Catalogue" : "Meta Flow";
 
@@ -206,7 +206,7 @@ export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEdito
             {formData.node_type === "LIST"
               ? "Each option becomes a selectable item for the user."
               : formData.node_type === "BUTTONS"
-              ? "Up to 3 buttons. Each button gets its own connection point on the canvas."
+              ? "Up to 3 buttons. All buttons share a connection point on the canvas."
               : "Each option gets its own connection point. Draw edges from each to a downstream node."}
           </p>
           <div className="space-y-2">
@@ -231,7 +231,7 @@ export function NodeEditor({ node, metaFlows = [], onSave, onDelete }: NodeEdito
                   </span>
                 </div>
                 <button
-                  onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
+                  onClick={() => setOptions(options.filter((_, idx) => idx !== i), i)}
                   className="text-muted-foreground hover:text-destructive shrink-0"
                   aria-label="Remove option"
                 >
