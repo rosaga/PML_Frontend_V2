@@ -19,6 +19,45 @@ export async function GetAdminOrganizations(query = "") {
   }
 }
 
+export async function GetAllAdminOrganizations(query = "") {
+  const params = new URLSearchParams(query);
+  params.set("limit", "200");
+  params.set("offset", "0");
+
+  const organizations = [];
+  const seenIds = new Set();
+  let count = null;
+
+  while (true) {
+    const response = await GetAdminOrganizations(params.toString());
+    const rows = response?.data;
+    if (!Array.isArray(rows)) {
+      throw new Error("Failed to load organizations for download.");
+    }
+    if (response.count != null) count = Number(response.count);
+
+    if (!rows.length) {
+      if (count != null && organizations.length < count) {
+        throw new Error("Could not load all matching organizations. Please try again.");
+      }
+      return organizations;
+    }
+
+    for (const organization of rows) {
+      const id = organization.external_id;
+      // Do not silently export a partial list if the API repeats a page.
+      if (seenIds.has(id)) {
+        throw new Error("Could not load all matching organizations. Please try again.");
+      }
+      seenIds.add(id);
+      organizations.push(organization);
+    }
+
+    if (count != null && organizations.length >= count) return organizations;
+    params.set("offset", String(organizations.length));
+  }
+}
+
 export async function GetAdminOrganizationProfile(orgId) {
   const config = await authHeaders();
 

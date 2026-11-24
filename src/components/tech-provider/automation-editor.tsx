@@ -30,7 +30,7 @@ export function AutomationEditor({ onBack }: { onBack: () => void }) {
     <div className="grid gap-4 sm:grid-cols-2"><Field label="Flow Name"><Input aria-label="Flow Name" placeholder="Enter flow name" /></Field><Field label="Description"><Input aria-label="Flow Description" placeholder="Describe this automation" /></Field></div>
     <p className="text-sm text-muted-foreground">Explore the flow builder. Changes stay in this editor until you leave; saving is coming soon.</p>
     <div className="grid overflow-hidden rounded-lg border bg-card xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="h-[580px] min-w-0"><FlowCanvas nodes={canvasNodes} edges={edges} onEdgesChange={setEdges} onNodeSelect={setSelected}
+      <div className="h-[580px] min-w-0"><FlowCanvas nodes={canvasNodes} edges={edges} selectedNodeId={selected} onEdgesChange={setEdges} onNodeSelect={setSelected}
         onNodesChange={(updated) => setNodes((previous) => previous.map((node) => ({ ...node, extra_data: { ...node.extra_data, position: updated.find((item) => item.id === String(node.id))?.position || node.extra_data.position } })))}
         onAddNode={(type) => {
           const id = `preview-node-${++sequence.current}`;

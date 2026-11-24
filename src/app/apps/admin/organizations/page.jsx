@@ -2,7 +2,11 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GetAdminOrganizations } from "@/app/api/actions/admin/admin";
+import * as XLSX from "xlsx";
+import {
+  GetAdminOrganizations,
+  GetAllAdminOrganizations,
+} from "@/app/api/actions/admin/admin";
 
 const OrganizationsPage = () => {
   const router = useRouter();
@@ -15,9 +19,21 @@ const OrganizationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [loadedQuery, setLoadedQuery] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const organizationQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    if (searchTerm.trim()) params.set("search", searchTerm.trim());
+    if (statusFilter !== "ALL") params.set("status", statusFilter);
+    if (serviceFilter !== "ALL") params.set("service", serviceFilter);
+    return params.toString();
+  }, [searchTerm, statusFilter, serviceFilter]);
 
   useEffect(() => {
     setIsClient(true);
@@ -28,30 +44,22 @@ const OrganizationsPage = () => {
   }, [searchTerm, statusFilter, serviceFilter]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchOrganizations() {
       try {
         setLoading(true);
         setError("");
+        setDownloadError("");
 
-        const params = new URLSearchParams();
-
-        if (searchTerm.trim()) {
-          params.set("search", searchTerm.trim());
-        }
-
-        if (statusFilter !== "ALL") {
-          params.set("status", statusFilter);
-        }
-
-        if (serviceFilter !== "ALL") {
-          params.set("service", serviceFilter);
-        }
-
-        const response = await GetAdminOrganizations(params.toString());
+        const response = await GetAdminOrganizations(organizationQuery);
+        if (cancelled) return;
 
         setOrganizations(response?.data || []);
         setCount(response?.count || response?.data?.length || 0);
+        setLoadedQuery(organizationQuery);
       } catch (error) {
+        if (cancelled) return;
         console.error("Error loading organizations:", error);
         setOrganizations([]);
         setCount(0);
@@ -59,14 +67,16 @@ const OrganizationsPage = () => {
           error?.response?.data?.error || "Failed to load organizations."
         );
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     if (isClient) {
       fetchOrganizations();
     }
-  }, [searchTerm, statusFilter, serviceFilter, isClient]);
+
+    return () => { cancelled = true; };
+  }, [organizationQuery, isClient, refreshKey]);
 
   const handleOrganizationClick = (org) => {
     router.push(`/apps/admin/organizations/${org.external_id}`);
@@ -90,6 +100,41 @@ const OrganizationsPage = () => {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return "-";
     return d.toLocaleDateString("en-CA");
+  };
+
+  const canDownload = !loading && !downloading && !error &&
+    loadedQuery === organizationQuery && organizations.length > 0;
+
+  const handleDownload = async () => {
+    if (!canDownload) return;
+    setDownloading(true);
+    setDownloadError("");
+
+    try {
+      const matchingOrganizations = await GetAllAdminOrganizations(organizationQuery);
+      if (!matchingOrganizations.length) {
+        throw new Error("No organizations match the current filters.");
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        matchingOrganizations.map((org) => ({
+          "Organization Name": org.name || "",
+          "Organization ID": org.external_id || "",
+          Status: org.status || "UNKNOWN",
+          "Recharge Count": Number(org.recharge_count || 0),
+          "Last Recharge": formatDate(org.last_recharge_at),
+          "Date Created": formatDate(org.created_at),
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Organizations");
+      XLSX.writeFile(workbook, `organizations_${formatDate(new Date())}.xlsx`);
+    } catch (error) {
+      setDownloadError(error?.response?.data?.error || error?.message ||
+        "Failed to download organizations. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(organizations.length / itemsPerPage));
@@ -118,24 +163,39 @@ const OrganizationsPage = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (!loading) {
-                const event = new Event("refresh-organizations");
-                window.dispatchEvent(event);
-                setSearchTerm((prev) => prev);
-              }
-            }}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-          >
-            Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={!canDownload}
+              title="Download all organizations matching the current search and filters"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#02051d] px-4 text-sm font-semibold text-white hover:bg-[#101637] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {downloading ? "Downloading..." : "Download Excel"}
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => setRefreshKey((value) => value + 1)}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         {error ? (
           <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
+          </div>
+        ) : null}
+
+        {downloadError ? (
+          <div role="alert" className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {downloadError}
           </div>
         ) : null}
 
