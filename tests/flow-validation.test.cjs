@@ -69,3 +69,24 @@ test("SMS rejects an empty menu or a WhatsApp-only terminal node", () => {
   assert.match(validateFlowGraph([node("Catalogue", "CATALOGUE")], [], true).message, /SMS cannot send/);
   assert.match(validateFlowGraph([{ ...name, header_text_template: { text: " " } }], [], true).message, /Enter the SMS message/);
 });
+
+test("multiple catalogues and forms can end separate WhatsApp branches", () => {
+  const menu = node("Menu", "ROUTE", ["Products", "Register", "More products", "Register again"]);
+  const catalogue = { ...node("Catalogue", "CATALOGUE"), extra_data: { catalogue_id: "catalogue-1" } };
+  const form = { ...node("Form", "META_FLOW"), extra_data: { meta_flow_id: "form-1" } };
+  const otherCatalogue = { ...catalogue, id: "Other catalogue", name: "Other catalogue" };
+  const otherForm = { ...form, id: "Other form", name: "Other form" };
+  const nodes = [menu, catalogue, form, otherCatalogue, otherForm];
+  const edges = nodes.slice(1).map((target, index) => edge(menu.id, target.id, `route-${index}`));
+
+  assert.equal(validateFlowGraph(nodes, edges, false), undefined);
+  assert.equal(validateFlowGraph([catalogue, menu, form, otherCatalogue, otherForm], edges, false), undefined);
+  assert.deepEqual(validateFlowGraph([...nodes.slice(0, -1), { ...otherForm, extra_data: {} }], edges, false), {
+    nodeId: "Other form", message: "Select a Meta Flow for “Other form”.",
+  });
+  for (const source of [catalogue, form]) {
+    const issue = validateFlowGraph([...nodes, name], [...edges, edge(source.id, name.id)], false);
+    assert.equal(issue.nodeId, source.id);
+    assert.match(issue.message, /cannot have an outgoing connection/);
+  }
+});

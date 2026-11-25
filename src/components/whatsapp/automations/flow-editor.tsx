@@ -194,30 +194,10 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
         // edges state is the single source of truth — seeded on load, updated on canvas interaction
         const uniqueEdges = edges;
 
-        // The batch API accepts one final interactive node, of either type.
-        const terminalNodes = nodes.filter((node) => isTerminalNodeType(node.node_type));
-        if (terminalNodes.length > 1) {
-          toast({ title: "Validation Error", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
-          setSaving(false);
-          return;
-        }
-
-        const terminalNode = terminalNodes[0];
-        if (terminalNode) {
-          const terminalLabel = terminalNode.node_type === "CATALOGUE" ? "Catalogue" : "Meta Flow";
-          const assetId = terminalNode.node_type === "CATALOGUE"
-            ? terminalNode.extra_data?.catalogue_id
-            : terminalNode.extra_data?.meta_flow_id;
-          if (!assetId) {
-            toast({ title: "Validation Error", description: `Select a ${terminalLabel} for the ${terminalLabel} node before saving.`, variant: "destructive" });
-            setSaving(false);
-            return;
-          }
-        }
-
-        // Terminal nodes must be last in the batch payload.
-        const orderedNodes = terminalNode
-          ? [...nodes.filter((node) => !isTerminalNodeType(node.node_type)), terminalNode]
+        // The batch API uses the first node as the start.
+        const startIndex = nodes.findIndex((node) => !isTerminalNodeType(node.node_type));
+        const orderedNodes = startIndex > 0
+          ? [nodes[startIndex], ...nodes.slice(0, startIndex), ...nodes.slice(startIndex + 1)]
           : nodes;
         const nodesPayload = orderedNodes.map((n, nodeIndex) => {
           const isMetaFlowNode = n.node_type === "META_FLOW";
@@ -321,10 +301,6 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
   };
 
   const handleAddNode = (type: string) => {
-    if (isTerminalNodeType(type) && nodes.some((node) => isTerminalNodeType(node.node_type))) {
-      toast({ title: "Terminal Node Already Added", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
-      return;
-    }
     const newNode: FlowNode = {
       id: `node-${Date.now()}`,
       name: `New ${type} Node`,
@@ -348,14 +324,6 @@ export function FlowEditor({ flowId, onBack, initialTemplateNodes = [] }: FlowEd
   };
 
   const handleNodeSave = (updatedNode: FlowNode, removedOptionIndex?: number) => {
-    if (
-      isTerminalNodeType(updatedNode.node_type) &&
-      nodes.some((node) => String(node.id) !== selectedNodeId && isTerminalNodeType(node.node_type))
-    ) {
-      toast({ title: "Terminal Node Already Added", description: "Only one terminal node (Meta Flow or Catalogue) can be used in a flow.", variant: "destructive" });
-      return false;
-    }
-
     setNodes(nodes.map((node) => {
       if (String(node.id) !== selectedNodeId) return node;
       if (!isTerminalNodeType(updatedNode.node_type)) return updatedNode;
