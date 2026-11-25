@@ -80,8 +80,15 @@ export function validateFlowGraph(nodes: FlowNode[], edges: Edge[], isSMS: boole
   for (const node of nodes) {
     const nodeId = String(node.id);
     const nodeEdges = outgoing.get(nodeId) ?? [];
-    if (isSMS && isTerminalNodeType(node.node_type)) {
-      return { nodeId, message: `“${node.name}” uses a node type that SMS cannot send.` };
+    if (isTerminalNodeType(node.node_type)) {
+      if (isSMS) return { nodeId, message: `“${node.name}” uses a node type that SMS cannot send.` };
+      const isCatalogue = node.node_type === "CATALOGUE";
+      const assetId = isCatalogue ? node.extra_data?.catalogue_id : node.extra_data?.meta_flow_id;
+      if (!assetId) {
+        const assetType = isCatalogue ? "catalogue" : "Meta Flow";
+        return { nodeId, message: `Select a ${assetType} for “${node.name}”.` };
+      }
+      continue;
     }
     if (isSMS && !node.header_text_template?.text?.trim()) {
       return { nodeId, message: `Enter the SMS message for “${node.name}”.` };
