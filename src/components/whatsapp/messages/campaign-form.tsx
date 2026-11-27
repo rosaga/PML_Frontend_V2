@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/whatsapp/ui/card";
 import { Button } from "@/components/whatsapp/ui/button";
 import { Input } from "@/components/whatsapp/ui/input";
@@ -37,11 +37,21 @@ interface Component {
   }>;
 }
 
+const CAMPAIGN_UNCONFIRMED = "We couldn't confirm whether the campaign was created. You can retry this submission safely.";
+
+async function campaignSubmissionStorageKey(payload: Record<string, unknown>) {
+  const { whatsapp_api_key, ...submission } = payload;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(submission)));
+  return `whatsapp-campaign:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
 export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
   const { config, isConfigured, displayPhoneNumber, organizationId, organizationExternalId, signalPmlUnauthorized } = useConfig();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"new" | "existing">("existing");
   const [loading, setLoading] = useState(false);
+  const submitting = useRef(false);
+  const submissionKeys = useRef(new Map<string, string>());
   
   // Send to existing group state
   const [groups, setGroups] = useState<Group[]>([]);
@@ -202,6 +212,8 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
   };
 
   const handleSendToExistingGroup = async () => {
+    if (submitting.current) return;
+
     if (!selectedGroupId) {
       toast({
         title: "Validation Error",
@@ -239,6 +251,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
       return;
     }
 
+    submitting.current = true;
     try {
       setLoading(true);
 
@@ -335,29 +348,56 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
         }),
       };
 
+      const storageKey = await campaignSubmissionStorageKey(campaignPayload);
+      let idempotencyKey = submissionKeys.current.get(storageKey);
+      try {
+        idempotencyKey ||= sessionStorage.getItem(storageKey) || undefined;
+      } catch {
+        // The in-memory key still covers retries in this form.
+      }
+      idempotencyKey ||= crypto.randomUUID();
+      submissionKeys.current.set(storageKey, idempotencyKey);
+      try {
+        sessionStorage.setItem(storageKey, idempotencyKey);
+      } catch {
+        // The in-memory key still covers retries in this form.
+      }
+
       const response = await fetch("/api/whatsapp/peakdata/campaign", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-auth-token": token,
+          "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify(campaignPayload),
+      }).catch(() => {
+        throw new Error(CAMPAIGN_UNCONFIRMED);
       });
 
       if (response.status === 401) { signalPmlUnauthorized(); return; }
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Failed to send campaign messages");
+      if (!response.ok || data?.success !== true) {
+        const message = data?.error?.message;
+        throw new Error(typeof message === "string" ? message : CAMPAIGN_UNCONFIRMED);
+      }
+
+      submissionKeys.current.delete(storageKey);
+      try {
+        sessionStorage.removeItem(storageKey);
+      } catch {
+        // The in-memory key has already been cleared.
       }
 
       setSendSuccess(true);
       const selectedGroup = groups.find(g => g.id.toString() === selectedGroupId);
+      const scheduled = scheduleEnabled && data.schedule_status !== "PENDING";
       toast({
-        title: scheduleEnabled ? "Campaign Scheduled" : "Campaign Sent",
-        description: scheduleEnabled
+        title: scheduled ? "Campaign Scheduled" : "Campaign Created",
+        description: scheduled
           ? `Campaign scheduled for ${scheduledDate} at ${scheduledTime} to "${selectedGroup?.name || 'the group'}"`
-          : `Messages are being sent to all contacts in "${selectedGroup?.name || 'the group'}"`,
+          : "Check the Campaigns page for progress.",
       });
 
       // Reset form
@@ -379,6 +419,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
         variant: "destructive",
       });
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   };
@@ -640,7 +681,7 @@ export function CampaignForm({ onSuccess }: { onSuccess?: () => void }) {
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm text-green-800 flex items-center gap-2">
                   <CheckCircle className="h-4 w-4" />
-                  <strong>Success!</strong> Campaign messages are being sent. Check the Messages tab for status.
+                  <strong>Campaign created.</strong> Check the Campaigns page for progress.
                 </p>
               </div>
             )}
