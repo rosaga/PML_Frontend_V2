@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PEAKDATA_BASE_URL = "https://peakdata-1048592730476.europe-west4.run.app/api/v1";
 const DEFAULT_ORGANIZATION_ID = process.env.NEXT_PUBLIC_ORGANIZATION_ID || "58045135-f272-4879-be0f-2559d836fdba";
+const CAMPAIGN_UNCONFIRMED = "We couldn't confirm whether the campaign was created.";
 
 export async function POST(request: NextRequest) {
+  const idempotencyKey = request.headers.get("Idempotency-Key");
+  const unconfirmedMessage = idempotencyKey
+    ? `${CAMPAIGN_UNCONFIRMED} You can retry this submission safely.`
+    : CAMPAIGN_UNCONFIRMED;
+
   try {
     const token = request.headers.get("x-auth-token") || "";
     let email: string;
@@ -20,7 +26,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: { message: "A JSON campaign request is required" } }, { status: 400 });
+    }
     const {
       group_id,
       template_id,
@@ -110,28 +119,35 @@ export async function POST(request: NextRequest) {
           accept: "application/json",
           "content-type": "application/json",
           Authorization: `Bearer ${token}`,
+          ...(idempotencyKey && { "Idempotency-Key": idempotencyKey }),
         },
         body: JSON.stringify(campaignBody),
       }
     );
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: { message: data.error || "Failed to send campaign messages" } },
+        {
+          error: { message: typeof data?.error === "string" ? data.error : unconfirmedMessage },
+          ...(data?.campaign_id && { campaign_id: data.campaign_id }),
+        },
         { status: response.status }
       );
+    }
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return NextResponse.json({ error: { message: unconfirmedMessage } }, { status: 502 });
     }
 
     return NextResponse.json({
       ...data,
-      created_by: email,
-    });
-  } catch (error: any) {
+      created_by: data.created_by ?? email,
+    }, { status: response.status });
+  } catch {
     return NextResponse.json(
-      { error: { message: error.message || "Internal server error" } },
-      { status: 500 }
+      { error: { message: unconfirmedMessage } },
+      { status: 502 }
     );
   }
 }
